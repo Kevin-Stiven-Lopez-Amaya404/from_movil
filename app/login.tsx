@@ -346,13 +346,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   linkRow: {
-    alignSelf: "flex-start",
+    alignSelf: "center",
     marginTop: 20,
   },
   linkText: {
     color: "#3F3F3F",
     fontFamily: serifFont,
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "700",
     textDecorationLine: "underline",
   },

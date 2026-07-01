@@ -24,7 +24,6 @@ export default function RegisterScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,7 +40,6 @@ export default function RegisterScreen() {
 
   const errors = {
     firstName: firstName.trim().length < 2 ? "Ingresa tus nombres." : "",
-    lastName: lastName.trim().length < 2 ? "Ingresa tus apellidos." : "",
     email: !isValidEmail(cleanEmail) ? "Ingresa un correo válido." : "",
     password: !passwordIsStrong ? "Cumple todos los requisitos de contraseña." : "",
     confirmPassword: !passwordsMatch ? "Las contraseñas no coinciden." : "",
@@ -71,7 +69,7 @@ export default function RegisterScreen() {
 
     const result = registerUser({
       email: cleanEmail,
-      name: `${firstName.trim()} ${lastName.trim()}`,
+      name: firstName.trim(),
       password,
     });
 
@@ -107,7 +105,6 @@ export default function RegisterScreen() {
           <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <BackButton fallbackHref="/welcome" />
           <Text style={[styles.title, layout.tiny && styles.titleTiny]}>Smart Home</Text>
-          <Text style={styles.sectionTitle}>Crear cuenta</Text>
 
           <TextInput
             style={[styles.input, visibleError("firstName") && styles.inputError]}
@@ -117,8 +114,7 @@ export default function RegisterScreen() {
             value={firstName}
             onChangeText={setFirstName}
           />
-
-          {!!visibleError("lastName") && <Text style={styles.errorText}>{errors.lastName}</Text>}
+          {!!visibleError("firstName") && <Text style={styles.errorText}>{errors.firstName}</Text>}
 
           <TextInput
             style={[styles.input, visibleError("email") && styles.inputError]}
@@ -266,14 +262,6 @@ const styles = StyleSheet.create({
     fontSize: 34,
     lineHeight: 41,
     marginBottom: 16,
-  },
-  sectionTitle: {
-    color: "#3F3F3F",
-    fontFamily: serifFont,
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 8,
-    textDecorationLine: "underline",
   },
   input: {
     backgroundColor: "#FBFBFD",

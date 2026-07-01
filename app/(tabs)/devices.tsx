@@ -1,10 +1,10 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 
 import { formatCOP } from "@/lib/formatters";
 import { useResponsiveLayout } from "@/lib/responsive";
-import { DeviceCategory, useSmartHome } from "@/lib/smart-home-context";
+import { useSmartHome } from "@/lib/smart-home-context";
 
 const BLUE = "#0864C8";
 const TEXT = "#454545";
@@ -13,28 +13,68 @@ const GREEN = "#2AAF5D";
 const RED = "#FF3B20";
 const MUTED = "#6B7280";
 
-const categories: DeviceCategory[] = ["Electrodomesticos", "Iluminacion", "Climatizacion", "Seguridad"];
-
 export default function DevicesScreen() {
   const layout = useResponsiveLayout();
-  const { devices, setDeviceOnline, toggleDevice } = useSmartHome();
-  const [activeCategory, setActiveCategory] = useState<DeviceCategory>("Electrodomesticos");
-  const [selectedId, setSelectedId] = useState(devices[0]?.id ?? "");
-  const filteredDevices = devices.filter((device) => device.category === activeCategory);
-  const selectedDevice = devices.find((device) => device.id === selectedId) ?? filteredDevices[0] ?? devices[0];
-  const onlineCount = devices.filter((device) => device.online).length;
+  const {
+    activeHomeId,
+    addDeviceToHome,
+    addHome,
+    devices,
+    homes,
+    setActiveHomeId,
+    setDeviceOnline,
+    toggleDevice,
+    toggleHomeFavorite,
+  } = useSmartHome();
+  const [homeName, setHomeName] = useState("");
+  const [deviceName, setDeviceName] = useState("");
+  const [selectedId, setSelectedId] = useState("");
+  const selectedHome = homes.find((home) => home.id === activeHomeId) ?? homes[0];
+  const homeDevices = devices.filter((device) => device.homeId === selectedHome?.id);
+  const selectedDevice =
+    homeDevices.find((device) => device.id === selectedId) ?? homeDevices[0];
+  const onlineCount = homeDevices.filter((device) => device.online).length;
   const monthlySavings = useMemo(() => {
-    const savedKwh = devices.reduce((total, device) => {
+    const savedKwh = homeDevices.reduce((total, device) => {
       const saved = Math.max(device.yesterday - (device.online ? device.consumption : 0), 0);
       return total + saved;
     }, 0);
 
     return Math.max(50000, Math.round(savedKwh * 30 * 9500));
-  }, [devices]);
+  }, [homeDevices]);
 
-  function turnOffCategory() {
-    filteredDevices.forEach((device) => setDeviceOnline(device.id, false));
-    Alert.alert("Categoria apagada", `Se apagaron los dispositivos de ${activeCategory}.`);
+  function handleAddHome() {
+    const cleanName = homeName.trim();
+
+    if (!cleanName) {
+      Alert.alert("Nombre requerido", "Ingresa el nombre del hogar.");
+      return;
+    }
+
+    addHome(cleanName);
+    setHomeName("");
+  }
+
+  function handleAddDevice() {
+    const cleanName = deviceName.trim();
+
+    if (!selectedHome) {
+      Alert.alert("Hogar requerido", "Primero registra un hogar.");
+      return;
+    }
+
+    if (!cleanName) {
+      Alert.alert("Nombre requerido", "Ingresa el nombre del dispositivo.");
+      return;
+    }
+
+    addDeviceToHome(selectedHome.id, cleanName);
+    setDeviceName("");
+  }
+
+  function turnOffHome() {
+    homeDevices.forEach((device) => setDeviceOnline(device.id, false));
+    Alert.alert("Hogar apagado", `Se apagaron los dispositivos de ${selectedHome?.name ?? "este hogar"}.`);
   }
 
   return (
@@ -51,46 +91,83 @@ export default function DevicesScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
         <View style={styles.savingsCard}>
-          <Text style={styles.savingsTitle}>Ahorros mensuales</Text>
+          <Text style={styles.savingsTitle}>Hogares</Text>
           <Text style={[styles.savingsAmount, layout.tiny && styles.savingsAmountTiny]}>
-            {formatCOP(monthlySavings)} / mes
+            {homes.length} registrados
           </Text>
-          <Text style={styles.savingsText}>{onlineCount} dispositivos conectados</Text>
+          <Text style={styles.savingsText}>
+            {selectedHome ? `${onlineCount} dispositivos conectados en ${selectedHome.name}` : "Registra tu primer hogar"}
+          </Text>
         </View>
 
-        <ScrollView
-          horizontal
-          contentContainerStyle={styles.segment}
-          showsHorizontalScrollIndicator={false}
-        >
-          {categories.map((category) => {
-            const active = activeCategory === category;
+        <View style={styles.addRow}>
+          <TextInput
+            style={styles.addInput}
+            placeholder="Nombre del hogar"
+            placeholderTextColor={MUTED}
+            value={homeName}
+            onChangeText={setHomeName}
+          />
+          <Pressable style={styles.addButton} onPress={handleAddHome}>
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </Pressable>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Hogares registrados</Text>
+          <Text style={styles.sectionMeta}>{homes.length} items</Text>
+        </View>
+
+        <View style={styles.homeList}>
+          {homes.map((home) => {
+            const active = selectedHome?.id === home.id;
+            const count = devices.filter((device) => device.homeId === home.id).length;
 
             return (
               <Pressable
-                key={category}
-                style={[styles.segmentItem, active && styles.segmentActive]}
-                onPress={() => {
-                  setActiveCategory(category);
-                  const firstDevice = devices.find((device) => device.category === category);
-                  if (firstDevice) setSelectedId(firstDevice.id);
-                }}
+                key={home.id}
+                style={[styles.homeCard, active && styles.homeCardSelected]}
+                onPress={() => setActiveHomeId(home.id)}
               >
-                <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
-                  {category}
-                </Text>
+                <View style={styles.deviceIcon}>
+                  <MaterialCommunityIcons name="home-city-outline" size={31} color={BLUE} />
+                </View>
+                <View style={styles.deviceCopy}>
+                  <Text style={styles.deviceName}>{home.name}</Text>
+                  <Text style={styles.deviceSubtitle}>{count} dispositivos · {home.location}</Text>
+                </View>
+                <Pressable
+                  accessibilityLabel={home.favorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+                  onPress={() => toggleHomeFavorite(home.id)}
+                  style={styles.favoriteButton}
+                >
+                  <Ionicons name={home.favorite ? "star" : "star-outline"} size={25} color={home.favorite ? "#F5B400" : MUTED} />
+                </Pressable>
               </Pressable>
             );
           })}
-        </ScrollView>
+        </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Dispositivos conectados</Text>
-          <Text style={styles.sectionMeta}>{filteredDevices.length} items</Text>
+          <Text style={styles.sectionTitle}>Dispositivos de {selectedHome?.name ?? "hogar"}</Text>
+          <Text style={styles.sectionMeta}>{homeDevices.length} items</Text>
+        </View>
+
+        <View style={styles.addRow}>
+          <TextInput
+            style={styles.addInput}
+            placeholder="Nombre del dispositivo"
+            placeholderTextColor={MUTED}
+            value={deviceName}
+            onChangeText={setDeviceName}
+          />
+          <Pressable style={styles.addButton} onPress={handleAddDevice}>
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </Pressable>
         </View>
 
         <View style={styles.deviceList}>
-          {filteredDevices.map((device) => (
+          {homeDevices.map((device) => (
             <Pressable
               key={device.id}
               style={[
@@ -120,6 +197,13 @@ export default function DevicesScreen() {
               />
             </Pressable>
           ))}
+
+          {!homeDevices.length && (
+            <View style={styles.emptyCard}>
+              <MaterialCommunityIcons name="power-plug-outline" size={32} color={BLUE} />
+              <Text style={styles.emptyText}>Este hogar todavía no tiene dispositivos.</Text>
+            </View>
+          )}
         </View>
 
         {selectedDevice && (
@@ -144,6 +228,7 @@ export default function DevicesScreen() {
                 <Text style={styles.metricLabel}>Ubicacion</Text>
               </View>
             </View>
+            <Text style={styles.savingsInline}>Ahorro estimado: {formatCOP(monthlySavings)} / mes</Text>
             <Pressable
               style={({ pressed }) => [
                 styles.primaryButton,
@@ -164,12 +249,14 @@ export default function DevicesScreen() {
           </View>
         )}
 
-        <Pressable
-          style={({ pressed }) => [styles.offButton, pressed && styles.offButtonPressed]}
-          onPress={turnOffCategory}
-        >
-          <Text style={styles.offButtonText}>Apagar categoría</Text>
-        </Pressable>
+        {!!homeDevices.length && (
+          <Pressable
+            style={({ pressed }) => [styles.offButton, pressed && styles.offButtonPressed]}
+            onPress={turnOffHome}
+          >
+            <Text style={styles.offButtonText}>Apagar hogar</Text>
+          </Pressable>
+        )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -227,30 +314,32 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginTop: 20,
   },
-  segment: {
-    gap: 8,
-    paddingHorizontal: 2,
-    paddingTop: 28,
-  },
-  segmentItem: {
+  addRow: {
     alignItems: "center",
-    backgroundColor: LILAC,
-    borderRadius: 8,
-    height: 34,
-    justifyContent: "center",
-    paddingHorizontal: 13,
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 18,
   },
-  segmentActive: {
-    backgroundColor: BLUE,
-  },
-  segmentText: {
+  addInput: {
+    backgroundColor: "#FBFBFD",
+    borderColor: "#DDE2F5",
+    borderRadius: 12,
+    borderWidth: 1,
     color: TEXT,
+    flex: 1,
     fontFamily: appFont,
-    fontSize: 14,
-    fontWeight: "800",
+    fontSize: 15,
+    fontWeight: "700",
+    height: 48,
+    paddingHorizontal: 14,
   },
-  segmentTextActive: {
-    color: "#FFFFFF",
+  addButton: {
+    alignItems: "center",
+    backgroundColor: BLUE,
+    borderRadius: 12,
+    height: 48,
+    justifyContent: "center",
+    width: 48,
   },
   sectionHeader: {
     alignItems: "center",
@@ -261,6 +350,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: TEXT,
+    flex: 1,
     fontFamily: appFont,
     fontSize: 17,
     fontWeight: "800",
@@ -270,6 +360,29 @@ const styles = StyleSheet.create({
     fontFamily: appFont,
     fontSize: 13,
     fontWeight: "700",
+  },
+  homeList: {
+    alignSelf: "stretch",
+    gap: 12,
+    marginTop: 13,
+  },
+  homeCard: {
+    alignItems: "center",
+    backgroundColor: LILAC,
+    borderRadius: 12,
+    flexDirection: "row",
+    minHeight: 74,
+    paddingHorizontal: 14,
+  },
+  homeCardSelected: {
+    borderColor: BLUE,
+    borderWidth: 1.5,
+  },
+  favoriteButton: {
+    alignItems: "center",
+    height: 42,
+    justifyContent: "center",
+    width: 42,
   },
   deviceList: {
     alignSelf: "stretch",
@@ -322,6 +435,22 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 4,
   },
+  emptyCard: {
+    alignItems: "center",
+    backgroundColor: LILAC,
+    borderRadius: 12,
+    flexDirection: "row",
+    gap: 10,
+    minHeight: 66,
+    paddingHorizontal: 14,
+  },
+  emptyText: {
+    color: TEXT,
+    flex: 1,
+    fontFamily: appFont,
+    fontSize: 14,
+    fontWeight: "800",
+  },
   detailCard: {
     alignSelf: "stretch",
     backgroundColor: LILAC,
@@ -368,8 +497,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 10,
     flex: 1,
-    minWidth: 82,
     minHeight: 64,
+    minWidth: 82,
     padding: 8,
   },
   metricValue: {
@@ -384,6 +513,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     marginTop: 5,
+  },
+  savingsInline: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 13,
+    fontWeight: "800",
+    marginTop: 12,
   },
   primaryButton: {
     alignItems: "center",

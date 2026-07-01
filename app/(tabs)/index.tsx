@@ -4,7 +4,7 @@ import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } fr
 
 import { formatKwh } from "@/lib/formatters";
 import { useResponsiveLayout } from "@/lib/responsive";
-import { HomeArea, SmartDevice, useSmartHome } from "@/lib/smart-home-context";
+import { SmartDevice, useSmartHome } from "@/lib/smart-home-context";
 
 const BLUE = "#0864C8";
 const LILAC = "#DDDDFB";
@@ -12,8 +12,6 @@ const TEXT = "#454545";
 const GREEN = "#2AAF5D";
 const RED = "#FF3B20";
 const MUTED = "#6B7280";
-
-const homes: HomeArea[] = ["Casa", "Oficina"];
 
 function getTrend(device: SmartDevice) {
   const delta = device.consumption - device.yesterday;
@@ -32,7 +30,7 @@ function getTrend(device: SmartDevice) {
 export default function DashboardScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
-  const { activeHome, devices, sessionName, setActiveHome } = useSmartHome();
+  const { devices, homes, sessionName, setActiveHomeId } = useSmartHome();
   const onlineDevices = devices.filter((device) => device.online);
   const currentConsumption = onlineDevices.reduce((total, device) => total + device.consumption, 0);
   const yesterdayConsumption = onlineDevices.reduce((total, device) => total + device.yesterday, 0);
@@ -41,6 +39,7 @@ export default function DashboardScreen() {
   const topDevices = [...devices]
     .sort((first, second) => second.consumption - first.consumption)
     .slice(0, 3);
+  const favoriteHomes = homes.filter((home) => home.favorite);
 
   function showNotifications() {
     const critical = devices.filter((device) => device.critical && device.online);
@@ -87,22 +86,6 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        <View style={styles.segment}>
-          {homes.map((home) => {
-            const active = activeHome === home;
-
-            return (
-              <Pressable
-                key={home}
-                style={[styles.segmentItem, active && styles.segmentActive]}
-                onPress={() => setActiveHome(home)}
-              >
-                <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{home}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
         <View style={styles.nowCard}>
           <View style={styles.nowTop}>
             <Text style={styles.nowLabel}>Consumo actual</Text>
@@ -120,8 +103,59 @@ export default function DashboardScreen() {
         <View style={styles.divider} />
 
         <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Hogares favoritos</Text>
+          <Pressable onPress={() => router.push("/devices")}>
+            <Text style={styles.seeAll}>Ver hogares</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.favoriteList}>
+          {favoriteHomes.length > 0 ? (
+            favoriteHomes.map((home) => {
+              const homeDevices = devices.filter((device) => device.homeId === home.id);
+              const homeOnline = homeDevices.filter((device) => device.online).length;
+
+              return (
+                <Pressable
+                  key={home.id}
+                  style={({ pressed }) => [styles.homeCard, pressed && styles.cardPressed]}
+                  onPress={() => {
+                    setActiveHomeId(home.id);
+                    router.push("/devices");
+                  }}
+                >
+                  <View style={styles.circleIcon}>
+                    <MaterialCommunityIcons name="home-city-outline" size={31} color={BLUE} />
+                  </View>
+                  <View style={styles.deviceCopy}>
+                    <Text style={styles.deviceName}>{home.name}</Text>
+                    <Text style={styles.deviceValue}>
+                      {homeOnline} de {homeDevices.length} dispositivos activos
+                    </Text>
+                  </View>
+                  <Ionicons name="star" size={22} color="#F5B400" />
+                </Pressable>
+              );
+            })
+          ) : (
+            <Pressable
+              style={styles.homeCard}
+              onPress={() => router.push("/devices")}
+            >
+              <View style={styles.circleIcon}>
+                <MaterialCommunityIcons name="home-plus-outline" size={31} color={BLUE} />
+              </View>
+              <View style={styles.deviceCopy}>
+                <Text style={styles.deviceName}>Sin hogares favoritos</Text>
+                <Text style={styles.deviceValue}>Marca un hogar como favorito para verlo aquí</Text>
+              </View>
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
-            Consumo por dispositivos <Text style={styles.muted}>(vs ayer)</Text>
+            Mayor consumo <Text style={styles.muted}>(vs ayer)</Text>
           </Text>
           <Pressable onPress={() => router.push("/devices")}>
             <Text style={styles.seeAll}>Ver todos</Text>
@@ -244,38 +278,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 44,
   },
-  segment: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    marginLeft: 0,
-    marginTop: 15,
-    overflow: "hidden",
-  },
-  segmentItem: {
-    alignItems: "center",
-    backgroundColor: LILAC,
-    height: 30,
-    justifyContent: "center",
-    minWidth: 87,
-    paddingHorizontal: 0,
-  },
-  segmentActive: {
-    backgroundColor: BLUE,
-  },
-  segmentText: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  segmentTextActive: {
-    color: "#FFFFFF",
-  },
   nowCard: {
     alignSelf: "center",
     backgroundColor: LILAC,
     borderRadius: 16,
-    marginTop: 25,
+    marginTop: 22,
     maxWidth: 292,
     paddingHorizontal: 15,
     paddingVertical: 12,
@@ -359,6 +366,18 @@ const styles = StyleSheet.create({
     gap: 11,
     paddingHorizontal: 0,
     paddingTop: 15,
+  },
+  favoriteList: {
+    gap: 11,
+    paddingTop: 15,
+  },
+  homeCard: {
+    alignItems: "center",
+    backgroundColor: LILAC,
+    borderRadius: 11,
+    flexDirection: "row",
+    minHeight: 64,
+    paddingHorizontal: 11,
   },
   deviceCard: {
     alignItems: "center",

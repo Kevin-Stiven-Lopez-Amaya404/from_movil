@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     backgroundColor: theme.colors.backgroundBlue,
-    paddingHorizontal: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
   },
   content: {
     flex: 1,
@@ -155,8 +155,11 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.lg,
   },
   buttonsArea: {
+    alignSelf: "center",
     paddingBottom: theme.spacing.xxl,
     gap: theme.spacing.md,
+    maxWidth: 340,
+    width: "100%",
   },
   buttonFilled: {
     backgroundColor: "#FFFFFF",

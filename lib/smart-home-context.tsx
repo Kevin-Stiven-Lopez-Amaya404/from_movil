@@ -1,13 +1,20 @@
 import { createContext, PropsWithChildren, useContext, useMemo, useState } from "react";
 
-export type HomeArea = "Casa" | "Oficina";
 export type DeviceCategory = "Electrodomesticos" | "Iluminacion" | "Climatizacion" | "Seguridad";
 export type ReportRange = "Diario" | "Semana" | "Mes" | "Rango";
 export type AppLanguage = "es" | "en" | "pt";
 export type ColorMode = "light" | "dark";
 
+export type SmartHomePlace = {
+  id: string;
+  name: string;
+  location: string;
+  favorite: boolean;
+};
+
 export type SmartDevice = {
   id: string;
+  homeId: string;
   name: string;
   category: DeviceCategory;
   room: string;
@@ -31,11 +38,12 @@ type ReportPoint = {
 };
 
 type SmartHomeState = {
-  activeHome: HomeArea;
+  activeHomeId: string;
   activeDevices: ActiveDevice[];
   accountActive: boolean;
   colorMode: ColorMode;
   devices: SmartDevice[];
+  homes: SmartHomePlace[];
   language: AppLanguage;
   reportData: Record<ReportRange, ReportPoint[]>;
   resolvedAlerts: string[];
@@ -43,21 +51,30 @@ type SmartHomeState = {
   offlineMode: boolean;
   lastSync: string;
   deactivateAccount: () => void;
-  setActiveHome: (home: HomeArea) => void;
+  addDeviceToHome: (homeId: string, name: string) => void;
+  addHome: (name: string) => void;
+  setActiveHomeId: (homeId: string) => void;
   setAccountActive: (active: boolean) => void;
   setColorMode: (mode: ColorMode) => void;
   setLanguage: (language: AppLanguage) => void;
   setSessionName: (name: string) => void;
   setOfflineMode: (enabled: boolean) => void;
   toggleDevice: (id: string) => void;
+  toggleHomeFavorite: (homeId: string) => void;
   setDeviceOnline: (id: string, online: boolean) => void;
   resolveDeviceAlert: (id: string) => void;
   refreshSync: () => void;
 };
 
+const initialHomes: SmartHomePlace[] = [
+  { id: "casa", name: "Casa", location: "Hogar principal", favorite: true },
+  { id: "oficina", name: "Oficina", location: "Espacio de trabajo", favorite: false },
+];
+
 const initialDevices: SmartDevice[] = [
   {
     id: "ac",
+    homeId: "casa",
     name: "Aire acondicionado",
     category: "Climatizacion",
     room: "Sala",
@@ -69,6 +86,7 @@ const initialDevices: SmartDevice[] = [
   },
   {
     id: "server",
+    homeId: "oficina",
     name: "Servidor domestico",
     category: "Electrodomesticos",
     room: "Estudio",
@@ -79,6 +97,7 @@ const initialDevices: SmartDevice[] = [
   },
   {
     id: "tv",
+    homeId: "casa",
     name: "TV",
     category: "Electrodomesticos",
     room: "Habitacion",
@@ -89,6 +108,7 @@ const initialDevices: SmartDevice[] = [
   },
   {
     id: "charger",
+    homeId: "casa",
     name: "Cargador",
     category: "Electrodomesticos",
     room: "Dormitorio",
@@ -99,6 +119,7 @@ const initialDevices: SmartDevice[] = [
   },
   {
     id: "lights",
+    homeId: "casa",
     name: "Luces inteligentes",
     category: "Iluminacion",
     room: "Cocina",
@@ -109,6 +130,7 @@ const initialDevices: SmartDevice[] = [
   },
   {
     id: "camera",
+    homeId: "casa",
     name: "Camara principal",
     category: "Seguridad",
     room: "Entrada",
@@ -165,8 +187,21 @@ function getTimeStamp() {
   }).format(new Date());
 }
 
+function createId(value: string) {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+  return `${slug || "hogar"}-${Date.now()}`;
+}
+
 export function SmartHomeProvider({ children }: PropsWithChildren) {
-  const [activeHome, setActiveHome] = useState<HomeArea>("Casa");
+  const [homes, setHomes] = useState(initialHomes);
+  const [activeHomeId, setActiveHomeId] = useState(initialHomes[0].id);
   const [devices, setDevices] = useState(initialDevices);
   const [activeDevices, setActiveDevices] = useState(defaultActiveDevices);
   const [accountActive, setAccountActive] = useState(true);
@@ -178,11 +213,12 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
 
   const value = useMemo<SmartHomeState>(
     () => ({
-      activeHome,
+      activeHomeId,
       activeDevices,
       accountActive,
       colorMode,
       devices,
+      homes,
       language,
       lastSync,
       offlineMode,
@@ -193,7 +229,42 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         setAccountActive(false);
         setOfflineMode(false);
       },
-      setActiveHome,
+      addDeviceToHome: (homeId, name) => {
+        const cleanName = name.trim();
+        if (!cleanName) return;
+
+        setDevices((items) => [
+          ...items,
+          {
+            id: createId(cleanName),
+            homeId,
+            name: cleanName,
+            category: "Electrodomesticos",
+            room: "General",
+            icon: "power-plug-outline",
+            consumption: 0,
+            yesterday: 0,
+            online: true,
+          },
+        ]);
+      },
+      addHome: (name) => {
+        const cleanName = name.trim();
+        if (!cleanName) return;
+
+        const id = createId(cleanName);
+        setHomes((items) => [
+          ...items,
+          {
+            id,
+            name: cleanName,
+            location: "Nuevo hogar",
+            favorite: items.length === 0,
+          },
+        ]);
+        setActiveHomeId(id);
+      },
+      setActiveHomeId,
       setAccountActive,
       setColorMode,
       setLanguage,
@@ -203,6 +274,13 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         setDevices((items) =>
           items.map((item) =>
             item.id === id ? { ...item, online: !item.online } : item,
+          ),
+        );
+      },
+      toggleHomeFavorite: (homeId) => {
+        setHomes((items) =>
+          items.map((item) =>
+            item.id === homeId ? { ...item, favorite: !item.favorite } : item,
           ),
         );
       },
@@ -218,7 +296,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       },
       refreshSync: () => setLastSync(getTimeStamp()),
     }),
-    [accountActive, activeDevices, activeHome, colorMode, devices, language, lastSync, offlineMode, sessionName],
+    [accountActive, activeDevices, activeHomeId, colorMode, devices, homes, language, lastSync, offlineMode, sessionName],
   );
 
   return <SmartHomeContext.Provider value={value}>{children}</SmartHomeContext.Provider>;
