@@ -3,39 +3,19 @@ import { useRouter } from "expo-router";
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { useResponsiveLayout } from "@/lib/responsive";
-import { useSmartHome } from "@/lib/smart-home-context";
 
 const BLUE = "#0864C8";
-const LILAC = "#DDDDFB";
+const DARK = "#FFFFFF";
+const CARD = "#F4F6FF";
+const ROW = "#FFFFFF";
 const TEXT = "#454545";
-const GREEN = "#35AD61";
-const ORANGE = "#F7B637";
-const RED = "#FF3B20";
 const MUTED = "#6B7280";
+
+const settingsTabs = ["Usuario", "Hogar", "App", "Suscripción", "Integraciones"] as const;
 
 export default function SettingsScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
-  const { activeDevices, lastSync, offlineMode, refreshSync, resolveDeviceAlert } = useSmartHome();
-  const pendingDevices = activeDevices.filter((device) => !device.verified);
-  const isSynced = pendingDevices.length === 0 && !offlineMode;
-
-  function handleLogout() {
-    Alert.alert("Cerrar sesión", "Tu sesión local se cerrará y volverás al inicio.", [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Cerrar sesión", style: "destructive", onPress: () => router.replace("/welcome") },
-    ]);
-  }
-
-  function handleRefresh() {
-    if (offlineMode) {
-      Alert.alert("Modo sin conexión activo", "Desactiva el modo sin conexión desde Perfil para sincronizar de nuevo.");
-      return;
-    }
-
-    refreshSync();
-    Alert.alert("Sincronización completa", "Los datos locales quedaron actualizados.");
-  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -50,100 +30,86 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.6 }]}
-        >
-          <Ionicons name="chevron-back" size={22} color={BLUE} />
-          <Text style={styles.backText}>Perfil</Text>
-        </Pressable>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.6 }]}
+          >
+            <Ionicons name="chevron-back" size={22} color={BLUE} />
+            <Text style={styles.backText}>Perfil</Text>
+          </Pressable>
 
-        <Text style={styles.title}>Sincronización de datos</Text>
-
-        <View style={styles.syncCard}>
-          <View style={[styles.cloudCircle, !isSynced && styles.cloudWarning]}>
-            <Ionicons
-              name={isSynced ? "cloud-done" : "cloud-upload-outline"}
-              size={38}
-              color={isSynced ? GREEN : ORANGE}
-            />
+          <View style={styles.topBar}>
+            <Text style={styles.brand}>Smart Home</Text>
+            <View style={styles.userCircle}>
+              <Text style={styles.userInitial}>K</Text>
+            </View>
           </View>
-          <View style={styles.syncCopy}>
-            <Text style={styles.syncTitle}>
-              {offlineMode ? "Modo sin conexión" : isSynced ? "Sincronizado" : "Revisión pendiente"}
-            </Text>
-            <Text style={styles.syncSubtitle}>Última: hoy, {lastSync}</Text>
-            <Pressable style={styles.checkButton} onPress={handleRefresh}>
-              <Text style={styles.checkButtonText}>Comprobar de nuevo</Text>
+
+          <ScrollView horizontal contentContainerStyle={styles.tabs} showsHorizontalScrollIndicator={false}>
+            {settingsTabs.map((item) => {
+              const active = item === "App";
+
+              return (
+                <Pressable key={item} style={[styles.tab, active && styles.tabActive]}>
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{item}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <View style={styles.versionCard}>
+            <View>
+              <Text style={styles.sectionTitle}>Versión de la app</Text>
+              <Text style={styles.versionNumber}>1.0.0</Text>
+            </View>
+            <Pressable style={styles.storeButton} onPress={() => Alert.alert("Tienda", "La versión publicada se conectará aquí.")}>
+              <Ionicons name="open-outline" size={20} color={TEXT} />
+              <Text style={styles.storeText}>Ir a tienda</Text>
             </Pressable>
           </View>
-        </View>
 
-        <Text style={styles.sectionTitle}>Tus dispositivos activos</Text>
-
-        <View style={styles.deviceList}>
-          {activeDevices.map((device) => (
-            <View key={device.id} style={[styles.deviceCard, !device.verified && styles.problemCard]}>
-              <View style={styles.deviceTopRow}>
-                <View style={styles.deviceIconBox}>
-                  <Ionicons name="phone-portrait-outline" size={31} color={BLUE} />
-                </View>
-                <View style={styles.deviceCopy}>
-                  <Text style={styles.deviceTitle}>{device.name}</Text>
-                  <Text style={styles.deviceSubtitle}>Último acceso: {device.lastAccess}</Text>
-                </View>
-                {device.verified ? (
-                  <View style={styles.checkCircle}>
-                    <Ionicons name="checkmark" size={20} color={GREEN} />
-                  </View>
-                ) : (
-                  <Ionicons name="ellipsis-horizontal" size={26} color={TEXT} />
-                )}
-              </View>
-
-              {!device.verified && (
-                <>
-                  <View style={styles.warningPill}>
-                    <Ionicons name="alert-circle-outline" size={14} color={ORANGE} />
-                    <Text style={styles.warningText}>Requiere verificación</Text>
-                  </View>
-
-                  <Pressable style={styles.solveButton} onPress={() => resolveDeviceAlert(device.id)}>
-                    <Text style={styles.solveText}>Solucionar</Text>
-                  </Pressable>
-                </>
-              )}
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.preferenceCard}>
-          <View style={styles.preferenceRow}>
-            <Ionicons name="shield-checkmark-outline" size={24} color={BLUE} />
-            <View style={styles.preferenceCopy}>
-              <Text style={styles.preferenceTitle}>Seguridad de cuenta</Text>
-              <Text style={styles.preferenceText}>Verificación de dispositivos y sesiones activas.</Text>
-            </View>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Conectividad</Text>
+            <Pressable style={styles.row} onPress={() => Alert.alert("Control local WiFi", "Listo para conectar con dispositivos en la red local.")}>
+              <Ionicons name="chevron-forward" size={24} color={TEXT} />
+              <Text style={styles.rowText}>Control local WiFi</Text>
+            </Pressable>
+            <Pressable style={styles.row} onPress={() => Alert.alert("Búsqueda en segundo plano", "Listo para detectar dispositivos nuevos.")}>
+              <Ionicons name="chevron-forward" size={24} color={TEXT} />
+              <Text style={styles.rowText}>Búsqueda en segundo plano</Text>
+            </Pressable>
           </View>
-          <View style={styles.preferenceRow}>
-            <Ionicons name="notifications-outline" size={24} color={BLUE} />
-            <View style={styles.preferenceCopy}>
-              <Text style={styles.preferenceTitle}>Alertas inteligentes</Text>
-              <Text style={styles.preferenceText}>Avisos por consumo alto y sincronización.</Text>
-            </View>
-          </View>
-        </View>
 
-        <Pressable
-          onPress={handleLogout}
-          style={({ pressed }) => [
-            styles.logoutButton,
-            pressed && styles.logoutButtonPressed,
-          ]}
-        >
-          <Ionicons name="log-out-outline" size={22} color="#FFFFFF" />
-          <Text style={styles.logoutText}>Cerrar sesión</Text>
-        </Pressable>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Dispositivos del sistema</Text>
+            <Pressable style={styles.primaryButton} onPress={() => Alert.alert("Editar", "Apartado preparado para configurar dispositivos del sistema.")}>
+              <Text style={styles.primaryButtonText}>Editar</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Integraciones disponibles</Text>
+            {[
+              { icon: "logo-amazon", name: "Amazon Alexa", detail: "Control por comandos de voz", status: "No conectado" },
+              { icon: "flash-outline", name: "Cury", detail: "Control de dispositivos Cury", status: "Nuevo" },
+              { icon: "infinite-outline", name: "Zendure", detail: "Monitoreo solar y consumo", status: "Alpha" },
+            ].map((item) => (
+              <Pressable
+                key={item.name}
+                style={styles.integrationRow}
+                onPress={() => Alert.alert(item.name, "La configuración quedará conectada al backend.")}
+              >
+                <View style={styles.integrationIcon}>
+                  <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={25} color={BLUE} />
+                </View>
+                <View style={styles.integrationCopy}>
+                  <Text style={styles.integrationName}>{item.name}</Text>
+                  <Text style={styles.integrationDetail}>{item.detail}</Text>
+                </View>
+                <Text style={styles.integrationStatus}>{item.status}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -155,11 +121,11 @@ const appFont = "sans-serif-medium";
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: DARK,
   },
   container: {
     alignItems: "center",
-    paddingBottom: 92,
+    paddingBottom: 112,
   },
   content: {
     alignSelf: "center",
@@ -175,212 +141,174 @@ const styles = StyleSheet.create({
     color: BLUE,
     fontFamily: appFont,
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
   },
-  title: {
+  topBar: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  brand: {
     color: TEXT,
     fontFamily: appFont,
-    fontSize: 18,
-    fontWeight: "800",
-    textAlign: "center",
+    fontSize: 30,
+    fontStyle: "italic",
+    fontWeight: "900",
   },
-  syncCard: {
+  userCircle: {
     alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: LILAC,
-    borderRadius: 16,
-    flexDirection: "row",
-    marginTop: 38,
-    paddingHorizontal: 17,
-    paddingVertical: 12,
-    width: "100%",
-  },
-  cloudCircle: {
-    width: 58,
-    height: 58,
-    alignItems: "center",
-    backgroundColor: "#D7FFE1",
-    borderRadius: 29,
+    backgroundColor: "#74D87C",
+    borderRadius: 23,
+    height: 46,
     justifyContent: "center",
+    width: 46,
   },
-  cloudWarning: {
-    backgroundColor: "#FFF3D7",
-  },
-  syncCopy: {
-    flex: 1,
-    marginLeft: 22,
-  },
-  syncTitle: {
-    color: TEXT,
+  userInitial: {
+    color: "#102314",
     fontFamily: appFont,
     fontSize: 20,
-    fontWeight: "800",
+    fontWeight: "900",
   },
-  syncSubtitle: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "800",
-    marginTop: 5,
+  tabs: {
+    gap: 8,
+    paddingTop: 30,
   },
-  checkButton: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: BLUE,
-    borderRadius: 7,
-    borderWidth: 1,
-    minHeight: 30,
+  tab: {
+    borderBottomColor: BLUE,
+    borderBottomWidth: 1,
+    minHeight: 48,
     justifyContent: "center",
-    marginTop: 14,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
   },
-  checkButtonText: {
-    color: BLUE,
+  tabActive: {
+    borderColor: BLUE,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderWidth: 1.5,
+    borderBottomWidth: 1,
+  },
+  tabText: {
+    color: MUTED,
     fontFamily: appFont,
-    fontSize: 14,
-    fontWeight: "800",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  tabTextActive: {
+    color: TEXT,
+    fontWeight: "900",
+  },
+  versionCard: {
+    alignItems: "center",
+    backgroundColor: CARD,
+    borderRadius: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 30,
+    padding: 16,
   },
   sectionTitle: {
     color: TEXT,
     fontFamily: appFont,
-    fontSize: 21,
-    fontWeight: "800",
-    marginTop: 36,
+    fontSize: 19,
+    fontWeight: "900",
   },
-  deviceList: {
-    gap: 14,
-    marginTop: 13,
+  versionNumber: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 14,
   },
-  deviceCard: {
-    alignItems: "stretch",
-    backgroundColor: LILAC,
-    borderRadius: 8,
-    minHeight: 62,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  problemCard: {
-    paddingBottom: 12,
-  },
-  deviceTopRow: {
+  storeButton: {
     alignItems: "center",
+    borderColor: BLUE,
+    borderRadius: 10,
+    borderWidth: 1.5,
     flexDirection: "row",
-    width: "100%",
+    gap: 8,
+    minHeight: 42,
+    paddingHorizontal: 12,
   },
-  deviceIconBox: {
-    width: 39,
-    height: 39,
+  storeText: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  card: {
+    backgroundColor: CARD,
+    borderRadius: 16,
+    gap: 12,
+    marginTop: 16,
+    padding: 16,
+  },
+  row: {
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 5,
+    backgroundColor: ROW,
+    borderRadius: 12,
+    flexDirection: "row",
+    minHeight: 50,
+    paddingHorizontal: 12,
+  },
+  rowText: {
+    color: TEXT,
+    flex: 1,
+    fontFamily: appFont,
+    fontSize: 17,
+    fontWeight: "700",
+    marginLeft: 8,
+  },
+  primaryButton: {
+    alignItems: "center",
+    backgroundColor: BLUE,
+    borderRadius: 12,
+    height: 50,
     justifyContent: "center",
   },
-  deviceCopy: {
-    flex: 1,
-    marginLeft: 10,
+  primaryButtonText: {
+    color: "#FFFFFF",
+    fontFamily: appFont,
+    fontSize: 17,
+    fontWeight: "900",
   },
-  deviceTitle: {
+  integrationRow: {
+    alignItems: "center",
+    backgroundColor: ROW,
+    borderRadius: 14,
+    flexDirection: "row",
+    minHeight: 78,
+    paddingHorizontal: 12,
+  },
+  integrationIcon: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    backgroundColor: "#EEF4FF",
+    borderRadius: 24,
+    justifyContent: "center",
+  },
+  integrationCopy: {
+    flex: 1,
+    marginLeft: 12,
+    minWidth: 0,
+  },
+  integrationName: {
     color: TEXT,
     fontFamily: appFont,
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "900",
   },
-  deviceSubtitle: {
-    color: MUTED,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "700",
-    marginTop: 2,
-  },
-  checkCircle: {
-    width: 24,
-    height: 24,
-    alignItems: "center",
-    backgroundColor: "#D7FFE1",
-    borderColor: GREEN,
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: "center",
-  },
-  warningPill: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    flexDirection: "row",
-    gap: 7,
-    minHeight: 30,
-    justifyContent: "center",
-    marginTop: 15,
-  },
-  warningText: {
-    color: ORANGE,
-    fontFamily: appFont,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  solveButton: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    height: 30,
-    justifyContent: "center",
-    marginTop: 6,
-  },
-  solveText: {
-    color: BLUE,
-    fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  preferenceCard: {
-    backgroundColor: "#F4F6FF",
-    borderRadius: 14,
-    gap: 14,
-    marginTop: 28,
-    padding: 14,
-  },
-  preferenceRow: {
-    alignItems: "center",
-    flexDirection: "row",
-  },
-  preferenceCopy: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  preferenceTitle: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  preferenceText: {
+  integrationDetail: {
     color: MUTED,
     fontFamily: appFont,
     fontSize: 12,
     fontWeight: "700",
     marginTop: 3,
   },
-  logoutButton: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: RED,
-    borderRadius: 12,
-    flexDirection: "row",
-    gap: 12,
-    height: 52,
-    justifyContent: "center",
-    marginTop: 34,
-    marginBottom: 24,
-  },
-  logoutButtonPressed: {
-    backgroundColor: "#E62810",
-  },
-  logoutText: {
-    color: "#FFFFFF",
+  integrationStatus: {
+    color: BLUE,
     fontFamily: appFont,
-    fontSize: 18,
-    fontWeight: "800",
+    fontSize: 11,
+    fontWeight: "900",
   },
 });

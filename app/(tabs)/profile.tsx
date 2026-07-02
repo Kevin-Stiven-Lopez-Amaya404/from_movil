@@ -1,277 +1,27 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
 
+import { ProfileMenuItem } from "@/components/profile/ProfileMenuItem";
+import { ProfileModule } from "@/components/profile/ProfileModule";
+import { ProfileSectionHeader } from "@/components/profile/ProfileSectionHeader";
+import { profileFont, profileTheme } from "@/components/profile/profileTheme";
 import { useResponsiveLayout } from "@/lib/responsive";
 import { useSmartHome } from "@/lib/smart-home-context";
 
-const BLUE = "#0864C8";
-const TEXT = "#3F3F3F";
-const LILAC = "#EDEEFF";
-const MUTED = "#6B7280";
-const RED = "#FF3B20";
+const BLUE = profileTheme.blue;
+const DARK = "#FFFFFF";
+const CARD = profileTheme.card;
+const ROW = profileTheme.row;
+const TEXT = profileTheme.text;
+const MUTED = profileTheme.muted;
+const RED = profileTheme.danger;
 
 const languages = [
   { code: "es", label: "Español" },
   { code: "en", label: "English" },
   { code: "pt", label: "Português" },
 ] as const;
-
-function AmazonSmile() {
-  return (
-    <Svg width={86} height={22} viewBox="0 0 86 22">
-      <Path
-        d="M8 5c19 15 48 15 70 0"
-        fill="none"
-        stroke="#0582C9"
-        strokeLinecap="round"
-        strokeWidth={5}
-      />
-      <Path d="M73 3l8 1-5 7" fill="none" stroke="#0582C9" strokeLinecap="round" strokeWidth={4} />
-    </Svg>
-  );
-}
-
-type TopActionsProps = {
-  onComingSoon: (title: string) => void;
-  onOpenSettings: () => void;
-};
-
-function TopActions({ onComingSoon, onOpenSettings }: TopActionsProps) {
-  return (
-    <View style={styles.topActions}>
-      <Pressable onPress={() => onComingSoon("Favoritos")}>
-        <MaterialCommunityIcons name="star-four-points" size={35} color="#000000" />
-      </Pressable>
-      <Pressable onPress={() => onComingSoon("Automatizaciones")}>
-        <MaterialCommunityIcons name="hexagon-slice-6" size={39} color="#000000" />
-      </Pressable>
-      <Pressable
-        onPress={onOpenSettings}
-        style={({ pressed }) => [styles.settingsButton, pressed && { opacity: 0.6 }]}
-      >
-        <Ionicons name="settings-outline" size={30} color={TEXT} />
-      </Pressable>
-    </View>
-  );
-}
-
-type ProfileHeaderProps = {
-  onlineDevices: number;
-  sessionName: string;
-};
-
-function ProfileHeader({ onlineDevices, sessionName }: ProfileHeaderProps) {
-  return (
-    <View style={styles.profileRow}>
-      <View style={styles.avatar}>
-        <Ionicons name="person-outline" size={43} color={TEXT} />
-      </View>
-      <View style={styles.profileCopy}>
-        <Text style={styles.greeting}>Hola, {sessionName}</Text>
-        <Text style={styles.profileMeta}>{onlineDevices} dispositivos activos</Text>
-      </View>
-    </View>
-  );
-}
-
-type AlexaIntegrationCardProps = {
-  onPress: () => void;
-};
-
-function AlexaIntegrationCard({ onPress }: AlexaIntegrationCardProps) {
-  return (
-    <Pressable style={styles.alexaCard} onPress={onPress}>
-      <Text style={styles.alexaText}>alexa</Text>
-      <AmazonSmile />
-      <Text style={styles.integrationText}>Sincronización disponible</Text>
-    </Pressable>
-  );
-}
-
-type ProfileMenuProps = {
-  alerts: number;
-  onComingSoon: (title: string) => void;
-};
-
-function ProfileMenu({ alerts, onComingSoon }: ProfileMenuProps) {
-  return (
-    <View style={styles.menuCard}>
-      <Pressable
-        style={({ pressed }) => [styles.menuRow, pressed && styles.menuRowPressed]}
-        onPress={() => onComingSoon("Gestion del hogar")}
-      >
-        <Ionicons name="home-outline" size={38} color="#000000" />
-        <View style={styles.menuCopy}>
-          <Text style={styles.menuText}>Gestion del hogar</Text>
-          <Text style={styles.menuSubtext}>Habitaciones, permisos y escenas</Text>
-        </View>
-      </Pressable>
-      <Pressable
-        style={({ pressed }) => [styles.menuRow, pressed && styles.menuRowPressed]}
-        onPress={() => onComingSoon("Centro de mensajes")}
-      >
-        <Ionicons name="chatbubble-outline" size={38} color="#000000" />
-        <View style={styles.menuCopy}>
-          <Text style={styles.menuText}>Centro de mensajes</Text>
-          <Text style={styles.menuSubtext}>{alerts ? `${alerts} alerta pendiente` : "Sin novedades"}</Text>
-        </View>
-      </Pressable>
-      <Pressable
-        style={({ pressed }) => [styles.menuRow, pressed && styles.menuRowPressed]}
-        onPress={() => onComingSoon("Centro de ayuda")}
-      >
-        <Ionicons name="help-circle-outline" size={38} color="#000000" />
-        <View style={styles.menuCopy}>
-          <Text style={styles.menuText}>Centro de ayuda</Text>
-          <Text style={styles.menuSubtext}>Soporte y preguntas frecuentes</Text>
-        </View>
-      </Pressable>
-    </View>
-  );
-}
-
-type LanguageSectionProps = {
-  language: (typeof languages)[number]["code"];
-  onLanguageChange: (language: (typeof languages)[number]["code"]) => void;
-};
-
-function LanguageSection({ language, onLanguageChange }: LanguageSectionProps) {
-  return (
-    <View style={styles.sectionCard}>
-      <View style={styles.sectionHeader}>
-        <Ionicons name="language-outline" size={22} color={BLUE} />
-        <View style={styles.sectionCopy}>
-          <Text style={styles.sectionTitle}>Idioma</Text>
-          <Text style={styles.sectionDescription}>Selecciona el idioma principal de la app.</Text>
-        </View>
-      </View>
-      <View style={styles.languageRow}>
-        {languages.map((item) => {
-          const active = language === item.code;
-
-          return (
-            <Pressable
-              key={item.code}
-              style={[styles.languageButton, active && styles.languageButtonActive]}
-              onPress={() => onLanguageChange(item.code)}
-            >
-              <Text style={[styles.languageText, active && styles.languageTextActive]}>
-                {item.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
-type OfflineSectionProps = {
-  offlineMode: boolean;
-  onOfflineModeChange: (enabled: boolean) => void;
-};
-
-function OfflineSection({ offlineMode, onOfflineModeChange }: OfflineSectionProps) {
-  return (
-    <View style={styles.sectionCard}>
-      <View style={styles.sectionHeader}>
-        <Ionicons name="cloud-offline-outline" size={22} color={BLUE} />
-        <View style={styles.sectionCopy}>
-          <Text style={styles.sectionTitle}>Modo sin conexión</Text>
-          <Text style={styles.sectionDescription}>Conserva datos recientes y pausa sincronizaciones externas.</Text>
-        </View>
-      </View>
-      <View style={styles.settingRow}>
-        <View style={styles.settingCopy}>
-          <Text style={styles.settingTitle}>{offlineMode ? "Activo" : "Inactivo"}</Text>
-          <Text style={styles.settingText}>
-            {offlineMode ? "La app usará datos guardados." : "La app sincronizará cuando haya conexión."}
-          </Text>
-        </View>
-        <Switch
-          value={offlineMode}
-          onValueChange={onOfflineModeChange}
-          trackColor={{ false: "#CDD2E4", true: "#BDE8CB" }}
-          thumbColor={offlineMode ? "#35AD61" : "#FFFFFF"}
-        />
-      </View>
-    </View>
-  );
-}
-
-type ActionSectionProps = {
-  actionIcon: keyof typeof Ionicons.glyphMap;
-  actionLabel: string;
-  description: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  onPress: () => void;
-  title: string;
-};
-
-function ActionSection({ actionIcon, actionLabel, description, icon, onPress, title }: ActionSectionProps) {
-  return (
-    <View style={styles.sectionCard}>
-      <View style={styles.sectionHeader}>
-        <Ionicons name={icon} size={22} color={BLUE} />
-        <View style={styles.sectionCopy}>
-          <Text style={styles.sectionTitle}>{title}</Text>
-          <Text style={styles.sectionDescription}>{description}</Text>
-        </View>
-      </View>
-      <Pressable
-        style={({ pressed }) => [styles.secondaryAction, pressed && styles.actionPressed]}
-        onPress={onPress}
-      >
-        <Ionicons name={actionIcon} size={19} color={BLUE} />
-        <Text style={styles.secondaryActionText}>{actionLabel}</Text>
-      </Pressable>
-    </View>
-  );
-}
-
-type DangerSectionProps = {
-  onDeactivate: () => void;
-};
-
-function DangerSection({ onDeactivate }: DangerSectionProps) {
-  return (
-    <View style={[styles.sectionCard, styles.dangerSection]}>
-      <View style={styles.sectionHeader}>
-        <Ionicons name="person-remove-outline" size={22} color={RED} />
-        <View style={styles.sectionCopy}>
-          <Text style={[styles.sectionTitle, styles.dangerTitle]}>Desactivación de cuenta</Text>
-          <Text style={styles.sectionDescription}>Pausa el acceso y la sincronización de tu cuenta.</Text>
-        </View>
-      </View>
-      <Pressable
-        style={({ pressed }) => [styles.deactivateButton, pressed && styles.deactivatePressed]}
-        onPress={onDeactivate}
-      >
-        <Ionicons name="person-remove-outline" size={19} color={RED} />
-        <Text style={styles.deactivateText}>Desactivar cuenta</Text>
-      </Pressable>
-    </View>
-  );
-}
-
-type SettingsLinkProps = {
-  onPress: () => void;
-};
-
-function SettingsLink({ onPress }: SettingsLinkProps) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.ajustesButton, pressed && { opacity: 0.8 }]}
-    >
-      <Ionicons name="settings-outline" size={20} color={BLUE} />
-      <Text style={styles.ajustesText}>Ajustes y sincronización</Text>
-      <Ionicons name="chevron-forward" size={20} color={BLUE} />
-    </Pressable>
-  );
-}
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -280,6 +30,7 @@ export default function ProfileScreen() {
     activeDevices,
     deactivateAccount,
     devices,
+    homes,
     language,
     offlineMode,
     sessionName,
@@ -290,13 +41,24 @@ export default function ProfileScreen() {
   const onlineDevices = devices.filter((device) => device.online).length;
 
   function showComingSoon(title: string) {
-    Alert.alert(title, "Modulo listo para conectar con el backend o integracion externa.");
+    Alert.alert(title, "Módulo listo para conectar con el backend.");
+  }
+
+  function showSubscription() {
+    Alert.alert("Suscripciones", "Apartado preparado para planes y beneficios.");
+  }
+
+  function confirmLogout() {
+    Alert.alert("Cerrar sesión", "Tu sesión local se cerrará y volverás al inicio.", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Cerrar sesión", style: "destructive", onPress: () => router.replace("/welcome") },
+    ]);
   }
 
   function confirmDeactivation() {
     Alert.alert(
       "Desactivar cuenta",
-      "Tu cuenta dejará de iniciar sesión y se pausará la sincronización. Podrás reactivarla desde el inicio de sesión en esta versión de prueba.",
+      "Tu cuenta dejará de iniciar sesión y se pausará la sincronización.",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -321,7 +83,7 @@ export default function ProfileScreen() {
   function confirmRestoreData() {
     Alert.alert(
       "Restaurar datos",
-      "Se restauraran preferencias locales y datos de prueba sin eliminar la cuenta.",
+      "Se restaurarán preferencias locales y datos de prueba sin eliminar la cuenta.",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -349,54 +111,169 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-        <TopActions
-          onComingSoon={showComingSoon}
-          onOpenSettings={() => router.push("/settings")}
-        />
+          <View style={styles.topActions}>
+            <Pressable onPress={() => router.push("/devices")}>
+              <MaterialCommunityIcons name="home-city-outline" size={34} color={TEXT} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/settings")} style={styles.settingsButton}>
+              <Ionicons name="settings-outline" size={30} color={TEXT} />
+            </Pressable>
+          </View>
 
-        <ProfileHeader onlineDevices={onlineDevices} sessionName={sessionName} />
+          <View style={styles.profileRow}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{sessionName.charAt(0).toUpperCase()}</Text>
+            </View>
+            <View style={styles.profileCopy}>
+              <Text style={styles.greeting}>Hola, {sessionName}</Text>
+              <Text style={styles.profileMeta}>{onlineDevices} dispositivos activos</Text>
+            </View>
+          </View>
 
-        <AlexaIntegrationCard onPress={() => showComingSoon("Alexa")} />
+          <View style={styles.accountCard}>
+            <View style={styles.handle} />
 
-        <ProfileMenu alerts={alerts} onComingSoon={showComingSoon} />
+            <View style={styles.accountHeader}>
+              <View style={styles.accountAvatar}>
+                <Text style={styles.accountInitial}>{sessionName.charAt(0).toUpperCase()}</Text>
+              </View>
+              <View style={styles.accountCopy}>
+                <Text numberOfLines={1} style={styles.accountName}>{sessionName}@smarthome.local</Text>
+                <Text numberOfLines={1} style={styles.accountEmail}>{sessionName.toLowerCase()}@smarthome.com</Text>
+              </View>
+              <Ionicons name="swap-horizontal-outline" size={27} color={TEXT} />
+            </View>
 
-        <LanguageSection language={language} onLanguageChange={setLanguage} />
+            <Pressable style={styles.homeAccountRow} onPress={() => router.push("/devices")}>
+              <View style={styles.homeAccountIcon}>
+                <Ionicons name="home" size={20} color={BLUE} />
+              </View>
+              <Text numberOfLines={1} style={styles.homeAccountText}>
+                Casa de {sessionName} · {homes.length} hogares
+              </Text>
+            </Pressable>
+          </View>
 
-        <OfflineSection offlineMode={offlineMode} onOfflineModeChange={setOfflineMode} />
+          <ProfileModule title="Cuenta y hogares" subtitle="Perfil, hogares, mensajes y soporte.">
+            <ProfileMenuItem icon="person-add-outline" title="Editar información de perfil" onPress={() => router.push("/settings")} />
+            <ProfileMenuItem icon="home-outline" title="Administrar hogares" onPress={() => router.push("/devices")} />
+            <ProfileMenuItem
+              description={alerts ? `${alerts} alerta pendiente` : "Sin novedades"}
+              icon="chatbubble-outline"
+              intent="primary"
+              onPress={() => showComingSoon("Centro de mensajes")}
+              title="Centro de mensajes"
+              variant="boxed"
+            />
+            <ProfileMenuItem
+              description="Soporte y preguntas frecuentes"
+              icon="help-circle-outline"
+              intent="primary"
+              onPress={() => showComingSoon("Centro de ayuda")}
+              title="Centro de ayuda"
+              variant="boxed"
+            />
+            <ProfileMenuItem icon="diamond-outline" title="Suscripciones" onPress={showSubscription} />
+          </ProfileModule>
 
-        <ActionSection
-          actionIcon="list-outline"
-          actionLabel="Ver auditoría"
-          description="Consulta actividad reciente y eventos de seguridad."
-          icon="shield-checkmark-outline"
-          onPress={showAuditDetail}
-          title="Auditoría"
-        />
+          <ProfileModule title="Preferencias" subtitle="Idioma y comportamiento de sincronización.">
+            <ProfileSectionHeader
+              description="Selecciona el idioma principal de la app."
+              icon="language-outline"
+              title="Idioma"
+            />
+            <View style={styles.languageRow}>
+              {languages.map((item) => {
+                const active = language === item.code;
 
-        <ActionSection
-          actionIcon="refresh-outline"
-          actionLabel="Restaurar datos"
-          description="Restablece preferencias locales y datos de prueba."
-          icon="refresh-circle-outline"
-          onPress={confirmRestoreData}
-          title="Restauración de datos"
-        />
+                return (
+                  <Pressable
+                    key={item.code}
+                    style={[styles.languageButton, active && styles.languageButtonActive]}
+                    onPress={() => setLanguage(item.code)}
+                  >
+                    <Text style={[styles.languageText, active && styles.languageTextActive]}>{item.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
 
-        <DangerSection onDeactivate={confirmDeactivation} />
+            <View style={styles.moduleDivider} />
 
-        <SettingsLink onPress={() => router.push("/settings")} />
+            <ProfileSectionHeader
+              description="Conserva datos recientes y pausa sincronizaciones externas."
+              icon="cloud-offline-outline"
+              title="Modo sin conexión"
+            />
+            <View style={styles.settingRow}>
+              <View style={styles.settingCopy}>
+                <Text style={styles.settingTitle}>{offlineMode ? "Activo" : "Inactivo"}</Text>
+                <Text style={styles.settingText}>
+                  {offlineMode ? "La app usará datos guardados." : "La app sincronizará cuando haya conexión."}
+                </Text>
+              </View>
+              <Switch
+                value={offlineMode}
+                onValueChange={setOfflineMode}
+                trackColor={{ false: "#CDD2E4", true: "#BDE8CB" }}
+                thumbColor={offlineMode ? "#35AD61" : "#FFFFFF"}
+              />
+            </View>
+          </ProfileModule>
+
+          <ProfileModule title="Seguridad y datos" subtitle="Auditoría, restauración y control de cuenta.">
+            <ProfileSectionHeader
+              description="Consulta actividad reciente y eventos de seguridad."
+              icon="shield-checkmark-outline"
+              title="Auditoría"
+            />
+            <Pressable style={styles.secondaryAction} onPress={showAuditDetail}>
+              <Ionicons name="list-outline" size={19} color={BLUE} />
+              <Text style={styles.secondaryActionText}>Ver auditoría</Text>
+            </Pressable>
+
+            <View style={styles.moduleDivider} />
+
+            <ProfileSectionHeader
+              description="Restablece preferencias locales y datos de prueba."
+              icon="refresh-circle-outline"
+              title="Restauración de datos"
+            />
+            <Pressable style={styles.secondaryAction} onPress={confirmRestoreData}>
+              <Ionicons name="refresh-outline" size={19} color={BLUE} />
+              <Text style={styles.secondaryActionText}>Restaurar datos</Text>
+            </Pressable>
+
+            <View style={styles.moduleDivider} />
+
+            <ProfileSectionHeader
+              danger
+              description="Pausa el acceso y la sincronización de tu cuenta."
+              icon="person-remove-outline"
+              title="Desactivación de cuenta"
+            />
+            <Pressable style={styles.deactivateButton} onPress={confirmDeactivation}>
+              <Ionicons name="person-remove-outline" size={19} color={RED} />
+              <Text style={styles.deactivateText}>Desactivar cuenta</Text>
+            </Pressable>
+          </ProfileModule>
+
+          <ProfileModule title="Sesión">
+            <ProfileMenuItem icon="close-circle-outline" intent="danger" title="Cerrar sesión" onPress={confirmLogout} />
+          </ProfileModule>
+
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const appFont = "sans-serif-medium";
+const appFont = profileFont;
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: DARK,
   },
   container: {
     alignItems: "center",
@@ -418,27 +295,32 @@ const styles = StyleSheet.create({
   profileRow: {
     alignItems: "center",
     flexDirection: "row",
-    marginLeft: 8,
-    marginTop: 35,
+    marginTop: 24,
   },
   avatar: {
-    width: 78,
-    height: 78,
+    width: 72,
+    height: 72,
     alignItems: "center",
     backgroundColor: "#DDDDFB",
-    borderRadius: 39,
+    borderRadius: 36,
     justifyContent: "center",
+  },
+  avatarText: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 28,
+    fontWeight: "900",
   },
   profileCopy: {
     flex: 1,
-    marginLeft: 22,
+    marginLeft: 18,
     minWidth: 0,
   },
   greeting: {
-    color: BLUE,
+    color: TEXT,
     fontFamily: appFont,
-    fontSize: 19,
-    fontWeight: "800",
+    fontSize: 20,
+    fontWeight: "900",
   },
   profileMeta: {
     color: MUTED,
@@ -447,87 +329,155 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 5,
   },
-  alexaCard: {
-    alignItems: "center",
+  accountCard: {
+    backgroundColor: CARD,
+    borderRadius: 18,
+    marginTop: 28,
+    padding: 14,
+  },
+  handle: {
     alignSelf: "center",
-    backgroundColor: "#FBFBFD",
-    borderRadius: 16,
+    backgroundColor: "#C7D2FE",
+    borderRadius: 3,
+    height: 5,
+    marginBottom: 18,
+    width: 70,
+  },
+  accountHeader: {
+    alignItems: "center",
+    backgroundColor: ROW,
+    borderRadius: 14,
+    flexDirection: "row",
+    padding: 12,
+  },
+  accountAvatar: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    backgroundColor: "#74D87C",
+    borderRadius: 24,
     justifyContent: "center",
-    marginTop: 33,
-    minHeight: 102,
-    paddingVertical: 12,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 7,
-    width: "100%",
   },
-  alexaText: {
-    color: "#0582C9",
+  accountInitial: {
+    color: "#102314",
     fontFamily: appFont,
-    fontSize: 41,
-    fontWeight: "800",
-    lineHeight: 42,
+    fontSize: 22,
+    fontWeight: "900",
   },
-  integrationText: {
+  accountCopy: {
+    flex: 1,
+    marginLeft: 12,
+    minWidth: 0,
+  },
+  accountName: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  accountEmail: {
     color: MUTED,
     fontFamily: appFont,
     fontSize: 12,
     fontWeight: "700",
-    marginTop: 5,
+    marginTop: 2,
   },
-  menuCard: {
-    backgroundColor: LILAC,
-    borderRadius: 16,
-    marginTop: 38,
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 8,
-  },
-  menuRow: {
+  homeAccountRow: {
     alignItems: "center",
-    borderRadius: 8,
+    backgroundColor: ROW,
+    borderRadius: 14,
     flexDirection: "row",
-    minHeight: 72,
-    paddingHorizontal: 4,
+    marginTop: 8,
+    minHeight: 58,
+    paddingHorizontal: 12,
   },
-  menuRowPressed: {
-    backgroundColor: "rgba(8, 100, 200, 0.08)",
+  homeAccountIcon: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    backgroundColor: "#EEF4FF",
+    borderRadius: 10,
+    justifyContent: "center",
   },
-  menuCopy: {
+  homeAccountText: {
+    color: TEXT,
     flex: 1,
-    marginLeft: 18,
-    minWidth: 0,
+    fontFamily: appFont,
+    fontSize: 15,
+    fontWeight: "900",
+    marginLeft: 12,
   },
-  menuText: {
+  accountMenuRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 16,
+    minHeight: 54,
+    paddingHorizontal: 10,
+  },
+  accountMenuText: {
+    color: TEXT,
+    flex: 1,
+    fontFamily: appFont,
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  logoutMenuText: {
+    color: RED,
+  },
+  moduleCard: {
+    backgroundColor: CARD,
+    borderRadius: 16,
+    gap: 12,
+    marginTop: 20,
+    padding: 14,
+  },
+  moduleTitle: {
     color: TEXT,
     fontFamily: appFont,
-    fontSize: 19,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  moduleSubtitle: {
+    color: MUTED,
+    fontFamily: appFont,
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 16,
+    marginTop: -6,
+  },
+  moduleDivider: {
+    backgroundColor: "#DDE2F5",
+    height: 1,
+  },
+  profileToolRow: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    borderColor: "#DDE2F5",
+    borderWidth: 1,
+    flexDirection: "row",
+    marginHorizontal: 4,
+    marginVertical: 5,
+    minHeight: 62,
+    paddingHorizontal: 10,
+  },
+  profileToolCopy: {
+    flex: 1,
+    marginLeft: 12,
+    minWidth: 0,
+  },
+  profileToolTitle: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 16,
     fontWeight: "800",
   },
-  menuSubtext: {
+  profileToolText: {
     color: MUTED,
     fontFamily: appFont,
     fontSize: 12,
     fontWeight: "700",
     marginTop: 4,
-  },
-  sectionCard: {
-    backgroundColor: "#F4F6FF",
-    borderRadius: 14,
-    gap: 16,
-    marginTop: 24,
-    padding: 14,
-  },
-  dangerSection: {
-    backgroundColor: "#FFF7F6",
-    borderColor: "#FFD1CB",
-    borderWidth: 1,
   },
   sectionHeader: {
     alignItems: "center",
@@ -565,8 +515,8 @@ const styles = StyleSheet.create({
     borderColor: "#DDE2F5",
     borderRadius: 10,
     borderWidth: 1,
-    minHeight: 36,
     justifyContent: "center",
+    minHeight: 36,
     paddingHorizontal: 12,
   },
   languageButtonActive: {
@@ -590,27 +540,6 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 12,
   },
-  secondaryAction: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#DDE2F5",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "center",
-    minHeight: 44,
-  },
-  actionPressed: {
-    opacity: 0.75,
-  },
-  secondaryActionText: {
-    color: BLUE,
-    fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "800",
-  },
   settingCopy: {
     flex: 1,
     minWidth: 0,
@@ -629,6 +558,24 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     marginTop: 3,
   },
+  secondaryAction: {
+    alignItems: "center",
+    alignSelf: "stretch",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#DDE2F5",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    minHeight: 44,
+  },
+  secondaryActionText: {
+    color: BLUE,
+    fontFamily: appFont,
+    fontSize: 15,
+    fontWeight: "800",
+  },
   deactivateButton: {
     alignItems: "center",
     alignSelf: "stretch",
@@ -638,38 +585,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: 8,
-    minHeight: 44,
     justifyContent: "center",
-  },
-  deactivatePressed: {
-    opacity: 0.75,
+    minHeight: 44,
   },
   deactivateText: {
     color: RED,
     fontFamily: appFont,
     fontSize: 15,
     fontWeight: "800",
-  },
-  ajustesButton: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: "#F0F4FF",
-    borderColor: BLUE,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 10,
-    height: 48,
-    justifyContent: "center",
-    marginTop: 32,
-    paddingHorizontal: 16,
-  },
-  ajustesText: {
-    color: BLUE,
-    flex: 1,
-    fontFamily: appFont,
-    fontSize: 16,
-    fontWeight: "700",
-    minWidth: 0,
   },
 });

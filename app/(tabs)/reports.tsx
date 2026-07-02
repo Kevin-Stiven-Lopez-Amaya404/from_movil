@@ -14,10 +14,13 @@ const MUTED = "#6B7280";
 
 const ranges: ReportRange[] = ["Diario", "Semana", "Mes", "Rango"];
 const filters: ("Todos" | DeviceCategory)[] = ["Todos", "Iluminacion", "Climatizacion", "Electrodomesticos"];
+const reportViews = ["Tiempo real", "Historial", "Mensual", "Tarifa"] as const;
+type ReportView = (typeof reportViews)[number];
 
 export default function ReportsScreen() {
   const layout = useResponsiveLayout();
   const { devices, reportData } = useSmartHome();
+  const [activeView, setActiveView] = useState<ReportView>("Tiempo real");
   const [activeRange, setActiveRange] = useState<ReportRange>("Semana");
   const [activeFilter, setActiveFilter] = useState<"Todos" | DeviceCategory>("Todos");
   const points = reportData[activeRange];
@@ -42,6 +45,17 @@ export default function ReportsScreen() {
   const previous = total * 0.87;
   const trend = Math.round(((total - previous) / previous) * 100);
   const activePoint = filteredPoints.reduce((best, point) => (point.value > best.value ? point : best), filteredPoints[0]);
+  const realTimeConsumption = devices
+    .filter((device) => device.online)
+    .reduce((sum, device) => sum + device.consumption, 0);
+  const applianceTypes = filters
+    .filter((item): item is DeviceCategory => item !== "Todos")
+    .map((category) => ({
+      category,
+      total: devices
+        .filter((device) => device.category === category && device.online)
+        .reduce((sum, device) => sum + device.consumption, 0),
+    }));
 
   function downloadReport() {
     Alert.alert(
@@ -70,6 +84,87 @@ export default function ReportsScreen() {
           </Pressable>
         </View>
 
+        <ScrollView
+          horizontal
+          contentContainerStyle={styles.viewTabs}
+          showsHorizontalScrollIndicator={false}
+        >
+          {reportViews.map((item) => {
+            const active = activeView === item;
+
+            return (
+              <Pressable
+                key={item}
+                style={[styles.viewTab, active && styles.viewTabActive]}
+                onPress={() => setActiveView(item)}
+              >
+                <Text style={[styles.viewTabText, active && styles.viewTabTextActive]}>{item}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {activeView === "Tiempo real" && (
+          <>
+            <View style={styles.realTimeCard}>
+              <View style={styles.realTimeTop}>
+                <Text style={styles.realTimeTitle}>Consumo en tiempo real</Text>
+                <Ionicons name="settings-outline" size={24} color={BLUE} />
+              </View>
+              <View style={styles.gaugeWrap}>
+                <View style={styles.gaugeOuter}>
+                  <View style={styles.gaugeInner}>
+                    <Ionicons name="flash-outline" size={35} color={BLUE} />
+                    <Text style={styles.gaugeValue}>{realTimeConsumption.toFixed(2)}</Text>
+                    <Text style={styles.gaugeUnit}>kWh</Text>
+                  </View>
+                </View>
+              </View>
+              <Text style={styles.realTimeMeta}>Actualizado ahora</Text>
+            </View>
+
+            <View style={styles.applianceCard}>
+              <Text style={styles.cardTitle}>Energía por tipo de dispositivo</Text>
+              {applianceTypes.map((item) => (
+                <View key={item.category} style={styles.applianceRow}>
+                  <Text style={styles.applianceName}>{item.category}</Text>
+                  <Text style={styles.applianceValue}>{item.total.toFixed(2)} kWh</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
+        {activeView === "Tarifa" && (
+          <>
+            <View style={styles.tariffInfoCard}>
+              <Ionicons name="information-circle-outline" size={24} color={BLUE} />
+              <Text style={styles.tariffInfoText}>
+                Configura la fecha de facturación y el valor por kWh para estimar el costo mensual.
+              </Text>
+            </View>
+
+            <View style={styles.tariffCard}>
+              <Text style={styles.cardTitle}>Detalles de tarifa eléctrica</Text>
+              <View style={styles.tariffRow}>
+                <Ionicons name="calendar-outline" size={22} color={MUTED} />
+                <Text style={styles.tariffLabel}>Día de facturación</Text>
+                <Text style={styles.tariffValue}>01 del mes</Text>
+              </View>
+              <View style={styles.tariffRow}>
+                <Ionicons name="cash-outline" size={22} color={MUTED} />
+                <Text style={styles.tariffLabel}>Tarifa estimada</Text>
+                <Text style={styles.tariffValue}>$950 COP/kWh</Text>
+              </View>
+              <Pressable style={styles.saveButton} onPress={() => Alert.alert("Tarifa guardada", "Los datos de tarifa quedaron preparados.")}>
+                <Text style={styles.saveButtonText}>Guardar tarifa</Text>
+              </Pressable>
+            </View>
+          </>
+        )}
+
+        {activeView !== "Tarifa" && activeView !== "Tiempo real" && (
+          <>
         <View style={styles.summaryCard}>
           <View style={styles.summaryTop}>
             <Text style={styles.summaryValue}>{total.toFixed(1)} kWh</Text>
@@ -178,6 +273,8 @@ export default function ReportsScreen() {
           <Ionicons name="download-outline" size={21} color={BLUE} />
           <Text style={styles.downloadText}>Descargar reporte</Text>
         </Pressable>
+          </>
+        )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -217,6 +314,186 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     width: 40,
+  },
+  viewTabs: {
+    gap: 8,
+    paddingTop: 21,
+  },
+  viewTab: {
+    alignItems: "center",
+    backgroundColor: LILAC,
+    borderRadius: 9,
+    minHeight: 36,
+    justifyContent: "center",
+    paddingHorizontal: 13,
+  },
+  viewTabActive: {
+    backgroundColor: BLUE,
+  },
+  viewTabText: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  viewTabTextActive: {
+    color: "#FFFFFF",
+  },
+  realTimeCard: {
+    backgroundColor: LILAC,
+    borderRadius: 18,
+    marginTop: 26,
+    padding: 18,
+  },
+  realTimeTop: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  realTimeTitle: {
+    color: TEXT,
+    flex: 1,
+    fontFamily: appFont,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  gaugeWrap: {
+    alignItems: "center",
+    marginTop: 22,
+  },
+  gaugeOuter: {
+    alignItems: "center",
+    borderColor: BLUE,
+    borderLeftColor: GREEN,
+    borderRadius: 92,
+    borderRightColor: RED,
+    borderWidth: 16,
+    height: 184,
+    justifyContent: "center",
+    width: 184,
+  },
+  gaugeInner: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 62,
+    height: 124,
+    justifyContent: "center",
+    width: 124,
+  },
+  gaugeValue: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 31,
+    fontWeight: "800",
+    marginTop: 2,
+  },
+  gaugeUnit: {
+    color: MUTED,
+    fontFamily: appFont,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  realTimeMeta: {
+    color: MUTED,
+    fontFamily: appFont,
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 14,
+    textAlign: "center",
+  },
+  applianceCard: {
+    backgroundColor: "#F4F6FF",
+    borderRadius: 16,
+    gap: 12,
+    marginTop: 18,
+    padding: 16,
+  },
+  cardTitle: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  applianceRow: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 42,
+    paddingHorizontal: 12,
+  },
+  applianceName: {
+    color: TEXT,
+    flex: 1,
+    fontFamily: appFont,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  applianceValue: {
+    color: BLUE,
+    fontFamily: appFont,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  tariffInfoCard: {
+    alignItems: "center",
+    backgroundColor: "#EEF4FF",
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 26,
+    padding: 14,
+  },
+  tariffInfoText: {
+    color: MUTED,
+    flex: 1,
+    fontFamily: appFont,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 18,
+  },
+  tariffCard: {
+    backgroundColor: LILAC,
+    borderRadius: 16,
+    gap: 12,
+    marginTop: 18,
+    padding: 16,
+  },
+  tariffRow: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    flexDirection: "row",
+    gap: 10,
+    minHeight: 48,
+    paddingHorizontal: 12,
+  },
+  tariffLabel: {
+    color: TEXT,
+    flex: 1,
+    fontFamily: appFont,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  tariffValue: {
+    color: MUTED,
+    fontFamily: appFont,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  saveButton: {
+    alignItems: "center",
+    backgroundColor: BLUE,
+    borderRadius: 12,
+    height: 48,
+    justifyContent: "center",
+  },
+  saveButtonText: {
+    color: "#FFFFFF",
+    fontFamily: appFont,
+    fontSize: 16,
+    fontWeight: "800",
   },
   summaryCard: {
     alignSelf: "center",

@@ -4,28 +4,15 @@ import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } fr
 
 import { formatKwh } from "@/lib/formatters";
 import { useResponsiveLayout } from "@/lib/responsive";
-import { SmartDevice, useSmartHome } from "@/lib/smart-home-context";
+import { useSmartHome } from "@/lib/smart-home-context";
 
 const BLUE = "#0864C8";
-const LILAC = "#DDDDFB";
+const DARK = "#FFFFFF";
+const CARD = "#DDDDFB";
+const PANEL = "#F4F6FF";
 const TEXT = "#454545";
-const GREEN = "#2AAF5D";
-const RED = "#FF3B20";
 const MUTED = "#6B7280";
-
-function getTrend(device: SmartDevice) {
-  const delta = device.consumption - device.yesterday;
-
-  if (Math.abs(delta) < 0.01) {
-    return { label: "=", color: MUTED };
-  }
-
-  const percent = Math.round((Math.abs(delta) / device.yesterday) * 100);
-  return {
-    label: `${delta > 0 ? "↑" : "↓"}${percent}%`,
-    color: delta > 0 ? RED : GREEN,
-  };
-}
+const GREEN = "#74D87C";
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -33,25 +20,17 @@ export default function DashboardScreen() {
   const { devices, homes, sessionName, setActiveHomeId } = useSmartHome();
   const onlineDevices = devices.filter((device) => device.online);
   const currentConsumption = onlineDevices.reduce((total, device) => total + device.consumption, 0);
-  const yesterdayConsumption = onlineDevices.reduce((total, device) => total + device.yesterday, 0);
-  const delta = currentConsumption - yesterdayConsumption;
-  const deltaPercent = yesterdayConsumption > 0 ? Math.round((Math.abs(delta) / yesterdayConsumption) * 100) : 0;
-  const topDevices = [...devices]
-    .sort((first, second) => second.consumption - first.consumption)
-    .slice(0, 3);
   const favoriteHomes = homes.filter((home) => home.favorite);
+  const dashboardHomes = favoriteHomes.length ? favoriteHomes : homes.slice(0, 1);
 
   function showNotifications() {
-    const critical = devices.filter((device) => device.critical && device.online);
-
-    if (!critical.length) {
-      Alert.alert("Todo en orden", "No hay alertas activas en tus dispositivos.");
-      return;
-    }
+    const critical = devices.find((device) => device.critical && device.online);
 
     Alert.alert(
-      "Ahorro recomendado",
-      `${critical[0].name} está consumiendo más de lo habitual. Revisa su horario o apágalo si no está en uso.`,
+      critical ? "Ahorro recomendado" : "Todo en orden",
+      critical
+        ? `${critical.name} está consumiendo más de lo habitual.`
+        : "No hay alertas activas en tus dispositivos.",
     );
   }
 
@@ -62,155 +41,108 @@ export default function DashboardScreen() {
           styles.container,
           {
             paddingHorizontal: layout.gutter,
-            paddingTop: layout.compact ? 12 : 17,
+            paddingTop: layout.compact ? 12 : 18,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-        <View style={styles.header}>
-          <Pressable style={[styles.avatar, layout.tiny && styles.avatarTiny]} onPress={() => router.push("/profile")}>
-            <Ionicons name="person-outline" size={layout.tiny ? 36 : 43} color={TEXT} />
-          </Pressable>
-          <View style={styles.headerCopy}>
-            <Text numberOfLines={1} style={styles.greeting}>Hola, {sessionName}</Text>
-            <Text numberOfLines={1} style={styles.subGreeting}>{onlineDevices.length} dispositivos activos</Text>
+          <View style={styles.topBar}>
+            <Text style={styles.brand}>Smart Home</Text>
+            <View style={styles.topActions}>
+              <Pressable style={styles.squareButton} onPress={showNotifications}>
+                <Ionicons name="notifications-outline" size={22} color={TEXT} />
+              </Pressable>
+              <Pressable style={styles.userCircle} onPress={() => router.push("/profile")}>
+                <Text style={styles.userInitial}>{sessionName.charAt(0).toUpperCase()}</Text>
+              </Pressable>
+            </View>
           </View>
-          <View style={styles.headerIcons}>
-            <Pressable onPress={() => router.push("/devices")} style={styles.iconButton}>
-              <MaterialCommunityIcons name="hand-heart-outline" size={layout.tiny ? 32 : 38} color={TEXT} />
-            </Pressable>
-            <Pressable onPress={showNotifications} style={styles.iconButton}>
-              <Ionicons name="notifications-outline" size={layout.tiny ? 30 : 34} color={BLUE} />
-            </Pressable>
-          </View>
-        </View>
 
-        <View style={styles.nowCard}>
-          <View style={styles.nowTop}>
-            <Text style={styles.nowLabel}>Consumo actual</Text>
-            <Ionicons name={delta > 0 ? "trending-up" : "trending-down"} size={22} color={delta > 0 ? RED : GREEN} />
-          </View>
-          <View style={styles.kwhRow}>
-            <Text style={styles.kwhValue}>{formatKwh(currentConsumption)}</Text>
-            <Text style={[styles.badge, delta > 0 ? styles.badgeDanger : styles.badgeGood]}>
-              {delta > 0 ? "+" : "-"}{deltaPercent}% vs ayer
-            </Text>
-          </View>
-          <Text style={styles.updated}>Actualizado hace 2 min</Text>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Hogares favoritos</Text>
-          <Pressable onPress={() => router.push("/devices")}>
-            <Text style={styles.seeAll}>Ver hogares</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.favoriteList}>
-          {favoriteHomes.length > 0 ? (
-            favoriteHomes.map((home) => {
-              const homeDevices = devices.filter((device) => device.homeId === home.id);
-              const homeOnline = homeDevices.filter((device) => device.online).length;
+          <ScrollView horizontal contentContainerStyle={styles.tabs} showsHorizontalScrollIndicator={false}>
+            {["Actividad", "Mi dashboard", "Hogares"].map((item) => {
+              const active = item === "Mi dashboard";
 
               return (
                 <Pressable
-                  key={home.id}
-                  style={({ pressed }) => [styles.homeCard, pressed && styles.cardPressed]}
-                  onPress={() => {
-                    setActiveHomeId(home.id);
-                    router.push("/devices");
-                  }}
+                  key={item}
+                  style={[styles.tab, active && styles.tabActive]}
+                  onPress={() => item === "Hogares" && router.push("/devices")}
                 >
-                  <View style={styles.circleIcon}>
-                    <MaterialCommunityIcons name="home-city-outline" size={31} color={BLUE} />
-                  </View>
-                  <View style={styles.deviceCopy}>
-                    <Text style={styles.deviceName}>{home.name}</Text>
-                    <Text style={styles.deviceValue}>
-                      {homeOnline} de {homeDevices.length} dispositivos activos
-                    </Text>
-                  </View>
-                  <Ionicons name="star" size={22} color="#F5B400" />
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{item}</Text>
                 </Pressable>
               );
-            })
-          ) : (
-            <Pressable
-              style={styles.homeCard}
-              onPress={() => router.push("/devices")}
-            >
-              <View style={styles.circleIcon}>
-                <MaterialCommunityIcons name="home-plus-outline" size={31} color={BLUE} />
-              </View>
-              <View style={styles.deviceCopy}>
-                <Text style={styles.deviceName}>Sin hogares favoritos</Text>
-                <Text style={styles.deviceValue}>Marca un hogar como favorito para verlo aquí</Text>
-              </View>
+            })}
+          </ScrollView>
+
+          <View style={styles.toolbar}>
+            <Text numberOfLines={1} style={styles.toolbarTitle}>Mi dashboard</Text>
+            <Pressable style={styles.customizeButton} onPress={() => router.push("/reports")}>
+              <Ionicons name="options-outline" size={21} color={TEXT} />
+              <Text style={styles.customizeText}>Personalizar</Text>
             </Pressable>
-          )}
-        </View>
+            <Pressable style={styles.blueIconButton} onPress={() => router.push("/devices")}>
+              <Ionicons name="add" size={26} color="#FFFFFF" />
+            </Pressable>
+            <Pressable style={styles.infoButton} onPress={() => Alert.alert("Dashboard", "Agrega hogares favoritos para verlos aquí.")}>
+              <Ionicons name="information-circle" size={24} color={TEXT} />
+            </Pressable>
+          </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            Mayor consumo <Text style={styles.muted}>(vs ayer)</Text>
-          </Text>
-          <Pressable onPress={() => router.push("/devices")}>
-            <Text style={styles.seeAll}>Ver todos</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.list}>
-          {topDevices.map((item) => {
-            const trend = getTrend(item);
-
-            return (
-              <Pressable
-                key={item.id}
-                style={({ pressed }) => [styles.deviceCard, pressed && styles.cardPressed]}
-                onPress={() => router.push("/devices")}
-              >
-                <View style={styles.circleIcon}>
-                  <MaterialCommunityIcons name={item.icon as never} size={34} color={BLUE} />
-                </View>
-                <View style={styles.deviceCopy}>
-                  <Text style={styles.deviceName}>{item.name}</Text>
-                  <Text style={styles.deviceValue}>
-                    {item.online ? formatKwh(item.consumption) : "Apagado"} · {item.room}
-                  </Text>
-                </View>
-                <Text style={[styles.trend, { color: trend.color }]}>{trend.label}</Text>
-              </Pressable>
-            );
-          })}
-
-          <Pressable style={styles.actionCard} onPress={() => router.push("/reports")}>
-            <View style={styles.circleIcon}>
-              <Ionicons name="bar-chart" size={32} color={BLUE} />
+          <View style={styles.energyCard}>
+            <View>
+              <Text style={styles.energyLabel}>Consumo actual</Text>
+              <Text style={styles.energyValue}>{formatKwh(currentConsumption)}</Text>
             </View>
-            <View style={styles.actionCopy}>
-              <Text style={styles.deviceName}>Reportes de energía</Text>
-              <Text style={styles.actionSubtitle}>Analiza tus datos históricos</Text>
+            <View style={styles.energyPill}>
+              <Ionicons name="flash" size={18} color={TEXT} />
+              <Text style={styles.energyPillText}>{onlineDevices.length} activos</Text>
             </View>
-            <Ionicons name="chevron-forward" size={33} color={TEXT} />
-          </Pressable>
+          </View>
 
-          <Pressable
-            style={styles.actionCard}
-            onPress={() => Alert.alert("Recomendación", "Programa el aire acondicionado para apagarse después de las 10:00 p. m. y reduce el pico nocturno.")}
-          >
-            <View style={styles.circleIcon}>
-              <MaterialCommunityIcons name="medal-outline" size={36} color={BLUE} />
-            </View>
-            <View style={styles.actionCopy}>
-              <Text style={styles.deviceName}>Recomendaciones</Text>
-              <Text style={styles.actionSubtitle}>1 acción puede ahorrar 8% esta semana</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={33} color={TEXT} />
-          </Pressable>
-        </View>
+          <View style={styles.widgets}>
+            {dashboardHomes.length > 0 ? (
+              dashboardHomes.map((home) => {
+                const homeDevices = devices.filter((device) => device.homeId === home.id);
+                const homeConsumption = homeDevices
+                  .filter((device) => device.online)
+                  .reduce((sum, device) => sum + device.consumption, 0);
+
+                return (
+                  <Pressable
+                    key={home.id}
+                    style={({ pressed }) => [styles.roomCard, pressed && styles.cardPressed]}
+                    onPress={() => {
+                      setActiveHomeId(home.id);
+                      router.push("/devices");
+                    }}
+                  >
+                    <View style={styles.roomStrip}>
+                      <View style={styles.roomBadge}>
+                        <MaterialCommunityIcons name="door-open" size={16} color={BLUE} />
+                        <Text style={styles.roomBadgeText}>Hogar</Text>
+                      </View>
+                    </View>
+                    <View style={styles.roomBody}>
+                      <Text numberOfLines={1} style={styles.roomName}>{home.name}</Text>
+                      <View style={styles.wattsPill}>
+                        <Ionicons name="flash" size={19} color={BLUE} />
+                        <Text style={styles.wattsText}>{homeConsumption.toFixed(2)} kWh</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>Dashboard vacío</Text>
+                <Text style={styles.emptyText}>Agrega un hogar favorito para tener acceso rápido.</Text>
+                <Pressable style={styles.addWidgetButton} onPress={() => router.push("/devices")}>
+                  <Text style={styles.addWidgetText}>Agregar hogar</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -222,223 +154,262 @@ const appFont = "sans-serif-medium";
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: DARK,
   },
   container: {
     alignItems: "center",
+    minHeight: "100%",
     paddingBottom: 112,
   },
   content: {
     alignSelf: "center",
     width: "100%",
   },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-  },
-  avatar: {
-    width: 73,
-    height: 73,
-    alignItems: "center",
-    backgroundColor: LILAC,
-    borderRadius: 37,
-    justifyContent: "center",
-  },
-  avatarTiny: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  headerCopy: {
-    flex: 1,
-    marginLeft: 10,
-    minWidth: 0,
-  },
-  greeting: {
-    color: BLUE,
-    fontFamily: appFont,
-    fontSize: 19,
-    fontWeight: "700",
-  },
-  subGreeting: {
-    color: MUTED,
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "700",
-    marginTop: 3,
-  },
-  headerIcons: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-  },
-  iconButton: {
-    alignItems: "center",
-    height: 44,
-    justifyContent: "center",
-    width: 44,
-  },
-  nowCard: {
-    alignSelf: "center",
-    backgroundColor: LILAC,
-    borderRadius: 16,
-    marginTop: 22,
-    maxWidth: 292,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    width: "100%",
-  },
-  nowTop: {
+  topBar: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  nowLabel: {
+  brand: {
     color: TEXT,
     fontFamily: appFont,
-    fontSize: 17,
-    fontWeight: "700",
+    fontSize: 30,
+    fontStyle: "italic",
+    fontWeight: "900",
   },
-  kwhRow: {
+  topActions: {
     alignItems: "center",
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 2,
+    gap: 12,
   },
-  kwhValue: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 29,
-    fontWeight: "700",
-  },
-  badge: {
-    borderRadius: 4,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "800",
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-  },
-  badgeGood: {
-    backgroundColor: "#E8FFE9",
-    color: GREEN,
-  },
-  badgeDanger: {
-    backgroundColor: "#FFECEA",
-    color: RED,
-  },
-  updated: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  divider: {
-    backgroundColor: "#DDE2F5",
-    height: 1,
-    marginTop: 18,
-  },
-  sectionHeader: {
+  squareButton: {
     alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingTop: 15,
-  },
-  sectionTitle: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  muted: {
-    fontWeight: "500",
-  },
-  seeAll: {
-    color: BLUE,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  list: {
-    gap: 11,
-    paddingHorizontal: 0,
-    paddingTop: 15,
-  },
-  favoriteList: {
-    gap: 11,
-    paddingTop: 15,
-  },
-  homeCard: {
-    alignItems: "center",
-    backgroundColor: LILAC,
-    borderRadius: 11,
-    flexDirection: "row",
-    minHeight: 64,
-    paddingHorizontal: 11,
-  },
-  deviceCard: {
-    alignItems: "center",
-    backgroundColor: LILAC,
-    borderRadius: 11,
-    flexDirection: "row",
-    minHeight: 62,
-    paddingHorizontal: 11,
-  },
-  cardPressed: {
-    opacity: 0.75,
-  },
-  circleIcon: {
-    width: 46,
+    backgroundColor: "#EEF4FF",
+    borderRadius: 14,
     height: 46,
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 23,
     justifyContent: "center",
+    width: 46,
   },
-  deviceCopy: {
-    flex: 1,
-    marginLeft: 10,
-    minWidth: 0,
+  userCircle: {
+    alignItems: "center",
+    backgroundColor: GREEN,
+    borderRadius: 23,
+    height: 46,
+    justifyContent: "center",
+    width: 46,
   },
-  deviceName: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  deviceValue: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "800",
-    marginTop: 1,
-  },
-  trend: {
+  userInitial: {
+    color: "#102314",
     fontFamily: appFont,
     fontSize: 20,
     fontWeight: "800",
   },
-  actionCard: {
-    alignItems: "center",
-    backgroundColor: LILAC,
-    borderRadius: 11,
-    flexDirection: "row",
-    minHeight: 64,
-    paddingHorizontal: 11,
+  tabs: {
+    gap: 8,
+    paddingTop: 30,
   },
-  actionCopy: {
+  tab: {
+    borderBottomColor: BLUE,
+    borderBottomWidth: 1,
+    minHeight: 48,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  tabActive: {
+    borderColor: BLUE,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderWidth: 1.5,
+    borderBottomWidth: 1,
+  },
+  tabText: {
+    color: MUTED,
+    fontFamily: appFont,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  tabTextActive: {
+    color: TEXT,
+    fontWeight: "900",
+  },
+  toolbar: {
+    alignItems: "center",
+    backgroundColor: PANEL,
+    borderColor: "#59616C",
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 28,
+    minHeight: 58,
+    paddingHorizontal: 12,
+  },
+  toolbarTitle: {
+    color: TEXT,
     flex: 1,
-    marginLeft: 13,
+    fontFamily: appFont,
+    fontSize: 18,
+    fontWeight: "900",
     minWidth: 0,
   },
-  actionSubtitle: {
+  customizeButton: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+  },
+  customizeText: {
     color: TEXT,
+    fontFamily: appFont,
+    fontSize: 14,
+    fontWeight: "800",
+    textDecorationLine: "underline",
+  },
+  blueIconButton: {
+    alignItems: "center",
+    backgroundColor: BLUE,
+    borderRadius: 12,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+  },
+  infoButton: {
+    alignItems: "center",
+    height: 38,
+    justifyContent: "center",
+    width: 32,
+  },
+  energyCard: {
+    alignItems: "center",
+    backgroundColor: CARD,
+    borderRadius: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 18,
+    padding: 16,
+  },
+  energyLabel: {
+    color: MUTED,
+    fontFamily: appFont,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  energyValue: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 28,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+  energyPill: {
+    alignItems: "center",
+    backgroundColor: "#EEF4FF",
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  energyPillText: {
+    color: BLUE,
     fontFamily: appFont,
     fontSize: 13,
     fontWeight: "800",
-    marginTop: 1,
+  },
+  widgets: {
+    marginTop: 30,
+  },
+  roomCard: {
+    backgroundColor: CARD,
+    borderRadius: 16,
+    maxWidth: 332,
+    overflow: "hidden",
+    width: "100%",
+  },
+  cardPressed: {
+    opacity: 0.75,
+  },
+  roomStrip: {
+    backgroundColor: BLUE,
+    height: 82,
+    justifyContent: "flex-start",
+  },
+  roomBadge: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#EEF4FF",
+    borderBottomRightRadius: 14,
+    flexDirection: "row",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  roomBadgeText: {
+    color: BLUE,
+    fontFamily: appFont,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  roomBody: {
+    alignItems: "center",
+    minHeight: 120,
+    padding: 18,
+  },
+  roomName: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  wattsPill: {
+    alignItems: "center",
+    backgroundColor: "#EEF4FF",
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  wattsText: {
+    color: BLUE,
+    fontFamily: appFont,
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  emptyState: {
+    alignItems: "center",
+    marginTop: 80,
+    paddingHorizontal: 18,
+  },
+  emptyTitle: {
+    color: TEXT,
+    fontFamily: appFont,
+    fontSize: 26,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+  emptyText: {
+    color: MUTED,
+    fontFamily: appFont,
+    fontSize: 17,
+    fontWeight: "700",
+    lineHeight: 24,
+    marginTop: 14,
+    textAlign: "center",
+  },
+  addWidgetButton: {
+    alignItems: "center",
+    backgroundColor: BLUE,
+    borderRadius: 15,
+    height: 56,
+    justifyContent: "center",
+    marginTop: 28,
+    paddingHorizontal: 28,
+  },
+  addWidgetText: {
+    color: "#FFFFFF",
+    fontFamily: appFont,
+    fontSize: 18,
+    fontWeight: "900",
   },
 });
