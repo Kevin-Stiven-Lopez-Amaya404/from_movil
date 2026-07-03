@@ -1,3 +1,7 @@
+/**
+ * Colores base generados para compatibilidad con hooks/componentes que consumen
+ * un esquema claro/oscuro simple.
+ */
 export const Colors = {
   light: {
     tint: "#0057B8",
@@ -13,6 +17,12 @@ export const Colors = {
   },
 } as const;
 
+/**
+ * Design tokens principales de la app.
+ *
+ * Centraliza colores, tamanos, espaciados y radios usados sobre todo en las
+ * pantallas de autenticacion. Tenerlos aqui evita repetir numeros magicos.
+ */
 export const theme = {
   colors: {
     primary: "#0057B8",

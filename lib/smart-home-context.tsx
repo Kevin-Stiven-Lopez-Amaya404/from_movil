@@ -1,10 +1,16 @@
 import { createContext, PropsWithChildren, useContext, useMemo, useState } from "react";
 
+// Tipos base usados por pantallas y reportes.
 export type DeviceCategory = "Electrodomesticos" | "Iluminacion" | "Climatizacion" | "Seguridad";
 export type ReportRange = "Diario" | "Semana" | "Mes" | "Rango";
 export type AppLanguage = "es" | "en" | "pt";
 export type ColorMode = "light" | "dark";
 
+/**
+ * Representa un hogar registrado.
+ *
+ * `favorite` permite que el dashboard decida que hogares mostrar como acceso rapido.
+ */
 export type SmartHomePlace = {
   id: string;
   name: string;
@@ -12,6 +18,11 @@ export type SmartHomePlace = {
   favorite: boolean;
 };
 
+/**
+ * Representa un dispositivo inteligente.
+ *
+ * La relacion clave es `homeId`: cada dispositivo pertenece a un hogar.
+ */
 export type SmartDevice = {
   id: string;
   homeId: string;
@@ -25,6 +36,7 @@ export type SmartDevice = {
   critical?: boolean;
 };
 
+// Dispositivos activos usados para auditoria/perfil.
 type ActiveDevice = {
   id: string;
   name: string;
@@ -32,11 +44,18 @@ type ActiveDevice = {
   verified: boolean;
 };
 
+// Punto simple para graficas de reportes.
 type ReportPoint = {
   label: string;
   value: number;
 };
 
+/**
+ * Contrato completo del contexto global.
+ *
+ * Incluye datos y acciones que consumen varias pantallas. Esto evita pasar props
+ * manualmente entre Dashboard, Hogares, Reportes, Perfil y Configuracion.
+ */
 type SmartHomeState = {
   activeHomeId: string;
   activeDevices: ActiveDevice[];
@@ -66,11 +85,13 @@ type SmartHomeState = {
   refreshSync: () => void;
 };
 
+// Datos iniciales de prueba. En una version real vendrian de backend/base de datos.
 const initialHomes: SmartHomePlace[] = [
   { id: "casa", name: "Casa", location: "Hogar principal", favorite: true },
   { id: "oficina", name: "Oficina", location: "Espacio de trabajo", favorite: false },
 ];
 
+// Dispositivos iniciales asociados a hogares mediante `homeId`.
 const initialDevices: SmartDevice[] = [
   {
     id: "ac",
@@ -180,6 +201,9 @@ const defaultActiveDevices: ActiveDevice[] = [
 
 const SmartHomeContext = createContext<SmartHomeState | null>(null);
 
+/**
+ * Genera una hora corta para mostrar ultima sincronizacion local.
+ */
 function getTimeStamp() {
   return new Intl.DateTimeFormat("es-CO", {
     hour: "2-digit",
@@ -187,6 +211,11 @@ function getTimeStamp() {
   }).format(new Date());
 }
 
+/**
+ * Crea identificadores legibles a partir de nombres ingresados por el usuario.
+ *
+ * Quita tildes/caracteres especiales y agrega timestamp para reducir choques.
+ */
 function createId(value: string) {
   const slug = value
     .trim()
@@ -199,7 +228,14 @@ function createId(value: string) {
   return `${slug || "hogar"}-${Date.now()}`;
 }
 
+/**
+ * Proveedor global de Smart Home.
+ *
+ * Aqui vive la "fuente de verdad" de la app mientras no hay backend:
+ * hogares, dispositivos, tema, idioma, sesion y acciones de modificacion.
+ */
 export function SmartHomeProvider({ children }: PropsWithChildren) {
+  // Estados principales compartidos entre pantallas.
   const [homes, setHomes] = useState(initialHomes);
   const [activeHomeId, setActiveHomeId] = useState(initialHomes[0].id);
   const [devices, setDevices] = useState(initialDevices);
@@ -211,6 +247,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
   const [sessionName, setSessionName] = useState("Pepe");
   const [lastSync, setLastSync] = useState(getTimeStamp());
 
+  // `useMemo` evita reconstruir el objeto de contexto si sus dependencias no cambian.
   const value = useMemo<SmartHomeState>(
     () => ({
       activeHomeId,
@@ -229,6 +266,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         setAccountActive(false);
         setOfflineMode(false);
       },
+      // Crea un dispositivo nuevo dentro de un hogar especifico.
       addDeviceToHome: (homeId, name) => {
         const cleanName = name.trim();
         if (!cleanName) return;
@@ -248,6 +286,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           },
         ]);
       },
+      // Crea un hogar y lo marca como activo para que el usuario pueda administrarlo.
       addHome: (name) => {
         const cleanName = name.trim();
         if (!cleanName) return;
@@ -270,6 +309,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setLanguage,
       setSessionName,
       setOfflineMode,
+      // Cambia el estado online/offline de un dispositivo.
       toggleDevice: (id) => {
         setDevices((items) =>
           items.map((item) =>
@@ -277,6 +317,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           ),
         );
       },
+      // Marca o desmarca un hogar como favorito para el dashboard.
       toggleHomeFavorite: (homeId) => {
         setHomes((items) =>
           items.map((item) =>
@@ -284,11 +325,13 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           ),
         );
       },
+      // Fuerza un estado especifico para un dispositivo.
       setDeviceOnline: (id, online) => {
         setDevices((items) =>
           items.map((item) => (item.id === id ? { ...item, online } : item)),
         );
       },
+      // Marca una alerta/dispositivo activo como verificado.
       resolveDeviceAlert: (id) => {
         setActiveDevices((items) =>
           items.map((item) => (item.id === id ? { ...item, verified: true } : item)),
@@ -302,6 +345,12 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
   return <SmartHomeContext.Provider value={value}>{children}</SmartHomeContext.Provider>;
 }
 
+/**
+ * Hook seguro para consumir el contexto.
+ *
+ * Lanza error si se usa fuera de `SmartHomeProvider`, lo que ayuda a detectar
+ * configuraciones incorrectas durante desarrollo.
+ */
 export function useSmartHome() {
   const context = useContext(SmartHomeContext);
 

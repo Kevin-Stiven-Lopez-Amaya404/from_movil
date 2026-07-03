@@ -1,22 +1,36 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
+import { useAppTheme } from "@/lib/app-theme";
+
 import { profileFont, profileTheme } from "./profileTheme";
 
 type ProfileSectionHeaderProps = {
+  /** Cambia color a rojo para secciones sensibles, como desactivar cuenta. */
   danger?: boolean;
+  /** Explica brevemente la finalidad de la seccion. */
   description: string;
+  /** Icono mostrado al inicio del encabezado. */
   icon: keyof typeof Ionicons.glyphMap;
+  /** Titulo de la seccion. */
   title: string;
 };
 
+/**
+ * Encabezado reutilizable para secciones internas del perfil.
+ *
+ * Separa la estructura visual de titulo/descripcion/icono para que cada modulo
+ * sea mas facil de leer y mantener.
+ */
 export function ProfileSectionHeader({ danger = false, description, icon, title }: ProfileSectionHeaderProps) {
+  const theme = useAppTheme();
+
   return (
     <View style={styles.header}>
-      <Ionicons name={icon} size={22} color={danger ? profileTheme.danger : profileTheme.blue} />
+      <Ionicons name={icon} size={22} color={danger ? theme.danger : theme.blue} />
       <View style={styles.copy}>
-        <Text style={[styles.title, danger && styles.dangerTitle]}>{title}</Text>
-        <Text style={styles.description}>{description}</Text>
+        <Text style={[styles.title, { color: danger ? theme.danger : theme.text }]}>{title}</Text>
+        <Text style={[styles.description, { color: theme.muted }]}>{description}</Text>
       </View>
     </View>
   );

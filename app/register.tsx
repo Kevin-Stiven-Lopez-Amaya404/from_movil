@@ -12,17 +12,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+
+  // Estados controlados del formulario de registro.
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,13 +33,16 @@ export default function RegisterScreen() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  // Se normaliza para evitar duplicados por mayusculas o espacios.
   const cleanEmail = email.trim().toLowerCase();
 
+  // Las reglas de contrasena se calculan fuera del JSX para mantener el render legible.
   const passwordRules = useMemo(() => getPasswordRules(password), [password]);
   const strength = passwordRules.filter((rule) => rule.passed).length;
   const passwordIsStrong = strength === passwordRules.length;
   const passwordsMatch = password.length > 0 && password === confirmPassword;
 
+  // Objeto centralizado de errores: facilita saber si el formulario se puede enviar.
   const errors = {
     firstName: firstName.trim().length < 2 ? "Ingresa tus nombres." : "",
     email: !isValidEmail(cleanEmail) ? "Ingresa un correo válido." : "",
@@ -48,10 +53,18 @@ export default function RegisterScreen() {
 
   const canSubmit = Object.values(errors).every((error) => !error);
 
+  /**
+   * Muestra errores solo despues del primer intento de envio.
+   * Esto evita que la pantalla aparezca llena de errores apenas se abre.
+   */
   function visibleError(key: keyof typeof errors) {
     return submitted ? errors[key] : "";
   }
 
+  /**
+   * Muestra condiciones legales de forma simulada.
+   * En una version real podria abrir una pantalla o documento externo.
+   */
   function showTerms() {
     Alert.alert(
       "Términos y condiciones",
@@ -59,6 +72,12 @@ export default function RegisterScreen() {
     );
   }
 
+  /**
+   * Valida el formulario y registra el usuario en memoria.
+   *
+   * `registerUser` no llama a backend: solo agrega el usuario al arreglo local
+   * definido en `lib/auth-store.ts`.
+   */
   function handleRegister() {
     setSubmitted(true);
 
@@ -96,7 +115,8 @@ export default function RegisterScreen() {
             styles.container,
             {
               paddingHorizontal: layout.gutter,
-              paddingTop: layout.compact ? 28 : 54,
+              paddingBottom: layout.safeBottom + 34,
+              paddingTop: layout.safeTop + (layout.compact ? 28 : 54),
             },
           ]}
           keyboardShouldPersistTaps="handled"

@@ -10,28 +10,40 @@ import Animated, {
 } from "react-native-reanimated";
 
 const { width } = Dimensions.get("window");
+
+// El tamano de los bloques depende del ancho del dispositivo para que el splash sea responsive.
 const BLOCK_SIZE = width * 0.24;
 
 interface Props {
+  /** Callback que avisa al layout raiz que la animacion ya termino. */
   onFinish: () => void;
 }
 
+/**
+ * Animacion inicial de la aplicacion.
+ *
+ * Usa React Native Reanimated para animar dos bloques blancos sobre fondo azul.
+ * Cuando termina el fade out, ejecuta `onFinish` en el hilo de JavaScript con `runOnJS`.
+ */
 export default function SplashAnimation({ onFinish }: Props) {
+  // Valores animados del bloque izquierdo.
   const leftOpacity = useSharedValue(0);
   const leftScale = useSharedValue(0.4);
   const leftX = useSharedValue(-30);
 
+  // Valores animados del bloque derecho.
   const rightOpacity = useSharedValue(0);
   const rightScale = useSharedValue(0.4);
   const rightX = useSharedValue(30);
 
+  // Controla el desvanecido de toda la pantalla de splash.
   const screenOpacity = useSharedValue(1);
 
   useEffect(() => {
     const easeOut = Easing.out(Easing.cubic);
     const easeIn = Easing.in(Easing.cubic);
 
-    // Bloque izquierdo entra
+    // Bloque izquierdo: aparece, escala y se mueve hacia su posicion final.
     leftOpacity.value = withDelay(
       200,
       withTiming(1, { duration: 400, easing: easeOut }),
@@ -45,7 +57,7 @@ export default function SplashAnimation({ onFinish }: Props) {
       withTiming(0, { duration: 450, easing: easeOut }),
     );
 
-    // Bloque derecho entra
+    // Bloque derecho: entra despues del izquierdo para crear una secuencia visual.
     rightOpacity.value = withDelay(
       450,
       withTiming(1, { duration: 400, easing: easeOut }),
@@ -77,6 +89,7 @@ export default function SplashAnimation({ onFinish }: Props) {
     onFinish,
   ]);
 
+  // Estilos animados calculados en el hilo de UI.
   const leftStyle = useAnimatedStyle(() => ({
     opacity: leftOpacity.value,
     transform: [{ scale: leftScale.value }, { translateX: leftX.value }],

@@ -1,3 +1,9 @@
+/**
+ * Paleta base usada originalmente por los componentes de perfil.
+ *
+ * Aunque varios colores ahora se sobrescriben con `useAppTheme` para soportar
+ * claro/oscuro, mantener esta paleta sirve como fallback y referencia visual.
+ */
 export const profileTheme = {
   blue: "#0864C8",
   card: "#F4F6FF",
@@ -12,4 +18,5 @@ export const profileTheme = {
   white: "#FFFFFF",
 };
 
+// Fuente base para que los modulos del perfil mantengan una apariencia consistente.
 export const profileFont = "sans-serif-medium";

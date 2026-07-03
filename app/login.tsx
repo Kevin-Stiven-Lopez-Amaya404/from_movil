@@ -14,19 +14,23 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+
+  // Datos globales relacionados con cuenta y sesion.
   const { accountActive, colorMode, setAccountActive, setSessionName } = useSmartHome();
   const palette = getAuthPalette(colorMode);
+
+  // Estados locales del formulario de login.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +38,10 @@ export default function LoginScreen() {
   const [touched, setTouched] = useState({ email: false, password: false });
   const [failedAttempts, setFailedAttempts] = useState(0);
 
+  // Normaliza el correo para evitar errores por espacios o mayusculas.
   const cleanEmail = email.trim().toLowerCase();
+
+  // Errores visibles solo cuando el usuario ya interactuo con el campo.
   const emailError =
     touched.email && !isValidEmail(cleanEmail)
       ? "Ingresa un correo válido."
@@ -45,18 +52,34 @@ export default function LoginScreen() {
       : "";
   const canSubmit = isValidEmail(cleanEmail) && password.length >= 4;
 
+  // Mensaje contextual que cambia con los intentos fallidos.
   const securityHint = useMemo(() => {
     if (failedAttempts === 0) return "Tus dispositivos se sincronizan al entrar.";
     if (failedAttempts === 1) return "Revisa mayúsculas y espacios antes de continuar.";
     return "Puedes usar el acceso demo para probar la app.";
   }, [failedAttempts]);
 
+  /**
+   * Completa credenciales de prueba.
+   *
+   * Sirve para demostrar la aplicacion sin depender de crear una cuenta nueva.
+   */
   function fillDemoUser() {
     setEmail("pepe@smarthome.com");
     setPassword("Smart123!");
     setTouched({ email: true, password: true });
   }
 
+  /**
+   * Valida y ejecuta el inicio de sesion.
+   *
+   * Orden de decision:
+   * 1. Marca campos como tocados para mostrar errores.
+   * 2. Verifica si la cuenta global esta activa.
+   * 3. Valida formato y longitud.
+   * 4. Consulta usuarios simulados en `auth-store`.
+   * 5. Guarda el nombre de sesion y entra a las tabs.
+   */
   function handleLogin() {
     setTouched({ email: true, password: true });
 
@@ -103,7 +126,8 @@ export default function LoginScreen() {
             styles.container,
             {
               paddingHorizontal: layout.gutter,
-              paddingTop: layout.compact ? 32 : 64,
+              paddingBottom: layout.safeBottom + 38,
+              paddingTop: layout.safeTop + (layout.compact ? 32 : 64),
             },
           ]}
           keyboardShouldPersistTaps="handled"

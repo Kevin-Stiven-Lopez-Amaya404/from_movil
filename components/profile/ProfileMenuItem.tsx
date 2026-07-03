@@ -1,17 +1,30 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { useAppTheme } from "@/lib/app-theme";
+
 import { profileFont, profileTheme } from "./profileTheme";
 
 type ProfileMenuItemProps = {
+  /** Texto secundario opcional debajo del titulo. */
   description?: string;
+  /** Nombre del icono Ionicons que acompaña la accion. */
   icon: keyof typeof Ionicons.glyphMap;
+  /** Define color semantico: normal, primario o peligro. */
   intent?: "default" | "danger" | "primary";
+  /** Accion que se ejecuta al tocar la fila. */
   onPress: () => void;
   title: string;
+  /** `boxed` muestra la fila como tarjeta; `plain` como opcion simple. */
   variant?: "plain" | "boxed";
 };
 
+/**
+ * Fila reutilizable para opciones del perfil.
+ *
+ * Centraliza estilos, iconos, estados presionados y colores por intencion.
+ * Asi `profile.tsx` puede enfocarse en la estructura y no repetir JSX.
+ */
 export function ProfileMenuItem({
   description,
   icon,
@@ -20,21 +33,26 @@ export function ProfileMenuItem({
   title,
   variant = "plain",
 }: ProfileMenuItemProps) {
+  const theme = useAppTheme();
+
+  // El color comunica el tipo de accion: peligro, primaria o normal.
   const iconColor =
-    intent === "danger" ? profileTheme.danger : intent === "primary" ? profileTheme.blue : profileTheme.text;
+    intent === "danger" ? theme.danger : intent === "primary" ? theme.blue : theme.text;
 
   return (
     <Pressable
       style={({ pressed }) => [
-        variant === "boxed" ? styles.boxedRow : styles.plainRow,
+        variant === "boxed"
+          ? [styles.boxedRow, { backgroundColor: theme.row, borderColor: theme.border }]
+          : styles.plainRow,
         pressed && styles.pressed,
       ]}
       onPress={onPress}
     >
       <Ionicons name={icon} size={variant === "boxed" ? 28 : 25} color={iconColor} />
       <View style={styles.copy}>
-        <Text style={[styles.title, intent === "danger" && styles.dangerText]}>{title}</Text>
-        {!!description && <Text style={styles.description}>{description}</Text>}
+        <Text style={[styles.title, { color: intent === "danger" ? theme.danger : theme.text }]}>{title}</Text>
+        {!!description && <Text style={[styles.description, { color: theme.muted }]}>{description}</Text>}
       </View>
     </Pressable>
   );

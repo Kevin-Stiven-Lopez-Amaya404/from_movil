@@ -6,15 +6,26 @@ import { useResponsiveLayout } from "@/lib/responsive";
 import { useSmartHome } from "@/lib/smart-home-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+
+  // El tema se guarda en contexto para que la seleccion del usuario afecte toda la app.
   const { colorMode, setColorMode } = useSmartHome();
+
+  // Paleta especifica para pantallas de autenticacion, calculada segun modo claro/oscuro.
   const palette = getAuthPalette(colorMode);
   const dark = colorMode === "dark";
 
+  /**
+   * Flujo temporal para Google.
+   *
+   * La autenticacion OAuth real no esta implementada en esta version, por eso se
+   * informa al usuario y se lo lleva al login normal/demo.
+   */
   function handleGoogleLogin() {
     Alert.alert(
       "Inicio con Google",
@@ -25,7 +36,17 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: dark ? palette.background : theme.colors.backgroundBlue }]}>
-      <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
+      <View
+        style={[
+          styles.content,
+          {
+            maxWidth: layout.contentWidth,
+            paddingBottom: layout.safeBottom,
+            paddingTop: layout.safeTop,
+          },
+        ]}
+      >
+      {/* Selector de tema disponible antes del login para personalizar la experiencia desde el inicio. */}
       <View style={styles.modeRow}>
         {(["light", "dark"] as const).map((mode) => {
           const active = colorMode === mode;
@@ -57,10 +78,12 @@ export default function WelcomeScreen() {
           );
         })}
       </View>
+      {/* El logo reduce espacio vertical en pantallas pequenas mediante `layout.compact`. */}
       <View style={[styles.logoArea, layout.compact && styles.logoAreaCompact]}>
         <SmartHomeLogo size={layout.compact ? 184 : 220} showText={true} variant="dark" />
       </View>
 
+      {/* Acciones principales de entrada al sistema. */}
       <View style={styles.buttonsArea}>
         <Pressable
           style={({ pressed }) => [

@@ -1,18 +1,30 @@
 import { PropsWithChildren } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import { useAppTheme } from "@/lib/app-theme";
+
 import { profileFont, profileTheme } from "./profileTheme";
 
 type ProfileModuleProps = PropsWithChildren<{
+  /** Texto secundario que resume el contenido del modulo. */
   subtitle?: string;
+  /** Titulo visible del bloque. */
   title: string;
 }>;
 
+/**
+ * Contenedor reutilizable para agrupar secciones del perfil.
+ *
+ * Evita que `profile.tsx` tenga tarjetas repetidas y permite aplicar tema
+ * claro/oscuro de forma consistente.
+ */
 export function ProfileModule({ children, subtitle, title }: ProfileModuleProps) {
+  const theme = useAppTheme();
+
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>{title}</Text>
-      {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+    <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+      {!!subtitle && <Text style={[styles.subtitle, { color: theme.muted }]}>{subtitle}</Text>}
       {children}
     </View>
   );

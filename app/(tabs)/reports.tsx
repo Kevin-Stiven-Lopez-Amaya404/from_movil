@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useAppTheme } from "@/lib/app-theme";
 import { useResponsiveLayout } from "@/lib/responsive";
 import { DeviceCategory, ReportRange, useSmartHome } from "@/lib/smart-home-context";
 
@@ -19,11 +21,18 @@ type ReportView = (typeof reportViews)[number];
 
 export default function ReportsScreen() {
   const layout = useResponsiveLayout();
+  const theme = useAppTheme();
+
+  // Datos globales usados para generar reportes simulados.
   const { devices, reportData } = useSmartHome();
+
+  // Estados que controlan la vista, el periodo y el filtro activo.
   const [activeView, setActiveView] = useState<ReportView>("Tiempo real");
   const [activeRange, setActiveRange] = useState<ReportRange>("Semana");
   const [activeFilter, setActiveFilter] = useState<"Todos" | DeviceCategory>("Todos");
   const points = reportData[activeRange];
+
+  // Ajusta los datos del reporte segun la categoria seleccionada.
   const multiplier = useMemo(() => {
     if (activeFilter === "Todos") return 1;
 
@@ -40,6 +49,8 @@ export default function ReportsScreen() {
     ...point,
     value: Number((point.value * multiplier).toFixed(1)),
   }));
+
+  // Valores derivados para resumen, grafica y tendencia.
   const maxValue = Math.max(...filteredPoints.map((point) => point.value), 1);
   const total = filteredPoints.reduce((sum, point) => sum + point.value, 0);
   const previous = total * 0.87;
@@ -57,6 +68,11 @@ export default function ReportsScreen() {
         .reduce((sum, device) => sum + device.consumption, 0),
     }));
 
+  /**
+   * Simula la preparacion de un reporte.
+   *
+   * En una version con backend podria generar/descargar un PDF o CSV real.
+   */
   function downloadReport() {
     Alert.alert(
       "Reporte preparado",
@@ -65,22 +81,23 @@ export default function ReportsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <ScrollView
         contentContainerStyle={[
           styles.container,
           {
             paddingHorizontal: layout.gutter,
-            paddingTop: layout.compact ? 24 : 36,
+            paddingBottom: layout.screenBottom,
+            paddingTop: layout.screenTop,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
         <View style={styles.header}>
-          <Text numberOfLines={1} style={styles.title}>Análisis energético</Text>
-          <Pressable onPress={downloadReport} style={styles.headerButton}>
-            <Ionicons name="open-outline" size={31} color={TEXT} />
+          <Text numberOfLines={1} style={[styles.title, { color: theme.text }]}>Análisis energético</Text>
+          <Pressable onPress={downloadReport} style={[styles.headerButton, { backgroundColor: theme.rowAlt }]}>
+            <Ionicons name="open-outline" size={31} color={theme.text} />
           </Pressable>
         </View>
 
@@ -98,7 +115,7 @@ export default function ReportsScreen() {
                 style={[styles.viewTab, active && styles.viewTabActive]}
                 onPress={() => setActiveView(item)}
               >
-                <Text style={[styles.viewTabText, active && styles.viewTabTextActive]}>{item}</Text>
+                <Text style={[styles.viewTabText, { color: theme.muted }, active && styles.viewTabTextActive]}>{item}</Text>
               </Pressable>
             );
           })}
@@ -106,9 +123,9 @@ export default function ReportsScreen() {
 
         {activeView === "Tiempo real" && (
           <>
-            <View style={styles.realTimeCard}>
+            <View style={[styles.realTimeCard, { backgroundColor: theme.card }]}>
               <View style={styles.realTimeTop}>
-                <Text style={styles.realTimeTitle}>Consumo en tiempo real</Text>
+                <Text style={[styles.realTimeTitle, { color: theme.text }]}>Consumo en tiempo real</Text>
                 <Ionicons name="settings-outline" size={24} color={BLUE} />
               </View>
               <View style={styles.gaugeWrap}>
@@ -120,14 +137,14 @@ export default function ReportsScreen() {
                   </View>
                 </View>
               </View>
-              <Text style={styles.realTimeMeta}>Actualizado ahora</Text>
+              <Text style={[styles.realTimeMeta, { color: theme.muted }]}>Actualizado ahora</Text>
             </View>
 
-            <View style={styles.applianceCard}>
-              <Text style={styles.cardTitle}>Energía por tipo de dispositivo</Text>
+            <View style={[styles.applianceCard, { backgroundColor: theme.card }]}>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>Energía por tipo de dispositivo</Text>
               {applianceTypes.map((item) => (
                 <View key={item.category} style={styles.applianceRow}>
-                  <Text style={styles.applianceName}>{item.category}</Text>
+                  <Text style={[styles.applianceName, { color: theme.text }]}>{item.category}</Text>
                   <Text style={styles.applianceValue}>{item.total.toFixed(2)} kWh</Text>
                 </View>
               ))}
@@ -137,23 +154,23 @@ export default function ReportsScreen() {
 
         {activeView === "Tarifa" && (
           <>
-            <View style={styles.tariffInfoCard}>
+            <View style={[styles.tariffInfoCard, { backgroundColor: theme.card }]}>
               <Ionicons name="information-circle-outline" size={24} color={BLUE} />
-              <Text style={styles.tariffInfoText}>
+              <Text style={[styles.tariffInfoText, { color: theme.muted }]}>
                 Configura la fecha de facturación y el valor por kWh para estimar el costo mensual.
               </Text>
             </View>
 
-            <View style={styles.tariffCard}>
-              <Text style={styles.cardTitle}>Detalles de tarifa eléctrica</Text>
+            <View style={[styles.tariffCard, { backgroundColor: theme.card }]}>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>Detalles de tarifa eléctrica</Text>
               <View style={styles.tariffRow}>
                 <Ionicons name="calendar-outline" size={22} color={MUTED} />
-                <Text style={styles.tariffLabel}>Día de facturación</Text>
+                <Text style={[styles.tariffLabel, { color: theme.muted }]}>Día de facturación</Text>
                 <Text style={styles.tariffValue}>01 del mes</Text>
               </View>
               <View style={styles.tariffRow}>
                 <Ionicons name="cash-outline" size={22} color={MUTED} />
-                <Text style={styles.tariffLabel}>Tarifa estimada</Text>
+                <Text style={[styles.tariffLabel, { color: theme.muted }]}>Tarifa estimada</Text>
                 <Text style={styles.tariffValue}>$950 COP/kWh</Text>
               </View>
               <Pressable style={styles.saveButton} onPress={() => Alert.alert("Tarifa guardada", "Los datos de tarifa quedaron preparados.")}>
@@ -165,14 +182,14 @@ export default function ReportsScreen() {
 
         {activeView !== "Tarifa" && activeView !== "Tiempo real" && (
           <>
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
           <View style={styles.summaryTop}>
-            <Text style={styles.summaryValue}>{total.toFixed(1)} kWh</Text>
+            <Text style={[styles.summaryValue, { color: theme.text }]}>{total.toFixed(1)} kWh</Text>
             <Text style={[styles.summaryTrend, trend > 0 ? styles.trendDanger : styles.trendGood]}>
               {trend > 0 ? "↑" : "↓"} {Math.abs(trend)}%
             </Text>
           </View>
-          <Text style={styles.summaryPeriod}>{activeRange} · {activeFilter}</Text>
+          <Text style={[styles.summaryPeriod, { color: theme.muted }]}>{activeRange} · {activeFilter}</Text>
         </View>
 
         <View style={styles.rangeTabs}>
@@ -185,7 +202,7 @@ export default function ReportsScreen() {
                 style={[styles.rangeTab, active && styles.rangeTabActive]}
                 onPress={() => setActiveRange(item)}
               >
-                <Text style={[styles.rangeText, active && styles.rangeTextActive]}>{item}</Text>
+                <Text style={[styles.rangeText, { color: theme.text }, active && styles.rangeTextActive]}>{item}</Text>
               </Pressable>
             );
           })}
@@ -205,7 +222,7 @@ export default function ReportsScreen() {
                 style={[styles.filterChip, active && styles.filterChipActive]}
                 onPress={() => setActiveFilter(item)}
               >
-                <Text style={[styles.filterText, active && styles.filterTextActive]}>
+                <Text style={[styles.filterText, { color: theme.text }, active && styles.filterTextActive]}>
                   {item}
                 </Text>
               </Pressable>
@@ -213,12 +230,12 @@ export default function ReportsScreen() {
           })}
         </ScrollView>
 
-        <Text style={styles.chartTitle}>Consumo de energía (kWh)</Text>
+        <Text style={[styles.chartTitle, { color: theme.text }]}>Consumo de energía (kWh)</Text>
 
-        <View style={styles.chartBlock}>
+        <View style={[styles.chartBlock, { backgroundColor: theme.card }]}>
           <View style={styles.yAxis}>
             {[maxValue, maxValue * 0.75, maxValue * 0.5, maxValue * 0.25, 0].map((label, index) => (
-              <Text key={`${label}-${index}`} style={styles.yLabel}>
+              <Text key={`${label}-${index}`} style={[styles.yLabel, { color: theme.muted }]}>
                 {label.toFixed(label >= 10 ? 0 : 1)}
               </Text>
             ))}
@@ -252,7 +269,7 @@ export default function ReportsScreen() {
                         active && styles.barActive,
                       ]}
                     />
-                    <Text style={styles.dayLabel}>{item.label}</Text>
+                    <Text style={[styles.dayLabel, { color: theme.muted }]}>{item.label}</Text>
                   </Pressable>
                 );
               })}
@@ -260,9 +277,9 @@ export default function ReportsScreen() {
           </View>
         </View>
 
-        <View style={styles.insightCard}>
+        <View style={[styles.insightCard, { backgroundColor: theme.card }]}>
           <Ionicons name="bulb-outline" size={26} color={BLUE} />
-          <Text style={styles.insightText}>
+          <Text style={[styles.insightText, { color: theme.text }]}>
             El mayor pico está en {activePoint.label}. Revisa horarios de climatización y cargas automáticas.
           </Text>
         </View>

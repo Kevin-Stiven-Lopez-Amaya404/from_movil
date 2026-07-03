@@ -1,8 +1,10 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { formatKwh } from "@/lib/formatters";
+import { useAppTheme } from "@/lib/app-theme";
 import { useResponsiveLayout } from "@/lib/responsive";
 import { useSmartHome } from "@/lib/smart-home-context";
 
@@ -17,12 +19,23 @@ const GREEN = "#74D87C";
 export default function DashboardScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+  const theme = useAppTheme();
+
+  // Datos globales usados para construir el resumen del dashboard.
   const { devices, homes, sessionName, setActiveHomeId } = useSmartHome();
+
+  // El dashboard no guarda estos datos: los deriva del estado global.
   const onlineDevices = devices.filter((device) => device.online);
   const currentConsumption = onlineDevices.reduce((total, device) => total + device.consumption, 0);
   const favoriteHomes = homes.filter((home) => home.favorite);
   const dashboardHomes = favoriteHomes.length ? favoriteHomes : homes.slice(0, 1);
 
+  /**
+   * Muestra una alerta de estado general.
+   *
+   * Si existe un dispositivo critico encendido, recomienda ahorro. Si no,
+   * informa que no hay alertas activas.
+   */
   function showNotifications() {
     const critical = devices.find((device) => device.critical && device.online);
 
@@ -35,23 +48,24 @@ export default function DashboardScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <ScrollView
         contentContainerStyle={[
           styles.container,
           {
             paddingHorizontal: layout.gutter,
-            paddingTop: layout.compact ? 12 : 18,
+            paddingBottom: layout.screenBottom,
+            paddingTop: layout.screenTop,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <View style={styles.topBar}>
-            <Text style={styles.brand}>Smart Home</Text>
+            <Text style={[styles.brand, { color: theme.text }]}>Smart Home</Text>
             <View style={styles.topActions}>
-              <Pressable style={styles.squareButton} onPress={showNotifications}>
-                <Ionicons name="notifications-outline" size={22} color={TEXT} />
+              <Pressable style={[styles.squareButton, { backgroundColor: theme.rowAlt }]} onPress={showNotifications}>
+                <Ionicons name="notifications-outline" size={22} color={theme.text} />
               </Pressable>
               <Pressable style={styles.userCircle} onPress={() => router.push("/profile")}>
                 <Text style={styles.userInitial}>{sessionName.charAt(0).toUpperCase()}</Text>
@@ -69,37 +83,39 @@ export default function DashboardScreen() {
                   style={[styles.tab, active && styles.tabActive]}
                   onPress={() => item === "Hogares" && router.push("/devices")}
                 >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{item}</Text>
+                  <Text style={[styles.tabText, { color: theme.muted }, active && styles.tabTextActive]}>{item}</Text>
                 </Pressable>
               );
             })}
           </ScrollView>
 
-          <View style={styles.toolbar}>
-            <Text numberOfLines={1} style={styles.toolbarTitle}>Mi dashboard</Text>
+          <View style={[styles.toolbar, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text numberOfLines={1} style={[styles.toolbarTitle, { color: theme.text }]}>Mi dashboard</Text>
             <Pressable style={styles.customizeButton} onPress={() => router.push("/reports")}>
-              <Ionicons name="options-outline" size={21} color={TEXT} />
-              <Text style={styles.customizeText}>Personalizar</Text>
+              <Ionicons name="options-outline" size={21} color={theme.text} />
+              <Text style={[styles.customizeText, { color: theme.text }]}>Personalizar</Text>
             </Pressable>
             <Pressable style={styles.blueIconButton} onPress={() => router.push("/devices")}>
               <Ionicons name="add" size={26} color="#FFFFFF" />
             </Pressable>
             <Pressable style={styles.infoButton} onPress={() => Alert.alert("Dashboard", "Agrega hogares favoritos para verlos aquí.")}>
-              <Ionicons name="information-circle" size={24} color={TEXT} />
+              <Ionicons name="information-circle" size={24} color={theme.text} />
             </Pressable>
           </View>
 
-          <View style={styles.energyCard}>
+          {/* Resumen principal: consumo total calculado con dispositivos encendidos. */}
+          <View style={[styles.energyCard, { backgroundColor: theme.card }]}>
             <View>
-              <Text style={styles.energyLabel}>Consumo actual</Text>
-              <Text style={styles.energyValue}>{formatKwh(currentConsumption)}</Text>
+              <Text style={[styles.energyLabel, { color: theme.muted }]}>Consumo actual</Text>
+              <Text style={[styles.energyValue, { color: theme.text }]}>{formatKwh(currentConsumption)}</Text>
             </View>
-            <View style={styles.energyPill}>
-              <Ionicons name="flash" size={18} color={TEXT} />
-              <Text style={styles.energyPillText}>{onlineDevices.length} activos</Text>
+            <View style={[styles.energyPill, { backgroundColor: theme.row }]}>
+              <Ionicons name="flash" size={18} color={theme.text} />
+              <Text style={[styles.energyPillText, { color: theme.text }]}>{onlineDevices.length} activos</Text>
             </View>
           </View>
 
+          {/* Hogares favoritos o primer hogar como acceso rapido. */}
           <View style={styles.widgets}>
             {dashboardHomes.length > 0 ? (
               dashboardHomes.map((home) => {
@@ -111,7 +127,11 @@ export default function DashboardScreen() {
                 return (
                   <Pressable
                     key={home.id}
-                    style={({ pressed }) => [styles.roomCard, pressed && styles.cardPressed]}
+                    style={({ pressed }) => [
+                      styles.roomCard,
+                      { backgroundColor: theme.row },
+                      pressed && styles.cardPressed,
+                    ]}
                     onPress={() => {
                       setActiveHomeId(home.id);
                       router.push("/devices");
@@ -124,19 +144,19 @@ export default function DashboardScreen() {
                       </View>
                     </View>
                     <View style={styles.roomBody}>
-                      <Text numberOfLines={1} style={styles.roomName}>{home.name}</Text>
-                      <View style={styles.wattsPill}>
+                      <Text numberOfLines={1} style={[styles.roomName, { color: theme.text }]}>{home.name}</Text>
+                      <View style={[styles.wattsPill, { backgroundColor: theme.rowAlt }]}>
                         <Ionicons name="flash" size={19} color={BLUE} />
-                        <Text style={styles.wattsText}>{homeConsumption.toFixed(2)} kWh</Text>
+                        <Text style={[styles.wattsText, { color: theme.text }]}>{homeConsumption.toFixed(2)} kWh</Text>
                       </View>
                     </View>
                   </Pressable>
                 );
               })
             ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>Dashboard vacío</Text>
-                <Text style={styles.emptyText}>Agrega un hogar favorito para tener acceso rápido.</Text>
+              <View style={[styles.emptyState, { backgroundColor: theme.card }]}>
+                <Text style={[styles.emptyTitle, { color: theme.text }]}>Dashboard vacío</Text>
+                <Text style={[styles.emptyText, { color: theme.muted }]}>Agrega un hogar favorito para tener acceso rápido.</Text>
                 <Pressable style={styles.addWidgetButton} onPress={() => router.push("/devices")}>
                   <Text style={styles.addWidgetText}>Agregar hogar</Text>
                 </Pressable>

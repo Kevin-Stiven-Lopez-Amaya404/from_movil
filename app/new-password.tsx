@@ -10,13 +10,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const BLUE = "#0864C8";
 const TEXT = "#3F3F3F";
@@ -24,11 +24,21 @@ const TEXT = "#3F3F3F";
 export default function NewPasswordScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+
+  // Email recibido desde la pantalla OTP para saber que usuario debe actualizarse.
   const params = useLocalSearchParams<{ email?: string }>();
+
+  // Estados locales del formulario de nueva contrasena.
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberPassword, setRememberPassword] = useState(false);
 
+  /**
+   * Finaliza la recuperacion de contrasena.
+   *
+   * Valida que la contrasena sea aceptable y luego llama `updateUserPassword`,
+   * que actualiza el usuario en memoria dentro de `auth-store`.
+   */
   function handleFinish() {
     if (!password.trim()) {
       Alert.alert("Contraseña requerida", "Ingresa tu nueva contraseña.");
@@ -66,7 +76,8 @@ export default function NewPasswordScreen() {
             styles.container,
             {
               paddingHorizontal: layout.gutter,
-              paddingTop: layout.compact ? 34 : 78,
+              paddingBottom: layout.safeBottom + 40,
+              paddingTop: layout.safeTop + (layout.compact ? 34 : 78),
             },
           ]}
           keyboardShouldPersistTaps="handled"

@@ -9,7 +9,6 @@ import {
   NativeSyntheticEvent,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,10 +16,16 @@ import {
   TextInputKeyPressEventData,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const CODE_LENGTH = 6;
+
+// Codigo fijo usado para simular la validacion OTP mientras no hay backend.
 const MOCK_CODE = "222222";
 
+/**
+ * Oculta parte del correo para mostrarlo de forma mas segura en pantalla.
+ */
 function maskEmail(email: string) {
   if (!email || !email.includes("@")) {
     return "**********gmail.com";
@@ -33,8 +38,14 @@ function maskEmail(email: string) {
 export default function OtpVerificationScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+
+  // Email recibido desde forgot-password mediante parametros de ruta.
   const params = useLocalSearchParams<{ email?: string }>();
+
+  // Referencias a cada input para mover el foco automaticamente entre casillas.
   const inputRefs = useRef<(TextInput | null)[]>([]);
+
+  // Cada posicion del arreglo representa un digito del codigo OTP.
   const [digits, setDigits] = useState(Array(CODE_LENGTH).fill(""));
 
   const maskedEmail = useMemo(
@@ -45,6 +56,12 @@ export default function OtpVerificationScreen() {
   const codeGap = layout.narrow ? 6 : 9;
   const codeSize = Math.min(48, Math.floor((layout.contentWidth - codeGap * 5) / 6));
 
+  /**
+   * Actualiza una casilla del codigo.
+   *
+   * Solo acepta numeros y conserva el ultimo digito escrito. Si el usuario
+   * escribe un digito valido, avanza automaticamente al siguiente input.
+   */
   function updateDigit(value: string, index: number) {
     const nextValue = value.replace(/\D/g, "").slice(-1);
     const nextDigits = [...digits];
@@ -56,6 +73,12 @@ export default function OtpVerificationScreen() {
     }
   }
 
+  /**
+   * Maneja la tecla borrar.
+   *
+   * Si la casilla actual tiene valor, lo limpia. Si esta vacia, mueve el foco
+   * a la casilla anterior para facilitar la correccion del codigo.
+   */
   function handleKeyPress(
     event: NativeSyntheticEvent<TextInputKeyPressEventData>,
     index: number,
@@ -76,6 +99,12 @@ export default function OtpVerificationScreen() {
     }
   }
 
+  /**
+   * Permite pegar el codigo completo.
+   *
+   * Si el valor pegado contiene mas de un numero, reparte los digitos entre
+   * las seis casillas y enfoca la ultima posicion escrita.
+   */
   function handlePaste(value: string) {
     const cleanValue = value.replace(/\D/g, "").slice(0, CODE_LENGTH);
 
@@ -93,6 +122,10 @@ export default function OtpVerificationScreen() {
     return true;
   }
 
+  /**
+   * Valida el codigo ingresado contra `MOCK_CODE`.
+   * En produccion esta comparacion deberia hacerse contra un backend.
+   */
   function handleVerifyCode() {
     if (code.length !== CODE_LENGTH) {
       Alert.alert("Código incompleto", "Ingresa los 6 dígitos del código.");
@@ -110,6 +143,10 @@ export default function OtpVerificationScreen() {
     });
   }
 
+  /**
+   * Simula el reenvio del codigo.
+   * Limpia los digitos y vuelve a enfocar la primera casilla.
+   */
   function handleResendCode() {
     setDigits(Array(CODE_LENGTH).fill(""));
     inputRefs.current[0]?.focus();
@@ -127,7 +164,8 @@ export default function OtpVerificationScreen() {
             styles.container,
             {
               paddingHorizontal: layout.gutter,
-              paddingTop: layout.compact ? 30 : 70,
+              paddingBottom: layout.safeBottom + 40,
+              paddingTop: layout.safeTop + (layout.compact ? 30 : 70),
             },
           ]}
           keyboardShouldPersistTaps="handled"

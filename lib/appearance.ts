@@ -1,5 +1,11 @@
 import { ColorMode } from "@/lib/smart-home-context";
 
+/**
+ * Paleta especifica para pantallas de autenticacion.
+ *
+ * Se mantiene separada de `app-theme` porque welcome/login/register tienen
+ * una composicion visual distinta al resto de pantallas internas.
+ */
 export function getAuthPalette(mode: ColorMode) {
   const dark = mode === "dark";
 

@@ -1,9 +1,16 @@
 import Svg, { Path } from "react-native-svg";
 
 type Props = {
+  /** Tamano del icono en pixeles. Mantiene ancho y alto iguales. */
   size?: number;
 };
 
+/**
+ * Icono de Google construido con SVG.
+ *
+ * Se usa en el boton "Continuar con Google". Aunque el login real con Google
+ * no esta implementado, centralizar el icono evita depender de imagenes externas.
+ */
 export function GoogleIcon({ size = 24 }: Props) {
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48">

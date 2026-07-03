@@ -10,13 +10,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 const COUNTRIES = [
@@ -31,6 +31,12 @@ const COUNTRIES = [
   "Estados Unidos",
 ];
 
+/**
+ * Flecha del selector de pais.
+ *
+ * Se construye con SVG para no depender de otro icono y poder cambiar su forma
+ * segun el estado abierto/cerrado del desplegable.
+ */
 function DownArrow({ open }: { open: boolean }) {
   return (
     <Svg width={18} height={18} viewBox="0 0 18 18">
@@ -49,11 +55,19 @@ function DownArrow({ open }: { open: boolean }) {
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+
+  // Estados del flujo inicial de recuperacion.
   const [country, setCountry] = useState("");
   const [showCountry, setShowCountry] = useState(false);
   const [email, setEmail] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
 
+  /**
+   * Valida los datos necesarios para solicitar el codigo.
+   *
+   * En esta version no se envia correo real porque no existe backend. Si los
+   * datos son validos, se navega a OTP pasando el email como parametro.
+   */
   function handleSendCode() {
     const cleanEmail = email.trim().toLowerCase();
 
@@ -97,7 +111,8 @@ export default function ForgotPasswordScreen() {
             styles.container,
             {
               paddingHorizontal: layout.gutter,
-              paddingTop: layout.compact ? 30 : 70,
+              paddingBottom: layout.safeBottom + 40,
+              paddingTop: layout.safeTop + (layout.compact ? 30 : 70),
             },
           ]}
           keyboardShouldPersistTaps="handled"

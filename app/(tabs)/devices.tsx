@@ -1,8 +1,10 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { formatCOP } from "@/lib/formatters";
+import { useAppTheme } from "@/lib/app-theme";
 import { useResponsiveLayout } from "@/lib/responsive";
 import { useSmartHome } from "@/lib/smart-home-context";
 
@@ -13,8 +15,11 @@ const GREEN = "#2AAF5D";
 const RED = "#FF3B20";
 const MUTED = "#6B7280";
 
-export default function DevicesScreen() {
+export default function HomesScreen() {
   const layout = useResponsiveLayout();
+  const theme = useAppTheme();
+
+  // Estado global de hogares y dispositivos. Aqui vive la relacion hogar -> dispositivos.
   const {
     activeHomeId,
     addDeviceToHome,
@@ -26,14 +31,27 @@ export default function DevicesScreen() {
     toggleDevice,
     toggleHomeFavorite,
   } = useSmartHome();
+
+  // Estados locales para formularios y seleccion visual dentro de esta pantalla.
   const [homeName, setHomeName] = useState("");
   const [deviceName, setDeviceName] = useState("");
+  const [openedHomeId, setOpenedHomeId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState("");
+
+  // Determina el hogar que se muestra actualmente.
   const selectedHome = homes.find((home) => home.id === activeHomeId) ?? homes[0];
-  const homeDevices = devices.filter((device) => device.homeId === selectedHome?.id);
-  const selectedDevice =
-    homeDevices.find((device) => device.id === selectedId) ?? homeDevices[0];
+  const openedHome = homes.find((home) => home.id === openedHomeId) ?? null;
+  const activeHome = openedHome ?? selectedHome;
+
+  // Filtra dispositivos por homeId. Esta es la regla central: cada dispositivo pertenece a un hogar.
+  const homeDevices = useMemo(
+    () => (activeHome ? devices.filter((device) => device.homeId === activeHome.id) : []),
+    [activeHome, devices],
+  );
+  const selectedDevice = homeDevices.find((device) => device.id === selectedId) ?? homeDevices[0];
   const onlineCount = homeDevices.filter((device) => device.online).length;
+
+  // Calculo simulado de ahorro mensual para mostrar una metrica util al usuario.
   const monthlySavings = useMemo(() => {
     const savedKwh = homeDevices.reduce((total, device) => {
       const saved = Math.max(device.yesterday - (device.online ? device.consumption : 0), 0);
@@ -43,6 +61,18 @@ export default function DevicesScreen() {
     return Math.max(50000, Math.round(savedKwh * 30 * 9500));
   }, [homeDevices]);
 
+  /**
+   * Abre el detalle de un hogar y lo marca como hogar activo global.
+   */
+  function openHome(homeId: string) {
+    setActiveHomeId(homeId);
+    setOpenedHomeId(homeId);
+    setSelectedId("");
+  }
+
+  /**
+   * Crea un hogar despues de validar que el nombre no este vacio.
+   */
   function handleAddHome() {
     const cleanName = homeName.trim();
 
@@ -55,10 +85,16 @@ export default function DevicesScreen() {
     setHomeName("");
   }
 
+  /**
+   * Crea un dispositivo dentro del hogar activo.
+   *
+   * Esta funcion protege la relacion correcta: no permite crear dispositivos
+   * si no hay un hogar seleccionado.
+   */
   function handleAddDevice() {
     const cleanName = deviceName.trim();
 
-    if (!selectedHome) {
+    if (!activeHome) {
       Alert.alert("Hogar requerido", "Primero registra un hogar.");
       return;
     }
@@ -68,41 +104,36 @@ export default function DevicesScreen() {
       return;
     }
 
-    addDeviceToHome(selectedHome.id, cleanName);
+    addDeviceToHome(activeHome.id, cleanName);
     setDeviceName("");
   }
 
+  /**
+   * Apaga todos los dispositivos del hogar actual.
+   */
   function turnOffHome() {
     homeDevices.forEach((device) => setDeviceOnline(device.id, false));
-    Alert.alert("Hogar apagado", `Se apagaron los dispositivos de ${selectedHome?.name ?? "este hogar"}.`);
+    Alert.alert("Hogar apagado", `Se apagaron los dispositivos de ${activeHome?.name ?? "este hogar"}.`);
   }
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          {
-            paddingHorizontal: layout.gutter,
-            paddingTop: layout.compact ? 24 : 40,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-        <View style={styles.savingsCard}>
-          <Text style={styles.savingsTitle}>Hogares</Text>
-          <Text style={[styles.savingsAmount, layout.tiny && styles.savingsAmountTiny]}>
+  /**
+   * Vista de lista de hogares.
+   * Se separa en funcion para no mezclarla con el detalle del hogar.
+   */
+  function renderHomeList() {
+    return (
+      <>
+        <View style={[styles.heroCard, { backgroundColor: theme.card }]}>
+          <Text style={[styles.heroTitle, { color: theme.text }]}>Hogares</Text>
+          <Text style={[styles.heroAmount, layout.tiny && styles.heroAmountTiny]}>
             {homes.length} registrados
           </Text>
-          <Text style={styles.savingsText}>
-            {selectedHome ? `${onlineCount} dispositivos conectados en ${selectedHome.name}` : "Registra tu primer hogar"}
-          </Text>
+          <Text style={[styles.heroText, { color: theme.muted }]}>Selecciona un hogar para ver y registrar sus dispositivos.</Text>
         </View>
 
         <View style={styles.addRow}>
           <TextInput
-            style={styles.addInput}
+            style={[styles.addInput, { backgroundColor: theme.row, borderColor: theme.border, color: theme.text }]}
             placeholder="Nombre del hogar"
             placeholderTextColor={MUTED}
             value={homeName}
@@ -114,27 +145,22 @@ export default function DevicesScreen() {
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Hogares registrados</Text>
-          <Text style={styles.sectionMeta}>{homes.length} items</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Hogares registrados</Text>
+          <Text style={[styles.sectionMeta, { color: theme.muted }]}>{homes.length} items</Text>
         </View>
 
-        <View style={styles.homeList}>
+        <View style={styles.list}>
           {homes.map((home) => {
-            const active = selectedHome?.id === home.id;
             const count = devices.filter((device) => device.homeId === home.id).length;
 
             return (
-              <Pressable
-                key={home.id}
-                style={[styles.homeCard, active && styles.homeCardSelected]}
-                onPress={() => setActiveHomeId(home.id)}
-              >
-                <View style={styles.deviceIcon}>
+              <Pressable key={home.id} style={[styles.homeCard, { backgroundColor: theme.row }]} onPress={() => openHome(home.id)}>
+                <View style={[styles.itemIcon, { backgroundColor: theme.rowAlt }]}>
                   <MaterialCommunityIcons name="home-city-outline" size={31} color={BLUE} />
                 </View>
-                <View style={styles.deviceCopy}>
-                  <Text style={styles.deviceName}>{home.name}</Text>
-                  <Text style={styles.deviceSubtitle}>{count} dispositivos · {home.location}</Text>
+                <View style={styles.itemCopy}>
+                  <Text style={[styles.itemTitle, { color: theme.text }]}>{home.name}</Text>
+                  <Text style={[styles.itemSubtitle, { color: theme.muted }]}>{count} dispositivos · {home.location}</Text>
                 </View>
                 <Pressable
                   accessibilityLabel={home.favorite ? "Quitar de favoritos" : "Agregar a favoritos"}
@@ -147,15 +173,35 @@ export default function DevicesScreen() {
             );
           })}
         </View>
+      </>
+    );
+  }
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Dispositivos de {selectedHome?.name ?? "hogar"}</Text>
-          <Text style={styles.sectionMeta}>{homeDevices.length} items</Text>
+  /**
+   * Vista de detalle de un hogar.
+   * Muestra solo los dispositivos cuyo `homeId` coincide con el hogar activo.
+   */
+  function renderHomeDetail() {
+    if (!activeHome) return null;
+
+    return (
+      <>
+        <Pressable style={styles.backRow} onPress={() => setOpenedHomeId(null)}>
+          <Ionicons name="chevron-back" size={22} color={BLUE} />
+          <Text style={[styles.backText, { color: theme.blue }]}>Hogares</Text>
+        </Pressable>
+
+        <View style={[styles.heroCard, { backgroundColor: theme.card }]}>
+          <Text style={[styles.heroTitle, { color: theme.text }]}>{activeHome.name}</Text>
+          <Text style={[styles.heroAmount, layout.tiny && styles.heroAmountTiny]}>
+            {onlineCount} activos
+          </Text>
+          <Text style={[styles.heroText, { color: theme.muted }]}>{homeDevices.length} dispositivos registrados en este hogar.</Text>
         </View>
 
         <View style={styles.addRow}>
           <TextInput
-            style={styles.addInput}
+            style={[styles.addInput, { backgroundColor: theme.row, borderColor: theme.border, color: theme.text }]}
             placeholder="Nombre del dispositivo"
             placeholderTextColor={MUTED}
             value={deviceName}
@@ -166,26 +212,28 @@ export default function DevicesScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.deviceList}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Dispositivos de {activeHome.name}</Text>
+          <Text style={[styles.sectionMeta, { color: theme.muted }]}>{homeDevices.length} items</Text>
+        </View>
+
+        <View style={styles.list}>
           {homeDevices.map((device) => (
             <Pressable
               key={device.id}
               style={[
                 styles.deviceCard,
-                selectedDevice?.id === device.id && styles.deviceCardSelected,
+                { backgroundColor: theme.row },
+                selectedDevice?.id === device.id && styles.selectedCard,
               ]}
               onPress={() => setSelectedId(device.id)}
             >
-              <View style={[styles.deviceIcon, !device.online && styles.deviceIconOff]}>
-                <MaterialCommunityIcons
-                  name={device.icon as never}
-                  size={35}
-                  color={device.online ? BLUE : MUTED}
-                />
+              <View style={[styles.itemIcon, { backgroundColor: theme.rowAlt }, !device.online && styles.itemIconOff]}>
+                <MaterialCommunityIcons name={device.icon as never} size={35} color={device.online ? BLUE : MUTED} />
               </View>
-              <View style={styles.deviceCopy}>
-                <Text style={styles.deviceName}>{device.name}</Text>
-                <Text style={styles.deviceSubtitle}>
+              <View style={styles.itemCopy}>
+                <Text style={[styles.itemTitle, { color: theme.text }]}>{device.name}</Text>
+                <Text style={[styles.itemSubtitle, { color: theme.muted }]}>
                   {device.room} · {device.online ? `${device.consumption.toFixed(2)} kWh` : "Apagado"}
                 </Text>
               </View>
@@ -199,36 +247,36 @@ export default function DevicesScreen() {
           ))}
 
           {!homeDevices.length && (
-            <View style={styles.emptyCard}>
+            <View style={[styles.emptyCard, { backgroundColor: theme.card }]}>
               <MaterialCommunityIcons name="power-plug-outline" size={32} color={BLUE} />
-              <Text style={styles.emptyText}>Este hogar todavía no tiene dispositivos.</Text>
+              <Text style={[styles.emptyText, { color: theme.muted }]}>Este hogar todavía no tiene dispositivos.</Text>
             </View>
           )}
         </View>
 
         {selectedDevice && (
-          <View style={styles.detailCard}>
+          <View style={[styles.detailCard, { backgroundColor: theme.card }]}>
             <View style={styles.detailTop}>
-              <Text style={styles.detailTitle}>{selectedDevice.name}</Text>
+              <Text style={[styles.detailTitle, { color: theme.text }]}>{selectedDevice.name}</Text>
               <Text style={[styles.statusPill, selectedDevice.online ? styles.statusOn : styles.statusOff]}>
                 {selectedDevice.online ? "Encendido" : "Apagado"}
               </Text>
             </View>
             <View style={styles.metricRow}>
               <View style={styles.metric}>
-                <Text style={styles.metricValue}>{selectedDevice.consumption.toFixed(2)}</Text>
-                <Text style={styles.metricLabel}>kWh hoy</Text>
+                <Text style={[styles.metricValue, { color: theme.text }]}>{selectedDevice.consumption.toFixed(2)}</Text>
+                <Text style={[styles.metricLabel, { color: theme.muted }]}>kWh hoy</Text>
               </View>
               <View style={styles.metric}>
-                <Text style={styles.metricValue}>{selectedDevice.yesterday.toFixed(2)}</Text>
-                <Text style={styles.metricLabel}>kWh ayer</Text>
+                <Text style={[styles.metricValue, { color: theme.text }]}>{selectedDevice.yesterday.toFixed(2)}</Text>
+                <Text style={[styles.metricLabel, { color: theme.muted }]}>kWh ayer</Text>
               </View>
               <View style={styles.metric}>
-                <Text style={styles.metricValue}>{selectedDevice.room}</Text>
-                <Text style={styles.metricLabel}>Ubicacion</Text>
+                <Text style={[styles.metricValue, { color: theme.text }]}>{selectedDevice.room}</Text>
+                <Text style={styles.metricLabel}>Ubicación</Text>
               </View>
             </View>
-            <Text style={styles.savingsInline}>Ahorro estimado: {formatCOP(monthlySavings)} / mes</Text>
+            <Text style={[styles.savingsInline, { color: theme.blue }]}>Ahorro estimado: {formatCOP(monthlySavings)} / mes</Text>
             <Pressable
               style={({ pressed }) => [
                 styles.primaryButton,
@@ -237,26 +285,36 @@ export default function DevicesScreen() {
               ]}
               onPress={() => toggleDevice(selectedDevice.id)}
             >
-              <Ionicons
-                name={selectedDevice.online ? "power-outline" : "flash-outline"}
-                size={22}
-                color="#FFFFFF"
-              />
-              <Text style={styles.primaryButtonText}>
-                {selectedDevice.online ? "Apagar" : "Encender"}
-              </Text>
+              <Ionicons name={selectedDevice.online ? "power-outline" : "flash-outline"} size={22} color="#FFFFFF" />
+              <Text style={styles.primaryButtonText}>{selectedDevice.online ? "Apagar" : "Encender"}</Text>
             </Pressable>
           </View>
         )}
 
         {!!homeDevices.length && (
-          <Pressable
-            style={({ pressed }) => [styles.offButton, pressed && styles.offButtonPressed]}
-            onPress={turnOffHome}
-          >
+          <Pressable style={({ pressed }) => [styles.offButton, pressed && styles.offButtonPressed]} onPress={turnOffHome}>
             <Text style={styles.offButtonText}>Apagar hogar</Text>
           </Pressable>
         )}
+      </>
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          {
+            paddingHorizontal: layout.gutter,
+            paddingBottom: layout.screenBottom,
+            paddingTop: layout.screenTop,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
+          {openedHome ? renderHomeDetail() : renderHomeList()}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -278,7 +336,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
   },
-  savingsCard: {
+  heroCard: {
     backgroundColor: BLUE,
     borderRadius: 16,
     paddingHorizontal: 18,
@@ -290,13 +348,13 @@ const styles = StyleSheet.create({
     elevation: 8,
     width: "100%",
   },
-  savingsTitle: {
+  heroTitle: {
     color: "#FFFFFF",
     fontFamily: appFont,
     fontSize: 17,
     fontWeight: "800",
   },
-  savingsAmount: {
+  heroAmount: {
     color: "#FFFFFF",
     fontFamily: appFont,
     fontSize: 28,
@@ -304,15 +362,28 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     marginTop: 13,
   },
-  savingsAmountTiny: {
+  heroAmountTiny: {
     fontSize: 24,
   },
-  savingsText: {
+  heroText: {
     color: "#FFFFFF",
     fontFamily: appFont,
     fontSize: 16,
     fontWeight: "800",
     marginTop: 20,
+  },
+  backRow: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    gap: 4,
+    marginBottom: 14,
+  },
+  backText: {
+    color: BLUE,
+    fontFamily: appFont,
+    fontSize: 16,
+    fontWeight: "800",
   },
   addRow: {
     alignItems: "center",
@@ -361,7 +432,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
-  homeList: {
+  list: {
     alignSelf: "stretch",
     gap: 12,
     marginTop: 13,
@@ -373,21 +444,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     minHeight: 74,
     paddingHorizontal: 14,
-  },
-  homeCardSelected: {
-    borderColor: BLUE,
-    borderWidth: 1.5,
-  },
-  favoriteButton: {
-    alignItems: "center",
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-  },
-  deviceList: {
-    alignSelf: "stretch",
-    gap: 12,
-    marginTop: 13,
   },
   deviceCard: {
     alignItems: "center",
@@ -402,11 +458,11 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
-  deviceCardSelected: {
+  selectedCard: {
     borderColor: BLUE,
     borderWidth: 1.5,
   },
-  deviceIcon: {
+  itemIcon: {
     alignItems: "center",
     backgroundColor: "#EEF4FF",
     borderRadius: 24,
@@ -414,26 +470,32 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 48,
   },
-  deviceIconOff: {
+  itemIconOff: {
     backgroundColor: "#ECEFF5",
   },
-  deviceCopy: {
+  itemCopy: {
     flex: 1,
     marginLeft: 14,
     minWidth: 0,
   },
-  deviceName: {
+  itemTitle: {
     color: TEXT,
     fontFamily: appFont,
     fontSize: 17,
     fontWeight: "800",
   },
-  deviceSubtitle: {
+  itemSubtitle: {
     color: MUTED,
     fontFamily: appFont,
     fontSize: 13,
     fontWeight: "700",
     marginTop: 4,
+  },
+  favoriteButton: {
+    alignItems: "center",
+    height: 42,
+    justifyContent: "center",
+    width: 42,
   },
   emptyCard: {
     alignItems: "center",

@@ -1,30 +1,78 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useAppTheme } from "@/lib/app-theme";
+import { useTranslation } from "@/lib/i18n";
 import { useResponsiveLayout } from "@/lib/responsive";
+import { ColorMode, useSmartHome } from "@/lib/smart-home-context";
 
-const BLUE = "#0864C8";
-const DARK = "#FFFFFF";
-const CARD = "#F4F6FF";
-const ROW = "#FFFFFF";
-const TEXT = "#454545";
-const MUTED = "#6B7280";
+const RED = "#FF3B20";
 
-const settingsTabs = ["Usuario", "Hogar", "App", "Suscripción", "Integraciones"] as const;
+const voiceIntegrations = [
+  {
+    descriptionKey: "settings.voiceAssistantDescription",
+    icon: "mic-outline",
+    titleKey: "settings.voiceAssistant",
+  },
+  {
+    descriptionKey: "settings.voiceAlexaDescription",
+    icon: "logo-amazon",
+    titleKey: "Amazon Alexa",
+  },
+] as const;
 
+/**
+ * Pantalla de configuracion.
+ *
+ * Agrupa ajustes globales de cuenta, tema e integraciones. No maneja estado
+ * local porque sus acciones afectan al contexto global de la aplicacion.
+ */
 export default function SettingsScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+  const theme = useAppTheme();
+  const { t } = useTranslation();
+
+  // Valores y acciones globales usados por configuracion.
+  const { colorMode, deactivateAccount, sessionName, setColorMode } = useSmartHome();
+
+  /**
+   * Informa que una integracion esta preparada visualmente, pero aun no
+   * conectada a backend/servicio externo.
+   */
+  function showPending(title: string) {
+    Alert.alert(title, t("settings.pendingBody"));
+  }
+
+  /**
+   * Confirma y ejecuta la desactivacion de cuenta.
+   * Luego devuelve al usuario a bienvenida.
+   */
+  function confirmDeactivation() {
+    Alert.alert(t("profile.deactivateAccount"), t("profile.deactivatePrompt"), [
+      { text: t("action.cancel"), style: "cancel" },
+      {
+        text: t("action.deactivate"),
+        style: "destructive",
+        onPress: () => {
+          deactivateAccount();
+          router.replace("/welcome");
+        },
+      },
+    ]);
+  }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <ScrollView
         contentContainerStyle={[
           styles.container,
           {
             paddingHorizontal: layout.gutter,
-            paddingTop: layout.compact ? 12 : 16,
+            paddingBottom: layout.screenBottom,
+            paddingTop: layout.screenTop,
           },
         ]}
         showsVerticalScrollIndicator={false}
@@ -34,81 +82,109 @@ export default function SettingsScreen() {
             onPress={() => router.back()}
             style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.6 }]}
           >
-            <Ionicons name="chevron-back" size={22} color={BLUE} />
-            <Text style={styles.backText}>Perfil</Text>
+            <Ionicons name="chevron-back" size={22} color={theme.blue} />
+            <Text style={[styles.backText, { color: theme.blue }]}>{t("action.back")}</Text>
           </Pressable>
 
-          <View style={styles.topBar}>
-            <Text style={styles.brand}>Smart Home</Text>
-            <View style={styles.userCircle}>
-              <Text style={styles.userInitial}>K</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{t("settings.title")}</Text>
+          <Text style={[styles.subtitle, { color: theme.muted }]}>{t("settings.subtitle")}</Text>
+
+          <View style={[styles.card, { backgroundColor: theme.card }]}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="person-circle-outline" size={28} color={theme.blue} />
+              <View style={styles.sectionCopy}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>{t("settings.account")}</Text>
+                <Text style={[styles.sectionDescription, { color: theme.muted }]}>{sessionName}@smarthome.com</Text>
+              </View>
+            </View>
+            <Pressable
+              style={[styles.row, { backgroundColor: theme.row, borderColor: theme.border }]}
+              onPress={() => router.push("/profile")}
+            >
+              <Ionicons name="create-outline" size={22} color={theme.blue} />
+              <Text style={[styles.rowText, { color: theme.text }]}>{t("profile.editInfo")}</Text>
+            </Pressable>
+          </View>
+
+          <View style={[styles.card, { backgroundColor: theme.card }]}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="contrast-outline" size={26} color={theme.blue} />
+              <View style={styles.sectionCopy}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>{t("settings.appearance")}</Text>
+                <Text style={[styles.sectionDescription, { color: theme.muted }]}>
+                  {t("settings.appearanceDescription")}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.themeRow}>
+              {(["light", "dark"] as ColorMode[]).map((mode) => {
+                const active = colorMode === mode;
+
+                return (
+                  <Pressable
+                    key={mode}
+                    style={[
+                      styles.themeButton,
+                      { backgroundColor: theme.row, borderColor: theme.border },
+                      active && { backgroundColor: theme.blue, borderColor: theme.blue },
+                    ]}
+                    onPress={() => setColorMode(mode)}
+                  >
+                    <Ionicons
+                      name={mode === "light" ? "sunny-outline" : "moon-outline"}
+                      size={19}
+                      color={active ? "#FFFFFF" : theme.blue}
+                    />
+                    <Text style={[styles.themeText, { color: active ? "#FFFFFF" : theme.blue }]}>
+                      {mode === "light" ? t("settings.light") : t("settings.dark")}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
 
-          <ScrollView horizontal contentContainerStyle={styles.tabs} showsHorizontalScrollIndicator={false}>
-            {settingsTabs.map((item) => {
-              const active = item === "App";
+          <View style={[styles.card, { backgroundColor: theme.card }]}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="mic-circle-outline" size={28} color={theme.blue} />
+              <View style={styles.sectionCopy}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>{t("settings.voiceIntegrations")}</Text>
+                <Text style={[styles.sectionDescription, { color: theme.muted }]}>{t("settings.voiceDescription")}</Text>
+              </View>
+            </View>
+            {voiceIntegrations.map((item) => {
+              const title = item.titleKey === "Amazon Alexa" ? item.titleKey : t(item.titleKey);
 
               return (
-                <Pressable key={item} style={[styles.tab, active && styles.tabActive]}>
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{item}</Text>
+                <Pressable
+                  key={item.titleKey}
+                  style={[styles.row, { backgroundColor: theme.row, borderColor: theme.border }]}
+                  onPress={() => showPending(title)}
+                >
+                  <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={22} color={theme.blue} />
+                  <View style={styles.rowCopy}>
+                    <Text style={[styles.rowText, { color: theme.text }]}>{title}</Text>
+                    <Text style={[styles.rowDescription, { color: theme.muted }]}>{t(item.descriptionKey)}</Text>
+                  </View>
                 </Pressable>
               );
             })}
-          </ScrollView>
+          </View>
 
-          <View style={styles.versionCard}>
-            <View>
-              <Text style={styles.sectionTitle}>Versión de la app</Text>
-              <Text style={styles.versionNumber}>1.0.0</Text>
+          <View style={[styles.card, styles.dangerCard, { backgroundColor: theme.dangerSoft }]}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="person-remove-outline" size={26} color={RED} />
+              <View style={styles.sectionCopy}>
+                <Text style={[styles.sectionTitle, styles.dangerTitle]}>{t("profile.deactivateAccount")}</Text>
+                <Text style={[styles.sectionDescription, { color: theme.muted }]}>
+                  {t("settings.deactivateDescription")}
+                </Text>
+              </View>
             </View>
-            <Pressable style={styles.storeButton} onPress={() => Alert.alert("Tienda", "La versión publicada se conectará aquí.")}>
-              <Ionicons name="open-outline" size={20} color={TEXT} />
-              <Text style={styles.storeText}>Ir a tienda</Text>
+            <Pressable style={styles.dangerButton} onPress={confirmDeactivation}>
+              <Ionicons name="person-remove-outline" size={19} color={RED} />
+              <Text style={styles.dangerButtonText}>{t("profile.deactivateAccount")}</Text>
             </Pressable>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Conectividad</Text>
-            <Pressable style={styles.row} onPress={() => Alert.alert("Control local WiFi", "Listo para conectar con dispositivos en la red local.")}>
-              <Ionicons name="chevron-forward" size={24} color={TEXT} />
-              <Text style={styles.rowText}>Control local WiFi</Text>
-            </Pressable>
-            <Pressable style={styles.row} onPress={() => Alert.alert("Búsqueda en segundo plano", "Listo para detectar dispositivos nuevos.")}>
-              <Ionicons name="chevron-forward" size={24} color={TEXT} />
-              <Text style={styles.rowText}>Búsqueda en segundo plano</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Dispositivos del sistema</Text>
-            <Pressable style={styles.primaryButton} onPress={() => Alert.alert("Editar", "Apartado preparado para configurar dispositivos del sistema.")}>
-              <Text style={styles.primaryButtonText}>Editar</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Integraciones disponibles</Text>
-            {[
-              { icon: "logo-amazon", name: "Amazon Alexa", detail: "Control por comandos de voz", status: "No conectado" },
-              { icon: "flash-outline", name: "Cury", detail: "Control de dispositivos Cury", status: "Nuevo" },
-              { icon: "infinite-outline", name: "Zendure", detail: "Monitoreo solar y consumo", status: "Alpha" },
-            ].map((item) => (
-              <Pressable
-                key={item.name}
-                style={styles.integrationRow}
-                onPress={() => Alert.alert(item.name, "La configuración quedará conectada al backend.")}
-              >
-                <View style={styles.integrationIcon}>
-                  <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={25} color={BLUE} />
-                </View>
-                <View style={styles.integrationCopy}>
-                  <Text style={styles.integrationName}>{item.name}</Text>
-                  <Text style={styles.integrationDetail}>{item.detail}</Text>
-                </View>
-                <Text style={styles.integrationStatus}>{item.status}</Text>
-              </Pressable>
-            ))}
           </View>
         </View>
       </ScrollView>
@@ -121,7 +197,6 @@ const appFont = "sans-serif-medium";
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: DARK,
   },
   container: {
     alignItems: "center",
@@ -135,180 +210,119 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 4,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   backText: {
-    color: BLUE,
     fontFamily: appFont,
     fontSize: 16,
     fontWeight: "800",
   },
-  topBar: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  brand: {
-    color: TEXT,
+  title: {
     fontFamily: appFont,
-    fontSize: 30,
-    fontStyle: "italic",
+    fontSize: 26,
     fontWeight: "900",
   },
-  userCircle: {
-    alignItems: "center",
-    backgroundColor: "#74D87C",
-    borderRadius: 23,
-    height: 46,
-    justifyContent: "center",
-    width: 46,
-  },
-  userInitial: {
-    color: "#102314",
-    fontFamily: appFont,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  tabs: {
-    gap: 8,
-    paddingTop: 30,
-  },
-  tab: {
-    borderBottomColor: BLUE,
-    borderBottomWidth: 1,
-    minHeight: 48,
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  tabActive: {
-    borderColor: BLUE,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    borderWidth: 1.5,
-    borderBottomWidth: 1,
-  },
-  tabText: {
-    color: MUTED,
-    fontFamily: appFont,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  tabTextActive: {
-    color: TEXT,
-    fontWeight: "900",
-  },
-  versionCard: {
-    alignItems: "center",
-    backgroundColor: CARD,
-    borderRadius: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 30,
-    padding: 16,
-  },
-  sectionTitle: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 19,
-    fontWeight: "900",
-  },
-  versionNumber: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 20,
-    fontWeight: "700",
-    marginTop: 14,
-  },
-  storeButton: {
-    alignItems: "center",
-    borderColor: BLUE,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    flexDirection: "row",
-    gap: 8,
-    minHeight: 42,
-    paddingHorizontal: 12,
-  },
-  storeText: {
-    color: TEXT,
+  subtitle: {
     fontFamily: appFont,
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "700",
+    marginTop: 4,
   },
   card: {
-    backgroundColor: CARD,
     borderRadius: 16,
-    gap: 12,
-    marginTop: 16,
+    gap: 14,
+    marginTop: 18,
     padding: 16,
   },
-  row: {
+  dangerCard: {
+    borderColor: "#FFD1CB",
+    borderWidth: 1,
+  },
+  sectionHeader: {
     alignItems: "center",
-    backgroundColor: ROW,
-    borderRadius: 12,
     flexDirection: "row",
-    minHeight: 50,
-    paddingHorizontal: 12,
+    gap: 10,
   },
-  rowText: {
-    color: TEXT,
+  sectionCopy: {
     flex: 1,
-    fontFamily: appFont,
-    fontSize: 17,
-    fontWeight: "700",
-    marginLeft: 8,
-  },
-  primaryButton: {
-    alignItems: "center",
-    backgroundColor: BLUE,
-    borderRadius: 12,
-    height: 50,
-    justifyContent: "center",
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontFamily: appFont,
-    fontSize: 17,
-    fontWeight: "900",
-  },
-  integrationRow: {
-    alignItems: "center",
-    backgroundColor: ROW,
-    borderRadius: 14,
-    flexDirection: "row",
-    minHeight: 78,
-    paddingHorizontal: 12,
-  },
-  integrationIcon: {
-    width: 48,
-    height: 48,
-    alignItems: "center",
-    backgroundColor: "#EEF4FF",
-    borderRadius: 24,
-    justifyContent: "center",
-  },
-  integrationCopy: {
-    flex: 1,
-    marginLeft: 12,
     minWidth: 0,
   },
-  integrationName: {
-    color: TEXT,
+  sectionTitle: {
     fontFamily: appFont,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "900",
   },
-  integrationDetail: {
-    color: MUTED,
+  dangerTitle: {
+    color: RED,
+  },
+  sectionDescription: {
     fontFamily: appFont,
     fontSize: 12,
     fontWeight: "700",
+    lineHeight: 16,
     marginTop: 3,
   },
-  integrationStatus: {
-    color: BLUE,
+  row: {
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    minHeight: 52,
+    paddingHorizontal: 12,
+  },
+  rowCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  rowText: {
+    flex: 1,
     fontFamily: appFont,
-    fontSize: 11,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  rowDescription: {
+    fontFamily: appFont,
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 16,
+    marginTop: 3,
+  },
+  themeRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  themeButton: {
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    minHeight: 46,
+  },
+  themeText: {
+    fontFamily: appFont,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  dangerButton: {
+    alignItems: "center",
+    alignSelf: "stretch",
+    backgroundColor: "#FFF1EF",
+    borderColor: "#FFD1CB",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    minHeight: 46,
+  },
+  dangerButtonText: {
+    color: RED,
+    fontFamily: appFont,
+    fontSize: 15,
     fontWeight: "900",
   },
 });
