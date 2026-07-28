@@ -1,11 +1,21 @@
+/**
+ * Pantalla de reportes de consumo.
+ *
+ * Simula analisis de energia por periodos y categorias, mostrando tendencias
+ * y una grafica basada en datos predefinidos dentro del contexto global.
+ */
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useAppTheme } from "@/lib/app-theme";
-import { useResponsiveLayout } from "@/lib/responsive";
-import { DeviceCategory, ReportRange, useSmartHome } from "@/lib/smart-home-context";
+import { type FilterItem } from "@/components/ui/FilterChip";
+import { HorizontalFilterTabs } from "@/components/ui/HorizontalFilterTabs";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { DeviceCategory, ReportRange, useSmartHome } from "@/lib/context/smart-home-context";
+import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { useAppTheme } from "@/lib/theme/app-theme";
+import { typography } from "@/lib/theme/typography";
 
 const BLUE = "#0864C8";
 const LILAC = "#DDDDFB";
@@ -31,8 +41,13 @@ export default function ReportsScreen() {
   const [activeRange, setActiveRange] = useState<ReportRange>("Semana");
   const [activeFilter, setActiveFilter] = useState<"Todos" | DeviceCategory>("Todos");
   const points = reportData[activeRange];
+  const viewItems: FilterItem<ReportView>[] = reportViews.map((label) => ({ label, value: label }));
+  const rangeItems: FilterItem<ReportRange>[] = ranges.map((label) => ({ label, value: label }));
+  const filterItems: FilterItem<"Todos" | DeviceCategory>[] = filters.map((label) => ({ label, value: label }));
 
   // Ajusta los datos del reporte segun la categoria seleccionada.
+  // Esto permite que la grafica muestre comparativas relativas entre tipos de
+  // consumo sin cambiar los valores originales del reporte base.
   const multiplier = useMemo(() => {
     if (activeFilter === "Todos") return 1;
 
@@ -51,6 +66,7 @@ export default function ReportsScreen() {
   }));
 
   // Valores derivados para resumen, grafica y tendencia.
+  // `maxValue` se usa para escalar las barras y evitar divisiones por cero.
   const maxValue = Math.max(...filteredPoints.map((point) => point.value), 1);
   const total = filteredPoints.reduce((sum, point) => sum + point.value, 0);
   const previous = total * 0.87;
@@ -59,6 +75,8 @@ export default function ReportsScreen() {
   const realTimeConsumption = devices
     .filter((device) => device.online)
     .reduce((sum, device) => sum + device.consumption, 0);
+
+  // Datos de consumo agregados por tipo de dispositivo, mostrados en el resumen.
   const applianceTypes = filters
     .filter((item): item is DeviceCategory => item !== "Todos")
     .map((category) => ({
@@ -101,25 +119,16 @@ export default function ReportsScreen() {
           </Pressable>
         </View>
 
-        <ScrollView
-          horizontal
-          contentContainerStyle={styles.viewTabs}
-          showsHorizontalScrollIndicator={false}
-        >
-          {reportViews.map((item) => {
-            const active = activeView === item;
-
-            return (
-              <Pressable
-                key={item}
-                style={[styles.viewTab, active && styles.viewTabActive]}
-                onPress={() => setActiveView(item)}
-              >
-                <Text style={[styles.viewTabText, { color: theme.muted }, active && styles.viewTabTextActive]}>{item}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <View style={styles.sectionGroup}>
+          <Text style={[styles.sectionLabel, { color: theme.muted }]}>Navegación</Text>
+          <SegmentedControl
+            items={viewItems}
+            selectedValue={activeView}
+            onValueChange={setActiveView}
+            scrollable={false}
+            containerStyle={styles.controlContainer}
+          />
+        </View>
 
         {activeView === "Tiempo real" && (
           <>
@@ -182,7 +191,28 @@ export default function ReportsScreen() {
 
         {activeView !== "Tarifa" && activeView !== "Tiempo real" && (
           <>
-        <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
+            <View style={styles.sectionGroup}>
+              <Text style={[styles.sectionLabel, { color: theme.muted }]}>Período</Text>
+              <SegmentedControl
+                items={rangeItems}
+                selectedValue={activeRange}
+                onValueChange={setActiveRange}
+                scrollable={false}
+                containerStyle={styles.controlContainer}
+              />
+            </View>
+
+            <View style={styles.sectionGroup}>
+              <Text style={[styles.sectionLabel, { color: theme.muted }]}>Categoría</Text>
+              <HorizontalFilterTabs
+                items={filterItems}
+                selectedValue={activeFilter}
+                onValueChange={setActiveFilter}
+                containerStyle={styles.controlContainer}
+              />
+            </View>
+
+            <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
           <View style={styles.summaryTop}>
             <Text style={[styles.summaryValue, { color: theme.text }]}>{total.toFixed(1)} kWh</Text>
             <Text style={[styles.summaryTrend, trend > 0 ? styles.trendDanger : styles.trendGood]}>
@@ -192,54 +222,7 @@ export default function ReportsScreen() {
           <Text style={[styles.summaryPeriod, { color: theme.muted }]}>{activeRange} · {activeFilter}</Text>
         </View>
 
-        <View style={styles.rangeTabs}>
-          {ranges.map((item) => {
-            const active = activeRange === item;
 
-            return (
-              <Pressable
-                key={item}
-                style={[styles.rangeTab, active && styles.rangeTabActive]}
-                onPress={() => setActiveRange(item)}
-              >
-                <Text style={[styles.rangeText, { color: theme.text }, active && styles.rangeTextActive]}>{item}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <ScrollView
-          horizontal
-          contentContainerStyle={styles.filterRow}
-          showsHorizontalScrollIndicator={false}
-        >
-          {filters.map((item) => {
-            const active = activeFilter === item;
-
-            return (
-              <Pressable
-                key={item}
-                style={[styles.filterChip, active && styles.filterChipActive]}
-                onPress={() => setActiveFilter(item)}
-              >
-                <Text style={[styles.filterText, { color: theme.text }, active && styles.filterTextActive]}>
-                  {item}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        <Text style={[styles.chartTitle, { color: theme.text }]}>Consumo de energía (kWh)</Text>
-
-        <View style={[styles.chartBlock, { backgroundColor: theme.card }]}>
-          <View style={styles.yAxis}>
-            {[maxValue, maxValue * 0.75, maxValue * 0.5, maxValue * 0.25, 0].map((label, index) => (
-              <Text key={`${label}-${index}`} style={[styles.yLabel, { color: theme.muted }]}>
-                {label.toFixed(label >= 10 ? 0 : 1)}
-              </Text>
-            ))}
-          </View>
           <View style={styles.chartArea}>
             {[0, 40, 80, 120].map((top) => (
               <View key={top} style={[styles.gridLine, { top }]} />
@@ -275,7 +258,6 @@ export default function ReportsScreen() {
               })}
             </View>
           </View>
-        </View>
 
         <View style={[styles.insightCard, { backgroundColor: theme.card }]}>
           <Ionicons name="bulb-outline" size={26} color={BLUE} />
@@ -290,15 +272,15 @@ export default function ReportsScreen() {
           <Ionicons name="download-outline" size={21} color={BLUE} />
           <Text style={styles.downloadText}>Descargar reporte</Text>
         </Pressable>
-          </>
-        )}
+      </>
+    )}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const appFont = "sans-serif-medium";
+const appFont = typography.fontFamily.emphasis;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -332,29 +314,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 40,
   },
-  viewTabs: {
-    gap: 8,
-    paddingTop: 21,
+  sectionGroup: {
+    marginTop: 22,
   },
-  viewTab: {
-    alignItems: "center",
-    backgroundColor: LILAC,
-    borderRadius: 9,
-    minHeight: 36,
-    justifyContent: "center",
-    paddingHorizontal: 13,
-  },
-  viewTabActive: {
-    backgroundColor: BLUE,
-  },
-  viewTabText: {
-    color: TEXT,
+  sectionLabel: {
     fontFamily: appFont,
-    fontSize: 14,
-    fontWeight: "800",
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
-  viewTabTextActive: {
-    color: "#FFFFFF",
+  controlContainer: {
+    width: "100%",
   },
   realTimeCard: {
     backgroundColor: LILAC,
@@ -554,86 +526,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginTop: 5,
     textAlign: "center",
-  },
-  rangeTabs: {
-    flexDirection: "row",
-    gap: 1,
-    marginTop: 21,
-    paddingHorizontal: 0,
-    width: "100%",
-  },
-  rangeTab: {
-    alignItems: "center",
-    backgroundColor: LILAC,
-    borderRadius: 6,
-    flex: 1,
-    height: 32,
-    justifyContent: "center",
-  },
-  rangeTabActive: {
-    backgroundColor: BLUE,
-  },
-  rangeText: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  rangeTextActive: {
-    color: "#FFFFFF",
-  },
-  filterRow: {
-    gap: 10,
-    paddingHorizontal: 0,
-    paddingTop: 28,
-  },
-  filterChip: {
-    alignItems: "center",
-    backgroundColor: LILAC,
-    borderRadius: 8,
-    height: 30,
-    justifyContent: "center",
-    paddingHorizontal: 13,
-  },
-  filterChipActive: {
-    backgroundColor: BLUE,
-    minWidth: 76,
-  },
-  filterText: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  filterTextActive: {
-    color: "#FFFFFF",
-  },
-  chartTitle: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 17,
-    fontWeight: "800",
-    marginTop: 25,
-    textAlign: "center",
-  },
-  chartBlock: {
-    flexDirection: "row",
-    marginTop: 39,
-    paddingLeft: 0,
-    paddingRight: 0,
-    width: "100%",
-  },
-  yAxis: {
-    height: 166,
-    justifyContent: "space-between",
-    paddingBottom: 2,
-    width: 32,
-  },
-  yLabel: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "800",
   },
   chartArea: {
     flex: 1,

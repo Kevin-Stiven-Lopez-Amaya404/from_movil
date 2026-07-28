@@ -51,7 +51,7 @@ Estos hooks permiten que el tabbar sea dinámico:
 Cada `Tabs.Screen` representa una pestaña. Por ejemplo:
 
 - `index`: Dashboard.
-- `devices`: Hogares.
+- `homes`: Hogares.
 - `reports`: Reportes.
 - `profile`: Perfil.
 - `settings`: oculta con `href: null`.
@@ -133,7 +133,7 @@ Si hay favoritos, los muestra. Si no hay, muestra el primer hogar.
 |---|---|
 | `showNotifications` | Busca un dispositivo crítico y muestra alerta. |
 | `router.push("/profile")` | Abre perfil. |
-| `router.push("/devices")` | Abre hogares. |
+| `router.push("/(tabs)/homes")` | Abre hogares. |
 | `router.push("/reports")` | Abre reportes. |
 
 ### Variables importantes
@@ -169,7 +169,7 @@ No usa estados locales. La pantalla muestra datos derivados del contexto. Esto e
 
 ---
 
-## `app/(tabs)/devices.tsx`
+## `app/(tabs)/homes.tsx`
 
 ### Nombre de la pantalla
 
@@ -585,4 +585,3 @@ La pantalla depende de:
 ### Cómo explicarlo en examen
 
 > Configuración permite cambiar valores globales de la app, especialmente el tema claro u oscuro. No usa estado local porque esas opciones afectan a toda la aplicación. También muestra integraciones preparadas y permite desactivar la cuenta con confirmación.
-

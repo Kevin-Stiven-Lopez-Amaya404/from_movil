@@ -1,22 +1,28 @@
-import { CheckIcon } from "@/components/icons/CheckIcon";
-import { BackButton } from "@/components/navigation/BackButton";
+import { AuthCheckboxRow } from "@/components/auth/AuthCheckboxRow";
+import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
+import { AuthTextField } from "@/components/auth/AuthTextField";
+import { PrimaryButton } from "@/components/auth/PrimaryButton";
+import { BackButton } from "@/components/common/BackButton";
 import { theme } from "@/constants/theme";
-import { useResponsiveLayout } from "@/lib/responsive";
-import { isValidEmail } from "@/lib/validators";
+import { typography } from "@/lib/theme/typography";
+import { isValidEmail } from "@/lib/utils/validators";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    Pressable,
+    StyleSheet,
+    Text,
+    View
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
+/**
+ * Pantalla de solicitud de código.
+ *
+ * Esta pantalla recopila país, correo y aceptación de términos para simular
+ * el envío de un código de verificación. El flujo es de una app de ejemplo
+ * sin backend real.
+ */
 import Svg, { Path } from "react-native-svg";
 
 const COUNTRIES = [
@@ -54,7 +60,6 @@ function DownArrow({ open }: { open: boolean }) {
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
 
   // Estados del flujo inicial de recuperacion.
   const [country, setCountry] = useState("");
@@ -101,123 +106,89 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+    <AuthScreenLayout contentStyle={styles.content} title="Smart Home">
+      <BackButton fallbackHref="/login" />
+
+      <Pressable
+        style={styles.sectionLink}
+        onPress={() => router.replace("/login")}
       >
-        <ScrollView
-          contentContainerStyle={[
-            styles.container,
-            {
-              paddingHorizontal: layout.gutter,
-              paddingBottom: layout.safeBottom + 40,
-              paddingTop: layout.safeTop + (layout.compact ? 30 : 70),
-            },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+        <Text style={styles.sectionLinkText}>Iniciar sesión</Text>
+      </Pressable>
+
+      <View style={styles.fieldGroup}>
+        {/* Selector de país personalizado que abre una lista interna al tocarlo. */}
+        <Pressable
+          style={styles.selectButton}
+          onPress={() => setShowCountry((value) => !value)}
         >
-          <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-            <BackButton fallbackHref="/login" />
-            <Text style={[styles.title, layout.compact && styles.titleCompact]}>Smart Home</Text>
+          <Text style={[styles.fieldText, !country && styles.placeholderText]}>
+            {country || "Seleccionar país"}
+          </Text>
+          <DownArrow open={showCountry} />
+        </Pressable>
 
-            <Pressable
-              style={styles.sectionLink}
-              onPress={() => router.replace("/login")}
-            >
-              <Text style={styles.sectionLinkText}>Iniciar sesión</Text>
-            </Pressable>
-
-            <View style={styles.fieldGroup}>
+        {showCountry && (
+          <View style={styles.optionList}>
+            {COUNTRIES.map((item) => (
               <Pressable
-                style={styles.selectButton}
-                onPress={() => setShowCountry((value) => !value)}
+                key={item}
+                style={({ pressed }) => [
+                  styles.option,
+                  pressed && styles.optionPressed,
+                  country === item && styles.optionSelected,
+                ]}
+                onPress={() => {
+                  setCountry(item);
+                  setShowCountry(false);
+                }}
               >
-                <Text style={[styles.fieldText, !country && styles.placeholderText]}>
-                  {country || "Seleccionar país"}
+                <Text
+                  style={[
+                    styles.optionText,
+                    country === item && styles.optionTextSelected,
+                  ]}
+                >
+                  {item}
                 </Text>
-                <DownArrow open={showCountry} />
               </Pressable>
-
-              {showCountry && (
-                <View style={styles.optionList}>
-                  {COUNTRIES.map((item) => (
-                    <Pressable
-                      key={item}
-                      style={({ pressed }) => [
-                        styles.option,
-                        pressed && styles.optionPressed,
-                        country === item && styles.optionSelected,
-                      ]}
-                      onPress={() => {
-                        setCountry(item);
-                        setShowCountry(false);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.optionText,
-                          country === item && styles.optionTextSelected,
-                        ]}
-                      >
-                        {item}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
-
-              <TextInput
-                style={styles.input}
-                placeholder="Correo electrónico"
-                placeholderTextColor={styles.placeholderText.color}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={setEmail}
-              />
-            </View>
-
-            <Pressable
-              style={styles.termsRow}
-              onPress={() => setAcceptTerms((value) => !value)}
-            >
-              <View style={[styles.checkbox, acceptTerms && styles.checkboxOn]}>
-                {acceptTerms && <CheckIcon />}
-              </View>
-              <Text style={styles.termsText}>
-                Acepto las <Text style={styles.inlineLink}>condiciones del servicio</Text> y la{" "}
-                <Text style={styles.inlineLink}>política de privacidad</Text> de Smart Home.
-              </Text>
-            </Pressable>
-
-            <Pressable style={styles.forgotLink}>
-              <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.primaryButton,
-                pressed && styles.primaryButtonPressed,
-              ]}
-              onPress={handleSendCode}
-            >
-              <Text style={styles.primaryButtonText}>Enviar código</Text>
-            </Pressable>
+            ))}
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        )}
+
+        <AuthTextField
+          containerStyle={styles.fieldContainer}
+          inputStyle={styles.input}
+          keyboardType="email-address"
+          onChangeText={setEmail}
+          placeholder="Correo electrónico"
+          placeholderTextColor={theme.colors.placeholder}
+          value={email}
+        />
+      </View>
+
+      <AuthCheckboxRow
+        checked={acceptTerms}
+        label={
+          <Text style={styles.termsText}>
+            Acepto las <Text style={styles.inlineLink}>condiciones del servicio</Text> y la{" "}
+            <Text style={styles.inlineLink}>política de privacidad</Text> de Smart Home.
+          </Text>
+        }
+        labelStyle={styles.checkboxLabel}
+        onToggle={() => setAcceptTerms((value) => !value)}
+      />
+
+      <Pressable style={styles.forgotLink}>
+        <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+      </Pressable>
+
+      <PrimaryButton onPress={handleSendCode} style={styles.primaryButton} text="Enviar código" />
+    </AuthScreenLayout>
   );
 }
 
-const serifFont = Platform.select({
-  ios: "Georgia",
-  android: "serif",
-  default: "Georgia",
-});
+const authFont = typography.fontFamily.emphasis;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -238,7 +209,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#0864C8",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 42,
     fontWeight: "700",
     lineHeight: 50,
@@ -256,7 +227,7 @@ const styles = StyleSheet.create({
   },
   sectionLinkText: {
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 22,
     fontWeight: "700",
     lineHeight: 27,
@@ -265,6 +236,12 @@ const styles = StyleSheet.create({
   fieldGroup: {
     gap: 18,
     marginBottom: 30,
+  },
+  fieldContainer: {
+    width: '100%',
+  },
+  checkboxLabel: {
+    flex: 1,
   },
   selectButton: {
     height: 54,
@@ -284,7 +261,7 @@ const styles = StyleSheet.create({
   fieldText: {
     color: "#3F3F3F",
     flex: 1,
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 20,
     fontWeight: "700",
   },
@@ -314,7 +291,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 17,
     fontWeight: "700",
   },
@@ -326,7 +303,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FBFBFD",
     borderRadius: 16,
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 20,
     fontWeight: "700",
     paddingHorizontal: 18,
@@ -357,7 +334,7 @@ const styles = StyleSheet.create({
   termsText: {
     flex: 1,
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 16,
     fontWeight: "700",
     lineHeight: 20,
@@ -372,7 +349,7 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 20,
     fontWeight: "700",
     lineHeight: 25,
@@ -391,7 +368,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: "#FFFFFF",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 24,
     fontWeight: "700",
   },

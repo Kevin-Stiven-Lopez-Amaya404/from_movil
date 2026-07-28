@@ -1,8 +1,10 @@
 /**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
+ * Hook utilitario para seleccionar colores segun el modo claro/oscuro.
+ *
+ * Recibe un par de variantes opcionales y devuelve el valor segun el tema
+ * actual del sistema. Esto es util para componentes que requieren colores
+ * adaptativos pero no usan el tema global completo.
  */
-
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 

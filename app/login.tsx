@@ -1,26 +1,34 @@
-import { CheckIcon } from "@/components/icons/CheckIcon";
-import { BackButton } from "@/components/navigation/BackButton";
+import { AuthCheckboxRow } from "@/components/auth/AuthCheckboxRow";
+import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
+import { AuthPasswordField, AuthTextField } from "@/components/auth/AuthTextField";
+import { PrimaryButton } from "@/components/auth/PrimaryButton";
+import { BackButton } from "@/components/common/BackButton";
 import { theme } from "@/constants/theme";
-import { getAuthPalette } from "@/lib/appearance";
-import { authenticateUser } from "@/lib/auth-store";
-import { useResponsiveLayout } from "@/lib/responsive";
-import { useSmartHome } from "@/lib/smart-home-context";
-import { isValidEmail } from "@/lib/validators";
+import { getApiErrorMessage } from "@/lib/api/api-error";
+import { authenticateUser } from "@/lib/auth/auth-store";
+import { useSmartHome } from "@/lib/context/smart-home-context";
+import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { getAuthPalette } from "@/lib/theme/appearance";
+import { typography } from "@/lib/theme/typography";
+import { isValidEmail } from "@/lib/utils/validators";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
+/**
+ * Pantalla de inicio de sesión.
+ *
+ * Esta pantalla valida credenciales contra el almacén local de usuarios y
+ * simula login con mensajes de alerta. También incluye acceso demo para
+ * explorar la app sin crear una cuenta real.
+ */
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -37,11 +45,13 @@ export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
   const [failedAttempts, setFailedAttempts] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   // Normaliza el correo para evitar errores por espacios o mayusculas.
   const cleanEmail = email.trim().toLowerCase();
 
   // Errores visibles solo cuando el usuario ya interactuo con el campo.
+  // Esto evita mostrar validaciones antes de que el usuario comience a escribir.
   const emailError =
     touched.email && !isValidEmail(cleanEmail)
       ? "Ingresa un correo válido."
@@ -77,16 +87,18 @@ export default function LoginScreen() {
    * 1. Marca campos como tocados para mostrar errores.
    * 2. Verifica si la cuenta global esta activa.
    * 3. Valida formato y longitud.
-   * 4. Consulta usuarios simulados en `auth-store`.
+   * 4. Consulta usuarios desde la capa de autenticacion.
    * 5. Guarda el nombre de sesion y entra a las tabs.
    */
-  function handleLogin() {
+  async function handleLogin() {
     setTouched({ email: true, password: true });
+
+    if (submitting) return;
 
     if (!accountActive) {
       Alert.alert(
         "Cuenta desactivada",
-        "Esta cuenta fue desactivada. Puedes reactivarla para continuar en esta versión de prueba.",
+        "Esta cuenta fue desactivada. Puedes reactivarla para continuar en esta version de prueba.",
         [
           { text: "Cancelar", style: "cancel" },
           { text: "Reactivar", onPress: () => setAccountActive(true) },
@@ -100,178 +112,124 @@ export default function LoginScreen() {
       return;
     }
 
-    const user = authenticateUser(cleanEmail, password);
+    setSubmitting(true);
 
-    if (!user) {
-      setFailedAttempts((value) => value + 1);
-      Alert.alert("No pudimos iniciar sesión", "Correo o contraseña incorrectos.");
-      return;
+    try {
+      const user = await authenticateUser(cleanEmail, password);
+
+      if (!user) {
+        setFailedAttempts((value) => value + 1);
+        Alert.alert("No pudimos iniciar sesion", "Correo o contrasena incorrectos.");
+        return;
+      }
+
+      setFailedAttempts(0);
+      setSessionName(user.name.split(" ")[0] || user.name);
+      Alert.alert("Bienvenido", `Hola, ${user.name}.`, [
+        { text: "Entrar", onPress: () => router.replace("/(tabs)") },
+      ]);
+    } catch (error) {
+      Alert.alert("Error de conexion", getApiErrorMessage(error));
+    } finally {
+      setSubmitting(false);
     }
-
-    setFailedAttempts(0);
-    setSessionName(user.name.split(" ")[0] || user.name);
-    Alert.alert("Bienvenido", `Hola, ${user.name}.`, [
-      { text: "Entrar", onPress: () => router.replace("/(tabs)") },
-    ]);
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerStyle={[
-            styles.container,
-            {
-              paddingHorizontal: layout.gutter,
-              paddingBottom: layout.safeBottom + 38,
-              paddingTop: layout.safeTop + (layout.compact ? 32 : 64),
-            },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <BackButton color={palette.link} fallbackHref="/welcome" />
-          <Text style={[styles.title, layout.tiny && styles.titleTiny, { color: palette.title }]}>Smart Home</Text>
+    <AuthScreenLayout
+      backgroundColor={palette.background}
+      compact={layout.compact}
+      title="Smart Home"
+      titleColor={palette.title}
+      titleStyle={layout.tiny ? styles.titleTiny : undefined}
+    >
+      <BackButton color={palette.link} fallbackHref="/welcome" />
 
-          <Pressable style={[styles.demoPill, { backgroundColor: palette.primarySoft }]} onPress={fillDemoUser}>
-            <Ionicons name="flash-outline" size={18} color={palette.link} />
-            <Text style={[styles.demoText, { color: palette.link }]}>Usar acceso demo</Text>
-          </Pressable>
+      <Pressable style={[styles.demoPill, { backgroundColor: palette.primarySoft }]} onPress={fillDemoUser}>
+        <Ionicons name="flash-outline" size={18} color={palette.link} />
+        <Text style={[styles.demoText, { color: palette.link }]}>Usar acceso demo</Text>
+      </Pressable>
 
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: palette.field,
-                borderColor: palette.fieldBorder,
-                color: palette.text,
-              },
-              emailError && styles.inputError,
-            ]}
-            placeholder="Correo electrónico"
-            placeholderTextColor={palette.muted}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={email}
-            onBlur={() => setTouched((value) => ({ ...value, email: true }))}
-            onChangeText={setEmail}
-          />
-          {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
+      <AuthTextField
+        containerStyle={styles.fieldContainer}
+        error={emailError}
+        inputStyle={[
+          styles.input,
+          {
+            backgroundColor: palette.field,
+            borderColor: palette.fieldBorder,
+            color: palette.text,
+          },
+        ]}
+        keyboardType="email-address"
+        onBlur={() => setTouched((value) => ({ ...value, email: true }))}
+        onChangeText={setEmail}
+        placeholder="Correo electrónico"
+        placeholderTextColor={palette.muted}
+        value={email}
+      />
 
-          <View style={styles.passwordWrap}>
-            <TextInput
-              style={[
-                styles.input,
-                styles.passwordInput,
-                {
-                  backgroundColor: palette.field,
-                  borderColor: palette.fieldBorder,
-                  color: palette.text,
-                },
-                passwordError && styles.inputError,
-              ]}
-              placeholder="Contraseña"
-              placeholderTextColor={palette.muted}
-              secureTextEntry={!showPassword}
-              value={password}
-              onBlur={() => setTouched((value) => ({ ...value, password: true }))}
-              onChangeText={setPassword}
-            />
-            <Pressable
-              accessibilityLabel={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-              style={styles.eyeButton}
-              onPress={() => setShowPassword((value) => !value)}
-            >
-              <Ionicons
-                name={showPassword ? "eye-outline" : "eye-off-outline"}
-                size={21}
-                color={palette.muted}
-              />
-            </Pressable>
-          </View>
-          {!!passwordError && <Text style={styles.errorText}>{passwordError}</Text>}
+      <AuthPasswordField
+        containerStyle={styles.fieldContainer}
+        error={passwordError}
+        inputStyle={[
+          styles.input,
+          {
+            backgroundColor: palette.field,
+            borderColor: palette.fieldBorder,
+            color: palette.text,
+          },
+        ]}
+        onBlur={() => setTouched((value) => ({ ...value, password: true }))}
+        onChangeText={setPassword}
+        onToggleVisibility={() => setShowPassword((value) => !value)}
+        placeholder="Contraseña"
+        showPassword={showPassword}
+        value={password}
+      />
 
-          <Pressable
-            style={styles.checkboxRow}
-            onPress={() => setRememberMe((value) => !value)}
-          >
-            <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-              {rememberMe && <CheckIcon />}
-            </View>
-            <Text style={[styles.checkboxLabel, { color: palette.text }]}>Recordar contraseña</Text>
-          </Pressable>
+      <AuthCheckboxRow
+        checked={rememberMe}
+        label="Recordar contraseña"
+        labelStyle={{ color: palette.text }}
+        onToggle={() => setRememberMe((value) => !value)}
+      />
 
-          <View style={[styles.securityBox, { backgroundColor: palette.primarySoft }]}>
-            <Ionicons name="shield-checkmark-outline" size={21} color={palette.link} />
-            <Text style={[styles.securityText, { color: palette.text }]}>{securityHint}</Text>
-          </View>
+      <View style={[styles.securityBox, { backgroundColor: palette.primarySoft }]}>
+        <Ionicons name="shield-checkmark-outline" size={21} color={palette.link} />
+        <Text style={[styles.securityText, { color: palette.text }]}>{securityHint}</Text>
+      </View>
 
-          <Pressable onPress={() => router.push("/forgot-password")} style={styles.linkRow}>
-            <Text style={[styles.linkText, { color: palette.text }]}>¿Olvidaste tu contraseña?</Text>
-          </Pressable>
+      <Pressable onPress={() => router.push("/forgot-password")} style={styles.linkRow}>
+        <Text style={[styles.linkText, { color: palette.text }]}>¿Olvidaste tu contraseña?</Text>
+      </Pressable>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              !canSubmit && styles.buttonDisabled,
-              { backgroundColor: palette.button },
-              pressed && canSubmit && { backgroundColor: palette.buttonPressed },
-            ]}
-            onPress={handleLogin}
-          >
-            <Text style={styles.buttonText}>Iniciar sesión</Text>
-          </Pressable>
+      <PrimaryButton
+        disabled={!canSubmit}
+        loading={submitting}
+        onPress={handleLogin}
+        style={{ backgroundColor: palette.button }}
+        text="Iniciar sesión"
+      />
 
-          <Pressable onPress={() => router.push("/register")} style={styles.registerRow}>
-            <Text style={[styles.registerText, { color: palette.text }]}>¿No tienes cuenta? </Text>
-            <Text style={[styles.registerText, styles.registerLink, { color: palette.link }]}>Registrarse</Text>
-          </Pressable>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <Pressable onPress={() => router.push("/register")} style={styles.registerRow}>
+        <Text style={[styles.registerText, { color: palette.text }]}>¿No tienes cuenta? </Text>
+        <Text style={[styles.registerText, styles.registerLink, { color: palette.link }]}>Registrarse</Text>
+      </Pressable>
+    </AuthScreenLayout>
   );
 }
 
-const serifFont = Platform.select({
-  ios: "Georgia",
-  android: "serif",
-  default: "Georgia",
-});
+const authFont = typography.fontFamily.emphasis;
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.backgroundWhite,
-  },
-  flex: { flex: 1 },
-  container: {
-    alignItems: "center",
-    flexGrow: 1,
-    paddingBottom: 38,
-  },
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-  title: {
-    color: "#0864C8",
-    fontFamily: serifFont,
-    fontSize: 42,
-    fontWeight: "700",
-    lineHeight: 51,
-    marginBottom: 26,
-    textAlign: "center",
-  },
   titleTiny: {
     fontSize: 36,
     lineHeight: 43,
     marginBottom: 20,
+  },
+  fieldContainer: {
+    width: "100%",
   },
   demoPill: {
     alignItems: "center",
@@ -295,7 +253,7 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     borderWidth: 1,
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 20,
     fontWeight: "700",
     height: 56,
@@ -348,7 +306,7 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 17,
     fontWeight: "700",
     marginLeft: 10,
@@ -375,7 +333,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 16,
     fontWeight: "700",
     textDecorationLine: "underline",
@@ -396,7 +354,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#FFFFFF",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 25,
     fontWeight: "700",
   },

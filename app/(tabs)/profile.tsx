@@ -1,3 +1,9 @@
+/**
+ * Pantalla de perfil y preferencias del usuario.
+ *
+ * Agrupa informacion de cuenta, ajustes de idioma y opciones de seguridad.
+ * Usa datos globales para mostrar el estado actual y acciones de usuario.
+ */
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
@@ -7,10 +13,10 @@ import { ProfileMenuItem } from "@/components/profile/ProfileMenuItem";
 import { ProfileModule } from "@/components/profile/ProfileModule";
 import { ProfileSectionHeader } from "@/components/profile/ProfileSectionHeader";
 import { profileFont } from "@/components/profile/profileTheme";
-import { useAppTheme } from "@/lib/app-theme";
-import { useTranslation } from "@/lib/i18n";
-import { useResponsiveLayout } from "@/lib/responsive";
-import { useSmartHome } from "@/lib/smart-home-context";
+import { useSmartHome } from "@/lib/context/smart-home-context";
+import { useTranslation } from "@/lib/i18n/i18n";
+import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { useAppTheme } from "@/lib/theme/app-theme";
 
 const languages = [
   { code: "es", label: "Español" },
@@ -123,7 +129,7 @@ export default function ProfileScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <View style={styles.topActions}>
-            <Pressable onPress={() => router.push("/devices")}>
+            <Pressable onPress={() => router.push("/(tabs)/homes")}>
               <MaterialCommunityIcons name="home-city-outline" size={34} color={theme.text} />
             </Pressable>
             <Pressable onPress={() => router.push("/settings")} style={styles.settingsButton}>
@@ -161,7 +167,7 @@ export default function ProfileScreen() {
               <Ionicons name="swap-horizontal-outline" size={27} color={theme.text} />
             </View>
 
-            <Pressable style={[styles.homeAccountRow, { backgroundColor: theme.row }]} onPress={() => router.push("/devices")}>
+            <Pressable style={[styles.homeAccountRow, { backgroundColor: theme.row }]} onPress={() => router.push("/(tabs)/homes")}>
               <View style={[styles.homeAccountIcon, { backgroundColor: theme.rowAlt }]}>
                 <Ionicons name="home" size={20} color={theme.blue} />
               </View>
@@ -173,7 +179,7 @@ export default function ProfileScreen() {
 
           <ProfileModule title={t("profile.accountModule")} subtitle={t("profile.accountModuleSubtitle")}>
             <ProfileMenuItem icon="person-add-outline" title={t("profile.editInfo")} onPress={() => router.push("/settings")} />
-            <ProfileMenuItem icon="home-outline" title={t("profile.manageHomes")} onPress={() => router.push("/devices")} />
+            <ProfileMenuItem icon="home-outline" title={t("profile.manageHomes")} onPress={() => router.push("/(tabs)/homes")} />
             <ProfileMenuItem
               description={
                 alerts

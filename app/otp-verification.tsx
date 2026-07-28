@@ -1,22 +1,27 @@
-import { BackButton } from "@/components/navigation/BackButton";
+import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
+import { PrimaryButton } from "@/components/auth/PrimaryButton";
+import { BackButton } from "@/components/common/BackButton";
 import { theme } from "@/constants/theme";
-import { useResponsiveLayout } from "@/lib/responsive";
+import { typography } from "@/lib/theme/typography";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  NativeSyntheticEvent,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TextInputKeyPressEventData,
-  View,
+    Alert,
+    NativeSyntheticEvent,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    TextInputKeyPressEventData,
+    View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
+/**
+ * Pantalla de verificación OTP.
+ *
+ * Permite ingresar un código de seis dígitos y avanzar al cambio de contraseña.
+ * Implementa manejo de pegado de código y navegación entre celdas.
+ */
 
 const CODE_LENGTH = 6;
 
@@ -37,7 +42,6 @@ function maskEmail(email: string) {
 
 export default function OtpVerificationScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
 
   // Email recibido desde forgot-password mediante parametros de ruta.
   const params = useLocalSearchParams<{ email?: string }>();
@@ -53,8 +57,6 @@ export default function OtpVerificationScreen() {
     [params.email],
   );
   const code = digits.join("");
-  const codeGap = layout.narrow ? 6 : 9;
-  const codeSize = Math.min(48, Math.floor((layout.contentWidth - codeGap * 5) / 6));
 
   /**
    * Actualiza una casilla del codigo.
@@ -154,87 +156,54 @@ export default function OtpVerificationScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerStyle={[
-            styles.container,
-            {
-              paddingHorizontal: layout.gutter,
-              paddingBottom: layout.safeBottom + 40,
-              paddingTop: layout.safeTop + (layout.compact ? 30 : 70),
-            },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-            <BackButton fallbackHref="/forgot-password" />
-            <Text style={[styles.title, layout.compact && styles.titleCompact]}>Smart Home</Text>
+    <AuthScreenLayout contentStyle={styles.content} title="Smart Home">
+      <BackButton fallbackHref="/forgot-password" />
 
-            <Text style={styles.sectionTitle}>Código de verificación</Text>
+      <Text style={styles.sectionTitle}>Código de verificación</Text>
 
-            <View style={[styles.codeRow, { gap: codeGap }]}>
-              {digits.map((digit, index) => (
-                <TextInput
-                  key={index}
-                  ref={(ref) => {
-                    inputRefs.current[index] = ref;
-                  }}
-                  style={[styles.codeInput, { height: codeSize, width: codeSize }]}
-                  value={digit}
-                  onChangeText={(value) => {
-                    if (!handlePaste(value)) {
-                      updateDigit(value, index);
-                    }
-                  }}
-                  onKeyPress={(event) => handleKeyPress(event, index)}
-                  keyboardType="number-pad"
-                  maxLength={CODE_LENGTH}
-                  returnKeyType="next"
-                  selectTextOnFocus
-                  textAlign="center"
-                />
-              ))}
-            </View>
+      <View style={styles.codeRow}>
+        {digits.map((digit, index) => (
+          <TextInput
+            key={index}
+            ref={(ref) => {
+              inputRefs.current[index] = ref;
+            }}
+            style={styles.codeInput}
+            value={digit}
+            onChangeText={(value) => {
+              if (!handlePaste(value)) {
+                updateDigit(value, index);
+              }
+            }}
+            onKeyPress={(event) => handleKeyPress(event, index)}
+            keyboardType="number-pad"
+            maxLength={CODE_LENGTH}
+            returnKeyType="next"
+            selectTextOnFocus
+            textAlign="center"
+          />
+        ))}
+      </View>
 
-            <View style={styles.messageBlock}>
-              <Text style={styles.messageText}>
-                El código de verificación se envió a tu correo {maskedEmail}.
-              </Text>
-              <Pressable onPress={handleResendCode} style={styles.resendLink}>
-                <Text style={styles.resendText}>Enviar de nuevo</Text>
-              </Pressable>
-            </View>
+      <View style={styles.messageBlock}>
+        <Text style={styles.messageText}>
+          El código de verificación se envió a tu correo {maskedEmail}.
+        </Text>
+        <Pressable onPress={handleResendCode} style={styles.resendLink}>
+          <Text style={styles.resendText}>Enviar de nuevo</Text>
+        </Pressable>
+      </View>
 
-            <Pressable style={styles.noCodeLink} onPress={handleResendCode}>
-              <Text style={styles.noCodeText}>¿No recibiste un código?</Text>
-            </Pressable>
+      <Pressable style={styles.noCodeLink} onPress={handleResendCode}>
+        <Text style={styles.noCodeText}>¿No recibiste un código?</Text>
+      </Pressable>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.primaryButton,
-                pressed && styles.primaryButtonPressed,
-              ]}
-              onPress={handleVerifyCode}
-            >
-              <Text style={styles.primaryButtonText}>Siguiente</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <PrimaryButton onPress={handleVerifyCode} style={styles.primaryButton} text="Siguiente" />
+    </AuthScreenLayout>
   );
 }
 
-const serifFont = Platform.select({
-  ios: "Georgia",
-  android: "serif",
-  default: "Georgia",
-});
+const authFont = typography.fontFamily.emphasis;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -255,7 +224,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#0864C8",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 42,
     fontWeight: "700",
     lineHeight: 50,
@@ -270,7 +239,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     alignSelf: "flex-start",
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 22,
     fontWeight: "700",
     lineHeight: 27,
@@ -287,7 +256,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FBFBFD",
     borderRadius: 14,
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 21,
     fontWeight: "700",
     padding: 0,
@@ -302,7 +271,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 17,
     fontWeight: "700",
     lineHeight: 21,
@@ -313,7 +282,7 @@ const styles = StyleSheet.create({
   },
   resendText: {
     color: "#0864C8",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 20,
     fontWeight: "700",
     lineHeight: 25,
@@ -325,7 +294,7 @@ const styles = StyleSheet.create({
   },
   noCodeText: {
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 20,
     fontWeight: "700",
     lineHeight: 25,
@@ -346,7 +315,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: "#FFFFFF",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 24,
     fontWeight: "700",
   },

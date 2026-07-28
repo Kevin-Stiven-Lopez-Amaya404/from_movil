@@ -1,3 +1,5 @@
+import { typography } from "@/lib/theme/typography";
+
 /**
  * Colores base generados para compatibilidad con hooks/componentes que consumen
  * un esquema claro/oscuro simple.
@@ -50,15 +52,17 @@ export const theme = {
   },
   fontSize: {
     xs: 11,
-    sm: 13,
-    base: 15,
-    md: 17,
-    lg: 20,
-    xl: 26,
-    xxl: 32,
+    sm: typography.size.helper,
+    base: typography.size.body,
+    md: typography.size.bodyLarge,
+    lg: typography.size.section,
+    xl: typography.size.title,
+    xxl: typography.size.screenTitle,
     logo: 28,
   },
-  rounded: "System",
+  fontFamily: typography.fontFamily,
+  fontWeight: typography.weight,
+  rounded: typography.fontFamily.regular,
   mono: "monospace",
   spacing: {
     xs: 4,

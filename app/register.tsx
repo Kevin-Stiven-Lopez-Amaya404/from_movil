@@ -1,24 +1,31 @@
+import { AuthCheckboxRow } from "@/components/auth/AuthCheckboxRow";
+import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
+import { AuthPasswordField, AuthTextField } from "@/components/auth/AuthTextField";
+import { PrimaryButton } from "@/components/auth/PrimaryButton";
+import { BackButton } from "@/components/common/BackButton";
 import { CheckIcon } from "@/components/icons/CheckIcon";
-import { BackButton } from "@/components/navigation/BackButton";
 import { theme } from "@/constants/theme";
-import { registerUser } from "@/lib/auth-store";
-import { useResponsiveLayout } from "@/lib/responsive";
-import { getPasswordRules, isValidEmail } from "@/lib/validators";
-import { Ionicons } from "@expo/vector-icons";
+import { getApiErrorMessage } from "@/lib/api/api-error";
+import { registerUser } from "@/lib/auth/auth-store";
+import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { typography } from "@/lib/theme/typography";
+import { getPasswordRules, isValidEmail } from "@/lib/utils/validators";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
+/**
+ * Pantalla de registro de cuenta.
+ *
+ * Recolecta nombre, correo, contraseñas y aceptación de términos para crear
+ * un usuario simulado en memoria. Muestra reglas de fortaleza de contraseña.
+ */
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -32,6 +39,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // Se normaliza para evitar duplicados por mayusculas o espacios.
   const cleanEmail = email.trim().toLowerCase();
@@ -75,213 +83,157 @@ export default function RegisterScreen() {
   /**
    * Valida el formulario y registra el usuario en memoria.
    *
-   * `registerUser` no llama a backend: solo agrega el usuario al arreglo local
-   * definido en `lib/auth-store.ts`.
+   * `registerUser` usa la capa de autenticacion, que hoy corre en mock local
+   * y luego puede apuntar al backend.
    */
-  function handleRegister() {
+  async function handleRegister() {
     setSubmitted(true);
+
+    if (submitting) return;
 
     if (!canSubmit) {
       Alert.alert("Registro incompleto", "Revisa los campos marcados.");
       return;
     }
 
-    const result = registerUser({
-      email: cleanEmail,
-      name: firstName.trim(),
-      password,
-    });
+    setSubmitting(true);
 
-    if (!result.ok) {
-      Alert.alert("Correo registrado", "Ya existe una cuenta con este correo.");
-      return;
+    try {
+      const result = await registerUser({
+        email: cleanEmail,
+        name: firstName.trim(),
+        password,
+      });
+
+      if (!result.ok) {
+        Alert.alert("Correo registrado", "Ya existe una cuenta con este correo.");
+        return;
+      }
+
+      Alert.alert(
+        "Cuenta creada",
+        "Tu perfil Smart Home quedo listo. Ahora inicia sesion.",
+        [{ text: "Iniciar sesion", onPress: () => router.replace("/login") }],
+      );
+    } catch (error) {
+      Alert.alert("Error de conexion", getApiErrorMessage(error));
+    } finally {
+      setSubmitting(false);
     }
-
-    Alert.alert(
-      "Cuenta creada",
-      "Tu perfil Smart Home quedó listo. Ahora inicia sesión.",
-      [{ text: "Iniciar sesión", onPress: () => router.replace("/login") }],
-    );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerStyle={[
-            styles.container,
-            {
-              paddingHorizontal: layout.gutter,
-              paddingBottom: layout.safeBottom + 34,
-              paddingTop: layout.safeTop + (layout.compact ? 28 : 54),
-            },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <BackButton fallbackHref="/welcome" />
-          <Text style={[styles.title, layout.tiny && styles.titleTiny]}>Smart Home</Text>
+    <AuthScreenLayout compact={layout.compact} title="Smart Home">
+      <BackButton fallbackHref="/welcome" />
 
-          <TextInput
-            style={[styles.input, visibleError("firstName") && styles.inputError]}
-            placeholder="Nombres"
-            placeholderTextColor={theme.colors.placeholder}
-            autoCapitalize="words"
-            value={firstName}
-            onChangeText={setFirstName}
-          />
-          {!!visibleError("firstName") && <Text style={styles.errorText}>{errors.firstName}</Text>}
+      <AuthTextField
+        containerStyle={styles.fieldContainer}
+        error={visibleError("firstName")}
+        inputStyle={[styles.input, styles.inputCompact]}
+        onChangeText={setFirstName}
+        placeholder="Nombres"
+        value={firstName}
+      />
 
-          <TextInput
-            style={[styles.input, visibleError("email") && styles.inputError]}
-            placeholder="Correo electrónico"
-            placeholderTextColor={theme.colors.placeholder}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={email}
-            onChangeText={setEmail}
-          />
-          {!!visibleError("email") && <Text style={styles.errorText}>{errors.email}</Text>}
+      <AuthTextField
+        containerStyle={styles.fieldContainer}
+        error={visibleError("email")}
+        inputStyle={[styles.input, styles.inputCompact]}
+        keyboardType="email-address"
+        onChangeText={setEmail}
+        placeholder="Correo electrónico"
+        value={email}
+      />
 
-          <View style={styles.passwordWrap}>
-            <TextInput
-              style={[styles.input, styles.passwordInput, visibleError("password") && styles.inputError]}
-              placeholder="Contraseña"
-              placeholderTextColor={theme.colors.placeholder}
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
+      <AuthPasswordField
+        containerStyle={styles.fieldContainer}
+        error={visibleError("password")}
+        inputStyle={[styles.input, styles.inputCompact]}
+        onChangeText={setPassword}
+        onToggleVisibility={() => setShowPassword((value) => !value)}
+        placeholder="Contraseña"
+        showPassword={showPassword}
+        value={password}
+      />
+
+      {/* Indicador visual de la fortaleza de la contraseña basada en las reglas actuales. */}
+      <View style={styles.strengthBox}>
+        <Text style={styles.requirementsTitle}>Requisitos de la contraseña</Text>
+        <View style={styles.strengthBars}>
+          {[0, 1, 2, 3].map((item) => (
+            <View
+              key={item}
+              style={[styles.strengthBar, item < strength && styles.strengthBarOn]}
             />
-            <Pressable
-              accessibilityLabel={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-              style={styles.eyeButton}
-              onPress={() => setShowPassword((value) => !value)}
-            >
-              <Ionicons
-                name={showPassword ? "eye-outline" : "eye-off-outline"}
-                size={21}
-                color={theme.colors.textMuted}
-              />
-            </Pressable>
-          </View>
-          {!!visibleError("password") && <Text style={styles.errorText}>{errors.password}</Text>}
-
-          <View style={styles.strengthBox}>
-            <Text style={styles.requirementsTitle}>Requisitos de la contraseña</Text>
-            <View style={styles.strengthBars}>
-              {[0, 1, 2, 3].map((item) => (
-                <View
-                  key={item}
-                  style={[styles.strengthBar, item < strength && styles.strengthBarOn]}
-                />
-              ))}
+          ))}
+        </View>
+        <View style={styles.rulesGrid}>
+          {passwordRules.map((rule) => (
+            <View key={rule.label} style={styles.ruleItem}>
+              <View style={[styles.ruleDot, rule.passed && styles.ruleDotOn]}>
+                {rule.passed && <CheckIcon />}
+              </View>
+              <Text style={styles.ruleText}>{rule.label}</Text>
             </View>
-            <View style={styles.rulesGrid}>
-              {passwordRules.map((rule) => (
-                <View key={rule.label} style={styles.ruleItem}>
-                  <View style={[styles.ruleDot, rule.passed && styles.ruleDotOn]}>
-                    {rule.passed && <CheckIcon />}
-                  </View>
-                  <Text style={styles.ruleText}>{rule.label}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
+          ))}
+        </View>
+      </View>
 
-          <TextInput
-            style={[styles.input, visibleError("confirmPassword") && styles.inputError]}
-            placeholder="Confirmar contraseña"
-            placeholderTextColor={theme.colors.placeholder}
-            secureTextEntry={!showPassword}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-          />
-          {!!visibleError("confirmPassword") && (
-            <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-          )}
+      <AuthPasswordField
+        containerStyle={styles.fieldContainer}
+        error={visibleError("confirmPassword")}
+        inputStyle={[styles.input, styles.inputCompact]}
+        onChangeText={setConfirmPassword}
+        onToggleVisibility={() => setShowPassword((value) => !value)}
+        placeholder="Confirmar contraseña"
+        showPassword={showPassword}
+        value={confirmPassword}
+      />
 
-          <Pressable
-            style={styles.termsRow}
-            onPress={() => setAcceptTerms((value) => !value)}
-          >
-            <View style={[styles.checkbox, acceptTerms && styles.checkboxChecked]}>
-              {acceptTerms && <CheckIcon />}
-            </View>
-            <Text style={styles.termsText}>
-              Acepto los{" "}
-              <Text style={styles.inlineLink} onPress={showTerms}>
-                términos y condiciones
-              </Text>{" "}
-              y la{" "}
-              <Text style={styles.inlineLink} onPress={showTerms}>
-                política de privacidad
-              </Text>{" "}
-              de Smart Home.
-            </Text>
-          </Pressable>
-          {!!visibleError("terms") && <Text style={styles.errorText}>{errors.terms}</Text>}
+      <AuthCheckboxRow
+        checked={acceptTerms}
+        label={
+          <Text style={styles.termsText}>
+            Acepto los{" "}
+            <Text style={styles.inlineLink} onPress={showTerms}>
+              términos y condiciones
+            </Text>{" "}
+            y la{" "}
+            <Text style={styles.inlineLink} onPress={showTerms}>
+              política de privacidad
+            </Text>{" "}
+            de Smart Home.
+          </Text>
+        }
+        labelStyle={{ flex: 1 }}
+        onToggle={() => setAcceptTerms((value) => !value)}
+      />
+      {!!visibleError("terms") && <Text style={styles.errorText}>{errors.terms}</Text>}
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              !canSubmit && styles.buttonDisabled,
-              pressed && canSubmit && styles.buttonPressed,
-            ]}
-            onPress={handleRegister}
-          >
-            <Text style={styles.buttonText}>Registrarse</Text>
-          </Pressable>
+      <PrimaryButton
+        disabled={!canSubmit}
+        loading={submitting}
+        onPress={handleRegister}
+        style={styles.button}
+        text="Registrarse"
+      />
 
-          <Pressable onPress={() => router.replace("/login")} style={styles.loginRow}>
-            <Text style={styles.loginText}>¿Ya tienes cuenta? </Text>
-            <Text style={[styles.loginText, styles.loginLink]}>Inicia sesión</Text>
-          </Pressable>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <Pressable onPress={() => router.replace("/login")} style={styles.loginRow}>
+        <Text style={styles.loginText}>¿Ya tienes cuenta? </Text>
+        <Text style={[styles.loginText, styles.loginLink]}>Inicia sesión</Text>
+      </Pressable>
+    </AuthScreenLayout>
   );
 }
 
-const serifFont = Platform.select({
-  ios: "Georgia",
-  android: "serif",
-  default: "Georgia",
-});
+const authFont = typography.fontFamily.emphasis;
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.backgroundWhite,
-  },
-  flex: { flex: 1 },
-  container: {
-    alignItems: "center",
-    flexGrow: 1,
-    paddingBottom: 34,
-  },
-  content: {
-    alignSelf: "center",
+  fieldContainer: {
     width: "100%",
   },
-  title: {
-    color: "#0864C8",
-    fontFamily: serifFont,
-    fontSize: 40,
-    fontWeight: "700",
-    lineHeight: 48,
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  titleTiny: {
-    fontSize: 34,
-    lineHeight: 41,
-    marginBottom: 16,
+  inputCompact: {
+    marginTop: 0,
   },
   input: {
     backgroundColor: "#FBFBFD",
@@ -289,7 +241,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     color: "#3F3F3F",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 19,
     fontWeight: "700",
     height: 52,
@@ -396,7 +348,7 @@ const styles = StyleSheet.create({
   termsText: {
     color: "#3F3F3F",
     flex: 1,
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 15,
     fontWeight: "700",
     lineHeight: 20,
@@ -421,7 +373,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#FFFFFF",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 24,
     fontWeight: "700",
   },

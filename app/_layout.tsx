@@ -1,13 +1,13 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
-import SplashAnimation from '@/components/SplashAnimation';
+import SplashAnimation from '@/components/common/SplashAnimation';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { SmartHomeProvider } from '@/lib/smart-home-context';
+import { SmartHomeProvider } from '@/lib/context/smart-home-context';
 
 /**
  * Configuracion inicial de Expo Router.
@@ -50,13 +50,27 @@ export default function RootLayout() {
    * Si la app quedo en `/`, se reemplaza la ruta por `/welcome`.
    * Se usa `replace` para no dejar la ruta vacia en el historial.
    */
-  function finishSplash() {
+  const finishSplash = useCallback(() => {
     setSplashDone(true);
 
     if (pathname === '/') {
       router.replace('/welcome');
     }
-  }
+  }, [pathname, router]);
+
+  /**
+   * Respaldo de seguridad para evitar pantalla blanca.
+   *
+   * Si por alguna razon la animacion no ejecuta `onFinish` en web o Android,
+   * este temporizador libera la app y envia al usuario a bienvenida.
+   */
+  useEffect(() => {
+    if (splashDone) return;
+
+    const timeout = setTimeout(finishSplash, 2600);
+
+    return () => clearTimeout(timeout);
+  }, [finishSplash, splashDone]);
 
   return (
     <SafeAreaProvider>

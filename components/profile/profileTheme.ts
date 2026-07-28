@@ -1,3 +1,5 @@
+import { typography } from "@/lib/theme/typography";
+
 /**
  * Paleta base usada originalmente por los componentes de perfil.
  *
@@ -19,4 +21,4 @@ export const profileTheme = {
 };
 
 // Fuente base para que los modulos del perfil mantengan una apariencia consistente.
-export const profileFont = "sans-serif-medium";
+export const profileFont = typography.fontFamily.emphasis;

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useAppTheme } from "@/lib/app-theme";
+import { useAppTheme } from "@/lib/theme/app-theme";
 
 import { profileFont, profileTheme } from "./profileTheme";
 

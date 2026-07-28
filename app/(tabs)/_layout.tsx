@@ -1,7 +1,14 @@
-import { HapticTab } from "@/components/haptic-tab";
-import { useAppTheme } from "@/lib/app-theme";
-import { useTranslation } from "@/lib/i18n";
-import { useSmartHome } from "@/lib/smart-home-context";
+/**
+ * Layout de navegacion de tabs.
+ *
+ * Configura la barra inferior de pestañas y aplica el tema global, iconos y
+ * comportamiento haptico. Las pantallas dentro de `(tabs)` se renderizan aqui.
+ */
+import { HapticTab } from "@/components/navigation/HapticTab";
+import { useSmartHome } from "@/lib/context/smart-home-context";
+import { useTranslation } from "@/lib/i18n/i18n";
+import { useAppTheme } from "@/lib/theme/app-theme";
+import { typography } from "@/lib/theme/typography";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { Platform, StyleSheet } from "react-native";
@@ -62,7 +69,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="devices"
+        name="homes"
         options={{
           title: t("tab.homes"),
           tabBarIcon: ({ color }) => (
@@ -108,11 +115,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.select({ ios: 18, default: 8 }),
   },
   tabLabel: {
-    fontFamily: Platform.select({
-      ios: "Avenir Next",
-      android: "sans-serif-medium",
-      default: "Arial",
-    }),
+    fontFamily: typography.fontFamily.emphasis,
     fontSize: 12,
     fontWeight: "700",
     marginTop: 0,

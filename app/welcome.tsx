@@ -1,13 +1,20 @@
+import SmartHomeLogo from "@/components/common/SmartHomeLogo";
 import { GoogleIcon } from "@/components/icons/GoogleIcon";
-import SmartHomeLogo from "@/components/smartHomeLogo";
 import { theme } from "@/constants/theme";
-import { getAuthPalette } from "@/lib/appearance";
-import { useResponsiveLayout } from "@/lib/responsive";
-import { useSmartHome } from "@/lib/smart-home-context";
+import { useSmartHome } from "@/lib/context/smart-home-context";
+import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { getAuthPalette } from "@/lib/theme/appearance";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+/**
+ * Pantalla de bienvenida inicial.
+ *
+ * Ofrece opciones de inicio de sesión, registro y acceso simulado con Google.
+ * También permite seleccionar el modo claro/oscuro antes de ingresar.
+ */
 
 export default function WelcomeScreen() {
   const router = useRouter();

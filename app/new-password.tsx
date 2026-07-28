@@ -1,29 +1,31 @@
-import { CheckIcon } from "@/components/icons/CheckIcon";
-import { BackButton } from "@/components/navigation/BackButton";
-import { updateUserPassword } from "@/lib/auth-store";
-import { useResponsiveLayout } from "@/lib/responsive";
-import { Ionicons } from "@expo/vector-icons";
+import { AuthCheckboxRow } from "@/components/auth/AuthCheckboxRow";
+import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
+import { AuthPasswordField } from "@/components/auth/AuthTextField";
+import { PrimaryButton } from "@/components/auth/PrimaryButton";
+import { BackButton } from "@/components/common/BackButton";
+import { getApiErrorMessage } from "@/lib/api/api-error";
+import { updateUserPassword } from "@/lib/auth/auth-store";
+import { typography } from "@/lib/theme/typography";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    StyleSheet,
+    Text
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const BLUE = "#0864C8";
 const TEXT = "#3F3F3F";
 
+/**
+ * Pantalla para establecer la nueva contraseña.
+ *
+ * Se muestra después de la verificación OTP y simula el cambio de contraseña
+ * de un usuario almacenado localmente.
+ */
+
 export default function NewPasswordScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
 
   // Email recibido desde la pantalla OTP para saber que usuario debe actualizarse.
   const params = useLocalSearchParams<{ email?: string }>();
@@ -32,6 +34,7 @@ export default function NewPasswordScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberPassword, setRememberPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   /**
    * Finaliza la recuperacion de contrasena.
@@ -39,105 +42,79 @@ export default function NewPasswordScreen() {
    * Valida que la contrasena sea aceptable y luego llama `updateUserPassword`,
    * que actualiza el usuario en memoria dentro de `auth-store`.
    */
-  function handleFinish() {
+  async function handleFinish() {
+    if (submitting) return;
+
     if (!password.trim()) {
-      Alert.alert("Contraseña requerida", "Ingresa tu nueva contraseña.");
+      Alert.alert("Contrasena requerida", "Ingresa tu nueva contrasena.");
       return;
     }
 
     if (password.trim().length < 6) {
-      Alert.alert("Contraseña corta", "La contraseña debe tener mínimo 6 caracteres.");
+      Alert.alert("Contrasena corta", "La contrasena debe tener minimo 6 caracteres.");
       return;
     }
 
-    const updated = updateUserPassword(String(params.email ?? ""), password.trim());
+    setSubmitting(true);
 
-    if (!updated) {
-      Alert.alert(
-        "Solicitud inválida",
-        "No encontramos una cuenta asociada a esta recuperación.",
-      );
-      return;
+    try {
+      const updated = await updateUserPassword(String(params.email ?? ""), password.trim());
+
+      if (!updated) {
+        Alert.alert(
+          "Solicitud invalida",
+          "No encontramos una cuenta asociada a esta recuperacion.",
+        );
+        return;
+      }
+
+      Alert.alert("Contrasena actualizada", "Ya puedes entrar a tu cuenta.", [
+        { text: "Continuar", onPress: () => router.replace("/login") },
+      ]);
+    } catch (error) {
+      Alert.alert("Error de conexion", getApiErrorMessage(error));
+    } finally {
+      setSubmitting(false);
     }
-
-    Alert.alert("Contraseña actualizada", "Ya puedes entrar a tu cuenta.", [
-      { text: "Continuar", onPress: () => router.replace("/login") },
-    ]);
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerStyle={[
-            styles.container,
-            {
-              paddingHorizontal: layout.gutter,
-              paddingBottom: layout.safeBottom + 40,
-              paddingTop: layout.safeTop + (layout.compact ? 34 : 78),
-            },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-            <BackButton fallbackHref="/forgot-password" />
-            <Text style={[styles.title, layout.compact && styles.titleCompact]}>Smart Home</Text>
+    <AuthScreenLayout contentStyle={styles.content} title="Smart Home">
+      <BackButton fallbackHref="/forgot-password" />
 
-            <Text style={styles.sectionTitle}>Establecer contraseña</Text>
+      <Text style={styles.sectionTitle}>Establecer contraseña</Text>
 
-            <View style={styles.passwordBox}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Contraseña"
-                placeholderTextColor={TEXT}
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={setPassword}
-              />
-              <Pressable style={styles.iconButton} onPress={() => setPassword("")}>
-                <Ionicons name="close" size={20} color="#000000" />
-              </Pressable>
-              <Pressable
-                accessibilityLabel={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                style={styles.iconButton}
-                onPress={() => setShowPassword((value) => !value)}
-              >
-                <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={21} color="#000000" />
-              </Pressable>
-            </View>
+      <AuthPasswordField
+        containerStyle={styles.passwordContainer}
+        inputStyle={styles.passwordInput}
+        onChangeText={setPassword}
+        onToggleVisibility={() => setShowPassword((value) => !value)}
+        placeholder="Contraseña"
+        placeholderTextColor={TEXT}
+        showPassword={showPassword}
+        value={password}
+      />
 
-            <Pressable
-              style={styles.rememberRow}
-              onPress={() => setRememberPassword((value) => !value)}
-            >
-              <View style={[styles.checkbox, rememberPassword && styles.checkboxOn]}>
-                {rememberPassword && <CheckIcon />}
-              </View>
-              <Text style={styles.rememberText}>Recordar contraseña</Text>
-            </Pressable>
+      {/* Opcion local para recordar la contraseña en esta sesión. */}
+      <AuthCheckboxRow
+        checked={rememberPassword}
+        label="Recordar contraseña"
+        labelStyle={styles.rememberText}
+        onToggle={() => setRememberPassword((value) => !value)}
+      />
 
-            <Pressable
-              style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
-              onPress={handleFinish}
-            >
-              <Text style={styles.primaryButtonText}>Finalizado</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      {/* Boton de envio: valida y actualiza la contraseña en el usuario local. */}
+      <PrimaryButton
+        loading={submitting}
+        onPress={handleFinish}
+        style={styles.primaryButton}
+        text="Finalizado"
+      />
+    </AuthScreenLayout>
   );
 }
 
-const serifFont = Platform.select({
-  ios: "Georgia",
-  android: "serif",
-  default: "Georgia",
-});
+const authFont = typography.fontFamily.emphasis;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -158,7 +135,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: BLUE,
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 38,
     fontWeight: "700",
     lineHeight: 46,
@@ -172,12 +149,16 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: TEXT,
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 20,
     fontWeight: "700",
     lineHeight: 25,
     marginBottom: 24,
     textDecorationLine: "underline",
+  },
+  passwordContainer: {
+    marginTop: 8,
+    width: "100%",
   },
   passwordBox: {
     alignItems: "center",
@@ -196,7 +177,7 @@ const styles = StyleSheet.create({
   passwordInput: {
     color: TEXT,
     flex: 1,
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 18,
     fontWeight: "700",
     paddingVertical: 0,
@@ -227,7 +208,7 @@ const styles = StyleSheet.create({
   rememberText: {
     color: TEXT,
     flex: 1,
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 17,
     fontWeight: "700",
     marginLeft: 10,
@@ -246,7 +227,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: "#FFFFFF",
-    fontFamily: serifFont,
+    fontFamily: authFont,
     fontSize: 23,
     fontWeight: "700",
   },
