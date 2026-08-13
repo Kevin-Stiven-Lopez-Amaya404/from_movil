@@ -15,30 +15,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
-    Alert,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
-
-/**
- * Pantalla de inicio de sesión.
- *
- * Esta pantalla valida credenciales contra el almacén local de usuarios y
- * simula login con mensajes de alerta. También incluye acceso demo para
- * explorar la app sin crear una cuenta real.
- */
 
 export default function LoginScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
 
-  // Datos globales relacionados con cuenta y sesion.
   const { accountActive, colorMode, setAccountActive, setSessionName } = useSmartHome();
   const palette = getAuthPalette(colorMode);
 
-  // Estados locales del formulario de login.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -47,11 +37,8 @@ export default function LoginScreen() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
-  // Normaliza el correo para evitar errores por espacios o mayusculas.
   const cleanEmail = email.trim().toLowerCase();
 
-  // Errores visibles solo cuando el usuario ya interactuo con el campo.
-  // Esto evita mostrar validaciones antes de que el usuario comience a escribir.
   const emailError =
     touched.email && !isValidEmail(cleanEmail)
       ? "Ingresa un correo válido."
@@ -62,34 +49,18 @@ export default function LoginScreen() {
       : "";
   const canSubmit = isValidEmail(cleanEmail) && password.length >= 4;
 
-  // Mensaje contextual que cambia con los intentos fallidos.
   const securityHint = useMemo(() => {
     if (failedAttempts === 0) return "Tus dispositivos se sincronizan al entrar.";
     if (failedAttempts === 1) return "Revisa mayúsculas y espacios antes de continuar.";
     return "Puedes usar el acceso demo para probar la app.";
   }, [failedAttempts]);
 
-  /**
-   * Completa credenciales de prueba.
-   *
-   * Sirve para demostrar la aplicacion sin depender de crear una cuenta nueva.
-   */
   function fillDemoUser() {
     setEmail("pepe@smarthome.com");
     setPassword("Smart123!");
     setTouched({ email: true, password: true });
   }
 
-  /**
-   * Valida y ejecuta el inicio de sesion.
-   *
-   * Orden de decision:
-   * 1. Marca campos como tocados para mostrar errores.
-   * 2. Verifica si la cuenta global esta activa.
-   * 3. Valida formato y longitud.
-   * 4. Consulta usuarios desde la capa de autenticacion.
-   * 5. Guarda el nombre de sesion y entra a las tabs.
-   */
   async function handleLogin() {
     setTouched({ email: true, password: true });
 
@@ -98,7 +69,7 @@ export default function LoginScreen() {
     if (!accountActive) {
       Alert.alert(
         "Cuenta desactivada",
-        "Esta cuenta fue desactivada. Puedes reactivarla para continuar en esta version de prueba.",
+        "Esta cuenta fue desactivada. Puedes reactivarla para continuar en esta versión de prueba.",
         [
           { text: "Cancelar", style: "cancel" },
           { text: "Reactivar", onPress: () => setAccountActive(true) },
@@ -118,8 +89,8 @@ export default function LoginScreen() {
       const user = await authenticateUser(cleanEmail, password);
 
       if (!user) {
-        setFailedAttempts((value) => value + 1);
-        Alert.alert("No pudimos iniciar sesion", "Correo o contrasena incorrectos.");
+        setFailedAttempts((prev) => prev + 1);
+        Alert.alert("No pudimos iniciar sesión", "Correo o contraseña incorrectos.");
         return;
       }
 
@@ -129,7 +100,7 @@ export default function LoginScreen() {
         { text: "Entrar", onPress: () => router.replace("/(tabs)") },
       ]);
     } catch (error) {
-      Alert.alert("Error de conexion", getApiErrorMessage(error));
+      Alert.alert("Error de conexión", getApiErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
@@ -145,7 +116,12 @@ export default function LoginScreen() {
     >
       <BackButton color={palette.link} fallbackHref="/welcome" />
 
-      <Pressable style={[styles.demoPill, { backgroundColor: palette.primarySoft }]} onPress={fillDemoUser}>
+      <Pressable 
+        style={[styles.demoPill, { backgroundColor: palette.primarySoft }]} 
+        onPress={fillDemoUser}
+        accessibilityRole="button"
+        accessibilityLabel="Usar acceso demo"
+      >
         <Ionicons name="flash-outline" size={18} color={palette.link} />
         <Text style={[styles.demoText, { color: palette.link }]}>Usar acceso demo</Text>
       </Pressable>
@@ -162,7 +138,8 @@ export default function LoginScreen() {
           },
         ]}
         keyboardType="email-address"
-        onBlur={() => setTouched((value) => ({ ...value, email: true }))}
+        autoCapitalize="none" // Evita que la primera letra sea mayúscula
+        onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
         onChangeText={setEmail}
         placeholder="Correo electrónico"
         placeholderTextColor={palette.muted}
@@ -180,9 +157,9 @@ export default function LoginScreen() {
             color: palette.text,
           },
         ]}
-        onBlur={() => setTouched((value) => ({ ...value, password: true }))}
+        onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
         onChangeText={setPassword}
-        onToggleVisibility={() => setShowPassword((value) => !value)}
+        onToggleVisibility={() => setShowPassword((prev) => !prev)}
         placeholder="Contraseña"
         showPassword={showPassword}
         value={password}
@@ -192,7 +169,7 @@ export default function LoginScreen() {
         checked={rememberMe}
         label="Recordar contraseña"
         labelStyle={{ color: palette.text }}
-        onToggle={() => setRememberMe((value) => !value)}
+        onToggle={() => setRememberMe((prev) => !prev)}
       />
 
       <View style={[styles.securityBox, { backgroundColor: palette.primarySoft }]}>
@@ -200,7 +177,11 @@ export default function LoginScreen() {
         <Text style={[styles.securityText, { color: palette.text }]}>{securityHint}</Text>
       </View>
 
-      <Pressable onPress={() => router.push("/forgot-password")} style={styles.linkRow}>
+      <Pressable 
+        onPress={() => router.push("/forgot-password")} 
+        style={styles.linkRow}
+        accessibilityRole="button"
+      >
         <Text style={[styles.linkText, { color: palette.text }]}>¿Olvidaste tu contraseña?</Text>
       </Pressable>
 
@@ -212,7 +193,11 @@ export default function LoginScreen() {
         text="Iniciar sesión"
       />
 
-      <Pressable onPress={() => router.push("/register")} style={styles.registerRow}>
+      <Pressable 
+        onPress={() => router.push("/register")} 
+        style={styles.registerRow}
+        accessibilityRole="link"
+      >
         <Text style={[styles.registerText, { color: palette.text }]}>¿No tienes cuenta? </Text>
         <Text style={[styles.registerText, styles.registerLink, { color: palette.link }]}>Registrarse</Text>
       </Pressable>
@@ -234,7 +219,6 @@ const styles = StyleSheet.create({
   demoPill: {
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: "#EEF4FF",
     borderRadius: 12,
     flexDirection: "row",
     gap: 6,
@@ -243,16 +227,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   demoText: {
-    color: theme.colors.primary,
     fontSize: 14,
     fontWeight: "800",
   },
   input: {
-    backgroundColor: "#FBFBFD",
-    borderColor: "transparent",
-    borderRadius: 17,
     borderWidth: 1,
-    color: "#3F3F3F",
+    borderRadius: 17,
     fontFamily: authFont,
     fontSize: 20,
     fontWeight: "700",
@@ -265,55 +245,8 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
-  inputError: {
-    borderColor: theme.colors.error,
-  },
-  errorText: {
-    color: theme.colors.error,
-    fontSize: 12,
-    fontWeight: "700",
-    marginLeft: 8,
-    marginTop: 6,
-  },
-  passwordWrap: {
-    position: "relative",
-  },
-  passwordInput: {
-    paddingRight: 52,
-  },
-  eyeButton: {
-    bottom: 0,
-    justifyContent: "center",
-    position: "absolute",
-    right: 16,
-    top: 10,
-  },
-  checkboxRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginTop: 20,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    alignItems: "center",
-    backgroundColor: "#D8DADC",
-    borderRadius: 5,
-    justifyContent: "center",
-  },
-  checkboxChecked: {
-    backgroundColor: theme.colors.primary,
-  },
-  checkboxLabel: {
-    color: "#3F3F3F",
-    fontFamily: authFont,
-    fontSize: 17,
-    fontWeight: "700",
-    marginLeft: 10,
-  },
   securityBox: {
     alignItems: "center",
-    backgroundColor: "#EEF4FF",
     borderRadius: 12,
     flexDirection: "row",
     gap: 8,
@@ -322,7 +255,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   securityText: {
-    color: "#3F3F3F",
     flex: 1,
     fontSize: 13,
     fontWeight: "700",
@@ -332,31 +264,10 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   linkText: {
-    color: "#3F3F3F",
     fontFamily: authFont,
     fontSize: 16,
     fontWeight: "700",
     textDecorationLine: "underline",
-  },
-  button: {
-    alignItems: "center",
-    backgroundColor: theme.colors.buttonPrimary,
-    borderRadius: 15,
-    height: 56,
-    justifyContent: "center",
-    marginTop: 30,
-  },
-  buttonPressed: {
-    backgroundColor: theme.colors.primaryDark,
-  },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontFamily: authFont,
-    fontSize: 25,
-    fontWeight: "700",
   },
   registerRow: {
     alignSelf: "center",
@@ -366,12 +277,10 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   registerText: {
-    color: "#3F3F3F",
     fontSize: 14,
     fontWeight: "700",
   },
   registerLink: {
-    color: theme.colors.primary,
     textDecorationLine: "underline",
   },
 });
