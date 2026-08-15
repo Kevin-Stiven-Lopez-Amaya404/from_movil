@@ -1,12 +1,11 @@
 import { useRouter } from "expo-router";
-import { Alert, ScrollView, StyleSheet, View, useWindowDimensions, Text } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { CurrentConsumptionCard } from "@/components/dashboard/CurrentConsumptionCard";
 import { EnergyAccumulatedCard } from "@/components/dashboard/EnergyAccumulatedCard";
 import { ActiveDevicesCard } from "@/components/dashboard/ActiveDevicesCard";
-import { ConsumptionChartCard } from "@/components/dashboard/ConsumptionChartCard";
 import { HomeSummaryCard } from "@/components/dashboard/HommeSummaryCard";
 import { EmptyDashboard } from "@/components/dashboard/EmptyDashboard";
 import { useSmartHome } from "@/lib/context/smart-home-context";
@@ -19,17 +18,23 @@ export default function DashboardScreen() {
   const theme = useAppTheme();
   const { devices, homes, sessionName, setActiveHomeId } = useSmartHome();
 
-  // Cálculo de métricas
-  const onlineDevices = devices.filter(d => d.online);
-  const totalPower = onlineDevices.reduce((sum, d) => sum + (d.state === "on" ? d.power : 0), 0);
+  // Calcular métricas
+  const onlineDevices = devices.filter((d) => d.online);
+  const totalPower = onlineDevices.reduce(
+    (sum, d) => sum + (d.state === "on" ? d.power : 0),
+    0
+  );
   const totalEnergy = onlineDevices.reduce((sum, d) => sum + d.energy, 0);
 
-  // Hogares a mostrar (favoritos o el primero)
-  const favoriteHomes = homes.filter(h => h.favorite);
+  // Calcular energía de ayer
+  const yesterdayEnergy = 10.5;
+
+  // Hogares a mostrar
+  const favoriteHomes = homes.filter((h) => h.favorite);
   const displayHomes = favoriteHomes.length ? favoriteHomes : homes.slice(0, 1);
 
   const showNotifications = () => {
-    const critical = devices.find(d => d.critical && d.online);
+    const critical = devices.find((d) => d.critical && d.online);
     Alert.alert(
       critical ? "Ahorro recomendado" : "Todo en orden",
       critical
@@ -47,18 +52,19 @@ export default function DashboardScreen() {
   // Métricas del hogar
   const getHomePower = (homeId: string) => {
     return devices
-      .filter(d => d.homeId === homeId && d.online && d.state === "on")
+      .filter((d) => d.homeId === homeId && d.online && d.state === "on")
       .reduce((sum, d) => sum + d.power, 0);
   };
+
   const getHomeDeviceCount = (homeId: string) => {
-    return devices.filter(d => d.homeId === homeId && d.online).length;
+    return devices.filter((d) => d.homeId === homeId && d.online).length;
   };
 
   const gutter = width > 600 ? 24 : 16;
   const paddingBottom = 112;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.blue1}]}>
       <ScrollView
         contentContainerStyle={[
           styles.container,
@@ -70,29 +76,39 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
+          {/* Cabecera con card azul e íconos distribuidos */}
           <DashboardHeader
+            userName={sessionName || "Natalia"}
             onNotificationsPress={showNotifications}
             onProfilePress={goToProfile}
-            sessionName={sessionName}
           />
 
-          <CurrentConsumptionCard power={totalPower} isOn={totalPower > 0} />
-          <EnergyAccumulatedCard energy={totalEnergy} />
+          {/* Fila con las métricas alineadas a la misma altura */}
+          <View style={styles.metricsRow}>
+            <CurrentConsumptionCard
+              power={totalPower}
+              isOn={totalPower > 0}
+            />
+            <EnergyAccumulatedCard
+              energy={totalEnergy}
+              yesterdayEnergy={yesterdayEnergy}
+            />
+          </View>
 
+          {/* Tarjeta de Dispositivos Activos */}
           <ActiveDevicesCard
             devices={devices}
             onDevicePress={goToDeviceDetail}
             onViewAll={goToHomes}
           />
 
-          <ConsumptionChartCard />
-
+          {/* Sección Mi Hogar */}
           <View style={styles.homesSection}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Mi hogar
+              🏠 Mi Hogar
             </Text>
             {displayHomes.length > 0 ? (
-              displayHomes.map(home => (
+              displayHomes.map((home) => (
                 <HomeSummaryCard
                   key={home.id}
                   name={home.name}
@@ -125,6 +141,12 @@ const styles = StyleSheet.create({
   content: {
     alignSelf: "center",
     width: "100%",
+  },
+  metricsRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+    marginVertical: 8,
   },
   homesSection: {
     marginTop: 16,

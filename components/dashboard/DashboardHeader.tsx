@@ -6,146 +6,133 @@ import { typography } from "@/lib/theme/typography";
 type Props = {
   onNotificationsPress: () => void;
   onProfilePress: () => void;
-  sessionName?: string;
-  title?: string;
+  userName?: string;
   hasUnreadNotifications?: boolean;
 };
 
 export function DashboardHeader({
   onNotificationsPress,
   onProfilePress,
-  sessionName = "Usuario",
-  title = "Smart Home",
+  userName = "Natalia",
   hasUnreadNotifications = false,
 }: Props) {
   const theme = useAppTheme();
-  const initial = sessionName.trim().charAt(0).toUpperCase() || "U";
 
   return (
-    <View style={[styles.topBar, { backgroundColor: theme.background }]}>
-      {/* Título de la marca con color primario/destacado */}
-      <Text style={[styles.brand, { color: theme.blue || theme.text }]}>
-        {title}
-      </Text>
-
-      <View style={styles.topActions}>
-        {/* Botón de Notificaciones con contraste y borde */}
+    <View style={styles.container}>
+      {/* Tarjeta azul con bordes redondeados ARRIBA y rectos ABAJO */}
+      <View style={[styles.headerCard, { backgroundColor: theme.blue }]}>
+        {/* Lado Izquierdo: Notificaciones */}
         <Pressable
           accessibilityLabel="Notificaciones"
           style={({ pressed }) => [
-            styles.squareButton,
-            { 
-              backgroundColor: theme.card || theme.rowAlt,
-              borderColor: theme.border || "transparent",
-            },
+            styles.iconButton,
             pressed && styles.buttonPressed,
           ]}
           onPress={onNotificationsPress}
         >
-          <Ionicons 
-            name={hasUnreadNotifications ? "notifications" : "notifications-outline"} 
-            size={22} 
-            color={hasUnreadNotifications ? (theme.blue || theme.text) : theme.muted || theme.text} 
-          />
-          
-          {/* Badge con borde blanco para destacar sobre el botón */}
-          {hasUnreadNotifications && (
-            <View 
-              style={[
-                styles.unreadBadge, 
-                { 
-                  backgroundColor: theme.danger || "#FF3B30",
-                  borderColor: theme.card || theme.background 
-                }
-              ]} 
-            />
-          )}
+          <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+          {hasUnreadNotifications && <View style={styles.unreadBadge} />}
         </Pressable>
 
-        {/* Avatar de Usuario con color de acento y texto en contraste */}
+        {/* Centro: Smart Home */}
+        <Text style={styles.brandTitle}>Smart Home</Text>
+
+        {/* Lado Derecho: Perfil */}
         <Pressable
           accessibilityLabel="Perfil"
           style={({ pressed }) => [
-            styles.userCircle,
-            { 
-              backgroundColor: theme.blue || theme.blue || "#007AFF",
-              shadowColor: theme.blue || "#007AFF",
-            },
+            styles.iconButton,
             pressed && styles.buttonPressed,
           ]}
           onPress={onProfilePress}
         >
-          <Text style={[styles.userInitial, { color: theme.blue || "#FFFFFF" }]}>
-            {initial}
-          </Text>
+          <Ionicons name="person-outline" size={20} color="#FFFFFF" />
         </Pressable>
+      </View>
+
+      {/* Saludo fuera de la cabecera */}
+      <View style={styles.greetingContainer}>
+        <Text style={[styles.greetingText, { color: theme.text }]}>
+          ¡Hola, {userName}! 👋
+        </Text>
+        <Text style={[styles.subGreetingText, { color: theme.muted }]}>
+          Casa principal ›
+        </Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  topBar: {
+  container: {
+    width: "100%",
+    marginBottom: 8,
+  },
+  headerCard: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
     width: "100%",
+    marginTop: 8,
+
+    // 👈 Redondeado en las esquinas superiores, recto abajo
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  brand: {
+  brandTitle: {
+    color: "#FFFFFF",
     fontFamily: typography.fontFamily.display,
-    fontSize: typography.size.brand,
+    fontSize: typography.size.title,
     fontWeight: typography.weight.bold,
-    letterSpacing: -0.4,
+    textAlign: "center",
   },
-  topActions: {
+  iconButton: {
     alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-  },
-  squareButton: {
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1,
-    height: 44,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 12,
+    height: 40,
     justifyContent: "center",
     position: "relative",
-    width: 44,
-    // Sombra sutil para darle profundidad
-    elevation: 2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    width: 40,
   },
   unreadBadge: {
-    borderRadius: 6,
-    borderWidth: 2,
-    height: 12,
+    backgroundColor: "#FF3B20",
+    borderRadius: 4,
+    height: 8,
     position: "absolute",
-    right: 8,
-    top: 8,
-    width: 12,
-  },
-  userCircle: {
-    alignItems: "center",
-    borderRadius: 22,
-    height: 44,
-    justifyContent: "center",
-    width: 44,
-    // Sombra de color dinámico para un efecto "glow"
-    elevation: 4,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-  },
-  userInitial: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.size.section,
-    fontWeight: typography.weight.bold,
+    right: 10,
+    top: 10,
+    width: 8,
   },
   buttonPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.95 }],
+    opacity: 0.75,
+    transform: [{ scale: 0.96 }],
+  },
+  greetingContainer: {
+    marginTop: 20,
+    paddingHorizontal: 4,
+  },
+  greetingText: {
+    fontFamily: typography.fontFamily.display,
+    fontSize: typography.size.screenTitle,
+    fontWeight: typography.weight.bold,
+  },
+  subGreetingText: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.size.body,
+    fontWeight: typography.weight.medium,
+    marginTop: 2,
   },
 });

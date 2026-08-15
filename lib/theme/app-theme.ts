@@ -15,39 +15,24 @@ export function getAppTheme(mode: ColorMode) {
 
   return {
     dark,
-    blue: "#0864C8",
-    background: dark ? "#101827" : "#FFFFFF",
-    card: dark ? "#172033" : "#F4F6FF",
+    blue1: "#e8f1ff",          // Azul profundo para títulos y botones destacados
+    blue: "#0047AB",          // Azul cobalto intenso de la cabecera e íconos principales
+    primary: "#003380",       // Tono para textos destacados y títulos de sección
+    background: dark ? "#101827" : "#F8FAFC", // Fondo claro casi blanco
+    card: dark ? "#172033" : "#FFFFFF",       // Tarjetas en fondo blanco puro
     row: dark ? "#111827" : "#FFFFFF",
-    rowAlt: dark ? "#1F2937" : "#EEF4FF",
-    text: dark ? "#F8FAFC" : "#454545",
-    muted: dark ? "#CBD5E1" : "#6B7280",
-    border: dark ? "#334155" : "#DDE2F5",
-    divider: dark ? "#2D3748" : "#DDE2F5",
+    rowAlt: dark ? "#1F2937" : "#EBF2FA",     // Fondo suave para insignias / pills
+    text: dark ? "#F8FAFC" : "#0A192F",       // Texto azul muy oscuro / marino
+    muted: dark ? "#CBD5E1" : "#64748B",      // Texto secundario gris azulado
+    border: dark ? "#334155" : "#0047AB",     // Borde azul destacado
+    borderLight: dark ? "#334155" : "#E2E8F0",// Borde neutro para tarjetas inactivas
     danger: "#FF3B20",
     dangerSoft: dark ? "#3A1D1A" : "#FFF1EF",
-    success: "#35AD61",
-    successSoft: dark ? "#123521" : "#BDE8CB",
+    success: "#22C55E",
+    successSoft: dark ? "#123521" : "#DCFCE7",
     tabBar: dark ? "#111827" : "#FFFFFF",
-    shadow: dark ? "#000000" : "#9AA6BD",
-    tab: {
-      activeBackground: "#0864C8",
-      activeBorder: "#0864C8",
-      activeText: "#FFFFFF",
-      inactiveBackground: dark ? "#1F2937" : "#EEF4FF",
-      inactiveBorder: dark ? "#334155" : "#DDE2F5",
-      inactiveText: dark ? "#E2E8F0" : "#334155",
-      disabledText: dark ? "#64748B" : "#94A3B8",
-      hoverBackground: dark ? "#1E293B" : "#EFF6FF",
-      focusRing: dark ? "#2563EB33" : "#93C5FD33",
-      borderRadius: 14,
-      height: 48,
-      minWidth: 96,
-      gap: 10,
-      horizontalPadding: 14,
-      pressedOpacity: 0.88,
-      activeShadow: dark ? "#000000" : "#9AA6BD",
-    },
+    shadow: dark ? "#000000" : "#00000010",
+    // ... resto de propiedades de tab si aplica
   };
 }
 

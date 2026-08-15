@@ -23,18 +23,27 @@ export function HomeSummaryCard({ name, power, deviceCount, onPress }: Props) {
       onPress={onPress}
     >
       <View style={styles.row}>
-        <View>
-          <Text style={[styles.name, { color: theme.text }]}>
-            🏠 {name}
-          </Text>
-          <Text style={[styles.detail, { color: theme.muted }]}>
-            ⚡ {formatWatts(power)} actuales
-          </Text>
-          <Text style={[styles.detail, { color: theme.muted }]}>
-            {deviceCount} dispositivo{deviceCount !== 1 ? "s" : ""}
-          </Text>
+        <View style={styles.leftContent}>
+          <View style={[styles.iconContainer, { backgroundColor: `${theme.blue}15` }]}>
+            <Ionicons name="home-outline" size={22} color={theme.blue} />
+          </View>
+          <View>
+            <Text style={[styles.name, { color: theme.text }]}>
+              {name}
+            </Text>
+            <Text style={[styles.detail, { color: theme.muted }]}>
+              {deviceCount} dispositivo{deviceCount !== 1 ? "s" : ""}
+            </Text>
+          </View>
         </View>
-        <Ionicons name="chevron-forward" size={24} color={theme.muted} />
+        <View style={styles.rightContent}>
+          <View style={[styles.powerBadge, { backgroundColor: theme.rowAlt }]}>
+            <Text style={[styles.powerText, { color: theme.text }]}>
+              {formatWatts(power)}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={theme.muted} />
+        </View>
       </View>
     </Pressable>
   );
@@ -59,14 +68,41 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  leftContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   name: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: typography.size.section,
+    fontSize: typography.size.bodyLarge,
     fontWeight: typography.weight.semibold,
   },
   detail: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.body,
-    marginTop: 4,
+    fontSize: typography.size.helper,
+    marginTop: 1,
+  },
+  rightContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  powerBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  powerText: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.size.helper,
+    fontWeight: typography.weight.semibold,
   },
 });
