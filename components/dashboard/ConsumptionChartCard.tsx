@@ -5,12 +5,12 @@ import { typography } from "@/lib/theme/typography";
 export function ConsumptionChartCard() {
   const theme = useAppTheme();
   return (
-    <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-      <Text style={[styles.title, { color: theme.colors.text }]}>
+    <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <Text style={[styles.title, { color: theme.text }]}>
         Consumo reciente
       </Text>
-      <View style={[styles.chartPlaceholder, { backgroundColor: theme.colors.border }]}>
-        <Text style={[styles.placeholderText, { color: theme.colors.muted }]}>
+      <View style={[styles.chartPlaceholder, { backgroundColor: theme.rowAlt }]}>
+        <Text style={[styles.placeholderText, { color: theme.muted }]}>
           Gráfico de consumo (próximamente)
         </Text>
       </View>
@@ -31,8 +31,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: typography.size.section,
+    fontWeight: typography.weight.semibold,
     marginBottom: 12,
   },
   chartPlaceholder: {
@@ -43,6 +43,6 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
+    fontSize: typography.size.body,
   },
 });

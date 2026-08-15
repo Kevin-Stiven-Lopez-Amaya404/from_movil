@@ -4,20 +4,20 @@ import { typography } from "@/lib/theme/typography";
 import { formatEnergy } from "@/lib/utils/formatters";
 
 type Props = {
-  energy: number; // en Wh
+  energy: number;
 };
 
 export function EnergyAccumulatedCard({ energy }: Props) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-      <Text style={[styles.label, { color: theme.colors.muted }]}>
+    <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <Text style={[styles.label, { color: theme.muted }]}>
         ⚡ Energía acumulada
       </Text>
-      <Text style={[styles.value, { color: theme.colors.text }]}>
+      <Text style={[styles.value, { color: theme.text }]}>
         {formatEnergy(energy)}
       </Text>
-      <Text style={[styles.sub, { color: theme.colors.muted }]}>
+      <Text style={[styles.sub, { color: theme.muted }]}>
         Energía consumida
       </Text>
     </View>
@@ -37,19 +37,19 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: typography.size.helper,
+    fontWeight: typography.weight.medium,
     marginBottom: 4,
   },
   value: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: typography.size.title,
+    fontWeight: typography.weight.bold,
     marginVertical: 4,
   },
   sub: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
-    fontWeight: "400",
+    fontSize: typography.size.helper,
+    fontWeight: typography.weight.regular,
   },
 });

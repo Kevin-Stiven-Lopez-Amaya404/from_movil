@@ -9,14 +9,14 @@ type Props = {
 export function EmptyDashboard({ onAddPress }: Props) {
   const theme = useAppTheme();
   return (
-    <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
-      <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
+    <View style={[styles.emptyState, { backgroundColor: theme.card }]}>
+      <Text style={[styles.emptyTitle, { color: theme.text }]}>
         Todavía no tienes un hogar configurado.
       </Text>
-      <Text style={[styles.emptyText, { color: theme.colors.muted }]}>
+      <Text style={[styles.emptyText, { color: theme.muted }]}>
         Agrega tu primer hogar para comenzar a monitorear tu consumo eléctrico.
       </Text>
-      <Pressable style={[styles.addButton, { backgroundColor: theme.colors.primary }]} onPress={onAddPress}>
+      <Pressable style={[styles.addButton, { backgroundColor: theme.blue }]} onPress={onAddPress}>
         <Text style={styles.addButtonText}>Agregar hogar</Text>
       </Pressable>
     </View>
@@ -32,14 +32,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: typography.size.section,
+    fontWeight: typography.weight.semibold,
     textAlign: "center",
     marginBottom: 8,
   },
   emptyText: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 15,
+    fontSize: typography.size.body,
     textAlign: "center",
     marginBottom: 20,
   },
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: "#fff",
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: typography.size.body,
+    fontWeight: typography.weight.semibold,
   },
 });

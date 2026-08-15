@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View, useWindowDimensions, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -7,25 +7,24 @@ import { CurrentConsumptionCard } from "@/components/dashboard/CurrentConsumptio
 import { EnergyAccumulatedCard } from "@/components/dashboard/EnergyAccumulatedCard";
 import { ActiveDevicesCard } from "@/components/dashboard/ActiveDevicesCard";
 import { ConsumptionChartCard } from "@/components/dashboard/ConsumptionChartCard";
-import { HomeSummaryCard } from "@/components/dashboard/HomeSummaryCard";
+import { HomeSummaryCard } from "@/components/dashboard/HommeSummaryCard";
 import { EmptyDashboard } from "@/components/dashboard/EmptyDashboard";
 import { useSmartHome } from "@/lib/context/smart-home-context";
-import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { typography } from "@/lib/theme/typography";
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
+  const { width } = useWindowDimensions();
   const theme = useAppTheme();
-
   const { devices, homes, sessionName, setActiveHomeId } = useSmartHome();
 
-  // Calcular métricas
+  // Cálculo de métricas
   const onlineDevices = devices.filter(d => d.online);
   const totalPower = onlineDevices.reduce((sum, d) => sum + (d.state === "on" ? d.power : 0), 0);
   const totalEnergy = onlineDevices.reduce((sum, d) => sum + d.energy, 0);
 
-  // Hogares para mostrar (favoritos o el primero)
+  // Hogares a mostrar (favoritos o el primero)
   const favoriteHomes = homes.filter(h => h.favorite);
   const displayHomes = favoriteHomes.length ? favoriteHomes : homes.slice(0, 1);
 
@@ -42,11 +41,10 @@ export default function DashboardScreen() {
   const goToHomes = () => router.push("/(tabs)/homes");
   const goToProfile = () => router.push("/profile");
   const goToDeviceDetail = (deviceId: string) => {
-    // Navegar a detalle del dispositivo (aún no implementado)
     Alert.alert("Detalle", `Ver detalle del dispositivo ${deviceId}`);
   };
 
-  // Determinar si el hogar tiene algún dispositivo encendido
+  // Métricas del hogar
   const getHomePower = (homeId: string) => {
     return devices
       .filter(d => d.homeId === homeId && d.online && d.state === "on")
@@ -56,20 +54,22 @@ export default function DashboardScreen() {
     return devices.filter(d => d.homeId === homeId && d.online).length;
   };
 
+  const gutter = width > 600 ? 24 : 16;
+  const paddingBottom = 112;
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <ScrollView
         contentContainerStyle={[
           styles.container,
           {
-            paddingHorizontal: layout.gutter,
-            paddingBottom: layout.screenBottom,
-            paddingTop: layout.screenTop,
+            paddingHorizontal: gutter,
+            paddingBottom: paddingBottom,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
+        <View style={styles.content}>
           <DashboardHeader
             onNotificationsPress={showNotifications}
             onProfilePress={goToProfile}
@@ -88,7 +88,7 @@ export default function DashboardScreen() {
           <ConsumptionChartCard />
 
           <View style={styles.homesSection}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Mi hogar
             </Text>
             {displayHomes.length > 0 ? (
@@ -105,9 +105,7 @@ export default function DashboardScreen() {
                 />
               ))
             ) : (
-              <EmptyDashboard
-                onAddPress={goToHomes}
-              />
+              <EmptyDashboard onAddPress={goToHomes} />
             )}
           </View>
         </View>
@@ -133,8 +131,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: typography.size.section,
+    fontWeight: typography.weight.semibold,
     marginBottom: 8,
   },
 });

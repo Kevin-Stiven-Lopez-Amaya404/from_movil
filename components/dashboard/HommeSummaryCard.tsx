@@ -17,24 +17,24 @@ export function HomeSummaryCard({ name, power, deviceCount, onPress }: Props) {
     <Pressable
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: theme.colors.card },
+        { backgroundColor: theme.card },
         pressed && styles.pressed,
       ]}
       onPress={onPress}
     >
       <View style={styles.row}>
         <View>
-          <Text style={[styles.name, { color: theme.colors.text }]}>
+          <Text style={[styles.name, { color: theme.text }]}>
             🏠 {name}
           </Text>
-          <Text style={[styles.detail, { color: theme.colors.muted }]}>
+          <Text style={[styles.detail, { color: theme.muted }]}>
             ⚡ {formatWatts(power)} actuales
           </Text>
-          <Text style={[styles.detail, { color: theme.colors.muted }]}>
+          <Text style={[styles.detail, { color: theme.muted }]}>
             {deviceCount} dispositivo{deviceCount !== 1 ? "s" : ""}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={24} color={theme.colors.muted} />
+        <Ionicons name="chevron-forward" size={24} color={theme.muted} />
       </View>
     </Pressable>
   );
@@ -61,12 +61,12 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: typography.size.section,
+    fontWeight: typography.weight.semibold,
   },
   detail: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
+    fontSize: typography.size.body,
     marginTop: 4,
   },
 });

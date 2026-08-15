@@ -16,18 +16,18 @@ export function ActiveDevicesCard({ devices, onDevicePress, onViewAll }: Props) 
   const active = devices.filter(d => d.online && d.state === "on" && d.power > 0);
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+    <View style={[styles.card, { backgroundColor: theme.card }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>
+        <Text style={[styles.title, { color: theme.text }]}>
           Dispositivos activos
         </Text>
         <Pressable onPress={onViewAll}>
-          <Text style={[styles.seeAll, { color: theme.colors.primary }]}>Ver ›</Text>
+          <Text style={[styles.seeAll, { color: theme.blue }]}>Ver ›</Text>
         </Pressable>
       </View>
 
       {active.length === 0 ? (
-        <Text style={[styles.empty, { color: theme.colors.muted }]}>
+        <Text style={[styles.empty, { color: theme.muted }]}>
           No hay dispositivos activos
         </Text>
       ) : (
@@ -36,18 +36,18 @@ export function ActiveDevicesCard({ devices, onDevicePress, onViewAll }: Props) 
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Pressable
-              style={[styles.deviceItem, { borderBottomColor: theme.colors.border }]}
+              style={[styles.deviceItem, { borderBottomColor: theme.border }]}
               onPress={() => onDevicePress(item.id)}
             >
               <View style={styles.deviceInfo}>
-                <Text style={[styles.deviceName, { color: theme.colors.text }]}>
+                <Text style={[styles.deviceName, { color: theme.text }]}>
                   {item.name}
                 </Text>
-                <Text style={[styles.devicePower, { color: theme.colors.muted }]}>
+                <Text style={[styles.devicePower, { color: theme.muted }]}>
                   {formatWatts(item.power)}
                 </Text>
               </View>
-              <View style={[styles.statusBadge, { backgroundColor: theme.colors.success }]}>
+              <View style={[styles.statusBadge, { backgroundColor: theme.success }]}>
                 <Text style={styles.statusText}>ON</Text>
               </View>
             </Pressable>
