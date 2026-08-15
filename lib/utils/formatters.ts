@@ -17,3 +17,14 @@ export function formatCOP(value: number) {
     style: "currency",
   }).format(value);
 }
+
+export const formatWatts = (watts: number): string => {
+  return `${watts.toFixed(0)} W`;
+};
+
+export const formatEnergy = (wh: number): string => {
+  if (wh >= 1000) {
+    return `${(wh / 1000).toFixed(2)} kWh`;
+  }
+  return `${wh.toFixed(0)} Wh`;
+};

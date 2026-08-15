@@ -30,9 +30,16 @@ export type SmartDevice = {
   category: DeviceCategory;
   room: string;
   icon: string;
-  consumption: number;
-  yesterday: number;
+  // Nuevos campos del Shelly
+  power: number;          // W (potencia instantánea)
+  energy: number;         // Wh (energía acumulada)
+  voltage: number;        // V
+  current: number;        // A
+  frequency: number;      // Hz
   online: boolean;
+  temperature?: number;   // °C
+  state: "on" | "off";    // estado del relé
+  yesterday: number;      // Wh (consumo del día anterior)
   critical?: boolean;
 };
 

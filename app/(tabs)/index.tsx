@@ -1,67 +1,63 @@
-/**
- * Pantalla del dashboard principal.
- *
- * Combina las metricas de consumo, las notificaciones y el acceso rapido a
- * hogares favoritos. Utiliza componentes visuales reutilizables para mantener
- * el archivo de pantalla legible y separado de la logica de presentacion.
- */
 import { useRouter } from "expo-router";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
-import { DashboardToolbar } from "@/components/dashboard/DashboardToolbar";
+import { CurrentConsumptionCard } from "@/components/dashboard/CurrentConsumptionCard";
+import { EnergyAccumulatedCard } from "@/components/dashboard/EnergyAccumulatedCard";
+import { ActiveDevicesCard } from "@/components/dashboard/ActiveDevicesCard";
+import { ConsumptionChartCard } from "@/components/dashboard/ConsumptionChartCard";
+import { HomeSummaryCard } from "@/components/dashboard/HomeSummaryCard";
 import { EmptyDashboard } from "@/components/dashboard/EmptyDashboard";
-import { EnergySummaryCard } from "@/components/dashboard/EnergySummaryCard";
-import { HomeWidgetCard } from "@/components/dashboard/HomeWidgetCard";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { formatKwh } from "@/lib/utils/formatters";
-
-const DARK = "#FFFFFF";
 
 export default function DashboardScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
 
-  // Datos globales usados para construir el resumen del dashboard.
   const { devices, homes, sessionName, setActiveHomeId } = useSmartHome();
 
-  // El dashboard no guarda estos datos: los deriva del estado global.
-  const onlineDevices = devices.filter((device) => device.online);
-  const currentConsumption = onlineDevices.reduce((total, device) => total + device.consumption, 0);
-  const favoriteHomes = homes.filter((home) => home.favorite);
+  // Calcular métricas
+  const onlineDevices = devices.filter(d => d.online);
+  const totalPower = onlineDevices.reduce((sum, d) => sum + (d.state === "on" ? d.power : 0), 0);
+  const totalEnergy = onlineDevices.reduce((sum, d) => sum + d.energy, 0);
 
-  // El dashboard muestra hogares favoritos si existen;
-  // de lo contrario muestra el primer hogar disponible.
-  const dashboardHomes = favoriteHomes.length ? favoriteHomes : homes.slice(0, 1);
+  // Hogares para mostrar (favoritos o el primero)
+  const favoriteHomes = homes.filter(h => h.favorite);
+  const displayHomes = favoriteHomes.length ? favoriteHomes : homes.slice(0, 1);
 
-  /**
-   * Muestra una alerta de estado general.
-   *
-   * Si existe un dispositivo critico encendido, recomienda ahorro. Si no,
-   * informa que no hay alertas activas.
-   */
-  function showNotifications() {
-    const critical = devices.find((device) => device.critical && device.online);
-
+  const showNotifications = () => {
+    const critical = devices.find(d => d.critical && d.online);
     Alert.alert(
       critical ? "Ahorro recomendado" : "Todo en orden",
       critical
-        ? `${critical.name} esta consumiendo mas de lo habitual.`
-        : "No hay alertas activas en tus dispositivos.",
+        ? `${critical.name} está consumiendo más de lo habitual.`
+        : "No hay alertas activas en tus dispositivos."
     );
-  }
+  };
 
-  function openHomes() {
-    router.push("/(tabs)/homes");
-  }
+  const goToHomes = () => router.push("/(tabs)/homes");
+  const goToProfile = () => router.push("/profile");
+  const goToDeviceDetail = (deviceId: string) => {
+    // Navegar a detalle del dispositivo (aún no implementado)
+    Alert.alert("Detalle", `Ver detalle del dispositivo ${deviceId}`);
+  };
+
+  // Determinar si el hogar tiene algún dispositivo encendido
+  const getHomePower = (homeId: string) => {
+    return devices
+      .filter(d => d.homeId === homeId && d.online && d.state === "on")
+      .reduce((sum, d) => sum + d.power, 0);
+  };
+  const getHomeDeviceCount = (homeId: string) => {
+    return devices.filter(d => d.homeId === homeId && d.online).length;
+  };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         contentContainerStyle={[
           styles.container,
@@ -76,68 +72,41 @@ export default function DashboardScreen() {
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <DashboardHeader
             onNotificationsPress={showNotifications}
-            onProfilePress={() => router.push("/profile")}
-            rowAltColor={theme.rowAlt}
+            onProfilePress={goToProfile}
             sessionName={sessionName}
-            textColor={theme.text}
           />
 
-          <DashboardTabs
-            activeKey="dashboard"
-            items={[
-              { key: "activity", label: "Actividad", route: "/(tabs)/reports" },
-              { key: "dashboard", label: "Mi dashboard", route: "/(tabs)" },
-              { key: "homes", label: "Hogares", route: "/(tabs)/homes" },
-            ]}
+          <CurrentConsumptionCard power={totalPower} isOn={totalPower > 0} />
+          <EnergyAccumulatedCard energy={totalEnergy} />
+
+          <ActiveDevicesCard
+            devices={devices}
+            onDevicePress={goToDeviceDetail}
+            onViewAll={goToHomes}
           />
 
-          <DashboardToolbar
-            borderColor={theme.border}
-            cardColor={theme.card}
-            onAddPress={openHomes}
-            onCustomizePress={() => router.push("/reports")}
-            onInfoPress={() => Alert.alert("Dashboard", "Agrega hogares favoritos para verlos aqui.")}
-            textColor={theme.text}
-          />
+          <ConsumptionChartCard />
 
-          <EnergySummaryCard
-            activeDevices={onlineDevices.length}
-            cardColor={theme.card}
-            formattedConsumption={formatKwh(currentConsumption)}
-            mutedColor={theme.muted}
-            rowColor={theme.row}
-            textColor={theme.text}
-          />
-
-          <View style={styles.widgets}>
-            {dashboardHomes.length > 0 ? (
-              dashboardHomes.map((home) => {
-                const homeDevices = devices.filter((device) => device.homeId === home.id);
-                const homeConsumption = homeDevices
-                  .filter((device) => device.online)
-                  .reduce((sum, device) => sum + device.consumption, 0);
-
-                return (
-                  <HomeWidgetCard
-                    key={home.id}
-                    consumption={`${homeConsumption.toFixed(2)} kWh`}
-                    name={home.name}
-                    onPress={() => {
-                      setActiveHomeId(home.id);
-                      openHomes();
-                    }}
-                    rowAltColor={theme.rowAlt}
-                    rowColor={theme.row}
-                    textColor={theme.text}
-                  />
-                );
-              })
+          <View style={styles.homesSection}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Mi hogar
+            </Text>
+            {displayHomes.length > 0 ? (
+              displayHomes.map(home => (
+                <HomeSummaryCard
+                  key={home.id}
+                  name={home.name}
+                  power={getHomePower(home.id)}
+                  deviceCount={getHomeDeviceCount(home.id)}
+                  onPress={() => {
+                    setActiveHomeId(home.id);
+                    goToHomes();
+                  }}
+                />
+              ))
             ) : (
               <EmptyDashboard
-                cardColor={theme.card}
-                mutedColor={theme.muted}
-                onAddPress={openHomes}
-                textColor={theme.text}
+                onAddPress={goToHomes}
               />
             )}
           </View>
@@ -150,18 +119,22 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: DARK,
   },
   container: {
     alignItems: "center",
     minHeight: "100%",
-    paddingBottom: 112,
   },
   content: {
     alignSelf: "center",
     width: "100%",
   },
-  widgets: {
-    marginTop: 30,
+  homesSection: {
+    marginTop: 16,
+  },
+  sectionTitle: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 8,
   },
 });
