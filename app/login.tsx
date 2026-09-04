@@ -1,9 +1,11 @@
 import { AuthCheckboxRow } from "@/components/auth/AuthCheckboxRow";
 import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
-import { AuthPasswordField, AuthTextField } from "@/components/auth/AuthTextField";
+import {
+  AuthPasswordField,
+  AuthTextField,
+} from "@/components/auth/AuthTextField";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { BackButton } from "@/components/common/BackButton";
-import { theme } from "@/constants/theme";
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { authenticateUser } from "@/lib/auth/auth-store";
 import { useSmartHome } from "@/lib/context/smart-home-context";
@@ -13,365 +15,741 @@ import { typography } from "@/lib/theme/typography";
 import { isValidEmail } from "@/lib/utils/validators";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
-    Alert,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
-
-/**
- * Pantalla de inicio de sesión.
- *
- * Esta pantalla valida credenciales contra el almacén local de usuarios y
- * simula login con mensajes de alerta. También incluye acceso demo para
- * explorar la app sin crear una cuenta real.
- */
 
 export default function LoginScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
 
-  // Datos globales relacionados con cuenta y sesion.
-  const { accountActive, colorMode, setAccountActive, setSessionName } = useSmartHome();
+  const {
+    accountActive,
+    colorMode,
+    setAccountActive,
+    setSessionName,
+  } = useSmartHome();
+
   const palette = getAuthPalette(colorMode);
 
-  // Estados locales del formulario de login.
+  // ==========================================
+  // ESTADO DEL FORMULARIO
+  // ==========================================
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [touched, setTouched] = useState({ email: false, password: false });
+
+  const [touched, setTouched] = useState({
+    email: false,
+    password: false,
+  });
+
+  const [submitted, setSubmitted] = useState(false);
+
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
-  // Normaliza el correo para evitar errores por espacios o mayusculas.
+  // ==========================================
+  // VALIDACIONES
+  // ==========================================
+
   const cleanEmail = email.trim().toLowerCase();
 
-  // Errores visibles solo cuando el usuario ya interactuo con el campo.
-  // Esto evita mostrar validaciones antes de que el usuario comience a escribir.
   const emailError =
-    touched.email && !isValidEmail(cleanEmail)
+    (submitted || touched.email) && !isValidEmail(cleanEmail)
       ? "Ingresa un correo válido."
       : "";
+
   const passwordError =
-    touched.password && password.length < 4
+    (submitted || touched.password) && password.length < 4
       ? "La contraseña debe tener mínimo 4 caracteres."
       : "";
-  const canSubmit = isValidEmail(cleanEmail) && password.length >= 4;
 
-  // Mensaje contextual que cambia con los intentos fallidos.
-  const securityHint = useMemo(() => {
-    if (failedAttempts === 0) return "Tus dispositivos se sincronizan al entrar.";
-    if (failedAttempts === 1) return "Revisa mayúsculas y espacios antes de continuar.";
-    return "Puedes usar el acceso demo para probar la app.";
-  }, [failedAttempts]);
+  const canSubmit =
+    isValidEmail(cleanEmail) && password.length >= 4;
 
-  /**
-   * Completa credenciales de prueba.
-   *
-   * Sirve para demostrar la aplicacion sin depender de crear una cuenta nueva.
-   */
+  // ==========================================
+  // MENSAJE DE SEGURIDAD
+  // ==========================================
+
+
+  // ==========================================
+  // ACCESO DEMO
+  // ==========================================
+
   function fillDemoUser() {
     setEmail("pepe@smarthome.com");
     setPassword("Smart123!");
-    setTouched({ email: true, password: true });
+
+    setTouched({
+      email: true,
+      password: true,
+    });
   }
 
-  /**
-   * Valida y ejecuta el inicio de sesion.
-   *
-   * Orden de decision:
-   * 1. Marca campos como tocados para mostrar errores.
-   * 2. Verifica si la cuenta global esta activa.
-   * 3. Valida formato y longitud.
-   * 4. Consulta usuarios desde la capa de autenticacion.
-   * 5. Guarda el nombre de sesion y entra a las tabs.
-   */
+  // ==========================================
+  // LOGIN
+  // ==========================================
+
   async function handleLogin() {
-    setTouched({ email: true, password: true });
+    setSubmitted(true);
 
     if (submitting) return;
+
+    // ========================================
+    // CUENTA DESACTIVADA
+    // ========================================
 
     if (!accountActive) {
       Alert.alert(
         "Cuenta desactivada",
-        "Esta cuenta fue desactivada. Puedes reactivarla para continuar en esta version de prueba.",
+        "Esta cuenta fue desactivada. Puedes reactivarla para continuar en esta versión de prueba.",
         [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Reactivar", onPress: () => setAccountActive(true) },
+          {
+            text: "Cancelar",
+            style: "cancel",
+          },
+          {
+            text: "Reactivar",
+            onPress: () => setAccountActive(true),
+          },
         ],
       );
+
       return;
     }
 
+    // ========================================
+    // VALIDACIÓN
+    // ========================================
+
     if (!canSubmit) {
-      Alert.alert("Datos incompletos", "Corrige los campos marcados.");
+      Alert.alert(
+        "Datos incompletos",
+        "Corrige los campos marcados.",
+      );
+
       return;
     }
 
     setSubmitting(true);
 
     try {
-      const user = await authenticateUser(cleanEmail, password);
+      const user = await authenticateUser(
+        cleanEmail,
+        password,
+      );
+
+      // ======================================
+      // CREDENCIALES INCORRECTAS
+      // ======================================
 
       if (!user) {
-        setFailedAttempts((value) => value + 1);
-        Alert.alert("No pudimos iniciar sesion", "Correo o contrasena incorrectos.");
+        setFailedAttempts((prev) => prev + 1);
+
+        Alert.alert(
+          "No pudimos iniciar sesión",
+          "Correo o contraseña incorrectos.",
+        );
+
         return;
       }
 
+      // ======================================
+      // LOGIN EXITOSO
+      // ======================================
+
       setFailedAttempts(0);
-      setSessionName(user.name.split(" ")[0] || user.name);
-      Alert.alert("Bienvenido", `Hola, ${user.name}.`, [
-        { text: "Entrar", onPress: () => router.replace("/(tabs)") },
-      ]);
+
+      setSessionName(
+        user.name.split(" ")[0] || user.name,
+      );
+
+      Alert.alert(
+        "Bienvenido",
+        `Hola, ${user.name}.`,
+        [
+          {
+            text: "Entrar",
+            onPress: () => router.replace("/(tabs)"),
+          },
+        ],
+      );
     } catch (error) {
-      Alert.alert("Error de conexion", getApiErrorMessage(error));
+      Alert.alert(
+        "Error de conexión",
+        getApiErrorMessage(error),
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
+  // ==========================================
+  // RENDER
+  // ==========================================
+
   return (
     <AuthScreenLayout
-      backgroundColor={palette.background}
+      backgroundColor={
+        colorMode === "dark"
+          ? "#08111F"
+          : "#ffffff"
+      }
       compact={layout.compact}
       title="Smart Home"
       titleColor={palette.title}
-      titleStyle={layout.tiny ? styles.titleTiny : undefined}
+      titleStyle={
+        layout.tiny
+          ? styles.titleTiny
+          : styles.brandTitle
+      }
     >
-      <BackButton color={palette.link} fallbackHref="/welcome" />
+      {/* ====================================== */}
+      {/* BOTÓN VOLVER                           */}
+      {/* ====================================== */}
 
-      <Pressable style={[styles.demoPill, { backgroundColor: palette.primarySoft }]} onPress={fillDemoUser}>
-        <Ionicons name="flash-outline" size={18} color={palette.link} />
-        <Text style={[styles.demoText, { color: palette.link }]}>Usar acceso demo</Text>
-      </Pressable>
-
-      <AuthTextField
-        containerStyle={styles.fieldContainer}
-        error={emailError}
-        inputStyle={[
-          styles.input,
-          {
-            backgroundColor: palette.field,
-            borderColor: palette.fieldBorder,
-            color: palette.text,
-          },
-        ]}
-        keyboardType="email-address"
-        onBlur={() => setTouched((value) => ({ ...value, email: true }))}
-        onChangeText={setEmail}
-        placeholder="Correo electrónico"
-        placeholderTextColor={palette.muted}
-        value={email}
-      />
-
-      <AuthPasswordField
-        containerStyle={styles.fieldContainer}
-        error={passwordError}
-        inputStyle={[
-          styles.input,
-          {
-            backgroundColor: palette.field,
-            borderColor: palette.fieldBorder,
-            color: palette.text,
-          },
-        ]}
-        onBlur={() => setTouched((value) => ({ ...value, password: true }))}
-        onChangeText={setPassword}
-        onToggleVisibility={() => setShowPassword((value) => !value)}
-        placeholder="Contraseña"
-        showPassword={showPassword}
-        value={password}
-      />
-
-      <AuthCheckboxRow
-        checked={rememberMe}
-        label="Recordar contraseña"
-        labelStyle={{ color: palette.text }}
-        onToggle={() => setRememberMe((value) => !value)}
-      />
-
-      <View style={[styles.securityBox, { backgroundColor: palette.primarySoft }]}>
-        <Ionicons name="shield-checkmark-outline" size={21} color={palette.link} />
-        <Text style={[styles.securityText, { color: palette.text }]}>{securityHint}</Text>
+      <View style={styles.header}>
+        <BackButton
+          color={palette.link}
+          fallbackHref="/welcome"
+        />
       </View>
 
-      <Pressable onPress={() => router.push("/forgot-password")} style={styles.linkRow}>
-        <Text style={[styles.linkText, { color: palette.text }]}>¿Olvidaste tu contraseña?</Text>
-      </Pressable>
 
-      <PrimaryButton
-        disabled={!canSubmit}
-        loading={submitting}
-        onPress={handleLogin}
-        style={{ backgroundColor: palette.button }}
-        text="Iniciar sesión"
-      />
+      {/* ====================================== */}
+      {/* FORMULARIO                             */}
+      {/* ====================================== */}
 
-      <Pressable onPress={() => router.push("/register")} style={styles.registerRow}>
-        <Text style={[styles.registerText, { color: palette.text }]}>¿No tienes cuenta? </Text>
-        <Text style={[styles.registerText, styles.registerLink, { color: palette.link }]}>Registrarse</Text>
-      </Pressable>
+      <View style={styles.formContainer}>
+        {/* ==================================== */}
+        {/* CORREO                               */}
+        {/* ==================================== */}
+
+        <View style={styles.fieldGroup}>
+          <Text
+            style={[
+              styles.fieldLabel,
+              {
+                color: palette.text,
+              },
+            ]}
+          >
+            Correo electrónico
+          </Text>
+
+          <AuthTextField
+            error={emailError}
+            inputStyle={[
+              styles.input,
+              {
+                backgroundColor: palette.field,
+                borderColor: palette.fieldBorder,
+                color: palette.text,
+              },
+            ]}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            onBlur={() =>
+              setTouched((prev) => ({
+                ...prev,
+                email: true,
+              }))
+            }
+            onChangeText={setEmail}
+            placeholder="Correo electrónico"
+            placeholderTextColor={palette.muted}
+            value={email}
+          />
+        </View>
+
+        {/* ==================================== */}
+        {/* CONTRASEÑA                            */}
+        {/* ==================================== */}
+
+        <View style={styles.fieldGroup}>
+          <Text
+            style={[
+              styles.fieldLabel,
+              {
+                color: palette.text,
+              },
+            ]}
+          >
+            Contraseña
+          </Text>
+
+          <AuthPasswordField
+            error={passwordError}
+            inputStyle={[
+              styles.input,
+              {
+                backgroundColor: palette.field,
+                borderColor: palette.fieldBorder,
+                color: palette.text,
+              },
+            ]}
+            onBlur={() =>
+              setTouched((prev) => ({
+                ...prev,
+                password: true,
+              }))
+            }
+            onChangeText={setPassword}
+            onToggleVisibility={() =>
+              setShowPassword((prev) => !prev)
+            }
+            placeholder="Contraseña"
+            showPassword={showPassword}
+            value={password}
+          />
+        </View>
+
+        {/* ==================================== */}
+        {/* RECORDAR / OLVIDÉ                     */}
+        {/* ==================================== */}
+
+        <View style={styles.optionsRow}>
+          <View style={styles.rememberContainer}>
+            <AuthCheckboxRow
+              checked={rememberMe}
+              label="Recordarme"
+              labelStyle={{
+                color: palette.text,
+              }}
+              onToggle={() =>
+                setRememberMe((prev) => !prev)
+              }
+            />
+          </View>
+
+          <Pressable
+            onPress={() =>
+              router.push("/forgot-password")
+            }
+            style={styles.forgotButton}
+            accessibilityRole="button"
+          >
+            <Text
+              style={[
+                styles.forgotText,
+                {
+                  color: palette.link,
+                },
+              ]}
+            >
+              ¿Olvidaste tú contraseña?
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* ==================================== */}
+        {/* BOTÓN PRINCIPAL                       */}
+        {/* ==================================== */}
+
+        <PrimaryButton
+          loading={submitting}
+          onPress={handleLogin}
+          style={{
+            backgroundColor: palette.button,
+          }}
+          text="Iniciar sesión"
+        />
+
+        {/* ==================================== */}
+        {/* SEPARADOR                             */}
+        {/* ==================================== */}
+
+        <View style={styles.dividerContainer}>
+          <View
+            style={[
+              styles.divider,
+              {
+                backgroundColor: palette.fieldBorder,
+              },
+            ]}
+          />
+
+          <Text
+            style={[
+              styles.dividerText,
+              {
+                color: palette.muted,
+              },
+            ]}
+          >
+            o continúa con
+          </Text>
+
+          <View
+            style={[
+              styles.divider,
+              {
+                backgroundColor: palette.fieldBorder,
+              },
+            ]}
+          />
+        </View>
+
+        {/* ==================================== */}
+        {/* ACCESO DEMO                           */}
+        {/* ==================================== */}
+
+        <Pressable
+          style={[
+            styles.demoButton,
+            {
+              backgroundColor: palette.primarySoft,
+              borderColor: palette.fieldBorder,
+            },
+          ]}
+          onPress={fillDemoUser}
+          accessibilityRole="button"
+          accessibilityLabel="Usar acceso demo"
+        >
+          <View
+            style={[
+              styles.demoIconContainer,
+              {
+                backgroundColor: palette.button,
+              },
+            ]}
+          >
+            <Ionicons
+              name="flash"
+              size={17}
+              color="#FFFFFF"
+            />
+          </View>
+
+          <View style={styles.demoContent}>
+            <Text
+              style={[
+                styles.demoTitle,
+                {
+                  color: palette.text,
+                },
+              ]}
+            >
+              Usar acceso demo
+            </Text>
+
+            <Text
+              style={[
+                styles.demoSubtitle,
+                {
+                  color: palette.muted,
+                },
+              ]}
+            >
+              Prueba la aplicación sin crear una cuenta
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={palette.muted}
+          />
+        </Pressable>
+
+
+        {/* ==================================== */}
+        {/* REGISTRO                              */}
+        {/* ==================================== */}
+
+        <View style={styles.registerRow}>
+          <Text
+            style={[
+              styles.registerText,
+              {
+                color: palette.muted,
+              },
+            ]}
+          >
+            ¿No tienes una cuenta?
+          </Text>
+
+          <Pressable
+            onPress={() =>
+              router.push("/register")
+            }
+            accessibilityRole="link"
+          >
+            <Text
+              style={[
+                styles.registerLink,
+                {
+                  color: palette.link,
+                },
+              ]}
+            >
+              Registrarse
+            </Text>
+          </Pressable>
+        </View>
+      </View>
     </AuthScreenLayout>
   );
 }
 
+// ======================================================
+// TIPOGRAFÍA
+// ======================================================
+
 const authFont = typography.fontFamily.emphasis;
 
+// ======================================================
+// ESTILOS
+// ======================================================
+
 const styles = StyleSheet.create({
-  titleTiny: {
-    fontSize: 36,
-    lineHeight: 43,
-    marginBottom: 20,
+  // ==========================================
+  // TÍTULO DE MARCA
+  // ==========================================
+
+  brandTitle: {
+    fontSize: 30,
+    lineHeight: 36,
+    marginBottom: 8,
   },
-  fieldContainer: {
+
+  titleTiny: {
+    fontSize: 30,
+    lineHeight: 36,
+    marginBottom: 10,
+  },
+
+  // ==========================================
+  // HEADER
+  // ==========================================
+
+  header: {
+    marginBottom: 12,
+  },
+
+  // ==========================================
+  // INTRODUCCIÓN
+  // ==========================================
+
+  introSection: {
+    marginBottom: 28,
+  },
+
+  welcomeTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: "800",
+    marginBottom: 6,
+    fontFamily: authFont,
+  },
+
+  welcomeSubtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: "500",
+  },
+
+  // ==========================================
+  // FORMULARIO
+  // ==========================================
+
+  formContainer: {
+    gap: 18,
     width: "100%",
   },
-  demoPill: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    backgroundColor: "#EEF4FF",
-    borderRadius: 12,
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  demoText: {
-    color: theme.colors.primary,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  input: {
-    backgroundColor: "#FBFBFD",
-    borderColor: "transparent",
-    borderRadius: 17,
-    borderWidth: 1,
-    color: "#3F3F3F",
-    fontFamily: authFont,
-    fontSize: 20,
-    fontWeight: "700",
-    height: 56,
-    marginTop: 10,
-    paddingHorizontal: 18,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  inputError: {
-    borderColor: theme.colors.error,
-  },
-  errorText: {
-    color: theme.colors.error,
-    fontSize: 12,
-    fontWeight: "700",
-    marginLeft: 8,
-    marginTop: 6,
-  },
-  passwordWrap: {
-    position: "relative",
-  },
-  passwordInput: {
-    paddingRight: 52,
-  },
-  eyeButton: {
-    bottom: 0,
-    justifyContent: "center",
-    position: "absolute",
-    right: 16,
-    top: 10,
-  },
-  checkboxRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginTop: 20,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    alignItems: "center",
-    backgroundColor: "#D8DADC",
-    borderRadius: 5,
-    justifyContent: "center",
-  },
-  checkboxChecked: {
-    backgroundColor: theme.colors.primary,
-  },
-  checkboxLabel: {
-    color: "#3F3F3F",
-    fontFamily: authFont,
-    fontSize: 17,
-    fontWeight: "700",
-    marginLeft: 10,
-  },
-  securityBox: {
-    alignItems: "center",
-    backgroundColor: "#EEF4FF",
-    borderRadius: 12,
-    flexDirection: "row",
+
+  // ==========================================
+  // CAMPOS
+  // ==========================================
+
+  fieldGroup: {
+    width: "100%",
     gap: 8,
-    marginTop: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
   },
-  securityText: {
-    color: "#3F3F3F",
-    flex: 1,
-    fontSize: 13,
+
+  fieldLabel: {
+    fontSize: 14,
     fontWeight: "700",
+    marginLeft: 3,
   },
-  linkRow: {
-    alignSelf: "center",
-    marginTop: 20,
-  },
-  linkText: {
-    color: "#3F3F3F",
+
+  input: {
+    borderWidth: 1,
+    borderRadius: 17,
+
     fontFamily: authFont,
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: "500",
+
+    height: 56,
+
+    paddingHorizontal: 18,
+
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.10,
+    shadowRadius: 5,
+
+    elevation: 3,
+  },
+
+  // ==========================================
+  // RECORDAR / OLVIDÉ
+  // ==========================================
+
+  optionsRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+
+    marginTop: -3,
+  },
+
+  rememberContainer: {
+    flex: 1,
+  },
+
+  forgotButton: {
+    paddingVertical: 5,
+    paddingLeft: 8,
+  },
+
+  forgotText: {
+    fontSize: 14,
     fontWeight: "700",
     textDecorationLine: "underline",
   },
-  button: {
+
+  // ==========================================
+  // SEPARADOR
+  // ==========================================
+
+  dividerContainer: {
+    width: "100%",
+    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.buttonPrimary,
-    borderRadius: 15,
-    height: 56,
+    gap: 10,
+
+    marginVertical: 2,
+  },
+
+  divider: {
+    flex: 1,
+    height: 1,
+  },
+
+  dividerText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  // ==========================================
+  // ACCESO DEMO
+  // ==========================================
+
+  demoButton: {
+    width: "100%",
+
+    minHeight: 62,
+
+    borderRadius: 16,
+    borderWidth: 1,
+
+    flexDirection: "row",
+    alignItems: "center",
+
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+
+    gap: 12,
+  },
+
+  demoIconContainer: {
+    width: 36,
+    height: 36,
+
+    borderRadius: 11,
+
+    alignItems: "center",
     justifyContent: "center",
-    marginTop: 30,
   },
-  buttonPressed: {
-    backgroundColor: theme.colors.primaryDark,
+
+  demoContent: {
+    flex: 1,
   },
-  buttonDisabled: {
-    opacity: 0.55,
+
+  demoTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    marginBottom: 2,
   },
-  buttonText: {
-    color: "#FFFFFF",
-    fontFamily: authFont,
-    fontSize: 25,
-    fontWeight: "700",
+
+  demoSubtitle: {
+    fontSize: 12,
+    fontWeight: "500",
   },
+
+  // ==========================================
+  // SEGURIDAD
+  // ==========================================
+
+  securityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    gap: 6,
+
+    paddingHorizontal: 5,
+
+    marginTop: -3,
+  },
+
+  securityText: {
+    fontSize: 11.5,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+
+  // ==========================================
+  // REGISTRO
+  // ==========================================
+
   registerRow: {
-    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
-    marginTop: 18,
+
+    gap: 5,
+
+    marginTop: 4,
   },
+
   registerText: {
-    color: "#3F3F3F",
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
   },
+
   registerLink: {
-    color: theme.colors.primary,
+    fontSize: 14,
+    fontWeight: "800",
     textDecorationLine: "underline",
   },
 });

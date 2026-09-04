@@ -1,55 +1,36 @@
 import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { BackButton } from "@/components/common/BackButton";
-import { theme } from "@/constants/theme";
 import { typography } from "@/lib/theme/typography";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import {
-    Alert,
-    NativeSyntheticEvent,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    TextInputKeyPressEventData,
-    View,
+  Alert,
+  NativeSyntheticEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextInputKeyPressEventData,
+  View,
 } from "react-native";
 
-/**
- * Pantalla de verificación OTP.
- *
- * Permite ingresar un código de seis dígitos y avanzar al cambio de contraseña.
- * Implementa manejo de pegado de código y navegación entre celdas.
- */
-
 const CODE_LENGTH = 6;
-
-// Codigo fijo usado para simular la validacion OTP mientras no hay backend.
 const MOCK_CODE = "222222";
 
-/**
- * Oculta parte del correo para mostrarlo de forma mas segura en pantalla.
- */
 function maskEmail(email: string) {
   if (!email || !email.includes("@")) {
     return "**********gmail.com";
   }
-
   const [, domain] = email.split("@");
-  return `**********${domain}`;
+  return `**********@${domain}`;
 }
 
 export default function OtpVerificationScreen() {
   const router = useRouter();
-
-  // Email recibido desde forgot-password mediante parametros de ruta.
   const params = useLocalSearchParams<{ email?: string }>();
 
-  // Referencias a cada input para mover el foco automaticamente entre casillas.
   const inputRefs = useRef<(TextInput | null)[]>([]);
-
-  // Cada posicion del arreglo representa un digito del codigo OTP.
   const [digits, setDigits] = useState(Array(CODE_LENGTH).fill(""));
 
   const maskedEmail = useMemo(
@@ -58,12 +39,6 @@ export default function OtpVerificationScreen() {
   );
   const code = digits.join("");
 
-  /**
-   * Actualiza una casilla del codigo.
-   *
-   * Solo acepta numeros y conserva el ultimo digito escrito. Si el usuario
-   * escribe un digito valido, avanza automaticamente al siguiente input.
-   */
   function updateDigit(value: string, index: number) {
     const nextValue = value.replace(/\D/g, "").slice(-1);
     const nextDigits = [...digits];
@@ -75,12 +50,6 @@ export default function OtpVerificationScreen() {
     }
   }
 
-  /**
-   * Maneja la tecla borrar.
-   *
-   * Si la casilla actual tiene valor, lo limpia. Si esta vacia, mueve el foco
-   * a la casilla anterior para facilitar la correccion del codigo.
-   */
   function handleKeyPress(
     event: NativeSyntheticEvent<TextInputKeyPressEventData>,
     index: number,
@@ -101,12 +70,6 @@ export default function OtpVerificationScreen() {
     }
   }
 
-  /**
-   * Permite pegar el codigo completo.
-   *
-   * Si el valor pegado contiene mas de un numero, reparte los digitos entre
-   * las seis casillas y enfoca la ultima posicion escrita.
-   */
   function handlePaste(value: string) {
     const cleanValue = value.replace(/\D/g, "").slice(0, CODE_LENGTH);
 
@@ -124,10 +87,6 @@ export default function OtpVerificationScreen() {
     return true;
   }
 
-  /**
-   * Valida el codigo ingresado contra `MOCK_CODE`.
-   * En produccion esta comparacion deberia hacerse contra un backend.
-   */
   function handleVerifyCode() {
     if (code.length !== CODE_LENGTH) {
       Alert.alert("Código incompleto", "Ingresa los 6 dígitos del código.");
@@ -145,10 +104,6 @@ export default function OtpVerificationScreen() {
     });
   }
 
-  /**
-   * Simula el reenvio del codigo.
-   * Limpia los digitos y vuelve a enfocar la primera casilla.
-   */
   function handleResendCode() {
     setDigits(Array(CODE_LENGTH).fill(""));
     inputRefs.current[0]?.focus();
@@ -156,49 +111,54 @@ export default function OtpVerificationScreen() {
   }
 
   return (
-    <AuthScreenLayout contentStyle={styles.content} title="Smart Home">
-      <BackButton fallbackHref="/forgot-password" />
+    <AuthScreenLayout contentStyle={styles.content}>
+      <View style={styles.header}>
+        <BackButton fallbackHref="/forgot-password" />
+      </View>
 
       <Text style={styles.sectionTitle}>Código de verificación</Text>
+      
+      <Text style={styles.messageText}>
+        Ingresa el código de 6 dígitos que enviamos a {maskedEmail}
+      </Text>
 
-      <View style={styles.codeRow}>
-        {digits.map((digit, index) => (
-          <TextInput
-            key={index}
-            ref={(ref) => {
-              inputRefs.current[index] = ref;
-            }}
-            style={styles.codeInput}
-            value={digit}
-            onChangeText={(value) => {
-              if (!handlePaste(value)) {
-                updateDigit(value, index);
-              }
-            }}
-            onKeyPress={(event) => handleKeyPress(event, index)}
-            keyboardType="number-pad"
-            maxLength={CODE_LENGTH}
-            returnKeyType="next"
-            selectTextOnFocus
-            textAlign="center"
-          />
-        ))}
-      </View>
+      <View style={styles.formContainer}>
+        <View style={styles.codeRow}>
+          {digits.map((digit, index) => (
+            <TextInput
+              key={index}
+              ref={(ref) => {
+                inputRefs.current[index] = ref;
+              }}
+              style={styles.codeInput}
+              value={digit}
+              onChangeText={(value) => {
+                if (!handlePaste(value)) {
+                  updateDigit(value, index);
+                }
+              }}
+              onKeyPress={(event) => handleKeyPress(event, index)}
+              keyboardType="number-pad"
+              maxLength={CODE_LENGTH}
+              returnKeyType="next"
+              selectTextOnFocus
+              textAlign="center"
+            />
+          ))}
+        </View>
 
-      <View style={styles.messageBlock}>
-        <Text style={styles.messageText}>
-          El código de verificación se envió a tu correo {maskedEmail}.
-        </Text>
-        <Pressable onPress={handleResendCode} style={styles.resendLink}>
-          <Text style={styles.resendText}>Enviar de nuevo</Text>
+        {/* Botón de validar (Acción principal) */}
+        <PrimaryButton 
+          onPress={handleVerifyCode} 
+          style={styles.button} 
+          text="Validar" 
+        />
+
+        {/* Botón de enviar de nuevo (Acción secundaria) */}
+        <Pressable onPress={handleResendCode} style={styles.secondaryButton}>
+          <Text style={styles.secondaryButtonText}>Enviar de nuevo</Text>
         </Pressable>
       </View>
-
-      <Pressable style={styles.noCodeLink} onPress={handleResendCode}>
-        <Text style={styles.noCodeText}>¿No recibiste un código?</Text>
-      </Pressable>
-
-      <PrimaryButton onPress={handleVerifyCode} style={styles.primaryButton} text="Siguiente" />
     </AuthScreenLayout>
   );
 }
@@ -206,117 +166,66 @@ export default function OtpVerificationScreen() {
 const authFont = typography.fontFamily.emphasis;
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.backgroundWhite,
-  },
-  flex: {
-    flex: 1,
-  },
-  container: {
-    alignItems: "center",
-    flexGrow: 1,
-    paddingBottom: 40,
-  },
   content: {
     alignSelf: "center",
     width: "100%",
   },
-  title: {
-    color: "#0864C8",
-    fontFamily: authFont,
-    fontSize: 42,
-    fontWeight: "700",
-    lineHeight: 50,
-    marginBottom: 34,
-    textAlign: "center",
-  },
-  titleCompact: {
-    fontSize: 36,
-    lineHeight: 43,
-    marginBottom: 24,
+  header: {
+    marginBottom: 10,
   },
   sectionTitle: {
-    alignSelf: "flex-start",
     color: "#3F3F3F",
     fontFamily: authFont,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "700",
-    lineHeight: 27,
-    marginBottom: 42,
-    textDecorationLine: "underline",
+    marginBottom: 8, // Poco margen porque le sigue el mensaje
+  },
+  messageText: {
+    color: "#7A7A7A", // Un color un poco más suave para la instrucción
+    fontFamily: authFont,
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 24,
+  },
+  formContainer: {
+    width: "100%",
   },
   codeRow: {
-    alignItems: "center",
     flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 36,
+    justifyContent: "space-between", // Separa las cajas uniformemente
+    marginBottom: 32,
+    gap: 6, // Pequeña separación entre las cajas
   },
   codeInput: {
+    flex: 1, // Hace que todas las cajas tengan el mismo ancho
     backgroundColor: "#FBFBFD",
-    borderRadius: 14,
+    borderColor: "transparent",
+    borderWidth: 1,
+    borderRadius: 17,
     color: "#3F3F3F",
     fontFamily: authFont,
-    fontSize: 21,
-    fontWeight: "700",
+    fontSize: 20,       // <-- Letra más grande porque es 1 solo dígito
+    fontWeight: "700",  // <-- Grosor fuerte para que el número resalte
+    height: 56,         // <-- Misma altura que el Login/Registro
     padding: 0,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.18,
     shadowRadius: 5,
-    elevation: 6,
+    elevation: 5,
   },
-  messageBlock: {
-    marginBottom: 13,
+  button: {
+    marginTop: 8,
   },
-  messageText: {
-    color: "#3F3F3F",
-    fontFamily: authFont,
-    fontSize: 17,
-    fontWeight: "700",
-    lineHeight: 21,
-  },
-  resendLink: {
-    alignSelf: "flex-start",
-    marginTop: 7,
-  },
-  resendText: {
-    color: "#0864C8",
-    fontFamily: authFont,
-    fontSize: 20,
-    fontWeight: "700",
-    lineHeight: 25,
-    textDecorationLine: "underline",
-  },
-  noCodeLink: {
-    alignSelf: "flex-start",
-    marginBottom: 42,
-  },
-  noCodeText: {
-    color: "#3F3F3F",
-    fontFamily: authFont,
-    fontSize: 20,
-    fontWeight: "700",
-    lineHeight: 25,
-    textDecorationLine: "underline",
-  },
-  primaryButton: {
+  secondaryButton: {
+    marginTop: 16,
     alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: "#0864C8",
-    borderRadius: 15,
-    height: 54,
-    justifyContent: "center",
-    minWidth: 170,
-    paddingHorizontal: 30,
+    paddingVertical: 12,
   },
-  primaryButtonPressed: {
-    backgroundColor: "#004FA5",
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
+  secondaryButtonText: {
+    color: "#3F3F3F",
     fontFamily: authFont,
-    fontSize: 24,
-    fontWeight: "700",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
