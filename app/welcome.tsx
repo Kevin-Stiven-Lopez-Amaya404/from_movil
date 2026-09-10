@@ -3,46 +3,186 @@ import { GoogleIcon } from "@/components/icons/GoogleIcon";
 import { theme } from "@/constants/theme";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
-import { getAuthPalette } from "@/lib/theme/appearance";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+    Alert,
+    Animated,
+    Easing,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-/**
- * Pantalla de bienvenida inicial.
- *
- * Ofrece opciones de inicio de sesión, registro y acceso simulado con Google.
- * También permite seleccionar el modo claro/oscuro antes de ingresar.
- */
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
 
-  // El tema se guarda en contexto para que la seleccion del usuario afecte toda la app.
-  const { colorMode, setColorMode } = useSmartHome();
-
-  // Paleta especifica para pantallas de autenticacion, calculada segun modo claro/oscuro.
-  const palette = getAuthPalette(colorMode);
+  const { colorMode } = useSmartHome();
   const dark = colorMode === "dark";
 
-  /**
-   * Flujo temporal para Google.
-   *
-   * La autenticacion OAuth real no esta implementada en esta version, por eso se
-   * informa al usuario y se lo lleva al login normal/demo.
-   */
+  // ==========================================
+  // ANIMACIONES DEL LOGO
+  // ==========================================
+
+  // Pequeño movimiento de escala del logo
+  const [logoScale] = useState(() => new Animated.Value(1));
+
+  // Escala del halo
+  const [glowScale] = useState(() => new Animated.Value(0.85));
+
+  // Intensidad del halo
+  const [glowOpacity] = useState(() => new Animated.Value(0.1));
+
+  useEffect(() => {
+    /*
+     * Animación suave y continua:
+     *
+     * 1. Espera un momento.
+     * 2. El logo aumenta ligeramente.
+     * 3. El halo crece.
+     * 4. El halo se desvanece.
+     * 5. El logo vuelve a su tamaño original.
+     * 6. Espera y vuelve a comenzar.
+     *
+     * No existe ningún destello que atraviese
+     * el logo ni ninguna animación en forma de
+     * cuadro.
+     */
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        // ======================================
+        // PAUSA INICIAL
+        // ======================================
+
+        Animated.delay(1200),
+
+        // ======================================
+        // LOGO + HALO CRECEN
+        // ======================================
+
+        Animated.parallel([
+          Animated.timing(logoScale, {
+            toValue: 1.04,
+            duration: 400,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+
+          Animated.timing(glowScale, {
+            toValue: 1.12,
+            duration: 700,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+
+          Animated.timing(glowOpacity, {
+            toValue: 0.32,
+            duration: 700,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+
+        // ======================================
+        // LOGO + HALO VUELVEN A NORMAL
+        // ======================================
+
+        Animated.parallel([
+          Animated.timing(logoScale, {
+            toValue: 1,
+            duration: 500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+
+          Animated.timing(glowScale, {
+            toValue: 0.85,
+            duration: 800,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+
+          Animated.timing(glowOpacity, {
+            toValue: 0.1,
+            duration: 800,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+
+        // ======================================
+        // PAUSA ANTES DEL SIGUIENTE CICLO
+        // ======================================
+
+        Animated.delay(1800),
+      ]),
+    );
+
+    animation.start();
+
+    return () => {
+      animation.stop();
+
+      logoScale.stopAnimation();
+      glowScale.stopAnimation();
+      glowOpacity.stopAnimation();
+    };
+  }, [glowOpacity, glowScale, logoScale]);
+
+  // ==========================================
+  // GOOGLE LOGIN
+  // ==========================================
+
   function handleGoogleLogin() {
     Alert.alert(
       "Inicio con Google",
       "La conexión OAuth queda preparada para producción. En esta versión de prueba continúa desde iniciar sesión y usa el acceso demo.",
-      [{ text: "Ir a iniciar sesión", onPress: () => router.push("/login") }],
+      [
+        {
+          text: "Ir a iniciar sesión",
+          onPress: () => router.push("/login"),
+        },
+      ],
     );
   }
 
+  // ==========================================
+  // RENDER
+  // ==========================================
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: dark ? palette.background : theme.colors.backgroundBlue }]}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          /*
+           * Fondo personalizado.
+           *
+           * Claro:
+           * azul muy suave para que el logo azul
+           * tenga mayor contraste.
+           *
+           * Oscuro:
+           * azul marino profundo.
+           */
+          backgroundColor: dark ? "#08111F" : "#dde7f4",
+        },
+      ]}
+    >
+      {/* ========================================== */}
+      {/* FONDO LIMPIO                              */}
+      {/* ========================================== */}
+
+      <View style={StyleSheet.absoluteFill} pointerEvents="none" />
+
+      {/* ========================================== */}
+      {/* CONTENIDO PRINCIPAL                       */}
+      {/* ========================================== */}
+
       <View
         style={[
           styles.content,
@@ -53,208 +193,395 @@ export default function WelcomeScreen() {
           },
         ]}
       >
-      {/* Selector de tema disponible antes del login para personalizar la experiencia desde el inicio. */}
-      <View style={styles.modeRow}>
-        {(["light", "dark"] as const).map((mode) => {
-          const active = colorMode === mode;
+        {/* ========================================== */}
+        {/* LOGO PRINCIPAL                            */}
+        {/* ========================================== */}
 
-          return (
-            <Pressable
-              key={mode}
+        <View
+          style={[styles.logoArea, layout.compact && styles.logoAreaCompact]}
+        >
+          <View style={styles.logoAnimationContainer}>
+            {/* ====================================== */}
+            {/* HALO DE ENERGÍA                        */}
+            {/* ====================================== */}
+
+            <Animated.View
+              pointerEvents="none"
               style={[
-                styles.modeButton,
-                active && styles.modeButtonActive,
-                active && { backgroundColor: dark ? "#3B82F6" : "#FFFFFF" },
+                styles.logoGlow,
+                {
+                  /*
+                   * El color del halo cambia ligeramente
+                   * dependiendo del modo de la aplicación.
+                   */
+                  backgroundColor: dark
+                    ? "rgba(59, 130, 246, 0.28)"
+                    : "rgba(37, 99, 235, 0.16)",
+
+                  opacity: glowOpacity,
+
+                  transform: [
+                    {
+                      scale: glowScale,
+                    },
+                  ],
+                },
               ]}
-              onPress={() => setColorMode(mode)}
+            />
+
+            {/* ====================================== */}
+            {/* LOGO SMART HOME                        */}
+            {/* ====================================== */}
+
+            <Animated.View
+              style={[
+                styles.logoWrapper,
+                {
+                  transform: [
+                    {
+                      scale: logoScale,
+                    },
+                  ],
+                },
+              ]}
             >
-              <Ionicons
-                name={mode === "light" ? "sunny-outline" : "moon-outline"}
-                size={17}
-                color={active ? (dark ? "#FFFFFF" : theme.colors.primary) : "#FFFFFF"}
+              <SmartHomeLogo
+                /*
+                 * Antes estaba en 220.
+                 *
+                 * Ahora utilizamos un logo mucho más grande
+                 * para que sea el elemento principal de
+                 * la pantalla de bienvenida.
+                 */
+                size={layout.compact ? 270 : 320}
+                showText={true}
+                variant="dark"
               />
-              <Text
-                style={[
-                  styles.modeText,
-                  active && { color: dark ? "#FFFFFF" : theme.colors.primary },
-                ]}
-              >
-                {mode === "light" ? "Claro" : "Oscuro"}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {/* El logo reduce espacio vertical en pantallas pequenas mediante `layout.compact`. */}
-      <View style={[styles.logoArea, layout.compact && styles.logoAreaCompact]}>
-        <SmartHomeLogo size={layout.compact ? 184 : 220} showText={true} variant="dark" />
-      </View>
+            </Animated.View>
+          </View>
+        </View>
 
-      {/* Acciones principales de entrada al sistema. */}
-      <View style={styles.buttonsArea}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.buttonFilled,
-            dark && styles.buttonFilledDark,
-            pressed && styles.buttonPressedFilled,
-          ]}
-          onPress={() => router.push("/login")}
-        >
-          <Text style={styles.buttonFilledText}>Iniciar sesión</Text>
-        </Pressable>
+        {/* ========================================== */}
+        {/* BOTONES                                   */}
+        {/* ========================================== */}
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.buttonOutline,
-            dark && styles.buttonOutlineDark,
-            pressed && styles.buttonPressedOutline,
-          ]}
-          onPress={() => router.push("/register")}
-        >
-          <Text style={styles.buttonOutlineText}>Registrarse</Text>
-        </Pressable>
+        <View style={styles.buttonsArea}>
+          {/* ====================================== */}
+          {/* INICIAR SESIÓN                         */}
+          {/* ====================================== */}
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.googleButton,
-            dark && styles.googleButtonDark,
-            pressed && styles.googleButtonPressed,
-          ]}
-          onPress={handleGoogleLogin}
-        >
-          <GoogleIcon size={24} />
-          <Text style={[styles.googleButtonText, dark && styles.googleButtonTextDark]}>Continuar con Google</Text>
-        </Pressable>
-      </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.buttonFilled,
+              dark && styles.buttonFilledDark,
+              pressed && styles.buttonPressedFilled,
+            ]}
+            onPress={() => router.push("/login")}
+          >
+            <Text style={styles.buttonFilledText}>Iniciar sesión</Text>
+          </Pressable>
+
+          {/* ====================================== */}
+          {/* REGISTRARSE                            */}
+          {/* ====================================== */}
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.buttonOutline,
+              dark && styles.buttonOutlineDark,
+              pressed && styles.buttonPressedOutline,
+            ]}
+            onPress={() => router.push("/register")}
+          >
+            <Text style={styles.buttonOutlineText}>Registrarse</Text>
+          </Pressable>
+
+          {/* ====================================== */}
+          {/* GOOGLE                                 */}
+          {/* ====================================== */}
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.googleButton,
+              dark && styles.googleButtonDark,
+              pressed && styles.googleButtonPressed,
+            ]}
+            onPress={handleGoogleLogin}
+          >
+            <GoogleIcon size={24} />
+
+            <Text
+              style={[
+                styles.googleButtonText,
+                dark && styles.googleButtonTextDark,
+              ]}
+            >
+              Continuar con Google
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
 }
 
+// ======================================================
+// ESTILOS
+// ======================================================
+
 const styles = StyleSheet.create({
+  // ==========================================
+  // CONTENEDOR PRINCIPAL
+  // ==========================================
+
   container: {
     alignItems: "center",
     flex: 1,
-    backgroundColor: theme.colors.backgroundBlue,
+
+    /*
+     * El fondo real se establece arriba dependiendo
+     * del modo claro/oscuro.
+     */
     paddingHorizontal: theme.spacing.lg,
+
+    overflow: "hidden",
   },
+
   content: {
     flex: 1,
     width: "100%",
+    zIndex: 1,
   },
-  modeRow: {
-    alignSelf: "center",
-    backgroundColor: "rgba(255,255,255,0.16)",
-    borderColor: "rgba(255,255,255,0.28)",
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 4,
-    marginTop: theme.spacing.lg,
-    padding: 6,
-    
-    
-  },
-  modeButton: {
-    alignItems: "center",
-    borderRadius: 11,
-    flexDirection: "row",
-    gap: 6,
-    minHeight: 34,
-    paddingHorizontal: 12,
-  },
-  modeButtonActive: {
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  modeText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "800",
-  },
+
+  // ==========================================
+  // ÁREA DEL LOGO
+  // ==========================================
+
   logoArea: {
     flex: 1,
+
     alignItems: "center",
     justifyContent: "center",
+
     paddingTop: theme.spacing.xxl,
   },
+
   logoAreaCompact: {
     paddingTop: theme.spacing.lg,
   },
+
+  // ==========================================
+  // CONTENEDOR DE ANIMACIÓN
+  // ==========================================
+
+  logoAnimationContainer: {
+    position: "relative",
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    /*
+     * Es importante que sea visible.
+     *
+     * Así el halo puede expandirse alrededor
+     * del logo sin quedar recortado.
+     */
+    overflow: "visible",
+
+    /*
+     * Espacio adicional alrededor del logo
+     * para que el halo tenga espacio.
+     */
+    padding: 30,
+  },
+
+  // ==========================================
+  // HALO
+  // ==========================================
+
+  logoGlow: {
+    position: "absolute",
+
+    /*
+     * El halo es ligeramente mayor que el logo.
+     */
+    width: 330,
+    height: 330,
+
+    borderRadius: 165,
+
+    /*
+     * Brillo exterior.
+     */
+    shadowColor: "#2563EB",
+
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+
+    shadowOpacity: 0.45,
+
+    shadowRadius: 45,
+
+    elevation: 10,
+  },
+
+  // ==========================================
+  // LOGO
+  // ==========================================
+
+  logoWrapper: {
+    position: "relative",
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    /*
+     * Sin borderRadius.
+     * Sin overflow hidden.
+     *
+     * Esto evita que aparezca un cuadro
+     * alrededor del logo.
+     */
+    overflow: "visible",
+  },
+
+  // ==========================================
+  // BOTONES
+  // ==========================================
+
   buttonsArea: {
     alignSelf: "center",
+
     paddingBottom: theme.spacing.xxl,
+
     gap: theme.spacing.md,
+
     maxWidth: 340,
+
     width: "100%",
   },
+
+  // ==========================================
+  // BOTÓN INICIAR SESIÓN
+  // ==========================================
+
   buttonFilled: {
     backgroundColor: "#FFFFFF",
+
     borderRadius: theme.radius.button,
+
     paddingVertical: theme.spacing.md + 2,
+
     alignItems: "center",
   },
+
   buttonPressedFilled: {
-    backgroundColor: "#E0E8FF",
+    backgroundColor: "#DCEAFF",
   },
+
   buttonFilledDark: {
     backgroundColor: "#E8F0FF",
   },
+
   buttonFilledText: {
     color: theme.colors.buttonPrimary,
+
     fontWeight: "700",
+
     fontSize: theme.fontSize.md,
   },
+
+  // ==========================================
+  // BOTÓN REGISTRARSE
+  // ==========================================
+
   buttonOutline: {
     backgroundColor: "transparent",
+
     borderRadius: theme.radius.button,
+
     borderWidth: 1.5,
-    borderColor: "#FFFFFF",
+
+    borderColor: "#2563EB",
+
     paddingVertical: theme.spacing.md + 2,
+
     alignItems: "center",
   },
+
   buttonPressedOutline: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(37, 99, 235, 0.08)",
   },
+
   buttonOutlineDark: {
     borderColor: "#93C5FD",
   },
+
   buttonOutlineText: {
-    color: "#FFFFFF",
+    color: "#2563EB",
+
     fontWeight: "600",
+
     fontSize: theme.fontSize.md,
   },
+
+  // ==========================================
+  // BOTÓN GOOGLE
+  // ==========================================
+
   googleButton: {
     alignItems: "center",
+
     backgroundColor: "#FFFFFF",
+
     borderRadius: theme.radius.button,
+
     flexDirection: "row",
+
     gap: 12,
+
     justifyContent: "center",
+
     marginTop: theme.spacing.sm,
+
     paddingVertical: theme.spacing.md + 1,
+
     elevation: 2,
+
     shadowColor: "#000",
+
     shadowOpacity: 0.1,
+
     shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
   },
+
   googleButtonPressed: {
     backgroundColor: "#F3F6FF",
   },
+
   googleButtonDark: {
     backgroundColor: "#151F33",
+
     borderColor: "#2D3B59",
+
     borderWidth: 1,
   },
+
   googleButtonText: {
     color: theme.colors.textDark,
+
     fontSize: theme.fontSize.base,
+
     fontWeight: "700",
   },
+
   googleButtonTextDark: {
     color: "#F8FAFC",
   },

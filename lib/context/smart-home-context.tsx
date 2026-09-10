@@ -1,10 +1,21 @@
-import { createContext, PropsWithChildren, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  PropsWithChildren,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
 // Tipos base usados por pantallas y reportes.
-export type DeviceCategory = "Electrodomesticos" | "Iluminacion" | "Climatizacion" | "Seguridad";
+export type DeviceCategory =
+  | "Electrodomesticos"
+  | "Iluminacion"
+  | "Climatizacion"
+  | "Seguridad";
 export type ReportRange = "Diario" | "Semana" | "Mes" | "Rango";
 export type AppLanguage = "es" | "en" | "pt";
 export type ColorMode = "light" | "dark";
+export type UserRole = "admin" | "miembro" | "invitado";
 
 /**
  * Representa un hogar registrado.
@@ -30,10 +41,18 @@ export type SmartDevice = {
   category: DeviceCategory;
   room: string;
   icon: string;
-  consumption: number;
-  yesterday: number;
+  // Nuevos campos del Shelly
+  power: number; // W (potencia instantánea)
+  energy: number; // Wh (energía acumulada)
+  voltage: number; // V
+  current: number; // A
+  frequency: number; // Hz
   online: boolean;
+  temperature?: number; // °C
+  state: "on" | "off"; // estado del relé
+  yesterday: number; // Wh (consumo del día anterior)
   critical?: boolean;
+  lastStateChange?: string;
 };
 
 // Dispositivos activos usados para auditoria/perfil.
@@ -62,10 +81,15 @@ type SmartHomeState = {
   accountActive: boolean;
   colorMode: ColorMode;
   devices: SmartDevice[];
+  homeConsumptionGoals: Record<string, number>;
   homes: SmartHomePlace[];
+  sessionEmail: string;
+  sessionRole: UserRole;
+  accessibleHomes: SmartHomePlace[];
   language: AppLanguage;
   reportData: Record<ReportRange, ReportPoint[]>;
   resolvedAlerts: string[];
+  resolvedSmartAlerts: string[];
   sessionName: string;
   offlineMode: boolean;
   lastSync: string;
@@ -75,20 +99,32 @@ type SmartHomeState = {
   setActiveHomeId: (homeId: string) => void;
   setAccountActive: (active: boolean) => void;
   setColorMode: (mode: ColorMode) => void;
+  setHomeConsumptionGoal: (homeId: string, targetWh: number) => void;
   setLanguage: (language: AppLanguage) => void;
   setSessionName: (name: string) => void;
+  setSessionEmail: (email: string) => void;
+  setSessionRole: (role: UserRole) => void;
   setOfflineMode: (enabled: boolean) => void;
+  setHomeDeviceState: (id: string, state: "on" | "off") => void;
+  setAllHomeDevicesState: (homeId: string, state: "on" | "off") => void;
+  assignHomeAccess: (email: string, homeId: string, assigned: boolean) => void;
   toggleDevice: (id: string) => void;
   toggleHomeFavorite: (homeId: string) => void;
   setDeviceOnline: (id: string, online: boolean) => void;
   resolveDeviceAlert: (id: string) => void;
+  resolveSmartDeviceAlert: (id: string) => void;
   refreshSync: () => void;
 };
 
 // Datos iniciales de prueba. En una version real vendrian de backend/base de datos.
 const initialHomes: SmartHomePlace[] = [
   { id: "casa", name: "Casa", location: "Hogar principal", favorite: true },
-  { id: "oficina", name: "Oficina", location: "Espacio de trabajo", favorite: false },
+  {
+    id: "oficina",
+    name: "Oficina",
+    location: "Espacio de trabajo",
+    favorite: false,
+  },
 ];
 
 // Dispositivos iniciales asociados a hogares mediante `homeId`.
@@ -100,9 +136,14 @@ const initialDevices: SmartDevice[] = [
     category: "Climatizacion",
     room: "Sala",
     icon: "air-conditioner",
-    consumption: 0.78,
-    yesterday: 0.72,
+    power: 780,
+    energy: 780,
+    voltage: 120,
+    current: 6.5,
+    frequency: 60,
     online: true,
+    state: "on",
+    yesterday: 720,
     critical: true,
   },
   {
@@ -112,9 +153,14 @@ const initialDevices: SmartDevice[] = [
     category: "Electrodomesticos",
     room: "Estudio",
     icon: "server",
-    consumption: 0.32,
-    yesterday: 0.35,
+    power: 320,
+    energy: 320,
+    voltage: 120,
+    current: 2.7,
+    frequency: 60,
     online: true,
+    state: "on",
+    yesterday: 350,
   },
   {
     id: "tv",
@@ -123,9 +169,14 @@ const initialDevices: SmartDevice[] = [
     category: "Electrodomesticos",
     room: "Habitacion",
     icon: "television-classic",
-    consumption: 0.15,
-    yesterday: 0.15,
+    power: 150,
+    energy: 150,
+    voltage: 120,
+    current: 1.25,
+    frequency: 60,
     online: true,
+    state: "on",
+    yesterday: 150,
   },
   {
     id: "charger",
@@ -134,9 +185,14 @@ const initialDevices: SmartDevice[] = [
     category: "Electrodomesticos",
     room: "Dormitorio",
     icon: "power-plug-outline",
-    consumption: 0.08,
-    yesterday: 0.11,
+    power: 80,
+    energy: 80,
+    voltage: 120,
+    current: 0.67,
+    frequency: 60,
     online: true,
+    state: "on",
+    yesterday: 110,
   },
   {
     id: "lights",
@@ -145,9 +201,14 @@ const initialDevices: SmartDevice[] = [
     category: "Iluminacion",
     room: "Cocina",
     icon: "lightbulb-on-outline",
-    consumption: 0.11,
-    yesterday: 0.18,
+    power: 110,
+    energy: 110,
+    voltage: 120,
+    current: 0.92,
+    frequency: 60,
     online: true,
+    state: "on",
+    yesterday: 180,
   },
   {
     id: "camera",
@@ -156,9 +217,14 @@ const initialDevices: SmartDevice[] = [
     category: "Seguridad",
     room: "Entrada",
     icon: "cctv",
-    consumption: 0.06,
-    yesterday: 0.05,
+    power: 60,
+    energy: 60,
+    voltage: 120,
+    current: 0.5,
+    frequency: 60,
     online: true,
+    state: "on",
+    yesterday: 50,
   },
 ];
 
@@ -187,16 +253,32 @@ const reportData: Record<ReportRange, ReportPoint[]> = {
     { label: "S4", value: 37 },
   ],
   Rango: [
-    { label: "Abr", value: 126 },
-    { label: "May", value: 114 },
-    { label: "Jun", value: 98 },
+    { label: "T1", value: 126 },
+    { label: "T2", value: 114 },
+    { label: "T3", value: 98 },
+    { label: "T4", value: 121 },
   ],
 };
 
 const defaultActiveDevices: ActiveDevice[] = [
-  { id: "phone", name: "Movil (este dispositivo)", lastAccess: "ahora", verified: true },
-  { id: "tablet-ana", name: "Tablet de Ana", lastAccess: "ayer, 18:27", verified: true },
-  { id: "tablet-guest", name: "Tablet invitados", lastAccess: "hace 3 dias", verified: false },
+  {
+    id: "phone",
+    name: "Movil (este dispositivo)",
+    lastAccess: "ahora",
+    verified: true,
+  },
+  {
+    id: "tablet-ana",
+    name: "Tablet de Ana",
+    lastAccess: "ayer, 18:27",
+    verified: true,
+  },
+  {
+    id: "tablet-guest",
+    name: "Tablet invitados",
+    lastAccess: "hace 3 dias",
+    verified: false,
+  },
 ];
 
 const SmartHomeContext = createContext<SmartHomeState | null>(null);
@@ -239,13 +321,39 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
   const [homes, setHomes] = useState(initialHomes);
   const [activeHomeId, setActiveHomeId] = useState(initialHomes[0].id);
   const [devices, setDevices] = useState(initialDevices);
+  // Metas demo locales por hogar. Podrán sustituirse por datos del backend cuando exista contrato.
+  const [homeConsumptionGoals, setHomeConsumptionGoals] = useState<Record<string, number>>({
+    casa: 5000,
+    oficina: 3000,
+  });
   const [activeDevices, setActiveDevices] = useState(defaultActiveDevices);
   const [accountActive, setAccountActive] = useState(true);
   const [colorMode, setColorMode] = useState<ColorMode>("light");
   const [language, setLanguage] = useState<AppLanguage>("es");
   const [offlineMode, setOfflineMode] = useState(false);
   const [sessionName, setSessionName] = useState("Pepe");
+  const [sessionEmail, setSessionEmail] = useState("pepe@smarthome.com");
+  const [sessionRole, setSessionRole] = useState<UserRole>("miembro");
   const [lastSync, setLastSync] = useState(getTimeStamp());
+
+  // Alertas Smart Home ya resueltas por el usuario.
+  // Se mantiene separado de activeDevices porque ese estado pertenece
+  // a la seguridad/sesiones de la cuenta.
+  const [resolvedSmartAlerts, setResolvedSmartAlerts] = useState<string[]>([]);
+
+  // Asignaciones demo: el administrador decide qué hogar puede ver cada cuenta.
+  // En producción estas relaciones deben venir del backend/BD.
+  const [homeAccess, setHomeAccess] = useState<Record<string, string[]>>({
+    "admin@smarthome.com": ["casa", "oficina"],
+    "pepe@smarthome.com": ["casa"],
+    "miembro@smarthome.com": ["casa"],
+    "invitado@smarthome.com": ["casa"],
+  });
+
+  const accessibleHomeIds = sessionRole === "admin"
+    ? homes.map((home) => home.id)
+    : homeAccess[sessionEmail] ?? [];
+  const accessibleHomes = homes.filter((home) => accessibleHomeIds.includes(home.id));
 
   // `useMemo` evita reconstruir el objeto de contexto si sus dependencias no cambian.
   const value = useMemo<SmartHomeState>(
@@ -255,12 +363,19 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       accountActive,
       colorMode,
       devices,
+      homeConsumptionGoals,
       homes,
+      sessionEmail,
+      sessionRole,
+      accessibleHomes,
       language,
       lastSync,
       offlineMode,
       reportData,
-      resolvedAlerts: activeDevices.filter((item) => item.verified).map((item) => item.id),
+      resolvedAlerts: activeDevices
+        .filter((item) => item.verified)
+        .map((item) => item.id),
+      resolvedSmartAlerts,
       sessionName,
       deactivateAccount: () => {
         setAccountActive(false);
@@ -280,9 +395,14 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
             category: "Electrodomesticos",
             room: "General",
             icon: "power-plug-outline",
-            consumption: 0,
-            yesterday: 0,
+            power: 0,
+            energy: 0,
+            voltage: 120,
+            current: 0,
+            frequency: 60,
             online: true,
+            state: "off",
+            yesterday: 0,
           },
         ]);
       },
@@ -301,19 +421,32 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
             favorite: items.length === 0,
           },
         ]);
+        setHomeConsumptionGoals((items) => ({ ...items, [id]: 5000 }));
         setActiveHomeId(id);
       },
       setActiveHomeId,
       setAccountActive,
       setColorMode,
+      setHomeConsumptionGoal: (homeId, targetWh) => {
+        if (!Number.isFinite(targetWh) || targetWh <= 0) return;
+        setHomeConsumptionGoals((items) => ({ ...items, [homeId]: targetWh }));
+      },
       setLanguage,
       setSessionName,
+      setSessionEmail,
+      setSessionRole,
       setOfflineMode,
       // Cambia el estado online/offline de un dispositivo.
       toggleDevice: (id) => {
         setDevices((items) =>
           items.map((item) =>
-            item.id === id ? { ...item, online: !item.online } : item,
+            item.id === id
+              ? {
+                  ...item,
+                  state: item.state === "on" ? "off" : "on",
+                  lastStateChange: getTimeStamp(),
+                }
+              : item,
           ),
         );
       },
@@ -330,19 +463,82 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         setDevices((items) =>
           items.map((item) => (item.id === id ? { ...item, online } : item)),
         );
+
+        // Un cambio manual de estado inicia un nuevo ciclo de evaluación
+        // para ese dispositivo.
+        setResolvedSmartAlerts((alerts) =>
+          alerts.filter((alertId) => alertId !== id),
+        );
+      },
+      setHomeDeviceState: (id, state) => {
+        setDevices((items) =>
+          items.map((item) =>
+            item.id === id ? { ...item, state, lastStateChange: getTimeStamp() } : item,
+          ),
+        );
+      },
+      setAllHomeDevicesState: (homeId, state) => {
+        setDevices((items) =>
+          items.map((item) =>
+            item.homeId === homeId ? { ...item, state, lastStateChange: getTimeStamp() } : item,
+          ),
+        );
+      },
+      assignHomeAccess: (email, homeId, assigned) => {
+        const cleanEmail = email.trim().toLowerCase();
+        if (!cleanEmail) return;
+        setHomeAccess((items) => {
+          const current = items[cleanEmail] ?? [];
+          const next = assigned
+            ? Array.from(new Set([...current, homeId]))
+            : current.filter((id) => id !== homeId);
+          return { ...items, [cleanEmail]: next };
+        });
       },
       // Marca una alerta/dispositivo activo como verificado.
       resolveDeviceAlert: (id) => {
         setActiveDevices((items) =>
-          items.map((item) => (item.id === id ? { ...item, verified: true } : item)),
+          items.map((item) =>
+            item.id === id ? { ...item, verified: true } : item,
+          ),
         );
       },
+
+      // Resuelve una alerta de un dispositivo Smart Home.
+      // La alerta queda registrada por su id para que la pantalla
+      // de alertas pueda ocultarla sin modificar el dispositivo.
+      resolveSmartDeviceAlert: (id) => {
+        setResolvedSmartAlerts((items) =>
+          items.includes(id) ? items : [...items, id],
+        );
+      },
+
       refreshSync: () => setLastSync(getTimeStamp()),
     }),
-    [accountActive, activeDevices, activeHomeId, colorMode, devices, homes, language, lastSync, offlineMode, sessionName],
+    [
+      accountActive,
+      activeDevices,
+      activeHomeId,
+      colorMode,
+      devices,
+      homeConsumptionGoals,
+      homes,
+      sessionEmail,
+      sessionRole,
+      accessibleHomes,
+      language,
+      lastSync,
+      offlineMode,
+      resolvedSmartAlerts,
+      sessionName,
+    ],
   );
 
-  return <SmartHomeContext.Provider value={value}>{children}</SmartHomeContext.Provider>;
+  return (
+    <SmartHomeContext.Provider value={value}>
+      {children}
+    </SmartHomeContext.Provider>
+  );
 }
 
 /**

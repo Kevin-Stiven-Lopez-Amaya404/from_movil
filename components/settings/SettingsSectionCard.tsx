@@ -19,15 +19,15 @@ const RED = "#FF3B20";
 const appFont = typography.fontFamily.emphasis;
 
 /**
- * Contenedor comun para secciones de configuracion.
+ * Grupo de opciones de configuración.
  *
- * Cada bloque mantiene el mismo patron visual: icono, titulo,
- * descripcion y contenido interno.
+ * Organiza cada categoría como una sección de menú:
+ * encabezado + descripción + opciones internas.
  */
 export function SettingsSectionCard({
   backgroundColor,
   children,
-  danger,
+  danger = false,
   description,
   descriptionColor,
   iconColor,
@@ -36,52 +36,104 @@ export function SettingsSectionCard({
   titleColor,
 }: SettingsSectionCardProps) {
   return (
-    <View style={[styles.card, danger && styles.dangerCard, { backgroundColor }]}>
+    <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Ionicons name={iconName} size={28} color={iconColor} />
+        <View
+          style={[
+            styles.sectionIcon,
+            {
+              backgroundColor: danger ? "#FFF1EF" : `${iconColor}12`,
+            },
+          ]}
+        >
+          <Ionicons name={iconName} size={19} color={iconColor} />
+        </View>
+
         <View style={styles.sectionCopy}>
-          <Text style={[styles.sectionTitle, { color: titleColor }, danger && styles.dangerTitle]}>{title}</Text>
-          <Text style={[styles.sectionDescription, { color: descriptionColor }]}>{description}</Text>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: danger ? RED : titleColor,
+              },
+            ]}
+          >
+            {title}
+          </Text>
+
+          <Text
+            style={[
+              styles.sectionDescription,
+              {
+                color: descriptionColor,
+              },
+            ]}
+          >
+            {description}
+          </Text>
         </View>
       </View>
-      {children}
+
+      <View
+        style={[
+          styles.menu,
+          {
+            backgroundColor,
+            borderColor: danger ? "#FFD1CB" : "transparent",
+            borderWidth: danger ? 1 : 0,
+          },
+        ]}
+      >
+        {children}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 16,
-    gap: 14,
-    marginTop: 18,
-    padding: 16,
+  section: {
+    marginTop: 24,
+    width: "100%",
   },
-  dangerCard: {
-    borderColor: "#FFD1CB",
-    borderWidth: 1,
-  },
+
   sectionHeader: {
     alignItems: "center",
     flexDirection: "row",
     gap: 10,
+    marginBottom: 9,
+    paddingHorizontal: 2,
   },
+
+  sectionIcon: {
+    alignItems: "center",
+    borderRadius: 10,
+    height: 38,
+    justifyContent: "center",
+    width: 38,
+  },
+
   sectionCopy: {
     flex: 1,
     minWidth: 0,
   },
+
   sectionTitle: {
     fontFamily: appFont,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "900",
   },
-  dangerTitle: {
-    color: RED,
-  },
+
   sectionDescription: {
     fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "700",
-    lineHeight: 16,
-    marginTop: 3,
+    fontSize: 11,
+    fontWeight: "600",
+    lineHeight: 15,
+    marginTop: 2,
+  },
+
+  menu: {
+    borderRadius: 16,
+    gap: 7,
+    padding: 4,
   },
 });

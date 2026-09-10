@@ -1,234 +1,303 @@
-import { AuthCheckboxRow } from "@/components/auth/AuthCheckboxRow";
 import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
 import { AuthPasswordField } from "@/components/auth/AuthTextField";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { BackButton } from "@/components/common/BackButton";
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { updateUserPassword } from "@/lib/auth/auth-store";
+import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { typography } from "@/lib/theme/typography";
+import { getPasswordRules } from "@/lib/utils/validators";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import {
-    Alert,
-    StyleSheet,
-    Text
-} from "react-native";
-
-const BLUE = "#0864C8";
-const TEXT = "#3F3F3F";
-
-/**
- * Pantalla para establecer la nueva contraseña.
- *
- * Se muestra después de la verificación OTP y simula el cambio de contraseña
- * de un usuario almacenado localmente.
- */
+import { useMemo, useState } from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
 
 export default function NewPasswordScreen() {
   const router = useRouter();
+  const layout = useResponsiveLayout();
 
-  // Email recibido desde la pantalla OTP para saber que usuario debe actualizarse.
+  // ==========================================
+  // PARÁMETROS
+  // ==========================================
+
   const params = useLocalSearchParams<{ email?: string }>();
 
-  // Estados locales del formulario de nueva contrasena.
+  const email = String(params.email ?? "")
+    .trim()
+    .toLowerCase();
+
+  // ==========================================
+  // ESTADO
+  // ==========================================
+
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberPassword, setRememberPassword] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
 
-  /**
-   * Finaliza la recuperacion de contrasena.
-   *
-   * Valida que la contrasena sea aceptable y luego llama `updateUserPassword`,
-   * que actualiza el usuario en memoria dentro de `auth-store`.
-   */
-  async function handleFinish() {
-    if (submitting) return;
+  const [submitted, setSubmitted] = useState(false);
 
-    if (!password.trim()) {
-      Alert.alert("Contrasena requerida", "Ingresa tu nueva contrasena.");
+  // ==========================================
+  // VALIDACIÓN DE CONTRASEÑA
+  // ==========================================
+
+  const passwordRules = useMemo(() => getPasswordRules(password), [password]);
+
+  const strength = passwordRules.filter((rule) => rule.passed).length;
+
+  const passwordIsStrong =
+    passwordRules.length > 0 && strength === passwordRules.length;
+
+  const passwordsMatch = password.length > 0 && password === confirmPassword;
+
+  // ==========================================
+  // ERRORES
+  // ==========================================
+
+  const passwordError = !passwordIsStrong
+    ? "La contraseña no cumple los requisitos."
+    : "";
+
+  const confirmPasswordError = !passwordsMatch
+    ? "Las contraseñas no coinciden."
+    : "";
+
+  // ==========================================
+  // CAMBIAR CONTRASEÑA
+  // ==========================================
+
+  async function handleFinish() {
+    setSubmitted(true);
+
+    if (submitting) {
       return;
     }
 
-    if (password.trim().length < 6) {
-      Alert.alert("Contrasena corta", "La contrasena debe tener minimo 6 caracteres.");
+    if (!email) {
+      Alert.alert(
+        "Solicitud inválida",
+        "No se encontró el correo asociado a esta recuperación.",
+      );
+
+      return;
+    }
+
+    if (!passwordIsStrong) {
+      Alert.alert(
+        "Contraseña inválida",
+        "La nueva contraseña no cumple los requisitos.",
+      );
+
+      return;
+    }
+
+    if (!passwordsMatch) {
+      Alert.alert("Contraseñas diferentes", "Las contraseñas deben coincidir.");
+
       return;
     }
 
     setSubmitting(true);
 
     try {
-      const updated = await updateUserPassword(String(params.email ?? ""), password.trim());
+      const updated = await updateUserPassword(email, password);
 
       if (!updated) {
         Alert.alert(
-          "Solicitud invalida",
-          "No encontramos una cuenta asociada a esta recuperacion.",
+          "Solicitud inválida",
+          "No encontramos una cuenta asociada a esta recuperación.",
         );
+
         return;
       }
 
-      Alert.alert("Contrasena actualizada", "Ya puedes entrar a tu cuenta.", [
-        { text: "Continuar", onPress: () => router.replace("/login") },
+      Alert.alert("Contraseña actualizada", "Ya puedes entrar a tu cuenta.", [
+        {
+          text: "Continuar",
+          onPress: () => router.replace("/login"),
+        },
       ]);
     } catch (error) {
-      Alert.alert("Error de conexion", getApiErrorMessage(error));
+      Alert.alert("Error de conexión", getApiErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
   }
 
+  // ==========================================
+  // RENDER
+  // ==========================================
+
   return (
-    <AuthScreenLayout contentStyle={styles.content} title="Smart Home">
-      <BackButton fallbackHref="/forgot-password" />
+    <AuthScreenLayout compact={layout.compact} contentStyle={styles.content}>
+      {/* ====================================== */}
+      {/* BOTÓN VOLVER                           */}
+      {/* ====================================== */}
+
+      <View style={styles.header}>
+        <BackButton fallbackHref="/otp-verification" />
+      </View>
+
+      {/* ====================================== */}
+      {/* TÍTULO                                 */}
+      {/* ====================================== */}
 
       <Text style={styles.sectionTitle}>Establecer contraseña</Text>
 
-      <AuthPasswordField
-        containerStyle={styles.passwordContainer}
-        inputStyle={styles.passwordInput}
-        onChangeText={setPassword}
-        onToggleVisibility={() => setShowPassword((value) => !value)}
-        placeholder="Contraseña"
-        placeholderTextColor={TEXT}
-        showPassword={showPassword}
-        value={password}
-      />
+      {/* ====================================== */}
+      {/* FORMULARIO                             */}
+      {/* ====================================== */}
 
-      {/* Opcion local para recordar la contraseña en esta sesión. */}
-      <AuthCheckboxRow
-        checked={rememberPassword}
-        label="Recordar contraseña"
-        labelStyle={styles.rememberText}
-        onToggle={() => setRememberPassword((value) => !value)}
-      />
+      <View style={styles.formContainer}>
+        {/* ==================================== */}
+        {/* NUEVA CONTRASEÑA                      */}
+        {/* ==================================== */}
 
-      {/* Boton de envio: valida y actualiza la contraseña en el usuario local. */}
-      <PrimaryButton
-        loading={submitting}
-        onPress={handleFinish}
-        style={styles.primaryButton}
-        text="Finalizado"
-      />
+        <View>
+          <AuthPasswordField
+            error={submitted ? passwordError : ""}
+            inputStyle={styles.input}
+            onChangeText={setPassword}
+            onToggleVisibility={() => setShowPassword((value) => !value)}
+            placeholder="Nueva contraseña"
+            showPassword={showPassword}
+            value={password}
+          />
+
+          {password.length > 0 && (
+            <View
+              style={styles.strengthContainer}
+              accessibilityLabel={`Fortaleza de contraseña: ${strength} de ${passwordRules.length}`}
+            >
+              <View
+                style={[
+                  styles.strengthBar,
+                  {
+                    width: `${
+                      passwordRules.length > 0
+                        ? (strength / passwordRules.length) * 100
+                        : 0
+                    }%`,
+                    backgroundColor:
+                      strength < 2
+                        ? "#FF4D4D"
+                        : strength < passwordRules.length
+                          ? "#FFA500"
+                          : "#003380",
+                  },
+                ]}
+              />
+            </View>
+          )}
+        </View>
+
+        {/* ==================================== */}
+        {/* CONFIRMAR CONTRASEÑA                  */}
+        {/* ==================================== */}
+
+        <AuthPasswordField
+          error={submitted ? confirmPasswordError : ""}
+          inputStyle={styles.input}
+          onChangeText={setConfirmPassword}
+          onToggleVisibility={() => setShowPassword((value) => !value)}
+          placeholder="Confirmar contraseña"
+          showPassword={showPassword}
+          value={confirmPassword}
+        />
+
+        {/* ==================================== */}
+        {/* BOTÓN                                 */}
+        {/* ==================================== */}
+
+        <PrimaryButton
+          loading={submitting}
+          onPress={handleFinish}
+          style={styles.button}
+          text="Finalizar"
+        />
+      </View>
     </AuthScreenLayout>
   );
 }
 
+// ======================================================
+// TIPOGRAFÍA
+// ======================================================
+
 const authFont = typography.fontFamily.emphasis;
 
+// ======================================================
+// ESTILOS
+// ======================================================
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  flex: {
-    flex: 1,
-  },
-  container: {
-    alignItems: "center",
-    flexGrow: 1,
-    paddingBottom: 40,
-  },
   content: {
     alignSelf: "center",
     width: "100%",
   },
-  title: {
-    color: BLUE,
-    fontFamily: authFont,
-    fontSize: 38,
-    fontWeight: "700",
-    lineHeight: 46,
-    marginBottom: 32,
-    textAlign: "center",
+
+  header: {
+    marginBottom: 10,
   },
-  titleCompact: {
-    fontSize: 34,
-    lineHeight: 41,
-    marginBottom: 24,
-  },
+
   sectionTitle: {
-    color: TEXT,
+    color: "#3F3F3F",
     fontFamily: authFont,
     fontSize: 20,
     fontWeight: "700",
-    lineHeight: 25,
-    marginBottom: 24,
-    textDecorationLine: "underline",
+    marginBottom: 20,
   },
-  passwordContainer: {
-    marginTop: 8,
+
+  formContainer: {
+    gap: 16,
     width: "100%",
   },
-  passwordBox: {
-    alignItems: "center",
+
+  input: {
     backgroundColor: "#FBFBFD",
-    borderRadius: 14,
-    flexDirection: "row",
-    minHeight: 52,
-    paddingLeft: 14,
-    paddingRight: 12,
+    borderColor: "transparent",
+    borderWidth: 1,
+    borderRadius: 17,
+
+    color: "#3F3F3F",
+
+    fontFamily: authFont,
+    fontSize: 15,
+    fontWeight: "500",
+
+    height: 56,
+
+    paddingHorizontal: 18,
+
     shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2,
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.18,
     shadowRadius: 5,
-    elevation: 6,
+
+    elevation: 5,
   },
-  passwordInput: {
-    color: TEXT,
-    flex: 1,
-    fontFamily: authFont,
-    fontSize: 18,
-    fontWeight: "700",
-    paddingVertical: 0,
+
+  strengthContainer: {
+    height: 4,
+
+    backgroundColor: "#E0E0E0",
+
+    borderRadius: 2,
+
+    marginTop: 8,
+
+    overflow: "hidden",
   },
-  iconButton: {
-    alignItems: "center",
-    height: 40,
-    justifyContent: "center",
-    marginLeft: 8,
-    width: 32,
+
+  strengthBar: {
+    height: "100%",
   },
-  rememberRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginTop: 24,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    alignItems: "center",
-    backgroundColor: "#D8DADC",
-    borderRadius: 5,
-    justifyContent: "center",
-  },
-  checkboxOn: {
-    backgroundColor: BLUE,
-  },
-  rememberText: {
-    color: TEXT,
-    flex: 1,
-    fontFamily: authFont,
-    fontSize: 17,
-    fontWeight: "700",
-    marginLeft: 10,
-  },
-  primaryButton: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: BLUE,
-    borderRadius: 14,
-    height: 54,
-    justifyContent: "center",
-    marginTop: 42,
-  },
-  primaryButtonPressed: {
-    backgroundColor: "#004FA5",
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontFamily: authFont,
-    fontSize: 23,
-    fontWeight: "700",
+
+  button: {
+    marginTop: 8,
   },
 });

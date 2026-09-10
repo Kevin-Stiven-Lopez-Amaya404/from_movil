@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { Dimensions, StyleSheet, View } from "react-native";
 import Animated, {
-  Easing,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withTiming,
+    Easing,
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withTiming,
 } from "react-native-reanimated";
 
 // Se toma el ancho real de la pantalla para calcular una animacion proporcional.
@@ -121,7 +121,7 @@ export default function SplashAnimation({ onFinish }: Props) {
 const styles = StyleSheet.create({
   container: {
     // Cubre toda la pantalla por encima del contenido normal de la app.
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "#005CC1",
     alignItems: "center",
     justifyContent: "center",

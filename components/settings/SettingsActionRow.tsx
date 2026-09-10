@@ -13,15 +13,16 @@ type SettingsActionRowProps = {
   textColor: string;
   title: string;
   mutedColor?: string;
+  showChevron?: boolean;
 };
 
 const appFont = typography.fontFamily.emphasis;
 
 /**
- * Fila accionable usada dentro de configuracion.
+ * Fila reutilizable para las opciones del menú de configuración.
  *
- * Permite reutilizar el mismo layout para editar perfil o abrir
- * integraciones pendientes.
+ * Mantiene un patrón visual consistente:
+ * icono → título → descripción → chevron.
  */
 export function SettingsActionRow({
   backgroundColor,
@@ -33,16 +34,68 @@ export function SettingsActionRow({
   onPress,
   textColor,
   title,
+  showChevron = true,
 }: SettingsActionRowProps) {
   return (
-    <Pressable style={[styles.row, { backgroundColor, borderColor }]} onPress={onPress}>
-      <Ionicons name={iconName} size={22} color={iconColor} />
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.row,
+        {
+          backgroundColor,
+          borderColor,
+        },
+        pressed && styles.pressed,
+      ]}
+    >
+      <View
+        style={[
+          styles.iconContainer,
+          {
+            backgroundColor: `${iconColor}12`,
+          },
+        ]}
+      >
+        <Ionicons name={iconName} size={20} color={iconColor} />
+      </View>
+
       <View style={styles.rowCopy}>
-        <Text style={[styles.rowText, { color: textColor }]}>{title}</Text>
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.rowText,
+            {
+              color: textColor,
+            },
+          ]}
+        >
+          {title}
+        </Text>
+
         {!!description && (
-          <Text style={[styles.rowDescription, { color: mutedColor ?? textColor }]}>{description}</Text>
+          <Text
+            numberOfLines={2}
+            style={[
+              styles.rowDescription,
+              {
+                color: mutedColor ?? textColor,
+              },
+            ]}
+          >
+            {description}
+          </Text>
         )}
       </View>
+
+      {showChevron && (
+        <Ionicons
+          name="chevron-forward"
+          size={18}
+          color={mutedColor ?? textColor}
+        />
+      )}
     </Pressable>
   );
 }
@@ -50,28 +103,43 @@ export function SettingsActionRow({
 const styles = StyleSheet.create({
   row: {
     alignItems: "center",
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     flexDirection: "row",
-    gap: 10,
-    minHeight: 52,
+    gap: 11,
+    minHeight: 62,
     paddingHorizontal: 12,
+    paddingVertical: 9,
   },
+
+  iconContainer: {
+    alignItems: "center",
+    borderRadius: 11,
+    height: 38,
+    justifyContent: "center",
+    width: 38,
+  },
+
   rowCopy: {
     flex: 1,
     minWidth: 0,
   },
+
   rowText: {
-    flex: 1,
     fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "800",
+    fontSize: 14,
+    fontWeight: "900",
   },
+
   rowDescription: {
     fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "700",
-    lineHeight: 16,
-    marginTop: 3,
+    fontSize: 11,
+    fontWeight: "600",
+    lineHeight: 15,
+    marginTop: 2,
+  },
+
+  pressed: {
+    opacity: 0.7,
   },
 });

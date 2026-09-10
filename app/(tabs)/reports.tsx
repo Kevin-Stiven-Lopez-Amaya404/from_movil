@@ -6,27 +6,37 @@
  */
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { type FilterItem } from "@/components/ui/FilterChip";
 import { HorizontalFilterTabs } from "@/components/ui/HorizontalFilterTabs";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { DeviceCategory, ReportRange, useSmartHome } from "@/lib/context/smart-home-context";
+import {
+  DeviceCategory,
+  ReportRange,
+  useSmartHome,
+} from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
-const BLUE = "#0864C8";
-const LILAC = "#DDDDFB";
-const TEXT = "#454545";
-const RED = "#FF3B20";
-const GREEN = "#2AAF5D";
-const MUTED = "#6B7280";
-
-const ranges: ReportRange[] = ["Diario", "Semana", "Mes", "Rango"];
-const filters: ("Todos" | DeviceCategory)[] = ["Todos", "Iluminacion", "Climatizacion", "Electrodomesticos"];
-const reportViews = ["Tiempo real", "Historial", "Mensual", "Tarifa"] as const;
+const ranges: ReportRange[] = ["Semana", "Mes", "Rango"];
+const filters: ("Todos" | DeviceCategory)[] = [
+  "Todos",
+  "Iluminacion",
+  "Climatizacion",
+  "Electrodomesticos",
+  "Seguridad",
+];
+const reportViews = ["Tiempo real", "Historial"] as const;
 type ReportView = (typeof reportViews)[number];
 
 export default function ReportsScreen() {
@@ -34,16 +44,49 @@ export default function ReportsScreen() {
   const theme = useAppTheme();
 
   // Datos globales usados para generar reportes simulados.
-  const { devices, reportData } = useSmartHome();
+  const { devices, reportData, accessibleHomes } = useSmartHome();
+  const accessibleHomeIds = new Set(accessibleHomes.map((home) => home.id));
+  const visibleDevices = devices.filter((device) => accessibleHomeIds.has(device.homeId));
 
   // Estados que controlan la vista, el periodo y el filtro activo.
   const [activeView, setActiveView] = useState<ReportView>("Tiempo real");
   const [activeRange, setActiveRange] = useState<ReportRange>("Semana");
-  const [activeFilter, setActiveFilter] = useState<"Todos" | DeviceCategory>("Todos");
+  const [activeFilter, setActiveFilter] = useState<"Todos" | DeviceCategory>(
+    "Todos",
+  );
   const points = reportData[activeRange];
-  const viewItems: FilterItem<ReportView>[] = reportViews.map((label) => ({ label, value: label }));
-  const rangeItems: FilterItem<ReportRange>[] = ranges.map((label) => ({ label, value: label }));
-  const filterItems: FilterItem<"Todos" | DeviceCategory>[] = filters.map((label) => ({ label, value: label }));
+
+  const viewLabels: Record<ReportView, string> = {
+    "Tiempo real": "Tiempo real",
+    Historial: "Historial",
+  };
+
+  const rangeLabels: Record<ReportRange, string> = {
+    Diario: "Diario",
+    Semana: "Semana",
+    Mes: "Mes",
+    Rango: "Año",
+  };
+
+  const filterLabels: Record<"Todos" | DeviceCategory, string> = {
+    Todos: "Todos",
+    Iluminacion: "Iluminación",
+    Climatizacion: "Climatización",
+    Electrodomesticos: "Electrodomésticos",
+    Seguridad: "Seguridad",
+  };
+
+  const viewItems: FilterItem<ReportView>[] = reportViews.map((value) => ({
+    label: viewLabels[value],
+    value,
+  }));
+  const rangeItems: FilterItem<ReportRange>[] = ranges.map((value) => ({
+    label: rangeLabels[value],
+    value,
+  }));
+  const filterItems: FilterItem<"Todos" | DeviceCategory>[] = filters.map(
+    (value) => ({ label: filterLabels[value], value }),
+  );
 
   // Ajusta los datos del reporte segun la categoria seleccionada.
   // Esto permite que la grafica muestre comparativas relativas entre tipos de
@@ -51,15 +94,15 @@ export default function ReportsScreen() {
   const multiplier = useMemo(() => {
     if (activeFilter === "Todos") return 1;
 
-    const categoryConsumption = devices
+    const categoryEnergy = visibleDevices
       .filter((device) => device.category === activeFilter && device.online)
-      .reduce((total, device) => total + device.consumption, 0);
-    const totalConsumption = devices
+      .reduce((total, device) => total + device.energy, 0);
+    const totalEnergy = visibleDevices
       .filter((device) => device.online)
-      .reduce((total, device) => total + device.consumption, 0);
+      .reduce((total, device) => total + device.energy, 0);
 
-    return totalConsumption > 0 ? Math.max(categoryConsumption / totalConsumption, 0.18) : 0.2;
-  }, [activeFilter, devices]);
+    return totalEnergy > 0 ? Math.max(categoryEnergy / totalEnergy, 0.18) : 0.2;
+  }, [activeFilter, visibleDevices]);
   const filteredPoints = points.map((point) => ({
     ...point,
     value: Number((point.value * multiplier).toFixed(1)),
@@ -70,20 +113,27 @@ export default function ReportsScreen() {
   const maxValue = Math.max(...filteredPoints.map((point) => point.value), 1);
   const total = filteredPoints.reduce((sum, point) => sum + point.value, 0);
   const previous = total * 0.87;
-  const trend = Math.round(((total - previous) / previous) * 100);
-  const activePoint = filteredPoints.reduce((best, point) => (point.value > best.value ? point : best), filteredPoints[0]);
-  const realTimeConsumption = devices
-    .filter((device) => device.online)
-    .reduce((sum, device) => sum + device.consumption, 0);
+  const trend =
+    previous > 0 ? Math.round(((total - previous) / previous) * 100) : 0;
+  const activePoint = filteredPoints.reduce(
+    (best, point) => (point.value > best.value ? point : best),
+    filteredPoints[0],
+  ) ?? { label: "-", value: 0 };
+
+  const realTimePower =
+    visibleDevices
+      .filter((device) => device.online && device.state === "on")
+      .reduce((sum, device) => sum + device.power, 0) / 1000;
 
   // Datos de consumo agregados por tipo de dispositivo, mostrados en el resumen.
   const applianceTypes = filters
     .filter((item): item is DeviceCategory => item !== "Todos")
     .map((category) => ({
       category,
-      total: devices
-        .filter((device) => device.category === category && device.online)
-        .reduce((sum, device) => sum + device.consumption, 0),
+      total:
+        visibleDevices
+          .filter((device) => device.category === category && device.online)
+          .reduce((sum, device) => sum + device.energy, 0) / 1000,
     }));
 
   /**
@@ -94,12 +144,14 @@ export default function ReportsScreen() {
   function downloadReport() {
     Alert.alert(
       "Reporte preparado",
-      `${activeRange} · ${activeFilter}: ${total.toFixed(1)} kWh. Puedes conectar aquí la descarga real del backend.`,
+      `${rangeLabels[activeRange]} · ${filterLabels[activeFilter]}: ${total.toFixed(1)} ${"kWh"}. ${"Puedes conectar aquí la descarga real del backend."}`,
     );
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
+    >
       <ScrollView
         contentContainerStyle={[
           styles.container,
@@ -112,168 +164,236 @@ export default function ReportsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-        <View style={styles.header}>
-          <Text numberOfLines={1} style={[styles.title, { color: theme.text }]}>Análisis energético</Text>
-          <Pressable onPress={downloadReport} style={[styles.headerButton, { backgroundColor: theme.rowAlt }]}>
-            <Ionicons name="open-outline" size={31} color={theme.text} />
-          </Pressable>
-        </View>
+          <View style={styles.header}>
+            <Text
+              numberOfLines={1}
+              style={[styles.title, { color: theme.text }]}
+            >
+              {"Análisis energético"}
+            </Text>
+            <Pressable
+              onPress={downloadReport}
+              style={[styles.headerButton, { backgroundColor: theme.rowAlt }]}
+            >
+              <Ionicons name="open-outline" size={31} color={theme.text} />
+            </Pressable>
+          </View>
 
-        <View style={styles.sectionGroup}>
-          <Text style={[styles.sectionLabel, { color: theme.muted }]}>Navegación</Text>
-          <SegmentedControl
-            items={viewItems}
-            selectedValue={activeView}
-            onValueChange={setActiveView}
-            scrollable={false}
-            containerStyle={styles.controlContainer}
-          />
-        </View>
+          <View style={styles.sectionGroup}>
+            <Text style={[styles.sectionLabel, { color: theme.muted }]}>
+              {"Navegación"}
+            </Text>
+            <SegmentedControl
+              items={viewItems}
+              selectedValue={activeView}
+              onValueChange={setActiveView}
+              scrollable={!layout.narrow}
+              containerStyle={styles.controlContainer}
+            />
+          </View>
 
-        {activeView === "Tiempo real" && (
-          <>
-            <View style={[styles.realTimeCard, { backgroundColor: theme.card }]}>
-              <View style={styles.realTimeTop}>
-                <Text style={[styles.realTimeTitle, { color: theme.text }]}>Consumo en tiempo real</Text>
-                <Ionicons name="settings-outline" size={24} color={BLUE} />
-              </View>
-              <View style={styles.gaugeWrap}>
-                <View style={styles.gaugeOuter}>
-                  <View style={styles.gaugeInner}>
-                    <Ionicons name="flash-outline" size={35} color={BLUE} />
-                    <Text style={styles.gaugeValue}>{realTimeConsumption.toFixed(2)}</Text>
-                    <Text style={styles.gaugeUnit}>kWh</Text>
+          {activeView === "Tiempo real" && (
+            <>
+              <View
+                style={[styles.realTimeCard, { backgroundColor: theme.card }]}
+              >
+                <View style={styles.realTimeTop}>
+                  <Text style={[styles.realTimeTitle, { color: theme.text }]}>
+                    {"Consumo en tiempo real"}
+                  </Text>
+                  <Ionicons
+                    name="settings-outline"
+                    size={24}
+                    color={theme.blue}
+                  />
+                </View>
+                <View style={styles.gaugeWrap}>
+                  <View
+                    style={[
+                      styles.gaugeOuter,
+                      {
+                        borderColor: theme.blue,
+                        borderLeftColor: "#2AAF5D",
+                        borderRightColor: theme.danger,
+                      },
+                    ]}
+                  >
+                    <View style={styles.gaugeInner}>
+                      <Ionicons
+                        name="flash-outline"
+                        size={35}
+                        color={theme.blue}
+                      />
+                      <Text style={styles.gaugeValue}>
+                        {realTimePower.toFixed(2)}
+                      </Text>
+                      <Text style={styles.gaugeUnit}>{"kW"}</Text>
+                    </View>
                   </View>
                 </View>
+                <Text style={[styles.realTimeMeta, { color: theme.muted }]}>
+                  {"Actualizado ahora"}
+                </Text>
               </View>
-              <Text style={[styles.realTimeMeta, { color: theme.muted }]}>Actualizado ahora</Text>
-            </View>
 
-            <View style={[styles.applianceCard, { backgroundColor: theme.card }]}>
-              <Text style={[styles.cardTitle, { color: theme.text }]}>Energía por tipo de dispositivo</Text>
-              {applianceTypes.map((item) => (
-                <View key={item.category} style={styles.applianceRow}>
-                  <Text style={[styles.applianceName, { color: theme.text }]}>{item.category}</Text>
-                  <Text style={styles.applianceValue}>{item.total.toFixed(2)} kWh</Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {activeView === "Tarifa" && (
-          <>
-            <View style={[styles.tariffInfoCard, { backgroundColor: theme.card }]}>
-              <Ionicons name="information-circle-outline" size={24} color={BLUE} />
-              <Text style={[styles.tariffInfoText, { color: theme.muted }]}>
-                Configura la fecha de facturación y el valor por kWh para estimar el costo mensual.
-              </Text>
-            </View>
-
-            <View style={[styles.tariffCard, { backgroundColor: theme.card }]}>
-              <Text style={[styles.cardTitle, { color: theme.text }]}>Detalles de tarifa eléctrica</Text>
-              <View style={styles.tariffRow}>
-                <Ionicons name="calendar-outline" size={22} color={MUTED} />
-                <Text style={[styles.tariffLabel, { color: theme.muted }]}>Día de facturación</Text>
-                <Text style={styles.tariffValue}>01 del mes</Text>
+              <View
+                style={[styles.applianceCard, { backgroundColor: theme.card }]}
+              >
+                <Text style={[styles.cardTitle, { color: theme.text }]}>
+                  {"Energía por tipo de dispositivo"}
+                </Text>
+                {applianceTypes.map((item) => (
+                  <View key={item.category} style={styles.applianceRow}>
+                    <Text style={[styles.applianceName, { color: theme.text }]}>
+                      {item.category}
+                    </Text>
+                    <Text style={styles.applianceValue}>
+                      {item.total.toFixed(2)} {"kWh"}
+                    </Text>
+                  </View>
+                ))}
               </View>
-              <View style={styles.tariffRow}>
-                <Ionicons name="cash-outline" size={22} color={MUTED} />
-                <Text style={[styles.tariffLabel, { color: theme.muted }]}>Tarifa estimada</Text>
-                <Text style={styles.tariffValue}>$950 COP/kWh</Text>
+            </>
+          )}
+
+          {activeView !== "Tiempo real" && (
+            <>
+              <View style={styles.sectionGroup}>
+                <Text style={[styles.sectionLabel, { color: theme.muted }]}>
+                  {"Período"}
+                </Text>
+                <SegmentedControl
+                  items={rangeItems}
+                  selectedValue={activeRange}
+                  onValueChange={setActiveRange}
+                  scrollable={!layout.narrow}
+                  containerStyle={styles.controlContainer}
+                />
               </View>
-              <Pressable style={styles.saveButton} onPress={() => Alert.alert("Tarifa guardada", "Los datos de tarifa quedaron preparados.")}>
-                <Text style={styles.saveButtonText}>Guardar tarifa</Text>
-              </Pressable>
-            </View>
-          </>
-        )}
 
-        {activeView !== "Tarifa" && activeView !== "Tiempo real" && (
-          <>
-            <View style={styles.sectionGroup}>
-              <Text style={[styles.sectionLabel, { color: theme.muted }]}>Período</Text>
-              <SegmentedControl
-                items={rangeItems}
-                selectedValue={activeRange}
-                onValueChange={setActiveRange}
-                scrollable={false}
-                containerStyle={styles.controlContainer}
-              />
-            </View>
+              <View style={styles.sectionGroup}>
+                <Text style={[styles.sectionLabel, { color: theme.muted }]}>
+                  {"Categoría"}
+                </Text>
+                <HorizontalFilterTabs
+                  items={filterItems}
+                  selectedValue={activeFilter}
+                  onValueChange={setActiveFilter}
+                  containerStyle={styles.controlContainer}
+                />
+              </View>
 
-            <View style={styles.sectionGroup}>
-              <Text style={[styles.sectionLabel, { color: theme.muted }]}>Categoría</Text>
-              <HorizontalFilterTabs
-                items={filterItems}
-                selectedValue={activeFilter}
-                onValueChange={setActiveFilter}
-                containerStyle={styles.controlContainer}
-              />
-            </View>
-
-            <View style={[styles.summaryCard, { backgroundColor: theme.card }]}>
-          <View style={styles.summaryTop}>
-            <Text style={[styles.summaryValue, { color: theme.text }]}>{total.toFixed(1)} kWh</Text>
-            <Text style={[styles.summaryTrend, trend > 0 ? styles.trendDanger : styles.trendGood]}>
-              {trend > 0 ? "↑" : "↓"} {Math.abs(trend)}%
-            </Text>
-          </View>
-          <Text style={[styles.summaryPeriod, { color: theme.muted }]}>{activeRange} · {activeFilter}</Text>
-        </View>
-
-
-          <View style={styles.chartArea}>
-            {[0, 40, 80, 120].map((top) => (
-              <View key={top} style={[styles.gridLine, { top }]} />
-            ))}
-
-            <View style={styles.bars}>
-              {filteredPoints.map((item) => {
-                const active = item.label === activePoint.label;
-                const height = Math.max((item.value / maxValue) * 138, 14);
-
-                return (
-                  <Pressable
-                    key={item.label}
-                    style={styles.barColumn}
-                    onPress={() => Alert.alert(item.label, `${item.value.toFixed(1)} kWh registrados.`)}
+              <View
+                style={[styles.summaryCard, { backgroundColor: theme.card }]}
+              >
+                <View style={styles.summaryTop}>
+                  <Text style={[styles.summaryValue, { color: theme.text }]}>
+                    {total.toFixed(1)} {"kWh"}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.summaryTrend,
+                      trend > 0
+                        ? { color: theme.danger }
+                        : { color: theme.success },
+                    ]}
                   >
-                    {active && (
-                      <View style={styles.tooltip}>
-                        <Text style={styles.tooltipText}>{item.label} {item.value.toFixed(1)} kWh</Text>
-                      </View>
-                    )}
-                    <View
-                      style={[
-                        styles.bar,
-                        layout.tiny && styles.barTiny,
-                        { height },
-                        active && styles.barActive,
-                      ]}
-                    />
-                    <Text style={[styles.dayLabel, { color: theme.muted }]}>{item.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
+                    {trend > 0 ? "↑" : "↓"} {Math.abs(trend)}%
+                  </Text>
+                </View>
+                <Text style={[styles.summaryPeriod, { color: theme.muted }]}>
+                  {rangeLabels[activeRange]} · {filterLabels[activeFilter]}
+                </Text>
+              </View>
 
-        <View style={[styles.insightCard, { backgroundColor: theme.card }]}>
-          <Ionicons name="bulb-outline" size={26} color={BLUE} />
-          <Text style={[styles.insightText, { color: theme.text }]}>
-            El mayor pico está en {activePoint.label}. Revisa horarios de climatización y cargas automáticas.
-          </Text>
-        </View>
+              <View style={styles.chartArea}>
+                {[0, 40, 80, 120].map((top) => (
+                  <View key={top} style={[styles.gridLine, { top }]} />
+                ))}
 
-        <View style={styles.divider} />
+                <View style={styles.bars}>
+                  {filteredPoints.map((item) => {
+                    const active = item.label === activePoint.label;
+                    const height = Math.max((item.value / maxValue) * 138, 14);
 
-        <Pressable style={styles.downloadButton} onPress={downloadReport}>
-          <Ionicons name="download-outline" size={21} color={BLUE} />
-          <Text style={styles.downloadText}>Descargar reporte</Text>
-        </Pressable>
-      </>
-    )}
+                    return (
+                      <Pressable
+                        key={item.label}
+                        style={styles.barColumn}
+                        onPress={() =>
+                          Alert.alert(
+                            item.label,
+                            `${item.value.toFixed(1)} ${"kWh"} ${"registrados"}.`,
+                          )
+                        }
+                      >
+                        {active && (
+                          <View
+                            style={[
+                              styles.tooltip,
+                              { backgroundColor: theme.rowAlt },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.tooltipText,
+                                { color: theme.text },
+                              ]}
+                            >
+                              {item.label} {item.value.toFixed(1)} {"kWh"}
+                            </Text>
+                          </View>
+                        )}
+                        <View
+                          style={[
+                            styles.bar,
+                            layout.tiny && styles.barTiny,
+                            { height },
+                            active && styles.barActive,
+                          ]}
+                        />
+                        <Text
+                          numberOfLines={1}
+                          style={[
+                            styles.dayLabel,
+                            layout.compact && styles.dayLabelCompact,
+                            { color: theme.muted },
+                          ]}
+                        >
+                          {item.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View
+                style={[styles.insightCard, { backgroundColor: theme.card }]}
+              >
+                <Ionicons name="bulb-outline" size={26} color={theme.blue} />
+                <Text style={[styles.insightText, { color: theme.text }]}>
+                  {`El mayor pico está en ${activePoint.label}. Revisa horarios de climatización y cargas automáticas.`}
+                </Text>
+              </View>
+
+              <View style={styles.divider} />
+
+              <Pressable
+                style={[styles.downloadButton, { borderColor: theme.blue }]}
+                onPress={downloadReport}
+              >
+                <Ionicons
+                  name="download-outline"
+                  size={21}
+                  color={theme.blue}
+                />
+                <Text style={[styles.downloadText, { color: theme.blue }]}>
+                  {"Descargar reporte"}
+                </Text>
+              </Pressable>
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -301,7 +421,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   title: {
-    color: TEXT,
+    color: "#454545",
     flex: 1,
     fontFamily: appFont,
     fontSize: 18,
@@ -329,7 +449,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   realTimeCard: {
-    backgroundColor: LILAC,
+    backgroundColor: "#F4F6FF",
     borderRadius: 18,
     marginTop: 26,
     padding: 18,
@@ -340,7 +460,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   realTimeTitle: {
-    color: TEXT,
+    color: "#454545",
     flex: 1,
     fontFamily: appFont,
     fontSize: 18,
@@ -352,10 +472,10 @@ const styles = StyleSheet.create({
   },
   gaugeOuter: {
     alignItems: "center",
-    borderColor: BLUE,
-    borderLeftColor: GREEN,
+    borderColor: "#0864C8",
+    borderLeftColor: "#2AAF5D",
     borderRadius: 92,
-    borderRightColor: RED,
+    borderRightColor: "#FF3B20",
     borderWidth: 16,
     height: 184,
     justifyContent: "center",
@@ -370,20 +490,20 @@ const styles = StyleSheet.create({
     width: 124,
   },
   gaugeValue: {
-    color: TEXT,
+    color: "#454545",
     fontFamily: appFont,
     fontSize: 31,
     fontWeight: "800",
     marginTop: 2,
   },
   gaugeUnit: {
-    color: MUTED,
+    color: "#6B7280",
     fontFamily: appFont,
     fontSize: 14,
     fontWeight: "800",
   },
   realTimeMeta: {
-    color: MUTED,
+    color: "#6B7280",
     fontFamily: appFont,
     fontSize: 13,
     fontWeight: "700",
@@ -398,7 +518,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   cardTitle: {
-    color: TEXT,
+    color: "#454545",
     fontFamily: appFont,
     fontSize: 18,
     fontWeight: "800",
@@ -413,80 +533,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   applianceName: {
-    color: TEXT,
+    color: "#454545",
     flex: 1,
     fontFamily: appFont,
     fontSize: 14,
     fontWeight: "800",
   },
   applianceValue: {
-    color: BLUE,
+    color: "#0864C8",
     fontFamily: appFont,
     fontSize: 14,
-    fontWeight: "800",
-  },
-  tariffInfoCard: {
-    alignItems: "center",
-    backgroundColor: "#EEF4FF",
-    borderRadius: 14,
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 26,
-    padding: 14,
-  },
-  tariffInfoText: {
-    color: MUTED,
-    flex: 1,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "700",
-    lineHeight: 18,
-  },
-  tariffCard: {
-    backgroundColor: LILAC,
-    borderRadius: 16,
-    gap: 12,
-    marginTop: 18,
-    padding: 16,
-  },
-  tariffRow: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    flexDirection: "row",
-    gap: 10,
-    minHeight: 48,
-    paddingHorizontal: 12,
-  },
-  tariffLabel: {
-    color: TEXT,
-    flex: 1,
-    fontFamily: appFont,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  tariffValue: {
-    color: MUTED,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  saveButton: {
-    alignItems: "center",
-    backgroundColor: BLUE,
-    borderRadius: 12,
-    height: 48,
-    justifyContent: "center",
-  },
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontFamily: appFont,
-    fontSize: 16,
     fontWeight: "800",
   },
   summaryCard: {
     alignSelf: "center",
-    backgroundColor: LILAC,
+    backgroundColor: "#F4F6FF",
     borderRadius: 16,
     marginTop: 32,
     paddingHorizontal: 15,
@@ -501,11 +562,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   summaryValue: {
-    color: TEXT,
+    color: "#454545",
     fontFamily: appFont,
     fontSize: 27,
     fontWeight: "800",
-    textDecorationColor: BLUE,
+    textDecorationColor: "#0864C8",
     textDecorationLine: "underline",
   },
   summaryTrend: {
@@ -514,13 +575,13 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   trendDanger: {
-    color: RED,
+    color: "#FF3B20",
   },
   trendGood: {
-    color: GREEN,
+    color: "#2AAF5D",
   },
   summaryPeriod: {
-    color: TEXT,
+    color: "#454545",
     fontFamily: appFont,
     fontSize: 15,
     fontWeight: "800",
@@ -565,31 +626,34 @@ const styles = StyleSheet.create({
     width: 18,
   },
   barActive: {
-    backgroundColor: BLUE,
+    backgroundColor: "#0864C8",
   },
   tooltip: {
-    backgroundColor: LILAC,
+    backgroundColor: "#F4F6FF",
     borderRadius: 4,
     marginBottom: 8,
     paddingHorizontal: 5,
     paddingVertical: 2,
   },
   tooltipText: {
-    color: TEXT,
+    color: "#454545",
     fontFamily: appFont,
     fontSize: 11,
     fontWeight: "800",
   },
   dayLabel: {
-    color: "#000000",
+    color: "#454545",
     fontFamily: appFont,
     fontSize: 14,
     fontWeight: "800",
     marginTop: 3,
   },
+  dayLabelCompact: {
+    fontSize: 11,
+  },
   insightCard: {
     alignItems: "center",
-    backgroundColor: "#EEF4FF",
+    backgroundColor: "#F4F6FF",
     borderRadius: 12,
     flexDirection: "row",
     gap: 10,
@@ -598,7 +662,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   insightText: {
-    color: MUTED,
+    color: "#6B7280",
     flex: 1,
     fontFamily: appFont,
     fontSize: 13,
@@ -606,14 +670,14 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   divider: {
-    backgroundColor: "#DDE2F5",
+    backgroundColor: "#D8DAFA",
     height: 1,
     marginTop: 19,
   },
   downloadButton: {
     alignItems: "center",
     alignSelf: "center",
-    borderColor: BLUE,
+    borderColor: "#0864C8",
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: "row",
@@ -625,7 +689,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   downloadText: {
-    color: BLUE,
+    color: "#0864C8",
     fontFamily: appFont,
     fontSize: 16,
     fontWeight: "800",

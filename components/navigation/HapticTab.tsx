@@ -1,6 +1,7 @@
-import { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
-import { PlatformPressable } from '@react-navigation/elements';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from "expo-haptics";
+import type { BottomTabBarButtonProps } from "expo-router/build/react-navigation/bottom-tabs";
+import type { ComponentProps } from "react";
+import { Pressable } from "react-native";
 
 /**
  * Boton personalizado para las pestañas inferiores.
@@ -14,18 +15,20 @@ import * as Haptics from 'expo-haptics';
  * - Evita repetir esta logica en cada pantalla del tabbar.
  */
 export function HapticTab(props: BottomTabBarButtonProps) {
+  const pressableProps = props as ComponentProps<typeof Pressable>;
+
   return (
-    <PlatformPressable
+    <Pressable
       // Se pasan todas las props originales para no romper navegacion, estilos ni accesibilidad.
-      {...props}
+      {...pressableProps}
       onPressIn={(ev) => {
-        if (process.env.EXPO_OS === 'ios') {
+        if (process.env.EXPO_OS === "ios") {
           // Feedback tactil suave para que el cambio de pestaña se sienta nativo.
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
 
         // Mantiene cualquier handler que React Navigation ya haya configurado.
-        props.onPressIn?.(ev);
+        pressableProps.onPressIn?.(ev);
       }}
     />
   );
