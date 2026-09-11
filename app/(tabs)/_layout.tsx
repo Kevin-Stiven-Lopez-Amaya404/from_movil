@@ -22,13 +22,13 @@ export default function TabLayout() {
       }}
       tabBar={(props) => <LiquidNavigation {...props} />}
     >
-      <Tabs.Screen name="index" options={{ title: "Home" }} />
-      <Tabs.Screen name="devices" options={{ title: "Dispositivos" }} />
-      <Tabs.Screen name="favorites" options={{ title: "Favoritos" }} />
+      <Tabs.Screen name="index" options={{ title: "Dashboard" }} />
+      <Tabs.Screen name="homes" options={{ title: "Estancias" }} />
+      <Tabs.Screen name="reports" options={{ title: "Energía" }} />
       <Tabs.Screen name="alerts" options={{ title: "Alertas" }} />
       <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
-      <Tabs.Screen name="reports" options={{ href: null }} />
-      <Tabs.Screen name="homes" options={{ href: null }} />
+      <Tabs.Screen name="devices" options={{ href: null }} />
+      <Tabs.Screen name="favorites" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="access" options={{ href: null }} />
       <Tabs.Screen name="help" options={{ href: null }} />

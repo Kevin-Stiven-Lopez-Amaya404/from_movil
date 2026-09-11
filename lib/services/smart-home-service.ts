@@ -1,10 +1,10 @@
 import { apiClient } from "@/lib/api/api-client";
 import { useMockApi } from "@/lib/config/api-config";
 import {
-  type DeviceCategory,
-  type ReportRange,
-  type SmartDevice,
-  type SmartHomePlace,
+    type DeviceCategory,
+    type ReportRange,
+    type SmartDevice,
+    type SmartHomePlace,
 } from "@/lib/context/smart-home-context";
 
 export type ReportPoint = {
@@ -40,7 +40,7 @@ export interface SmartHomeService {
     favorite: boolean,
     token?: string,
   ): Promise<SmartHomePlace>;
-  listDevices(homeId: string, token?: string): Promise<SmartDevice[]>;
+  listDevices(homeId?: string, token?: string): Promise<SmartDevice[]>;
   createDevice(
     request: CreateDeviceRequest,
     token?: string,
@@ -50,6 +50,16 @@ export interface SmartHomeService {
     request: UpdateDeviceStatusRequest,
     token?: string,
   ): Promise<SmartDevice>;
+  updateDeviceState(
+    deviceId: string,
+    state: "on" | "off",
+    token?: string,
+  ): Promise<SmartDevice>;
+  setAllHomeDevicesState(
+    homeId: string,
+    state: "on" | "off",
+    token?: string,
+  ): Promise<SmartDevice[]>;
   getReports(range: ReportRange, token?: string): Promise<ReportPoint[]>;
 }
 
@@ -60,6 +70,13 @@ function createMockId(value: string) {
       .toLowerCase()
       .replace(/[^a-z0-9]+/gi, "-") || "item"
   }-${Date.now()}`;
+}
+
+function getLocalTimestamp() {
+  return new Intl.DateTimeFormat("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date());
 }
 
 const mockHomes: SmartHomePlace[] = [
@@ -87,13 +104,29 @@ const mockDevices: SmartDevice[] = [
     icon: "air-conditioner",
     power: 780,
     energy: 780,
-    yesterday: 720,
     voltage: 120,
     current: 6.5,
     frequency: 60,
     online: true,
-    critical: true,
     state: "on",
+    yesterday: 720,
+    critical: true,
+  },
+  {
+    id: "server",
+    homeId: "oficina",
+    name: "Servidor domestico",
+    category: "Electrodomesticos",
+    room: "Estudio",
+    icon: "server",
+    power: 320,
+    energy: 320,
+    voltage: 120,
+    current: 2.7,
+    frequency: 60,
+    online: true,
+    state: "on",
+    yesterday: 350,
   },
   {
     id: "tv",
@@ -104,12 +137,76 @@ const mockDevices: SmartDevice[] = [
     icon: "television-classic",
     power: 150,
     energy: 150,
-    yesterday: 150,
     voltage: 120,
     current: 1.25,
     frequency: 60,
     online: true,
     state: "on",
+    yesterday: 150,
+  },
+  {
+    id: "charger",
+    homeId: "casa",
+    name: "Cargador",
+    category: "Electrodomesticos",
+    room: "Dormitorio",
+    icon: "power-plug-outline",
+    power: 80,
+    energy: 80,
+    voltage: 120,
+    current: 0.67,
+    frequency: 60,
+    online: true,
+    state: "on",
+    yesterday: 110,
+  },
+  {
+    id: "lights",
+    homeId: "casa",
+    name: "Luces inteligentes",
+    category: "Iluminacion",
+    room: "Cocina",
+    icon: "lightbulb-on-outline",
+    power: 110,
+    energy: 110,
+    voltage: 120,
+    current: 0.92,
+    frequency: 60,
+    online: true,
+    state: "on",
+    yesterday: 180,
+  },
+  {
+    id: "camera",
+    homeId: "casa",
+    name: "Camara principal",
+    category: "Seguridad",
+    room: "Entrada",
+    icon: "cctv",
+    power: 60,
+    energy: 60,
+    voltage: 120,
+    current: 0.5,
+    frequency: 60,
+    online: true,
+    state: "on",
+    yesterday: 50,
+  },
+  {
+    id: "stiven-relay",
+    homeId: "casa",
+    name: "Stiven",
+    category: "Electrodomesticos",
+    room: "Stiven",
+    icon: "hardware-chip-outline",
+    power: 0,
+    energy: 0,
+    voltage: 120,
+    current: 0,
+    frequency: 60,
+    online: false,
+    state: "off",
+    yesterday: 0,
   },
 ];
 
@@ -138,15 +235,16 @@ const mockReportData: Record<ReportRange, ReportPoint[]> = {
     { label: "S4", value: 37 },
   ],
   Rango: [
-    { label: "Abr", value: 126 },
-    { label: "May", value: 114 },
-    { label: "Jun", value: 98 },
+    { label: "T1", value: 126 },
+    { label: "T2", value: 114 },
+    { label: "T3", value: 98 },
+    { label: "T4", value: 121 },
   ],
 };
 
 const mockSmartHomeService: SmartHomeService = {
   async listHomes() {
-    return mockHomes;
+    return [...mockHomes];
   },
 
   async createHome({ name, location }) {
@@ -178,6 +276,7 @@ const mockSmartHomeService: SmartHomeService = {
   },
 
   async listDevices(homeId) {
+    if (!homeId) return [...mockDevices];
     return mockDevices.filter((device) => device.homeId === homeId);
   },
 
@@ -219,6 +318,40 @@ const mockSmartHomeService: SmartHomeService = {
     throw new Error("Dispositivo no encontrado.");
   },
 
+  async updateDeviceState(deviceId, state) {
+    const index = mockDevices.findIndex((device) => device.id === deviceId);
+
+    if (index >= 0) {
+      mockDevices[index] = {
+        ...mockDevices[index],
+        state,
+        lastStateChange: getLocalTimestamp(),
+      };
+
+      return mockDevices[index];
+    }
+
+    throw new Error("Dispositivo no encontrado.");
+  },
+
+  async setAllHomeDevicesState(homeId, state) {
+    const timestamp = getLocalTimestamp();
+    const updated: SmartDevice[] = [];
+
+    for (let i = 0; i < mockDevices.length; i++) {
+      if (mockDevices[i].homeId === homeId) {
+        mockDevices[i] = {
+          ...mockDevices[i],
+          state,
+          lastStateChange: timestamp,
+        };
+        updated.push(mockDevices[i]);
+      }
+    }
+
+    return updated;
+  },
+
   async getReports(range) {
     return mockReportData[range];
   },
@@ -246,7 +379,8 @@ const backendSmartHomeService: SmartHomeService = {
   },
 
   listDevices(homeId, token) {
-    return apiClient.get<SmartDevice[]>(`/homes/${homeId}/devices`, { token });
+    const path = homeId ? `/homes/${homeId}/devices` : "/devices";
+    return apiClient.get<SmartDevice[]>(path, { token });
   },
 
   createDevice(request, token) {
@@ -261,6 +395,22 @@ const backendSmartHomeService: SmartHomeService = {
     return apiClient.patch<SmartDevice, UpdateDeviceStatusRequest>(
       `/devices/${deviceId}/status`,
       request,
+      { token },
+    );
+  },
+
+  updateDeviceState(deviceId, state, token) {
+    return apiClient.patch<SmartDevice, { state: "on" | "off" }>(
+      `/devices/${deviceId}/state`,
+      { state },
+      { token },
+    );
+  },
+
+  setAllHomeDevicesState(homeId, state, token) {
+    return apiClient.patch<SmartDevice[], { state: "on" | "off" }>(
+      `/homes/${homeId}/devices/state`,
+      { state },
       { token },
     );
   },

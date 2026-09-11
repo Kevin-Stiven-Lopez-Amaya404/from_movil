@@ -1,17 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    Alert,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { SettingsActionRow } from "@/components/settings/SettingsActionRow";
-import { SettingsSectionCard } from "@/components/settings/SettingsSectionCard";
 import { ThemeModeSelector } from "@/components/settings/ThemeModeSelector";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useTranslation } from "@/lib/i18n/i18n";
@@ -19,48 +17,78 @@ import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
-const RED = "#FF3B20";
 const appFont = typography.fontFamily.emphasis;
+type ThemeLike = ReturnType<typeof useAppTheme>;
+
+type RowProps = {
+  description?: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  theme: ThemeLike;
+  title: string;
+};
+
+function SettingRow({ description, icon, onPress, theme, title }: RowProps) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      <View style={[styles.rowIcon, { backgroundColor: theme.rowAlt }]}>
+        <Ionicons name={icon} size={17} color={theme.blue} />
+      </View>
+      <View style={styles.rowCopy}>
+        <Text style={[styles.rowTitle, { color: theme.text }]}>{title}</Text>
+        {!!description && (
+          <Text style={[styles.rowDescription, { color: theme.muted }]}>
+            {description}
+          </Text>
+        )}
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={theme.muted} />
+    </Pressable>
+  );
+}
+
+type GroupProps = {
+  children: React.ReactNode;
+  icon: keyof typeof Ionicons.glyphMap;
+  theme: ThemeLike;
+  title: string;
+};
+
+function Group({ children, icon, theme, title }: GroupProps) {
+  return (
+    <View style={styles.group}>
+      <View style={styles.groupTitleRow}>
+        <Ionicons name={icon} size={16} color={theme.blue} />
+        <Text style={[styles.groupTitle, { color: theme.text }]}>{title}</Text>
+      </View>
+      <View
+        style={[
+          styles.groupCard,
+          { backgroundColor: theme.card, borderColor: theme.borderLight },
+        ]}
+      >
+        {children}
+      </View>
+    </View>
+  );
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const { t } = useTranslation();
-
-  const {
-    colorMode,
-    deactivateAccount,
-    offlineMode,
-    sessionName,
-    setColorMode,
-    setLanguage,
-    setOfflineMode,
-  } = useSmartHome();
+  const { colorMode, deactivateAccount, setColorMode, setLanguage } =
+    useSmartHome();
 
   function showPending(title: string) {
     Alert.alert(title, t("common.readyBackend"), [
-      {
-        text: t("action.cancel"),
-        style: "cancel",
-      },
-    ]);
-  }
-
-  function confirmDeactivation() {
-    Alert.alert(t("profile.deactivateAccount"), t("profile.deactivatePrompt"), [
-      {
-        text: t("action.cancel"),
-        style: "cancel",
-      },
-      {
-        text: t("action.deactivate"),
-        style: "destructive",
-        onPress: () => {
-          deactivateAccount();
-          router.replace("/welcome");
-        },
-      },
+      { text: t("action.cancel") },
     ]);
   }
 
@@ -73,378 +101,153 @@ export default function SettingsScreen() {
     ]);
   }
 
-  function toggleOfflineMode() {
-    const nextValue = !offlineMode;
-    setOfflineMode(nextValue);
-    Alert.alert(
-      t("profile.offline"),
-      nextValue ? t("profile.offlineOnText") : t("profile.offlineOffText"),
-    );
+  function confirmDeactivation() {
+    Alert.alert(t("profile.deactivateAccount"), t("profile.deactivatePrompt"), [
+      { text: t("action.cancel"), style: "cancel" },
+      {
+        text: t("action.deactivate"),
+        style: "destructive",
+        onPress: () => {
+          deactivateAccount();
+          router.replace("/welcome");
+        },
+      },
+    ]);
   }
 
   return (
     <SafeAreaView
-      style={[
-        styles.safeArea,
-        {
-          backgroundColor: theme.background,
-        },
-      ]}
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.container,
-          {
-            paddingHorizontal: layout.gutter,
-            paddingTop: layout.screenTop,
-            paddingBottom: layout.screenBottom,
-          },
-        ]}
+        contentContainerStyle={{
+          paddingHorizontal: layout.gutter,
+          paddingTop: layout.screenTop,
+          paddingBottom: layout.screenBottom,
+        }}
       >
-        <View
-          style={[
-            styles.content,
-            {
-              maxWidth: layout.contentWidth,
-            },
-          ]}
-        >
-          {/* VOLVER */}
+        <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("action.back")}
             onPress={() => router.back()}
             style={({ pressed }) => [
               styles.backButton,
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name="chevron-back" size={22} color={theme.blue} />
-
-            <Text
-              style={[
-                styles.backText,
-                {
-                  color: theme.blue,
-                },
-              ]}
-            >
-              {t("action.back")}
-            </Text>
+            <Ionicons name="chevron-back" size={17} color={theme.blue} />
+            <Text style={[styles.backText, { color: theme.blue }]}>Volver</Text>
           </Pressable>
 
-          {/* ENCABEZADO */}
           <View style={styles.header}>
-            <View
-              style={[
-                styles.headerIcon,
-                {
-                  backgroundColor: theme.rowAlt,
-                },
-              ]}
-            >
-              <Ionicons name="settings-outline" size={26} color={theme.blue} />
+            <View style={[styles.headerIcon, { backgroundColor: theme.blue1 }]}>
+              <Ionicons name="settings-outline" size={21} color={theme.blue} />
             </View>
-
             <View style={styles.headerCopy}>
-              <Text
-                style={[
-                  styles.title,
-                  {
-                    color: theme.text,
-                  },
-                ]}
-              >
+              <Text style={[styles.title, { color: theme.text }]}>
                 {t("settings.title")}
               </Text>
-
-              <Text
-                style={[
-                  styles.subtitle,
-                  {
-                    color: theme.muted,
-                  },
-                ]}
-              >
-                {t("settings.subtitle")}
+              <Text style={[styles.subtitle, { color: theme.muted }]}>
+                Personaliza tu experiencia en Smart Home.
               </Text>
             </View>
           </View>
 
-          {/* CUENTA */}
-          <SettingsSectionCard
-            backgroundColor={theme.card}
-            description={sessionName}
-            descriptionColor={theme.muted}
-            iconColor={theme.blue}
-            iconName="person-circle-outline"
-            title={t("settings.account")}
-            titleColor={theme.text}
-          >
-            <SettingsActionRow
-              backgroundColor={theme.row}
-              borderColor={theme.border}
-              description={sessionName}
-              iconColor={theme.blue}
-              iconName="person-outline"
-              mutedColor={theme.muted}
-              onPress={() => router.push("/profile")}
-              textColor={theme.text}
-              title={t("settings.account")}
-            />
-
-            <SettingsActionRow
-              backgroundColor={theme.row}
-              borderColor={theme.border}
-              description={t("profile.editInfo")}
-              iconColor={theme.blue}
-              iconName="create-outline"
-              mutedColor={theme.muted}
-              onPress={() => router.push("/profile")}
-              textColor={theme.text}
-              title={t("profile.editInfo")}
-            />
-          </SettingsSectionCard>
-
-          {/* PREFERENCIAS */}
-          <SettingsSectionCard
-            backgroundColor={theme.card}
-            description={t("profile.preferencesSubtitle")}
-            descriptionColor={theme.muted}
-            iconColor={theme.blue}
-            iconName="options-outline"
-            title={t("profile.preferences")}
-            titleColor={theme.text}
-          >
-            {/* APARIENCIA */}
-            <View
-              style={[
-                styles.preferenceCard,
-                {
-                  backgroundColor: theme.row,
-                  borderColor: theme.border,
-                },
-              ]}
-            >
-              <View style={styles.preferenceHeader}>
-                <View
-                  style={[
-                    styles.preferenceIcon,
-                    {
-                      backgroundColor: `${theme.blue}12`,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name="contrast-outline"
-                    size={20}
-                    color={theme.blue}
-                  />
-                </View>
-
-                <View style={styles.preferenceCopy}>
-                  <Text
-                    style={[
-                      styles.preferenceTitle,
-                      {
-                        color: theme.text,
-                      },
-                    ]}
-                  >
-                    {t("settings.appearance")}
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.preferenceDescription,
-                      {
-                        color: theme.muted,
-                      },
-                    ]}
-                  >
-                    {colorMode === "dark"
-                      ? t("settings.dark")
-                      : t("settings.light")}
-                  </Text>
-                </View>
+          <Group icon="options-outline" title="Preferencias" theme={theme}>
+            <View style={styles.appearanceRow}>
+              <View style={[styles.rowIcon, { backgroundColor: theme.rowAlt }]}>
+                <Ionicons
+                  name="contrast-outline"
+                  size={17}
+                  color={theme.blue}
+                />
               </View>
+              <View style={styles.rowCopy}>
+                <Text style={[styles.rowTitle, { color: theme.text }]}>
+                  {t("settings.appearance")}
+                </Text>
+                <Text style={[styles.rowDescription, { color: theme.muted }]}>
+                  {colorMode === "dark"
+                    ? t("settings.dark")
+                    : t("settings.light")}
+                </Text>
+              </View>
+            </View>
+            <ThemeModeSelector
+              activeMode={colorMode}
+              blueColor={theme.blue}
+              borderColor={theme.border}
+              labels={{ dark: t("settings.dark"), light: t("settings.light") }}
+              onChange={setColorMode}
+              rowColor={theme.row}
+            />
+            <SettingRow
+              icon="language-outline"
+              title="Idioma"
+              description="Español (Colombia)"
+              onPress={chooseLanguage}
+              theme={theme}
+            />
+            <SettingRow
+              icon="notifications-outline"
+              title="Notificaciones"
+              description="Configura tus alertas"
+              onPress={() => showPending(t("profile.messageCenter"))}
+              theme={theme}
+            />
+          </Group>
 
-              <ThemeModeSelector
-                activeMode={colorMode}
-                blueColor={theme.blue}
-                borderColor={theme.border}
-                labels={{
-                  dark: t("settings.dark"),
-                  light: t("settings.light"),
-                }}
-                onChange={setColorMode}
-                rowColor={theme.row}
+          <Group
+            icon="help-circle-outline"
+            title="Ayuda y soporte"
+            theme={theme}
+          >
+            <SettingRow
+              icon="help-circle-outline"
+              title="Centro de ayuda"
+              description="Preguntas frecuentes y soporte"
+              onPress={() => router.push("/(tabs)/help")}
+              theme={theme}
+            />
+            <SettingRow
+              icon="warning-outline"
+              title="Reportar un problema"
+              description="Informa un error en la app"
+              onPress={() => showPending(t("settings.reportProblem"))}
+              theme={theme}
+            />
+          </Group>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("profile.deactivateAccount")}
+            onPress={confirmDeactivation}
+            style={({ pressed }) => [
+              styles.dangerRow,
+              {
+                backgroundColor: theme.dangerSoft,
+                borderColor: theme.dangerSoft,
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <View style={styles.dangerIcon}>
+              <Ionicons
+                name="person-remove-outline"
+                size={17}
+                color={theme.danger}
               />
             </View>
-
-            {/* IDIOMA */}
-            <SettingsActionRow
-              backgroundColor={theme.row}
-              borderColor={theme.border}
-              description={t("profile.languageDescription")}
-              iconColor={theme.blue}
-              iconName="language-outline"
-              mutedColor={theme.muted}
-              onPress={chooseLanguage}
-              textColor={theme.text}
-              title={t("profile.language")}
-            />
-
-            {/* MODO SIN CONEXIÓN */}
-            <SettingsActionRow
-              backgroundColor={theme.row}
-              borderColor={theme.border}
-              description={t("profile.offlineDescription")}
-              iconColor={theme.blue}
-              iconName="cloud-offline-outline"
-              mutedColor={theme.muted}
-              onPress={toggleOfflineMode}
-              textColor={theme.text}
-              title={t("profile.offline")}
-            />
-          </SettingsSectionCard>
-
-          {/* AYUDA Y SOPORTE */}
-          <SettingsSectionCard
-            backgroundColor={theme.card}
-            description={t("profile.helpSubtitle")}
-            descriptionColor={theme.muted}
-            iconColor={theme.blue}
-            iconName="help-circle-outline"
-            title={t("settings.helpSupport")}
-            titleColor={theme.text}
-          >
-            <SettingsActionRow
-              backgroundColor={theme.row}
-              borderColor={theme.border}
-              description={t("profile.helpSubtitle")}
-              iconColor={theme.blue}
-              iconName="help-circle-outline"
-              mutedColor={theme.muted}
-              onPress={() => router.push("/(tabs)/help")}
-              textColor={theme.text}
-              title={t("profile.helpCenter")}
-            />
-
-            <SettingsActionRow
-              backgroundColor={theme.row}
-              borderColor={theme.border}
-              description={t("settings.messageDescription")}
-              iconColor={theme.blue}
-              iconName="chatbubble-ellipses-outline"
-              mutedColor={theme.muted}
-              onPress={() => showPending(t("profile.messageCenter"))}
-              textColor={theme.text}
-              title={t("profile.messageCenter")}
-            />
-
-            <SettingsActionRow
-              backgroundColor={theme.row}
-              borderColor={theme.border}
-              description={t("settings.reportProblemDescription")}
-              iconColor={theme.blue}
-              iconName="warning-outline"
-              mutedColor={theme.muted}
-              onPress={() => showPending(t("settings.reportProblem"))}
-              textColor={theme.text}
-              title={t("settings.reportProblem")}
-            />
-
-            <SettingsActionRow
-              backgroundColor={theme.row}
-              borderColor={theme.border}
-              description={t("settings.aboutDescription")}
-              iconColor={theme.blue}
-              iconName="information-circle-outline"
-              mutedColor={theme.muted}
-              onPress={() => showPending(t("settings.about"))}
-              textColor={theme.text}
-              title={t("settings.about")}
-            />
-          </SettingsSectionCard>
-
-          {/* SEGURIDAD Y DATOS */}
-          <SettingsSectionCard
-            backgroundColor={theme.card}
-            description={t("profile.securityDataSubtitle")}
-            descriptionColor={theme.muted}
-            iconColor={theme.blue}
-            iconName="shield-checkmark-outline"
-            title={t("profile.securityData")}
-            titleColor={theme.text}
-          >
-            <SettingsActionRow
-              backgroundColor={theme.row}
-              borderColor={theme.border}
-              description={t("profile.auditDescription")}
-              iconColor={theme.blue}
-              iconName="document-text-outline"
-              mutedColor={theme.muted}
-              onPress={() => showPending(t("profile.audit"))}
-              textColor={theme.text}
-              title={t("profile.audit")}
-            />
-
-            <SettingsActionRow
-              backgroundColor={theme.row}
-              borderColor={theme.border}
-              description={t("profile.restoreDescription")}
-              iconColor={theme.blue}
-              iconName="refresh-outline"
-              mutedColor={theme.muted}
-              onPress={() => showPending(t("profile.restoreData"))}
-              textColor={theme.text}
-              title={t("profile.restoreData")}
-            />
-          </SettingsSectionCard>
-
-          {/* DESACTIVAR CUENTA */}
-          <SettingsSectionCard
-            backgroundColor={theme.dangerSoft}
-            danger
-            description={t("profile.deactivateDescription")}
-            descriptionColor={theme.muted}
-            iconColor={RED}
-            iconName="person-remove-outline"
-            title={t("profile.deactivateAccount")}
-            titleColor={RED}
-          >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t("profile.deactivateAccount")}
-              onPress={confirmDeactivation}
-              style={({ pressed }) => [
-                styles.dangerButton,
-                {
-                  backgroundColor: theme.card,
-                  borderColor: "#FFD1CB",
-                },
-                pressed && styles.pressed,
-              ]}
-            >
-              <View style={styles.dangerIcon}>
-                <Ionicons name="person-remove-outline" size={18} color={RED} />
-              </View>
-
-              <View style={styles.dangerCopy}>
-                <Text style={styles.dangerTitle}>
-                  {t("profile.deactivateAccount")}
-                </Text>
-
-                <Text style={styles.dangerDescription}>
-                  {t("profile.deactivateDescription")}
-                </Text>
-              </View>
-
-              <Ionicons name="chevron-forward" size={18} color={RED} />
-            </Pressable>
-          </SettingsSectionCard>
+            <View style={styles.rowCopy}>
+              <Text style={[styles.rowTitle, { color: theme.danger }]}>
+                {t("profile.deactivateAccount")}
+              </Text>
+              <Text style={[styles.rowDescription, { color: theme.danger }]}>
+                {t("profile.deactivateDescription")}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.danger} />
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -452,148 +255,80 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-
-  container: {
-    alignItems: "center",
-  },
-
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-
+  safeArea: { flex: 1 },
+  content: { alignSelf: "center", width: "100%" },
   backButton: {
     alignItems: "center",
     alignSelf: "flex-start",
     flexDirection: "row",
-    gap: 4,
-    marginBottom: 14,
-    paddingVertical: 4,
+    gap: 3,
+    marginBottom: 11,
   },
-
-  backText: {
-    fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "900",
-  },
-
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 13,
-  },
-
+  backText: { fontFamily: appFont, fontSize: 11, fontWeight: "800" },
+  header: { alignItems: "center", flexDirection: "row", marginBottom: 17 },
   headerIcon: {
     alignItems: "center",
-    borderRadius: 16,
-    height: 52,
-    justifyContent: "center",
-    width: 52,
-  },
-
-  headerCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  title: {
-    fontFamily: appFont,
-    fontSize: 27,
-    fontWeight: "900",
-  },
-
-  subtitle: {
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "600",
-    lineHeight: 18,
-    marginTop: 3,
-  },
-
-  preferenceCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 10,
-  },
-
-  preferenceHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 10,
-  },
-
-  preferenceIcon: {
-    alignItems: "center",
-    borderRadius: 10,
+    borderRadius: 11,
     height: 38,
     justifyContent: "center",
     width: 38,
   },
-
-  preferenceCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  preferenceTitle: {
-    fontFamily: appFont,
-    fontSize: 14,
+  headerCopy: { flex: 1, marginLeft: 10 },
+  title: {
+    fontFamily: typography.fontFamily.display,
+    fontSize: 23,
     fontWeight: "900",
   },
-
-  preferenceDescription: {
-    fontFamily: appFont,
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-
-  dangerButton: {
+  subtitle: { fontFamily: appFont, fontSize: 10, marginTop: 2 },
+  group: { marginBottom: 16 },
+  groupTitleRow: {
     alignItems: "center",
-    borderRadius: 14,
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 6,
+    paddingHorizontal: 2,
+  },
+  groupTitle: { fontFamily: appFont, fontSize: 13, fontWeight: "900" },
+  groupCard: {
+    borderRadius: 13,
+    borderWidth: 1,
+    overflow: "hidden",
+    paddingHorizontal: 8,
+  },
+  appearanceRow: { alignItems: "center", flexDirection: "row", minHeight: 49 },
+  row: {
+    alignItems: "center",
+    borderTopColor: "#E2E8F0",
+    borderTopWidth: 1,
+    flexDirection: "row",
+    minHeight: 48,
+    paddingVertical: 6,
+  },
+  rowIcon: {
+    alignItems: "center",
+    borderRadius: 9,
+    height: 30,
+    justifyContent: "center",
+    width: 30,
+  },
+  rowCopy: { flex: 1, marginHorizontal: 9 },
+  rowTitle: { fontFamily: appFont, fontSize: 11, fontWeight: "800" },
+  rowDescription: { fontFamily: appFont, fontSize: 9, marginTop: 2 },
+  dangerRow: {
+    alignItems: "center",
+    borderRadius: 13,
     borderWidth: 1,
     flexDirection: "row",
-    gap: 10,
-    minHeight: 64,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    minHeight: 54,
+    paddingHorizontal: 10,
   },
-
   dangerIcon: {
     alignItems: "center",
-    backgroundColor: "#FFF1EF",
-    borderRadius: 10,
-    height: 38,
+    backgroundColor: "#FFFFFF99",
+    borderRadius: 9,
+    height: 30,
     justifyContent: "center",
-    width: 38,
+    width: 30,
   },
-
-  dangerCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  dangerTitle: {
-    color: RED,
-    fontFamily: appFont,
-    fontSize: 14,
-    fontWeight: "900",
-  },
-
-  dangerDescription: {
-    color: "#8C6863",
-    fontFamily: appFont,
-    fontSize: 11,
-    fontWeight: "600",
-    lineHeight: 15,
-    marginTop: 2,
-  },
-
-  pressed: {
-    opacity: 0.7,
-  },
+  pressed: { opacity: 0.72 },
 });

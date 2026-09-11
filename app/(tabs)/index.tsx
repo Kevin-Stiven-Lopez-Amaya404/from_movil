@@ -1,145 +1,106 @@
-import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ActiveDevicesCard } from "@/components/dashboard/ActiveDevicesCard";
-import { CurrentConsumptionCard } from "@/components/dashboard/CurrentConsumptionCard";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { EmptyDashboard } from "@/components/dashboard/EmptyDashboard";
-import { EnergyAccumulatedCard } from "@/components/dashboard/EnergyAccumulatedCard";
-import { HomeConsumptionGoalCard } from "@/components/dashboard/HomeConsumptionGoalCard";
-import { HomeSummaryCard } from "@/components/dashboard/HommeSummaryCard";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
-import { getHouseConsumption } from "@/lib/utils/consumption";
+
+const appFont = typography.fontFamily.emphasis;
+
+type ThemeLike = ReturnType<typeof useAppTheme>;
+
+type QuickCardProps = {
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  theme: ThemeLike;
+  title: string;
+};
+
+function QuickCard({
+  description,
+  icon,
+  onPress,
+  theme,
+  title,
+}: QuickCardProps) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.quickCard,
+        { backgroundColor: theme.card, borderColor: theme.borderLight },
+        pressed && styles.pressed,
+      ]}
+    >
+      <View style={[styles.quickIcon, { backgroundColor: theme.blue1 }]}>
+        <Ionicons name={icon} size={24} color={theme.blue} />
+      </View>
+      <Text style={[styles.quickTitle, { color: theme.text }]}>{title}</Text>
+      <Text style={[styles.quickDescription, { color: theme.muted }]}>
+        {description}
+      </Text>
+    </Pressable>
+  );
+}
+
+type StatCardProps = {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  theme: ThemeLike;
+  value: number;
+};
+
+function StatCard({ icon, label, theme, value }: StatCardProps) {
+  return (
+    <View
+      style={[
+        styles.statCard,
+        { backgroundColor: theme.card, borderColor: theme.borderLight },
+      ]}
+    >
+      <View style={[styles.statIcon, { backgroundColor: theme.blue1 }]}>
+        <Ionicons name={icon} size={18} color={theme.blue} />
+      </View>
+      <Text style={[styles.statValue, { color: theme.text }]}>{value}</Text>
+      <Text style={[styles.statLabel, { color: theme.muted }]}>{label}</Text>
+    </View>
+  );
+}
 
 export default function DashboardScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-
   const {
     devices,
     homes,
-    accessibleHomes,
+    lastSync,
+    refreshSync,
     resolvedSmartAlerts,
     sessionName,
-    activeHomeId,
-    setActiveHomeId,
-    homeConsumptionGoals,
-    sessionRole,
-    setHomeConsumptionGoal,
   } = useSmartHome();
 
-  const isAdmin = sessionRole === "admin";
-  const [goalModalVisible, setGoalModalVisible] = useState(false);
-  const [goalInput, setGoalInput] = useState("");
-
-  /* ------------------------------------------------------------------------ */
-  /* Métricas                                                                  */
-  /* ------------------------------------------------------------------------ */
-
-  const activeHome = homes.find((home) => home.id === activeHomeId) ?? homes[0];
-  const activeHomeDevices = activeHome
-    ? devices.filter((device) => device.homeId === activeHome.id)
-    : [];
-  const onlineDevices = activeHomeDevices.filter((device) => device.online);
-
-  const activeDevices = onlineDevices.filter(
-    (device) => device.state === "on" && device.power > 0,
-  );
-
-  const totalPower = activeDevices.reduce(
-    (sum, device) => sum + device.power,
-    0,
-  );
-
-  const totalEnergy = activeHome ? getHouseConsumption(devices, activeHome.id) : 0;
-
-  const yesterdayEnergy = onlineDevices.reduce(
-    (sum, device) => sum + device.yesterday,
-    0,
-  );
-
-  /* ------------------------------------------------------------------------ */
-  /* Hogar activo                                                              */
-  /* ------------------------------------------------------------------------ */
-
-  const favoriteHomes = homes.filter((home) => home.favorite);
-
-  const displayHomes =
-    favoriteHomes.length > 0 ? favoriteHomes : homes.slice(0, 1);
-
-  /* ------------------------------------------------------------------------ */
-  /* Navegación                                                                */
-  /* ------------------------------------------------------------------------ */
-
-  const goToHomes = () => {
-    router.push("/(tabs)/homes");
-  };
-
-  const goToProfile = () => {
-    router.push("/(tabs)/profile");
-  };
-
-  const goToDeviceDetail = (deviceId: string) => {
-    const device = devices.find((item) => item.id === deviceId);
-
-    if (!device) {
-      return;
-    }
-
-    Alert.alert(device.name, `${device.room}\n${device.power} W`);
-  };
-
-  /* ------------------------------------------------------------------------ */
-  /* Notificaciones                                                            */
-  /* ------------------------------------------------------------------------ */
-
-  const showNotifications = () => {
-    router.push("/(tabs)/alerts");
-  };
-
+  const activeDeviceCount = devices.filter(
+    (device) => device.online && device.state === "on",
+  ).length;
+  const onlineDeviceCount = devices.filter((device) => device.online).length;
   const pendingAlerts = devices.filter(
     (device) =>
       (device.critical || !device.online) &&
       !resolvedSmartAlerts.includes(device.id),
   ).length;
-
-  /* ------------------------------------------------------------------------ */
-  /* Métricas por hogar                                                        */
-  /* ------------------------------------------------------------------------ */
-
-  const getHomePower = (homeId: string) => {
-    return devices
-      .filter(
-        (device) =>
-          device.homeId === homeId && device.online && device.state === "on",
-      )
-      .reduce((sum, device) => sum + device.power, 0);
-  };
-
-  const getHomeDeviceCount = (homeId: string) => {
-    return devices.filter((device) => device.homeId === homeId && device.online)
-      .length;
-  };
-
-  /* ------------------------------------------------------------------------ */
-  /* Render                                                                    */
-  /* ------------------------------------------------------------------------ */
+  const favoriteHomes = homes.filter((home) => home.favorite).length;
+  const initial = sessionName.trim().charAt(0).toUpperCase() || "U";
 
   return (
     <SafeAreaView
-      style={[
-        styles.safeArea,
-        {
-          backgroundColor: theme.background,
-        },
-      ]}
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -152,394 +113,318 @@ export default function DashboardScreen() {
           },
         ]}
       >
-        <View
-          style={[
-            styles.content,
-            {
-              maxWidth: layout.contentWidth,
-            },
-          ]}
-        >
-          {/* Header */}
-          <DashboardHeader
-            userName={sessionName || "Usuario"}
-            activeHomeName={activeHome?.name ?? "Sin hogar"}
-            activeHomeLocation={
-              activeHome?.location ?? "Configura tu primer hogar"
-            }
-            onHomePress={goToHomes}
-            onNotificationsPress={showNotifications}
-            onProfilePress={goToProfile}
-            hasUnreadNotifications={pendingAlerts > 0}
-          />
-
-          <View style={[styles.roleBanner, { backgroundColor: theme.rowAlt }]}>
-            <Ionicons name={sessionRole === "admin" ? "shield-checkmark-outline" : "person-circle-outline"} size={18} color={theme.blue} />
-            <Text style={[styles.roleBannerText, { color: theme.text }]}>
-              Rol: {sessionRole === "admin" ? "Administrador" : sessionRole === "miembro" ? "Miembro" : "Invitado"}
-            </Text>
-            <Text style={[styles.roleBannerMeta, { color: theme.muted }]}>
-              {accessibleHomes.length === 1 ? "1 hogar disponible" : `${accessibleHomes.length} hogares disponibles`}
-            </Text>
-          </View>
-
-          {/* Resumen energético */}
-          <View style={styles.section}>
-            <Text
-              style={[
-                styles.sectionTitle,
-                {
-                  color: theme.text,
-                },
-              ]}
-            >
-              Resumen energético
-            </Text>
-
-            <View
-              style={[styles.metricsRow, layout.narrow && styles.metricsColumn]}
-            >
-              <CurrentConsumptionCard
-                power={totalPower}
-                isOn={totalPower > 0}
-              />
-
-              <EnergyAccumulatedCard
-                energy={totalEnergy}
-                yesterdayEnergy={yesterdayEnergy}
-              />
-            </View>
-
-            {activeHome && (
-              <HomeConsumptionGoalCard
-                consumedWh={totalEnergy}
-                targetWh={homeConsumptionGoals[activeHome.id] ?? 5000}
-                onEdit={
-                  sessionRole !== "invitado"
-                    ? () => {
-                        setGoalInput(String(homeConsumptionGoals[activeHome.id] ?? 5000));
-                        setGoalModalVisible(true);
-                      }
-                    : undefined
-                }
-              />
-            )}
-          </View>
-
-          {isAdmin && (
-            <View style={[styles.adminCard, { backgroundColor: theme.card, borderColor: theme.borderLight }]}>
-              <View style={styles.adminCopy}>
-                <View style={[styles.adminIcon, { backgroundColor: theme.rowAlt }]}>
-                  <Ionicons name="settings-outline" size={20} color={theme.blue} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.adminTitle, { color: theme.text }]}>Administración</Text>
-                  <Text style={[styles.adminSubtitle, { color: theme.muted }]}>
-                    Gestiona hogares, dispositivos y accesos.
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.adminActions}>
-                <Pressable onPress={goToHomes} style={[styles.adminButton, { borderColor: theme.borderLight }]}>
-                  <Ionicons name="home-outline" size={17} color={theme.blue} />
-                  <Text style={[styles.adminButtonText, { color: theme.blue }]}>Hogares</Text>
-                </Pressable>
-                <Pressable onPress={() => router.push("/(tabs)/access")} style={[styles.adminButton, { borderColor: theme.borderLight }]}>
-                  <Ionicons name="people-outline" size={17} color={theme.blue} />
-                  <Text style={[styles.adminButtonText, { color: theme.blue }]}>Accesos</Text>
-                </Pressable>
-              </View>
-            </View>
-          )}
-
-          {/* Dispositivos */}
-          <ActiveDevicesCard
-            devices={activeHomeDevices}
-            onDevicePress={goToDeviceDetail}
-            onViewAll={goToHomes}
-          />
-
-          {/* Hogares */}
-          <View style={styles.homesSection}>
-            <View style={styles.sectionHeader}>
+        <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
+          <View
+            style={[
+              styles.hero,
+              { backgroundColor: theme.card, borderColor: theme.borderLight },
+            ]}
+          >
+            <View style={styles.heroHeader}>
               <View>
-                <Text
-                  style={[
-                    styles.sectionTitle,
-                    {
-                      color: theme.text,
-                    },
-                  ]}
-                >
-                  Mis hogares
+                <Text style={[styles.overline, { color: theme.blue }]}>
+                  SMART HOME
                 </Text>
-
-                <Text
-                  style={[
-                    styles.sectionSubtitle,
-                    {
-                      color: theme.muted,
-                    },
-                  ]}
-                >
-                  Acceso rápido a tus espacios
+                <Text style={[styles.greeting, { color: theme.text }]}>
+                  Hola, {sessionName}
+                </Text>
+                <Text style={[styles.subtitle, { color: theme.muted }]}>
+                  Perfil, hogares, mensajes y soporte.
                 </Text>
               </View>
-
-              <Text
-                style={[
-                  styles.homeCount,
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Abrir configuración"
+                onPress={() => router.push("/(tabs)/settings")}
+                style={({ pressed }) => [
+                  styles.settingsButton,
                   {
-                    color: theme.blue,
+                    backgroundColor: theme.rowAlt,
+                    borderColor: theme.borderLight,
+                  },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons
+                  name="settings-outline"
+                  size={21}
+                  color={theme.text}
+                />
+              </Pressable>
+            </View>
+
+            <View style={styles.identityRow}>
+              <View
+                style={[
+                  styles.avatar,
+                  {
+                    backgroundColor: theme.rowAlt,
+                    borderColor: theme.borderLight,
                   },
                 ]}
               >
-                {homes.length}
-              </Text>
-            </View>
-
-            {displayHomes.length > 0 ? (
-              displayHomes.map((home) => (
-                <HomeSummaryCard
-                  key={home.id}
-                  name={home.name}
-                  power={getHomePower(home.id)}
-                  deviceCount={getHomeDeviceCount(home.id)}
-                  onPress={() => {
-                    setActiveHomeId(home.id);
-                    goToHomes();
-                  }}
-                />
-              ))
-            ) : (
-              <EmptyDashboard onAddPress={goToHomes} />
-            )}
-          </View>
-        </View>
-
-        <Modal visible={goalModalVisible} transparent animationType="fade" onRequestClose={() => setGoalModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Meta mensual del hogar</Text>
-              <Text style={[styles.modalText, { color: theme.muted }]}>
-                Define el límite total de consumo del hogar. Se acumula el consumo de todos sus dispositivos.
-              </Text>
-              <TextInput
-                value={goalInput}
-                onChangeText={setGoalInput}
-                keyboardType="numeric"
-                style={[styles.goalInput, { color: theme.text, borderColor: theme.borderLight, backgroundColor: theme.rowAlt }]}
-                placeholder="Ej. 5000"
-                placeholderTextColor={theme.muted}
-              />
-              <View style={styles.modalActions}>
-                <Pressable onPress={() => setGoalModalVisible(false)} style={[styles.modalButton, { borderColor: theme.borderLight }]}>
-                  <Text style={[styles.modalButtonText, { color: theme.muted }]}>Cancelar</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    const value = Number(goalInput);
-                    if (!activeHome || !Number.isFinite(value) || value <= 0) {
-                      Alert.alert("Meta inválida", "Ingresa un valor mayor que 0 Wh.");
-                      return;
-                    }
-                    setHomeConsumptionGoal(activeHome.id, value);
-                    setGoalModalVisible(false);
-                  }}
-                  style={[styles.modalButton, { backgroundColor: theme.blue, borderColor: theme.blue }]}
-                >
-                  <Text style={styles.modalButtonPrimary}>Guardar meta</Text>
-                </Pressable>
+                <Text style={[styles.avatarText, { color: theme.blue }]}>
+                  {initial}
+                </Text>
+              </View>
+              <View style={styles.identityCopy}>
+                <Text style={[styles.identityName, { color: theme.text }]}>
+                  {sessionName}
+                </Text>
+                <Text style={[styles.identityRole, { color: theme.muted }]}>
+                  Cuenta y hogares
+                </Text>
+                <View style={styles.statusRow}>
+                  <View
+                    style={[
+                      styles.statusDot,
+                      { backgroundColor: theme.success },
+                    ]}
+                  />
+                  <Text style={[styles.statusText, { color: theme.muted }]}>
+                    {activeDeviceCount} dispositivos activos
+                  </Text>
+                </View>
               </View>
             </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Editar información de perfil"
+              onPress={() => router.push("/(tabs)/profile")}
+              style={({ pressed }) => [
+                styles.editButton,
+                { backgroundColor: theme.blue },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons name="create-outline" size={17} color="#FFFFFF" />
+              <Text style={styles.editText}>Editar información de perfil</Text>
+            </Pressable>
           </View>
-        </Modal>
+
+          <View style={styles.statsRow}>
+            <StatCard
+              icon="home-outline"
+              label="Administrar hogares"
+              theme={theme}
+              value={homes.length}
+            />
+            <StatCard
+              icon="hardware-chip-outline"
+              label={`${onlineDeviceCount} dispositivos activos`}
+              theme={theme}
+              value={activeDeviceCount}
+            />
+            <StatCard
+              icon="notifications-outline"
+              label={`${pendingAlerts} alertas pendientes`}
+              theme={theme}
+              value={pendingAlerts}
+            />
+          </View>
+
+          <View style={styles.quickHeader}>
+            <Text style={[styles.quickHeading, { color: theme.text }]}>
+              Tus accesos rápidos
+            </Text>
+            <Text style={[styles.quickSubtitle, { color: theme.muted }]}>
+              Funciones principales de Smart Home
+            </Text>
+          </View>
+
+          <View style={styles.quickGrid}>
+            <QuickCard
+              icon="home-outline"
+              title="Mis hogares"
+              description={`${homes.length} disponibles`}
+              onPress={() => router.push("/(tabs)/homes")}
+              theme={theme}
+            />
+            <QuickCard
+              icon="hardware-chip-outline"
+              title="Dispositivos"
+              description={`${onlineDeviceCount} conectados`}
+              onPress={() => router.push("/(tabs)/devices")}
+              theme={theme}
+            />
+            <QuickCard
+              icon="bar-chart-outline"
+              title="Consumo"
+              description="Consulta tus reportes"
+              onPress={() => router.push("/(tabs)/reports")}
+              theme={theme}
+            />
+            <QuickCard
+              icon="notifications-outline"
+              title="Alertas"
+              description={`${pendingAlerts} pendientes`}
+              onPress={() => router.push("/(tabs)/alerts")}
+              theme={theme}
+            />
+            <QuickCard
+              icon="star-outline"
+              title="Favoritos"
+              description={`${favoriteHomes} guardados`}
+              onPress={() => router.push("/(tabs)/favorites")}
+              theme={theme}
+            />
+            <QuickCard
+              icon="sync-outline"
+              title="Sincronizar"
+              description={`Última: ${lastSync}`}
+              onPress={refreshSync}
+              theme={theme}
+            />
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({  roleBanner: {
-    alignItems: "center",
-    borderRadius: 12,
+const styles = StyleSheet.create({
+  safeArea: { flex: 1 },
+  container: { alignItems: "center" },
+  content: { alignSelf: "center", width: "100%" },
+  hero: { borderRadius: 20, borderWidth: 1, marginBottom: 12, padding: 14 },
+  heroHeader: {
+    alignItems: "flex-start",
     flexDirection: "row",
-    gap: 7,
-    marginTop: 10,
-    minHeight: 38,
-    paddingHorizontal: 11,
+    justifyContent: "space-between",
   },
-  roleBannerText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  roleBannerMeta: {
-    flex: 1,
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 11,
-    textAlign: "right",
-  },
-  modalOverlay: {
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.35)",
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
-  },
-  modalCard: {
-    borderRadius: 20,
-    padding: 20,
-    width: "100%",
-    maxWidth: 420,
-  },
-  modalTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 19,
+  overline: {
+    fontFamily: appFont,
+    fontSize: 10,
     fontWeight: "900",
+    letterSpacing: 1.4,
   },
-  modalText: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 6,
+  greeting: {
+    fontFamily: typography.fontFamily.display,
+    fontSize: 26,
+    fontWeight: "900",
+    marginTop: 4,
   },
-  goalInput: {
+  subtitle: {
+    fontFamily: appFont,
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 3,
+  },
+  settingsButton: {
+    alignItems: "center",
     borderRadius: 12,
     borderWidth: 1,
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 17,
-    fontWeight: "800",
-    marginTop: 14,
-    minHeight: 48,
-    paddingHorizontal: 13,
-  },
-  modalActions: {
-    flexDirection: "row",
-    gap: 9,
-    marginTop: 14,
-  },
-  modalButton: {
-    alignItems: "center",
-    borderRadius: 11,
-    borderWidth: 1,
-    flex: 1,
-    justifyContent: "center",
-    minHeight: 44,
-  },
-  modalButtonText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  modalButtonPrimary: {
-    color: "#FFFFFF",
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  adminCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    marginTop: 16,
-    padding: 14,
-  },
-  adminCopy: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-  },
-  adminIcon: {
-    alignItems: "center",
-    borderRadius: 11,
     height: 40,
     justifyContent: "center",
     width: 40,
   },
-  adminTitle: {
+  identityRow: { alignItems: "center", flexDirection: "row", marginTop: 18 },
+  avatar: {
+    alignItems: "center",
+    borderRadius: 27,
+    borderWidth: 1,
+    height: 54,
+    justifyContent: "center",
+    width: 54,
+  },
+  avatarText: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: "900",
   },
-  adminSubtitle: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
+  identityCopy: { flex: 1, marginLeft: 11 },
+  identityName: { fontFamily: appFont, fontSize: 17, fontWeight: "900" },
+  identityRole: {
+    fontFamily: appFont,
+    fontSize: 11,
+    fontWeight: "600",
     marginTop: 2,
   },
-  adminActions: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 11,
-  },
-  adminButton: {
+  statusRow: { alignItems: "center", flexDirection: "row", marginTop: 5 },
+  statusDot: { borderRadius: 5, height: 8, marginRight: 5, width: 8 },
+  statusText: { fontFamily: appFont, fontSize: 10, fontWeight: "700" },
+  editButton: {
     alignItems: "center",
-    borderRadius: 10,
+    borderRadius: 11,
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 17,
+    minHeight: 41,
+  },
+  editText: {
+    color: "#FFFFFF",
+    fontFamily: appFont,
+    fontSize: 12,
+    fontWeight: "900",
+    marginLeft: 6,
+  },
+  statsRow: { flexDirection: "row", gap: 8, marginBottom: 13 },
+  statCard: {
+    borderRadius: 14,
     borderWidth: 1,
     flex: 1,
-    flexDirection: "row",
-    gap: 6,
+    minHeight: 100,
+    padding: 9,
+  },
+  statIcon: {
+    alignItems: "center",
+    borderRadius: 9,
+    height: 30,
     justifyContent: "center",
-    minHeight: 40,
+    width: 30,
   },
-  adminButtonText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-
-  safeArea: {
-    flex: 1,
-  },
-
-  container: {
-    alignItems: "center",
-  },
-
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-
-  section: {
-    marginTop: 22,
-  },
-
-  sectionTitle: {
+  statValue: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 19,
-    fontWeight: typography.weight.bold,
+    fontSize: 21,
+    fontWeight: "900",
+    marginTop: 7,
   },
-
-  metricsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 10,
-    width: "100%",
+  statLabel: {
+    fontFamily: appFont,
+    fontSize: 9,
+    fontWeight: "700",
+    marginTop: 2,
   },
-
-  metricsColumn: {
-    flexDirection: "column",
+  quickHeader: { marginBottom: 10 },
+  quickHeading: {
+    fontFamily: typography.fontFamily.display,
+    fontSize: 18,
+    fontWeight: "900",
   },
-
-  homesSection: {
-    marginTop: 24,
-    width: "100%",
+  quickSubtitle: {
+    fontFamily: appFont,
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 2,
   },
-
-  sectionHeader: {
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  quickCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    flexBasis: "48%",
+    flexGrow: 1,
+    minHeight: 124,
+    padding: 12,
+  },
+  quickIcon: {
     alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
+    borderRadius: 11,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
   },
-
-  sectionSubtitle: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
+  quickTitle: {
+    fontFamily: typography.fontFamily.display,
+    fontSize: 14,
+    fontWeight: "900",
+    marginTop: 11,
+  },
+  quickDescription: {
+    fontFamily: appFont,
+    fontSize: 10,
+    fontWeight: "600",
     marginTop: 3,
   },
-
-  homeCount: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
-    fontWeight: typography.weight.bold,
-  },
+  pressed: { opacity: 0.72 },
 });

@@ -37,7 +37,7 @@ export function ProfileShortcutCard({
         style={[
           styles.iconContainer,
           {
-            backgroundColor: theme.rowAlt,
+            backgroundColor: theme.blue1,
           },
         ]}
       >
@@ -73,9 +73,11 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     borderWidth: 1,
+    flexBasis: "48%",
+    flexGrow: 1,
     minHeight: 132,
     padding: 14,
-    width: "48%",
+    width: "auto",
   },
 
   iconContainer: {

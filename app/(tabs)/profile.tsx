@@ -10,9 +10,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ProfileMenuItem } from "@/components/profile/ProfileMenuItem";
-import { ProfileModule } from "@/components/profile/ProfileModule";
-import { ProfileShortcutCard } from "@/components/profile/ProfileShortcutCard";
 import { profileFont } from "@/components/profile/profileTheme";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useTranslation } from "@/lib/i18n/i18n";
@@ -20,37 +17,94 @@ import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
 const appFont = profileFont;
-
 type ThemeLike = ReturnType<typeof useAppTheme>;
+
+type RowProps = {
+  description?: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  theme: ThemeLike;
+  title: string;
+};
+
+function Row({ description, icon, onPress, theme, title }: RowProps) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      <View style={[styles.rowIcon, { backgroundColor: theme.rowAlt }]}>
+        <Ionicons name={icon} size={20} color={theme.blue} />
+      </View>
+      <View style={styles.rowCopy}>
+        <Text style={[styles.rowTitle, { color: theme.text }]}>{title}</Text>
+        {!!description && (
+          <Text style={[styles.rowDescription, { color: theme.muted }]}>
+            {description}
+          </Text>
+        )}
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={theme.muted} />
+    </Pressable>
+  );
+}
+
+type SectionProps = {
+  children: React.ReactNode;
+  icon: keyof typeof Ionicons.glyphMap;
+  theme: ThemeLike;
+  title: string;
+};
+
+function Section({ children, icon, theme, title }: SectionProps) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeading}>
+        <Ionicons name={icon} size={17} color={theme.blue} />
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          {title}
+        </Text>
+      </View>
+      <View
+        style={[
+          styles.rows,
+          { backgroundColor: theme.card, borderColor: theme.borderLight },
+        ]}
+      >
+        {children}
+      </View>
+    </View>
+  );
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const { t } = useTranslation();
-  const {
-    activeHomeId,
-    devices,
-    homes,
-    lastSync,
-    refreshSync,
-    resolvedSmartAlerts,
-    sessionName,
-  } = useSmartHome();
+  const { devices, resolvedSmartAlerts, sessionName, sessionRole } =
+    useSmartHome();
 
-  const onlineDevices = devices.filter((device) => device.online).length;
-  const activeDeviceCount = devices.filter(
-    (device) => device.online && device.state === "on",
-  ).length;
-  const smartHomeAlerts = devices.filter(
+  const pendingAlerts = devices.filter(
     (device) =>
       (device.critical || !device.online) &&
       !resolvedSmartAlerts.includes(device.id),
   ).length;
-  const favoriteHomes = homes.filter((home) => home.favorite).length;
-  const activeHome =
-    homes.find((home) => home.id === activeHomeId) ?? homes[0] ?? null;
   const initial = sessionName.trim().charAt(0).toUpperCase() || "U";
+  const roleLabel =
+    sessionRole === "admin"
+      ? "Administrador"
+      : sessionRole === "miembro"
+        ? "Miembro"
+        : "Invitado";
+
+  function showPending(title: string) {
+    Alert.alert(title, t("common.readyBackend"), [
+      { text: t("action.cancel") },
+    ]);
+  }
 
   function confirmLogout() {
     Alert.alert(t("action.logout"), t("profile.logoutPrompt"), [
@@ -76,412 +130,231 @@ export default function ProfileScreen() {
         }}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <View
-            style={[
-              styles.profileHero,
-              { backgroundColor: theme.card, borderColor: theme.borderLight },
-            ]}
-          >
-            <View style={styles.heroTopRow}>
-              <View>
-                <Text style={[styles.overline, { color: theme.blue }]}>
-                  SMART HOME
-                </Text>
-                <Text style={[styles.heroTitle, { color: theme.text }]}>
-                  {t("profile.greeting", { name: sessionName })}
-                </Text>
-                <Text style={[styles.heroSubtitle, { color: theme.muted }]}>
-                  {t("profile.accountModuleSubtitle")}
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => router.push("/(tabs)/settings")}
-                style={({ pressed }) => [
-                  styles.iconButton,
-                  {
-                    backgroundColor: theme.rowAlt,
-                    borderColor: theme.borderLight,
-                  },
-                  pressed && styles.pressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={t("settings.title")}
-              >
-                <Ionicons
-                  name="settings-outline"
-                  size={21}
-                  color={theme.text}
-                />
-              </Pressable>
-            </View>
-
-            <View style={styles.identityRow}>
-              <View
-                style={[
-                  styles.avatar,
-                  {
-                    backgroundColor: theme.rowAlt,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <Text style={[styles.avatarText, { color: theme.blue }]}>
-                  {initial}
-                </Text>
-              </View>
-              <View style={styles.identityCopy}>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.profileName, { color: theme.text }]}
-                >
-                  {sessionName}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.profileEmail, { color: theme.muted }]}
-                >
-                  {t("profile.accountModule")}
-                </Text>
-                <View style={styles.statusRow}>
-                  <View
-                    style={[
-                      styles.statusDot,
-                      { backgroundColor: theme.success },
-                    ]}
-                  />
-                  <Text style={[styles.statusText, { color: theme.muted }]}>
-                    {t("profile.activeDevices", { count: activeDeviceCount })}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <Pressable
-              onPress={() => router.push("/(tabs)/settings")}
-              style={({ pressed }) => [
-                styles.editButton,
-                { backgroundColor: theme.blue },
-                pressed && styles.pressed,
-              ]}
-              accessibilityRole="button"
-            >
-              <Ionicons name="create-outline" size={17} color="#FFFFFF" />
-              <Text style={styles.editButtonText}>{t("profile.editInfo")}</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.statsRow}>
-            <StatCard
-              icon="home-outline"
-              label={t("profile.manageHomes")}
-              value={String(homes.length)}
-              theme={theme}
-            />
-            <StatCard
-              icon="hardware-chip-outline"
-              label={t("profile.activeDevices", { count: activeDeviceCount })}
-              value={String(activeDeviceCount)}
-              theme={theme}
-            />
-            <StatCard
-              icon="notifications-outline"
-              label={t(
-                smartHomeAlerts === 1
-                  ? "common.pendingAlert"
-                  : "common.pendingAlerts",
-                { count: smartHomeAlerts },
-              )}
-              value={String(smartHomeAlerts)}
-              theme={theme}
-            />
-          </View>
-
           <Pressable
-            onPress={() => router.push("/(tabs)/homes")}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir configuración"
+            onPress={() => router.push("/(tabs)/settings")}
             style={({ pressed }) => [
-              styles.homeCard,
+              styles.identityCard,
               { backgroundColor: theme.card, borderColor: theme.borderLight },
               pressed && styles.pressed,
             ]}
           >
-            <View style={[styles.homeIcon, { backgroundColor: theme.rowAlt }]}>
-              <Ionicons name="home-outline" size={23} color={theme.blue} />
+            <View
+              style={[
+                styles.avatar,
+                {
+                  backgroundColor: theme.rowAlt,
+                  borderColor: theme.borderLight,
+                },
+              ]}
+            >
+              <Text style={[styles.avatarText, { color: theme.blue }]}>
+                {initial}
+              </Text>
             </View>
-            <View style={styles.homeCopy}>
-              <Text style={[styles.homeLabel, { color: theme.blue }]}>
-                {t("profile.accountHome", {
-                  name: sessionName,
-                  count: homes.length,
-                })}
+            <View style={styles.identityCopy}>
+              <Text style={[styles.identityName, { color: theme.text }]}>
+                {sessionName}
               </Text>
-              <Text
-                numberOfLines={1}
-                style={[styles.homeName, { color: theme.text }]}
+              <Text style={[styles.identityEmail, { color: theme.muted }]}>
+                pepe@smarthome.com
+              </Text>
+              <View
+                style={[
+                  styles.rolePill,
+                  { backgroundColor: theme.successSoft },
+                ]}
               >
-                {activeHome?.name ?? t("profile.noHomeConfigured")}
-              </Text>
-              <Text style={[styles.homeDescription, { color: theme.muted }]}>
-                {homes.length}{" "}
-                {homes.length === 1
-                  ? t("profile.homeAvailable")
-                  : t("profile.homesAvailable")}
-              </Text>
+                <Ionicons
+                  name="shield-checkmark"
+                  size={13}
+                  color={theme.success}
+                />
+                <Text style={[styles.roleText, { color: theme.success }]}>
+                  {roleLabel}
+                </Text>
+              </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.muted} />
           </Pressable>
 
-          <View style={styles.sectionHeading}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              {t("profile.quickAccess")}
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: theme.muted }]}>
-              {t("profile.quickAccessSubtitle")}
-            </Text>
-          </View>
-          <View style={styles.shortcutsGrid}>
-            <ProfileShortcutCard
-              icon="home-outline"
-              title={t("profile.myHomes")}
-              description={t("profile.availableCount", { count: homes.length })}
-              onPress={() => router.push("/(tabs)/homes")}
-            />
-            <ProfileShortcutCard
-              icon="hardware-chip-outline"
-              title={t("profile.devices")}
-              description={t("profile.connectedCount", {
-                count: onlineDevices,
-              })}
-              onPress={() => router.push("/(tabs)/devices")}
-            />
-            <ProfileShortcutCard
-              icon="bar-chart-outline"
-              title={t("profile.consumption")}
-              description={t("profile.consumptionDescription")}
-              onPress={() => router.push("/(tabs)/reports")}
-            />
-            <ProfileShortcutCard
-              icon="notifications-outline"
-              title={t("profile.alerts")}
-              description={
-                smartHomeAlerts
-                  ? `${smartHomeAlerts} pendiente${smartHomeAlerts === 1 ? "" : "s"}`
-                  : t("profile.noAlerts")
-              }
-              onPress={() => router.push("/(tabs)/alerts")}
-            />
-            <ProfileShortcutCard
-              icon="star-outline"
-              title={t("profile.favorites")}
-              description={t("profile.savedCount", { count: favoriteHomes })}
-              onPress={() => router.push("/(tabs)/favorites")}
-            />
-            <ProfileShortcutCard
-              icon="sync-outline"
-              title={t("profile.sync")}
-              description={t("profile.lastSync", { value: lastSync })}
-              onPress={refreshSync}
-            />
-          </View>
-
-          <ProfileModule
-            title={t("profile.accountModule")}
-            subtitle={t("profile.accountModuleSubtitle")}
-          >
-            <ProfileMenuItem
+          <Section icon="person-outline" title="Cuenta" theme={theme}>
+            <Row
               icon="person-outline"
-              title={t("profile.editInfo")}
+              title="Información personal"
               onPress={() => router.push("/(tabs)/settings")}
+              theme={theme}
             />
-            <ProfileMenuItem
+            <Row
               icon="home-outline"
-              title={t("profile.manageHomes")}
+              title="Mis hogares"
               onPress={() => router.push("/(tabs)/homes")}
+              theme={theme}
             />
-          </ProfileModule>
+          </Section>
 
-          <ProfileModule title={t("profile.session")}>
-            <ProfileMenuItem
-              icon="log-out-outline"
-              intent="danger"
-              title={t("action.logout")}
-              onPress={confirmLogout}
+          <Section icon="lock-closed-outline" title="Seguridad" theme={theme}>
+            <Row
+              icon="lock-closed-outline"
+              title="Cambiar contraseña"
+              onPress={() => router.push("/forgot-password")}
+              theme={theme}
             />
-          </ProfileModule>
+            <Row
+              icon="shield-checkmark-outline"
+              title="Seguridad de la cuenta"
+              description={`${pendingAlerts} alertas pendientes`}
+              onPress={() => router.push("/(tabs)/alerts")}
+              theme={theme}
+            />
+          </Section>
+
+          <Section icon="options-outline" title="Preferencias" theme={theme}>
+            <Row
+              icon="notifications-outline"
+              title="Notificaciones"
+              onPress={() => router.push("/(tabs)/alerts")}
+              theme={theme}
+            />
+            <Row
+              icon="contrast-outline"
+              title="Apariencia"
+              onPress={() => router.push("/(tabs)/settings")}
+              theme={theme}
+            />
+            <Row
+              icon="language-outline"
+              title="Idioma"
+              onPress={() => router.push("/(tabs)/settings")}
+              theme={theme}
+            />
+          </Section>
+
+          <Section icon="help-circle-outline" title="Ayuda" theme={theme}>
+            <Row
+              icon="help-circle-outline"
+              title="Centro de ayuda"
+              onPress={() => router.push("/(tabs)/help")}
+              theme={theme}
+            />
+            <Row
+              icon="information-circle-outline"
+              title="Acerca de Smart Home"
+              onPress={() => showPending("Acerca de Smart Home")}
+              theme={theme}
+            />
+          </Section>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("action.logout")}
+            onPress={confirmLogout}
+            style={({ pressed }) => [
+              styles.logout,
+              {
+                backgroundColor: theme.dangerSoft,
+                borderColor: theme.dangerSoft,
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons name="log-out-outline" size={21} color={theme.danger} />
+            <Text style={[styles.logoutText, { color: theme.danger }]}>
+              {t("action.logout")}
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-type StatCardProps = {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-  theme: ThemeLike;
-};
-
-function StatCard({ icon, label, value, theme }: StatCardProps) {
-  return (
-    <View
-      style={[
-        styles.statCard,
-        { backgroundColor: theme.card, borderColor: theme.borderLight },
-      ]}
-    >
-      <View style={[styles.statIcon, { backgroundColor: theme.rowAlt }]}>
-        <Ionicons name={icon} size={18} color={theme.blue} />
-      </View>
-      <Text style={[styles.statValue, { color: theme.text }]}>{value}</Text>
-      <Text
-        numberOfLines={2}
-        style={[styles.statLabel, { color: theme.muted }]}
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   content: { alignSelf: "center", width: "100%" },
-  profileHero: {
-    borderRadius: 22,
-    borderWidth: 1,
-    marginBottom: 12,
-    padding: 18,
-  },
-  heroTopRow: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  overline: {
-    fontFamily: appFont,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-  heroTitle: {
-    fontFamily: appFont,
-    fontSize: 25,
-    fontWeight: "900",
-    marginTop: 5,
-  },
-  heroSubtitle: {
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "700",
-    marginTop: 5,
-  },
-  iconButton: {
+  identityCard: {
     alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-  },
-  identityRow: { alignItems: "center", flexDirection: "row", marginTop: 22 },
-  avatar: {
-    alignItems: "center",
-    borderRadius: 28,
-    borderWidth: 1,
-    height: 56,
-    justifyContent: "center",
-    width: 56,
-  },
-  avatarText: { fontFamily: appFont, fontSize: 24, fontWeight: "900" },
-  identityCopy: { flex: 1, marginLeft: 12 },
-  profileName: { fontFamily: appFont, fontSize: 18, fontWeight: "900" },
-  profileEmail: {
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 3,
-  },
-  statusRow: { alignItems: "center", flexDirection: "row", marginTop: 7 },
-  statusDot: { borderRadius: 5, height: 9, marginRight: 6, width: 9 },
-  statusText: { fontFamily: appFont, fontSize: 11, fontWeight: "700" },
-  editButton: {
-    alignItems: "center",
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 18,
-    minHeight: 44,
-  },
-  editButtonText: {
-    color: "#FFFFFF",
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "900",
-    marginLeft: 7,
-  },
-  statsRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  statCard: {
-    borderRadius: 15,
-    borderWidth: 1,
-    flex: 1,
-    minHeight: 108,
-    padding: 10,
-  },
-  statIcon: {
-    alignItems: "center",
-    borderRadius: 10,
-    height: 32,
-    justifyContent: "center",
-    width: 32,
-  },
-  statValue: {
-    fontFamily: appFont,
-    fontSize: 22,
-    fontWeight: "900",
-    marginTop: 8,
-  },
-  statLabel: {
-    fontFamily: appFont,
-    fontSize: 10,
-    fontWeight: "700",
-    marginTop: 2,
-  },
-  homeCard: {
-    alignItems: "center",
-    borderRadius: 16,
+    borderRadius: 17,
     borderWidth: 1,
     flexDirection: "row",
-    marginBottom: 20,
+    marginBottom: 17,
     padding: 13,
   },
-  homeIcon: {
+  avatar: {
     alignItems: "center",
-    borderRadius: 12,
-    height: 45,
+    borderRadius: 34,
+    borderWidth: 1,
+    height: 68,
     justifyContent: "center",
-    width: 45,
+    width: 68,
   },
-  homeCopy: { flex: 1, marginHorizontal: 11 },
-  homeLabel: { fontFamily: appFont, fontSize: 11, fontWeight: "800" },
-  homeName: {
+  avatarText: { fontFamily: appFont, fontSize: 27, fontWeight: "900" },
+  identityCopy: { flex: 1, marginHorizontal: 12 },
+  identityName: { fontFamily: appFont, fontSize: 17, fontWeight: "900" },
+  identityEmail: { fontFamily: appFont, fontSize: 12, marginTop: 3 },
+  rolePill: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    borderRadius: 12,
+    flexDirection: "row",
+    marginTop: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  roleText: {
     fontFamily: appFont,
-    fontSize: 16,
+    fontSize: 10,
+    fontWeight: "800",
+    marginLeft: 4,
+  },
+  section: { marginBottom: 15 },
+  sectionHeading: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 6,
+    paddingHorizontal: 2,
+  },
+  sectionTitle: { fontFamily: appFont, fontSize: 14, fontWeight: "900" },
+  rows: {
+    borderRadius: 15,
+    borderWidth: 1,
+    overflow: "hidden",
+    paddingHorizontal: 9,
+  },
+  row: {
+    alignItems: "center",
+    borderTopColor: "#E2E8F0",
+    borderTopWidth: 1,
+    flexDirection: "row",
+    minHeight: 56,
+    paddingVertical: 8,
+  },
+  rowIcon: {
+    alignItems: "center",
+    borderRadius: 10,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+  rowCopy: { flex: 1, marginHorizontal: 10 },
+  rowTitle: { fontFamily: appFont, fontSize: 13, fontWeight: "800" },
+  rowDescription: { fontFamily: appFont, fontSize: 10, marginTop: 2 },
+  logout: {
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    minHeight: 48,
+    marginBottom: 8,
+  },
+  logoutText: {
+    fontFamily: appFont,
+    fontSize: 14,
     fontWeight: "900",
-    marginTop: 3,
+    marginLeft: 8,
   },
-  homeDescription: {
-    fontFamily: appFont,
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  sectionHeading: { marginBottom: 11 },
-  sectionTitle: { fontFamily: appFont, fontSize: 18, fontWeight: "900" },
-  sectionSubtitle: {
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 3,
-  },
-  shortcutsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   pressed: { opacity: 0.72 },
 });

@@ -1,1279 +1,1182 @@
 /**
- * Pantalla de gestión de hogares.
+ * Pantalla de Estancias y Dispositivos.
  *
- * Permite al usuario crear y explorar hogares, ver dispositivos asociados,
- * encender/apagar dispositivos y revisar detalles del hogar seleccionado.
+ * - Vista de Estancias con buscador, sub-pestañas y tarjetas con gradiente azul y consumo (⚡ 0 W).
+ * - Detalle de Estancia con header de acciones, filtros (Dispositivos, Grupos, Escenas, Termostatos)
+ *   y tarjetas de dispositivos con estado de red e interruptor.
  */
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
     Alert,
+    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TextInput,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useSmartHome } from "@/lib/context/smart-home-context";
+import { RoomCard } from "@/components/homes/RoomCard";
+import { ShellyDeviceCard } from "@/components/homes/ShellyDeviceCard";
+import {
+    type SmartDevice,
+    useSmartHome,
+} from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
-
-const BLUE = "#0864C8";
-const TEXT = "#454545";
-const LILAC = "#DDDDFB";
-const GREEN = "#2AAF5D";
-const RED = "#FF3B20";
-const MUTED = "#6B7280";
+type TopSubTab =
+  | "Todas Las Estancias"
+  | "Todos Los Grupos"
+  | "Todos los Dispositivos";
+type RoomFilter = "Dispositivos" | "Grupos" | "Escenas" | "Termostatos";
 
 export default function HomesScreen() {
-  const { homeId, deviceId } = useLocalSearchParams<{
+  const { homeId } = useLocalSearchParams<{
     homeId?: string;
-    deviceId?: string;
   }>();
 
   const layout = useResponsiveLayout();
   const router = useRouter();
   const theme = useAppTheme();
 
-  // Estado global de hogares y dispositivos. Aqui vive la relacion hogar -> dispositivos.
   const {
     activeHomeId,
     addDeviceToHome,
-    addHome,
     devices,
-    homes,
     accessibleHomes,
     sessionRole,
-    setActiveHomeId,
-    setDeviceOnline,
-    toggleDevice,
     setHomeDeviceState,
-    setAllHomeDevicesState,
-    toggleHomeFavorite,
-    resolvedSmartAlerts,
-    resolveSmartDeviceAlert,
   } = useSmartHome();
 
   const canManage = sessionRole === "admin";
   const canControl = sessionRole !== "invitado";
 
-  // Estados locales para formularios y seleccion visual dentro de esta pantalla.
-  const [homeName, setHomeName] = useState("");
-  const [deviceName, setDeviceName] = useState("");
-  const [openedHomeId, setOpenedHomeId] = useState<string | null>(
-    () => homeId ?? null,
+  // Estados de navegación interna
+  const [activeSubTab, setActiveSubTab] = useState<TopSubTab>(
+    "Todas Las Estancias",
   );
-  const [selectedId, setSelectedId] = useState(() => deviceId ?? "");
+  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+  const [roomFilter, setRoomFilter] = useState<RoomFilter>("Dispositivos");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Alertas puede abrir directamente un hogar/dispositivo mediante parámetros
-  // de navegación. Los parámetros se usan como valores derivados cuando existen.
+  // Modales
+  const [telemetryDevice, setTelemetryDevice] = useState<SmartDevice | null>(
+    null,
+  );
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [newRoomName, setNewRoomName] = useState("");
+  const [newDeviceName, setNewDeviceName] = useState("");
 
-  // Determina el hogar que se muestra actualmente.
+  // Hogar activo
   const selectedHome =
-    accessibleHomes.find((home) => home.id === activeHomeId) ?? accessibleHomes[0];
-  const resolvedOpenedHomeId = homeId ?? openedHomeId;
-  const openedHome =
-    accessibleHomes.find((home) => home.id === resolvedOpenedHomeId) ?? null;
+    accessibleHomes.find((home) => home.id === activeHomeId) ??
+    accessibleHomes[0];
+  const activeHome =
+    accessibleHomes.find((home) => home.id === homeId) ?? selectedHome;
 
-  // El hogar actualmente visible: si el usuario abrió el detalle se muestra ese,
-  // de lo contrario se muestra el hogar seleccionado globalmente.
-  const activeHome = openedHome ?? selectedHome;
-
-  // Filtra dispositivos por homeId. Esta es la regla central: cada dispositivo pertenece a un hogar.
+  // Dispositivos del hogar activo
   const homeDevices = useMemo(
-    () =>
-      activeHome
-        ? devices.filter((device) => device.homeId === activeHome.id)
-        : [],
+    () => (activeHome ? devices.filter((d) => d.homeId === activeHome.id) : []),
     [activeHome, devices],
   );
-  const resolvedSelectedId = deviceId ?? selectedId;
-  const selectedDevice =
-    homeDevices.find((device) => device.id === resolvedSelectedId) ??
-    homeDevices[0];
-  const onlineCount = homeDevices.filter((device) => device.online).length;
 
-  const currentPower = homeDevices
-    .filter((device) => device.online && device.state === "on")
-    .reduce((sum, device) => sum + device.power, 0);
+  // Lista de estancias
+  const roomNames = useMemo(() => {
+    const set = new Set<string>();
+    set.add("Stiven"); // Estancia de referencia en las capturas
+    homeDevices.forEach((d) => {
+      if (d.room) set.add(d.room);
+    });
+    return Array.from(set);
+  }, [homeDevices]);
 
-  const currentPowerLabel =
-    currentPower >= 1000
-      ? `${(currentPower / 1000).toFixed(2)} kW`
-      : `${currentPower} W`;
+  // Datos calculados por estancia
+  const roomsData = useMemo(() => {
+    return roomNames.map((name) => {
+      const roomDevs = homeDevices.filter(
+        (d) => d.room.toLowerCase() === name.toLowerCase(),
+      );
+      const power = roomDevs
+        .filter((d) => d.online && d.state === "on")
+        .reduce((sum, d) => sum + d.power, 0);
+      return {
+        name,
+        power,
+        devices: roomDevs,
+      };
+    });
+  }, [roomNames, homeDevices]);
 
-  /**
-   * Abre el detalle de un hogar y lo marca como hogar activo global.
-   */
-  function openHome(homeId: string) {
-    setActiveHomeId(homeId);
-    setOpenedHomeId(homeId);
-    setSelectedId("");
+  // Filtrado por búsqueda
+  const filteredRooms = useMemo(() => {
+    if (!searchQuery.trim()) return roomsData;
+    const q = searchQuery.toLowerCase();
+    return roomsData.filter((r) => r.name.toLowerCase().includes(q));
+  }, [roomsData, searchQuery]);
+
+  // Dispositivos de la estancia seleccionada
+  const activeRoomDevices = useMemo(() => {
+    if (!selectedRoom) return [];
+    return homeDevices.filter(
+      (d) => d.room.toLowerCase() === selectedRoom.toLowerCase(),
+    );
+  }, [homeDevices, selectedRoom]);
+
+  // Manejo de apagado/encendido de la estancia
+  function toggleRoomDevices(state: "on" | "off") {
+    if (!selectedRoom || !canControl) return;
+    activeRoomDevices.forEach((d) => {
+      if (d.online) {
+        setHomeDeviceState(d.id, state);
+      }
+    });
+    Alert.alert(
+      state === "off" ? "Estancia apagada" : "Estancia encendida",
+      `Se ${state === "off" ? "apagaron" : "encendieron"} los dispositivos de ${selectedRoom}.`,
+    );
   }
 
-  /**
-   * Crea un hogar despues de validar que el nombre no este vacio.
-   */
-  function handleAddHome() {
-    const cleanName = homeName.trim();
-
-    if (!cleanName) {
-      Alert.alert("Nombre requerido", "Ingresa el nombre del hogar.");
+  function handleCreateRoom() {
+    const clean = newRoomName.trim();
+    if (!clean) {
+      Alert.alert(
+        "Nombre requerido",
+        "Ingresa el nombre de la nueva estancia.",
+      );
       return;
     }
-
-    addHome(cleanName);
-    setHomeName("");
+    if (activeHome) {
+      addDeviceToHome(activeHome.id, `Dispositivo de ${clean}`);
+    }
+    setNewRoomName("");
+    setAddModalVisible(false);
+    setSelectedRoom(clean);
   }
 
-  /**
-   * Crea un dispositivo dentro del hogar activo.
-   *
-   * Esta funcion protege la relacion correcta: no permite crear dispositivos
-   * si no hay un hogar seleccionado.
-   */
-  function handleAddDevice() {
-    const cleanName = deviceName.trim();
-
-    if (!activeHome) {
-      Alert.alert("Hogar requerido", "Primero registra un hogar.");
-      return;
-    }
-
-    if (!cleanName) {
+  function handleCreateDeviceInRoom() {
+    const clean = newDeviceName.trim();
+    if (!clean) {
       Alert.alert("Nombre requerido", "Ingresa el nombre del dispositivo.");
       return;
     }
-
-    addDeviceToHome(activeHome.id, cleanName);
-    setDeviceName("");
-  }
-
-  /**
-   * Apaga todos los dispositivos del hogar actual.
-   */
-  function setHomePowerState(state: "on" | "off") {
-    if (!activeHome || !canControl) return;
-    setAllHomeDevicesState(activeHome.id, state);
-    Alert.alert(
-      state === "off" ? "Hogar apagado" : "Hogar encendido",
-      `${state === "off" ? "Se apagaron" : "Se encendieron"} los dispositivos de ${activeHome.name}.`,
-    );
-  }
-
-  /**
-   * Vista de lista de hogares.
-   * Se separa en funcion para no mezclarla con el detalle del hogar.
-   */
-  function renderHomeList() {
-    return (
-      <>
-        {canManage && (
-                  <View style={styles.addRow}>
-                    <TextInput
-                      style={[
-                        styles.addInput,
-                        {
-                          backgroundColor: theme.row,
-                          borderColor: theme.border,
-                          color: theme.text,
-                        },
-                      ]}
-                      placeholder="Nombre del hogar"
-                      placeholderTextColor={MUTED}
-                      value={homeName}
-                      onChangeText={setHomeName}
-                    />
-                    <Pressable style={styles.addButton} onPress={handleAddHome}>
-                      <Ionicons name="add" size={24} color="#FFFFFF" />
-                    </Pressable>
-                  </View>
-
-        )}
-
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Hogares registrados
-          </Text>
-          <Text style={[styles.sectionMeta, { color: theme.muted }]}>
-            {accessibleHomes.length} hogar{accessibleHomes.length === 1 ? "" : "es"}
-          </Text>
-        </View>
-
-        {canManage && (
-          <Pressable
-            style={({ pressed }) => [styles.accessButton, pressed && styles.pressed]}
-            onPress={() => router.push("/(tabs)/access")}
-          >
-            <Ionicons name="people-outline" size={19} color={theme.blue} />
-            <Text style={[styles.accessButtonText, { color: theme.blue }]}>
-              Gestionar miembros e invitados
-            </Text>
-            <Ionicons name="chevron-forward" size={18} color={theme.blue} />
-          </Pressable>
-        )}
-
-        <View style={styles.list}>
-          {accessibleHomes.map((home) => {
-            const homeDevices = devices.filter(
-              (device) => device.homeId === home.id,
-            );
-
-            const count = homeDevices.length;
-
-            const alertCount = homeDevices.filter(
-              (device) =>
-                (device.critical || !device.online) &&
-                !resolvedSmartAlerts.includes(device.id),
-            ).length;
-
-            return (
-              <View
-                key={home.id}
-                style={[
-                  styles.homeCard,
-                  {
-                    backgroundColor: theme.row,
-                    borderColor:
-                      alertCount > 0 ? theme.danger : theme.borderLight,
-                    borderWidth: alertCount > 0 ? 1 : 0,
-                  },
-                ]}
-              >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Abrir ${home.name}`}
-                  onPress={() => openHome(home.id)}
-                  style={({ pressed }) => [
-                    styles.homeContent,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <View
-                    style={[styles.itemIcon, { backgroundColor: theme.rowAlt }]}
-                  >
-                    <MaterialCommunityIcons
-                      name="home-city-outline"
-                      size={31}
-                      color={theme.blue}
-                    />
-                  </View>
-
-                  <View style={styles.itemCopy}>
-                    <Text
-                      numberOfLines={1}
-                      style={[styles.itemTitle, { color: theme.text }]}
-                    >
-                      {home.name}
-                    </Text>
-
-                    <Text
-                      numberOfLines={1}
-                      style={[styles.itemSubtitle, { color: theme.muted }]}
-                    >
-                      {count} dispositivos · {home.location}
-                    </Text>
-
-                    {alertCount > 0 && (
-                      <View style={styles.homeAlertRow}>
-                        <Ionicons
-                          name="warning-outline"
-                          size={14}
-                          color={theme.danger}
-                        />
-                        <Text
-                          style={[
-                            styles.homeAlertText,
-                            { color: theme.danger },
-                          ]}
-                        >
-                          {alertCount} alerta
-                          {alertCount === 1 ? "" : "s"} pendiente
-                          {alertCount === 1 ? "" : "s"}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </Pressable>
-
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    home.favorite
-                      ? `Quitar ${home.name} de favoritos`
-                      : `Agregar ${home.name} a favoritos`
-                  }
-                  onPress={() => toggleHomeFavorite(home.id)}
-                  hitSlop={6}
-                  style={({ pressed }) => [
-                    styles.favoriteButton,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Ionicons
-                    name={home.favorite ? "star" : "star-outline"}
-                    size={25}
-                    color={home.favorite ? "#F5B400" : theme.muted}
-                  />
-                </Pressable>
-              </View>
-            );
-          })}
-        </View>
-      </>
-    );
-  }
-
-  /**
-   * Vista de detalle de un hogar.
-   * Muestra solo los dispositivos cuyo `homeId` coincide con el hogar activo.
-   */
-  function renderHomeDetail() {
-    if (!activeHome) return null;
-
-    return (
-      <>
-        <Pressable style={styles.backRow} onPress={() => setOpenedHomeId(null)}>
-          <Ionicons name="chevron-back" size={22} color={BLUE} />
-          <Text style={[styles.backText, { color: theme.blue }]}>Hogares</Text>
-        </Pressable>
-
-        <View
-          style={[
-            styles.detailHero,
-            {
-              backgroundColor: theme.card,
-              borderColor: theme.borderLight,
-            },
-          ]}
-        >
-          <View style={styles.detailHeroTop}>
-            <View
-              style={[styles.detailHomeIcon, { backgroundColor: theme.rowAlt }]}
-            >
-              <MaterialCommunityIcons
-                name="home-city-outline"
-                size={28}
-                color={theme.blue}
-              />
-            </View>
-
-            <View style={styles.detailHeroCopy}>
-              <Text
-                numberOfLines={1}
-                style={[styles.detailHeroTitle, { color: theme.text }]}
-              >
-                {activeHome.name}
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={[styles.detailHeroSubtitle, { color: theme.muted }]}
-              >
-                {activeHome.location}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: theme.successSoft },
-              ]}
-            >
-              <View
-                style={[styles.statusDot, { backgroundColor: theme.success }]}
-              />
-              <Text style={[styles.statusBadgeText, { color: theme.success }]}>
-                {onlineCount > 0 ? "Activo" : "Sin conexión"}
-              </Text>
-            </View>
-          </View>
-
-          <View
-            style={[styles.homeMetrics, { borderTopColor: theme.borderLight }]}
-          >
-            <View style={styles.homeMetric}>
-              <Text style={[styles.homeMetricValue, { color: theme.text }]}>
-                {homeDevices.length}
-              </Text>
-              <Text style={[styles.homeMetricLabel, { color: theme.muted }]}>
-                Dispositivos
-              </Text>
-            </View>
-
-            <View style={styles.homeMetric}>
-              <Text style={[styles.homeMetricValue, { color: theme.text }]}>
-                {onlineCount}
-              </Text>
-              <Text style={[styles.homeMetricLabel, { color: theme.muted }]}>
-                Conectados
-              </Text>
-            </View>
-
-            <View style={styles.homeMetric}>
-              <Text style={[styles.homeMetricValue, { color: theme.text }]}>
-                {currentPowerLabel}
-              </Text>
-              <Text style={[styles.homeMetricLabel, { color: theme.muted }]}>
-                Consumo actual
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {canManage && (
-                  <View style={styles.addRow}>
-                    <TextInput
-                      style={[
-                        styles.addInput,
-                        {
-                          backgroundColor: theme.row,
-                          borderColor: theme.border,
-                          color: theme.text,
-                        },
-                      ]}
-                      placeholder="Nombre del dispositivo"
-                      placeholderTextColor={MUTED}
-                      value={deviceName}
-                      onChangeText={setDeviceName}
-                    />
-                    <Pressable style={styles.addButton} onPress={handleAddDevice}>
-                      <Ionicons name="add" size={24} color="#FFFFFF" />
-                    </Pressable>
-                  </View>
-
-        )}
-
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Dispositivos de {activeHome.name}
-          </Text>
-          <Text style={[styles.sectionMeta, { color: theme.muted }]}>
-            {homeDevices.length} items
-          </Text>
-        </View>
-
-        <View style={styles.list}>
-          {homeDevices.map((device) => {
-            const hasAlert =
-              (device.critical || !device.online) &&
-              !resolvedSmartAlerts.includes(device.id);
-
-            return (
-              <View
-                key={device.id}
-                style={[
-                  styles.deviceCard,
-                  {
-                    backgroundColor: theme.row,
-                    borderColor: hasAlert ? theme.danger : theme.borderLight,
-                    borderWidth: hasAlert ? 1 : 0,
-                  },
-                  selectedDevice?.id === device.id && styles.selectedCard,
-                ]}
-              >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Seleccionar ${device.name}`}
-                  onPress={() => setSelectedId(device.id)}
-                  style={({ pressed }) => [
-                    styles.deviceContent,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.itemIcon,
-                      { backgroundColor: theme.rowAlt },
-                      !device.online && styles.itemIconOff,
-                    ]}
-                  >
-                    <MaterialCommunityIcons
-                      name={device.icon as never}
-                      size={35}
-                      color={device.online ? theme.blue : theme.muted}
-                    />
-                  </View>
-
-                  <View style={styles.itemCopy}>
-                    <View style={styles.deviceTitleRow}>
-                      <Text
-                        numberOfLines={1}
-                        style={[styles.itemTitle, { color: theme.text }]}
-                      >
-                        {device.name}
-                      </Text>
-
-                      {hasAlert && (
-                        <Ionicons
-                          name="warning-outline"
-                          size={17}
-                          color={theme.danger}
-                        />
-                      )}
-                    </View>
-
-                    <Text style={[styles.itemSubtitle, { color: theme.muted }]}>
-                      {device.room} ·{" "}
-                      {device.online
-                        ? `${(device.energy / 1000).toFixed(2)} kWh hoy`
-                        : "Sin conexión"}
-                    </Text>
-
-                    {hasAlert && (
-                      <Text
-                        style={[
-                          styles.deviceAlertText,
-                          { color: theme.danger },
-                        ]}
-                      >
-                        {device.critical ? "Requiere atención" : "Sin conexión"}
-                      </Text>
-                    )}
-                  </View>
-                </Pressable>
-
-                <Switch
-                  value={device.state === "on"}
-                  onValueChange={() => {
-                    if (canControl) {
-                      setHomeDeviceState(device.id, device.state === "on" ? "off" : "on");
-                    }
-                  }}
-                  disabled={!canControl || !device.online}
-                  accessibilityLabel={`Encender o apagar ${device.name}`}
-                  trackColor={{
-                    false: "#CDD2E4",
-                    true: "#BDE8CB",
-                  }}
-                  thumbColor={device.online ? GREEN : "#FFFFFF"}
-                />
-              </View>
-            );
-          })}
-
-          {!homeDevices.length && (
-            <View style={[styles.emptyCard, { backgroundColor: theme.card }]}>
-              <MaterialCommunityIcons
-                name="power-plug-outline"
-                size={32}
-                color={BLUE}
-              />
-              <Text style={[styles.emptyText, { color: theme.muted }]}>
-                Este hogar todavía no tiene dispositivos.
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {selectedDevice && (
-          <View style={[styles.detailCard, { backgroundColor: theme.card }]}>
-            <View style={styles.detailTop}>
-              <Text style={[styles.detailTitle, { color: theme.text }]}>
-                {selectedDevice.name}
-              </Text>
-              <Text
-                style={[
-                  styles.statusPill,
-                  selectedDevice.online ? styles.statusOn : styles.statusOff,
-                ]}
-              >
-                {selectedDevice.online ? "Conectado" : "Sin conexión"}
-              </Text>
-            </View>
-            <View style={styles.metricRow}>
-              <View style={styles.metric}>
-                <Text style={[styles.metricValue, { color: theme.text }]}>
-                  {(selectedDevice.energy / 1000).toFixed(2)}
-                </Text>
-                <Text style={[styles.metricLabel, { color: theme.muted }]}>
-                  kWh hoy
-                </Text>
-              </View>
-              <View style={styles.metric}>
-                <Text style={[styles.metricValue, { color: theme.text }]}>
-                  {(selectedDevice.yesterday / 1000).toFixed(2)}
-                </Text>
-                <Text style={[styles.metricLabel, { color: theme.muted }]}>
-                  kWh ayer
-                </Text>
-              </View>
-              <View style={styles.metric}>
-                <Text style={[styles.metricValue, { color: theme.text }]}>
-                  {selectedDevice.power >= 1000
-                    ? `${(selectedDevice.power / 1000).toFixed(2)} kW`
-                    : `${selectedDevice.power} W`}
-                </Text>
-                <Text style={[styles.metricLabel, { color: theme.muted }]}>
-                  Potencia
-                </Text>
-              </View>
-              <View style={styles.metric}>
-                <Text style={[styles.metricValue, { color: theme.text }]}>
-                  {selectedDevice.room}
-                </Text>
-                <Text style={[styles.metricLabel, { color: theme.muted }]}>
-                  Ubicación
-                </Text>
-              </View>
-            </View>
-            {(selectedDevice.critical || !selectedDevice.online) &&
-            !resolvedSmartAlerts.includes(selectedDevice.id) ? (
-              <View
-                style={[
-                  styles.detailAlertBox,
-                  {
-                    backgroundColor: theme.dangerSoft,
-                    borderColor: theme.danger,
-                  },
-                ]}
-              >
-                <View style={styles.detailAlertCopy}>
-                  <View style={styles.detailAlertTitleRow}>
-                    <Ionicons
-                      name="warning-outline"
-                      size={18}
-                      color={theme.danger}
-                    />
-                    <Text
-                      style={[styles.detailAlertTitle, { color: theme.danger }]}
-                    >
-                      {selectedDevice.critical
-                        ? "Requiere atención"
-                        : "Sin conexión"}
-                    </Text>
-                  </View>
-
-                  <Text
-                    style={[
-                      styles.detailAlertDescription,
-                      { color: theme.muted },
-                    ]}
-                  >
-                    Revisa el dispositivo y marca la alerta como atendida cuando
-                    corresponda.
-                  </Text>
-                </View>
-
-                <Pressable
-                  onPress={() => resolveSmartDeviceAlert(selectedDevice.id)}
-                  style={({ pressed }) => [
-                    styles.resolveDetailButton,
-                    {
-                      backgroundColor: theme.card,
-                      borderColor: theme.borderLight,
-                    },
-                    pressed && styles.primaryButtonPressed,
-                  ]}
-                >
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={18}
-                    color={theme.success}
-                  />
-                  <Text
-                    style={[
-                      styles.resolveDetailButtonText,
-                      { color: theme.success },
-                    ]}
-                  >
-                    Resolver
-                  </Text>
-                </Pressable>
-              </View>
-            ) : null}
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.primaryButton,
-                !selectedDevice.online && styles.powerOnButton,
-                pressed && styles.primaryButtonPressed,
-              ]}
-              onPress={() => canControl && setHomeDeviceState(
-                selectedDevice.id,
-                selectedDevice.state === "on" ? "off" : "on",
-              )}
-            >
-              <Ionicons
-                name={selectedDevice.online ? "power-outline" : "flash-outline"}
-                size={22}
-                color="#FFFFFF"
-              />
-              <Text style={styles.primaryButtonText}>
-                {selectedDevice.state === "on" ? "Apagar ahora" : "Encender ahora"}
-              </Text>
-            </Pressable>
-            <Text style={[styles.actionHint, { color: theme.muted }]}>
-              {selectedDevice.state === "on"
-                ? `Se apagará ahora · último cambio: ${selectedDevice.lastStateChange ?? "sin registro"}`
-                : `Se encenderá ahora · último cambio: ${selectedDevice.lastStateChange ?? "sin registro"}`}
-            </Text>
-          </View>
-        )}
-
-        {!!homeDevices.length && canControl && (
-          <View style={styles.bulkActions}>
-            <Pressable
-              style={({ pressed }) => [styles.offButton, pressed && styles.offButtonPressed]}
-              onPress={() => setHomePowerState("off")}
-            >
-              <Ionicons name="power-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.offButtonText}>Apagar todos</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [styles.onButton, pressed && styles.offButtonPressed]}
-              onPress={() => setHomePowerState("on")}
-            >
-              <Ionicons name="flash-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.offButtonText}>Encender todos</Text>
-            </Pressable>
-          </View>
-        )}
-      </>
-    );
+    if (activeHome) {
+      addDeviceToHome(activeHome.id, clean);
+      Alert.alert(
+        "Dispositivo agregado",
+        `${clean} ha sido registrado en ${selectedRoom ?? "la estancia"}.`,
+      );
+    }
+    setNewDeviceName("");
+    setAddModalVisible(false);
   }
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: theme.background }]}
+      style={[
+        styles.safeArea,
+        { backgroundColor: theme.dark ? "#0C1322" : theme.background },
+      ]}
     >
       <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          {
-            paddingHorizontal: layout.gutter,
-            paddingBottom: layout.screenBottom,
-            paddingTop: layout.screenTop,
-          },
-        ]}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: layout.gutter,
+          paddingTop: layout.screenTop,
+          paddingBottom: layout.screenBottom,
+        }}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          {openedHome ? renderHomeDetail() : renderHomeList()}
+          {/* ============================================================ */}
+          {/* CABECERA GENERAL DE ESTANCIAS (Sub-pestañas estilo Shelly)     */}
+          {/* ============================================================ */}
+          <View style={styles.topTabsScroll}>
+            {(
+              [
+                "Todas Las Estancias",
+                "Todos Los Grupos",
+                "Todos los Dispositivos",
+              ] as TopSubTab[]
+            ).map((tab) => {
+              const active = activeSubTab === tab;
+              return (
+                <Pressable
+                  key={tab}
+                  onPress={() => {
+                    setActiveSubTab(tab);
+                    setSelectedRoom(null);
+                  }}
+                  style={[
+                    styles.subTabItem,
+                    active && styles.subTabItemActive,
+                    active && { borderColor: theme.blue },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.subTabText,
+                      active ? styles.subTabTextActive : { color: theme.muted },
+                    ]}
+                  >
+                    {tab}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* ============================================================ */}
+          {/* VISTA 1: DETALLE DE ESTANCIA ("Stiven") - IMAGEN 4           */}
+          {/* ============================================================ */}
+          {selectedRoom ? (
+            <View style={styles.roomDetailContainer}>
+              {/* Header de la estancia */}
+              <View
+                style={[
+                  styles.roomDetailHeader,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <View style={styles.roomDetailHeaderLeft}>
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() => setSelectedRoom(null)}
+                    style={styles.roomBackBtn}
+                  >
+                    <Ionicons
+                      name="chevron-back"
+                      size={24}
+                      color={theme.text}
+                    />
+                  </Pressable>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.roomDetailTitle, { color: theme.text }]}
+                  >
+                    {selectedRoom}
+                  </Text>
+                </View>
+
+                <View style={styles.roomDetailHeaderActions}>
+                  {canManage && (
+                    <Pressable
+                      onPress={() => setAddModalVisible(true)}
+                      style={[
+                        styles.actionSquareBtn,
+                        { backgroundColor: theme.blue },
+                      ]}
+                    >
+                      <Ionicons name="pencil" size={17} color="#FFFFFF" />
+                    </Pressable>
+                  )}
+
+                  <Pressable
+                    onPress={() => {
+                      Alert.alert(
+                        selectedRoom,
+                        "Acciones rápidas para esta estancia:",
+                        [
+                          {
+                            text: "Encender todos",
+                            onPress: () => toggleRoomDevices("on"),
+                          },
+                          {
+                            text: "Apagar todos",
+                            onPress: () => toggleRoomDevices("off"),
+                            style: "destructive",
+                          },
+                          { text: "Cancelar", style: "cancel" },
+                        ],
+                      );
+                    }}
+                    style={[
+                      styles.actionSquareBtn,
+                      { backgroundColor: theme.blue },
+                    ]}
+                  >
+                    <Ionicons
+                      name="ellipsis-horizontal"
+                      size={17}
+                      color="#FFFFFF"
+                    />
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => {
+                      Alert.alert(
+                        "Información de Estancia",
+                        `Estancia: ${selectedRoom}\nHogar: ${activeHome?.name ?? "Principal"}\nDispositivos: ${activeRoomDevices.length}`,
+                      );
+                    }}
+                    style={[
+                      styles.actionRoundBtn,
+                      { backgroundColor: theme.rowAlt },
+                    ]}
+                  >
+                    <Ionicons name="information" size={16} color={theme.text} />
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Píldoras de Filtro (Dispositivos, Grupos, Escenas, Termostatos) */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.roomFiltersRow}
+              >
+                {(
+                  [
+                    "Dispositivos",
+                    "Grupos",
+                    "Escenas",
+                    "Termostatos",
+                  ] as RoomFilter[]
+                ).map((filter) => {
+                  const active = roomFilter === filter;
+                  return (
+                    <Pressable
+                      key={filter}
+                      onPress={() => setRoomFilter(filter)}
+                      style={[
+                        styles.roomFilterPill,
+                        {
+                          backgroundColor: active
+                            ? theme.blue
+                            : theme.dark
+                              ? "#162032"
+                              : "#E2E8F0",
+                          borderColor: active ? theme.blue : theme.borderLight,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.roomFilterPillText,
+                          { color: active ? "#FFFFFF" : theme.muted },
+                        ]}
+                      >
+                        {filter}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Lista de Dispositivos de la Estancia (Imagen 4) */}
+              {roomFilter === "Dispositivos" ? (
+                <View style={styles.devicesSection}>
+                  {activeRoomDevices.map((device) => (
+                    <ShellyDeviceCard
+                      key={device.id}
+                      device={device}
+                      theme={theme}
+                      canControl={canControl}
+                      onPress={() => setTelemetryDevice(device)}
+                      onToggleState={() => {
+                        if (canControl) {
+                          setHomeDeviceState(
+                            device.id,
+                            device.state === "on" ? "off" : "on",
+                          );
+                        }
+                      }}
+                    />
+                  ))}
+
+                  {activeRoomDevices.length === 0 && (
+                    <View
+                      style={[
+                        styles.emptyRoomCard,
+                        {
+                          backgroundColor: theme.card,
+                          borderColor: theme.borderLight,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="hardware-chip-outline"
+                        size={36}
+                        color={theme.muted}
+                      />
+                      <Text
+                        style={[styles.emptyRoomTitle, { color: theme.text }]}
+                      >
+                        Sin dispositivos en {selectedRoom}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.emptyRoomSubtitle,
+                          { color: theme.muted },
+                        ]}
+                      >
+                        Agrega un dispositivo Shelly a esta estancia para
+                        comenzar.
+                      </Text>
+                      {canManage && (
+                        <Pressable
+                          onPress={() => setAddModalVisible(true)}
+                          style={[
+                            styles.primaryAddBtn,
+                            { backgroundColor: theme.blue },
+                          ]}
+                        >
+                          <Ionicons name="add" size={18} color="#FFFFFF" />
+                          <Text style={styles.primaryAddBtnText}>
+                            Añadir dispositivo
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View
+                  style={[
+                    styles.emptyRoomCard,
+                    {
+                      backgroundColor: theme.card,
+                      borderColor: theme.borderLight,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="sparkles-outline"
+                    size={34}
+                    color={theme.blue}
+                  />
+                  <Text style={[styles.emptyRoomTitle, { color: theme.text }]}>
+                    Módulo de {roomFilter}
+                  </Text>
+                  <Text
+                    style={[styles.emptyRoomSubtitle, { color: theme.muted }]}
+                  >
+                    Gestiona automatizaciones y grupos para la estancia{" "}
+                    {selectedRoom}.
+                  </Text>
+                </View>
+              )}
+            </View>
+          ) : (
+            /* ============================================================ */
+            /* VISTA 2: LISTA DE ESTANCIAS - IMAGEN 5                      */
+            /* ============================================================ */
+            <View style={styles.estanciasContainer}>
+              {/* Encabezado: "Estancias" + Botones +, lápiz, i */}
+              <View
+                style={[
+                  styles.estanciasHeaderCard,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <View style={styles.estanciasHeaderTop}>
+                  <Text style={[styles.estanciasTitle, { color: theme.text }]}>
+                    Estancias
+                  </Text>
+
+                  <View style={styles.headerBtnGroup}>
+                    {canManage && (
+                      <Pressable
+                        onPress={() => setAddModalVisible(true)}
+                        style={[
+                          styles.actionSquareBtn,
+                          { backgroundColor: theme.blue },
+                        ]}
+                      >
+                        <Ionicons name="add" size={20} color="#FFFFFF" />
+                      </Pressable>
+                    )}
+
+                    <Pressable
+                      onPress={() => {
+                        Alert.alert(
+                          "Editar estancias",
+                          "Selecciona una estancia para editar su nombre y dispositivos.",
+                        );
+                      }}
+                      style={[
+                        styles.actionSquareBtn,
+                        { backgroundColor: theme.blue },
+                      ]}
+                    >
+                      <Ionicons name="pencil" size={17} color="#FFFFFF" />
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => {
+                        Alert.alert(
+                          "Estancias Shelly",
+                          "Las estancias te permiten agrupar dispositivos inteligentes por habitación y monitorear el consumo de energía en tiempo real.",
+                        );
+                      }}
+                      style={[
+                        styles.actionRoundBtn,
+                        { backgroundColor: theme.rowAlt },
+                      ]}
+                    >
+                      <Ionicons
+                        name="information"
+                        size={16}
+                        color={theme.text}
+                      />
+                    </Pressable>
+                  </View>
+                </View>
+
+                {/* Input de Búsqueda con icono de Lupa (Imagen 5) */}
+                <View
+                  style={[
+                    styles.searchInputWrapper,
+                    {
+                      backgroundColor: theme.dark ? "#0E1829" : theme.rowAlt,
+                      borderColor: theme.borderLight,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="search-outline"
+                    size={19}
+                    color={theme.muted}
+                    style={{ marginRight: 8 }}
+                  />
+                  <TextInput
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Buscar"
+                    placeholderTextColor={theme.muted}
+                    style={[styles.searchInput, { color: theme.text }]}
+                  />
+                  {searchQuery.length > 0 && (
+                    <Pressable onPress={() => setSearchQuery("")} hitSlop={6}>
+                      <Ionicons
+                        name="close-circle"
+                        size={17}
+                        color={theme.muted}
+                      />
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+
+              {/* Botón de gestión para Administrador */}
+              {canManage && (
+                <Pressable
+                  onPress={() => router.push("/(tabs)/access")}
+                  style={[
+                    styles.adminAccessBtn,
+                    {
+                      backgroundColor: theme.card,
+                      borderColor: theme.borderLight,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="people-outline"
+                    size={18}
+                    color={theme.blue}
+                  />
+                  <Text style={[styles.adminAccessText, { color: theme.blue }]}>
+                    Gestionar miembros e invitados
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={theme.blue}
+                  />
+                </Pressable>
+              )}
+
+              {/* Listado de Tarjetas de Estancias en Gradiente Azul (Imagen 5) */}
+              <View style={styles.roomsList}>
+                {filteredRooms.map((room) => (
+                  <RoomCard
+                    key={room.name}
+                    name={room.name}
+                    power={room.power}
+                    onPress={() => setSelectedRoom(room.name)}
+                  />
+                ))}
+
+                {filteredRooms.length === 0 && (
+                  <View
+                    style={[
+                      styles.emptyRoomCard,
+                      {
+                        backgroundColor: theme.card,
+                        borderColor: theme.borderLight,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name="search-outline"
+                      size={32}
+                      color={theme.muted}
+                    />
+                    <Text
+                      style={[styles.emptyRoomTitle, { color: theme.text }]}
+                    >
+                      No se encontraron estancias
+                    </Text>
+                    <Text
+                      style={[styles.emptyRoomSubtitle, { color: theme.muted }]}
+                    >
+                      Intenta con otro término de búsqueda.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
+
+      {/* ============================================================ */}
+      {/* MODAL: TELEMETRÍA DETALLADA DEL DISPOSITIVO SHELLY           */}
+      {/* ============================================================ */}
+      <Modal
+        visible={!!telemetryDevice}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTelemetryDevice(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.telemetryCard, { backgroundColor: theme.card }]}>
+            <View style={styles.telemetryHeader}>
+              <View style={styles.telemetryTitleGroup}>
+                <Text style={[styles.telemetryName, { color: theme.text }]}>
+                  {telemetryDevice?.name}
+                </Text>
+                <Text style={[styles.telemetryRoom, { color: theme.muted }]}>
+                  Estancia: {telemetryDevice?.room} · Shelly Plus 1PM
+                </Text>
+              </View>
+              <Pressable onPress={() => setTelemetryDevice(null)} hitSlop={8}>
+                <Ionicons
+                  name="close-circle-outline"
+                  size={26}
+                  color={theme.muted}
+                />
+              </Pressable>
+            </View>
+
+            {telemetryDevice && (
+              <View style={styles.telemetryGrid}>
+                <View
+                  style={[
+                    styles.telemetryCell,
+                    { backgroundColor: theme.rowAlt },
+                  ]}
+                >
+                  <Text style={[styles.telemetryLabel, { color: theme.muted }]}>
+                    Potencia
+                  </Text>
+                  <Text style={[styles.telemetryValue, { color: theme.blue }]}>
+                    {telemetryDevice.power} W
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.telemetryCell,
+                    { backgroundColor: theme.rowAlt },
+                  ]}
+                >
+                  <Text style={[styles.telemetryLabel, { color: theme.muted }]}>
+                    Energía Acumulada
+                  </Text>
+                  <Text style={[styles.telemetryValue, { color: theme.text }]}>
+                    {(telemetryDevice.energy / 1000).toFixed(2)} kWh
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.telemetryCell,
+                    { backgroundColor: theme.rowAlt },
+                  ]}
+                >
+                  <Text style={[styles.telemetryLabel, { color: theme.muted }]}>
+                    Voltaje
+                  </Text>
+                  <Text style={[styles.telemetryValue, { color: theme.text }]}>
+                    {telemetryDevice.voltage} V
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.telemetryCell,
+                    { backgroundColor: theme.rowAlt },
+                  ]}
+                >
+                  <Text style={[styles.telemetryLabel, { color: theme.muted }]}>
+                    Corriente
+                  </Text>
+                  <Text style={[styles.telemetryValue, { color: theme.text }]}>
+                    {telemetryDevice.current} A
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.telemetryCell,
+                    { backgroundColor: theme.rowAlt },
+                  ]}
+                >
+                  <Text style={[styles.telemetryLabel, { color: theme.muted }]}>
+                    Frecuencia
+                  </Text>
+                  <Text style={[styles.telemetryValue, { color: theme.text }]}>
+                    {telemetryDevice.frequency} Hz
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.telemetryCell,
+                    { backgroundColor: theme.rowAlt },
+                  ]}
+                >
+                  <Text style={[styles.telemetryLabel, { color: theme.muted }]}>
+                    Estado Red
+                  </Text>
+                  <Text
+                    style={[
+                      styles.telemetryValue,
+                      {
+                        color: telemetryDevice.online
+                          ? theme.success
+                          : theme.danger,
+                      },
+                    ]}
+                  >
+                    {telemetryDevice.online ? "Conectado" : "Fuera de línea"}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {telemetryDevice && canControl && (
+              <Pressable
+                onPress={() => {
+                  setHomeDeviceState(
+                    telemetryDevice.id,
+                    telemetryDevice.state === "on" ? "off" : "on",
+                  );
+                  setTelemetryDevice((curr) =>
+                    curr
+                      ? { ...curr, state: curr.state === "on" ? "off" : "on" }
+                      : null,
+                  );
+                }}
+                style={[
+                  styles.telemetryPowerBtn,
+                  {
+                    backgroundColor:
+                      telemetryDevice.state === "on"
+                        ? theme.danger
+                        : theme.blue,
+                  },
+                ]}
+              >
+                <Ionicons name="power" size={20} color="#FFFFFF" />
+                <Text style={styles.telemetryPowerBtnText}>
+                  {telemetryDevice.state === "on"
+                    ? "Apagar relé"
+                    : "Encender relé"}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ============================================================ */}
+      {/* MODAL: AÑADIR ESTANCIA O DISPOSITIVO                         */}
+      {/* ============================================================ */}
+      <Modal
+        visible={addModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAddModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.addModalCard, { backgroundColor: theme.card }]}>
+            <Text style={[styles.addModalTitle, { color: theme.text }]}>
+              {selectedRoom
+                ? `Nuevo dispositivo en ${selectedRoom}`
+                : "Nueva Estancia"}
+            </Text>
+
+            {selectedRoom ? (
+              <TextInput
+                value={newDeviceName}
+                onChangeText={setNewDeviceName}
+                placeholder="Ej. Shelly Luz Principal"
+                placeholderTextColor={theme.muted}
+                style={[
+                  styles.modalInput,
+                  {
+                    color: theme.text,
+                    borderColor: theme.borderLight,
+                    backgroundColor: theme.rowAlt,
+                  },
+                ]}
+              />
+            ) : (
+              <TextInput
+                value={newRoomName}
+                onChangeText={setNewRoomName}
+                placeholder="Ej. Sala de Estar"
+                placeholderTextColor={theme.muted}
+                style={[
+                  styles.modalInput,
+                  {
+                    color: theme.text,
+                    borderColor: theme.borderLight,
+                    backgroundColor: theme.rowAlt,
+                  },
+                ]}
+              />
+            )}
+
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => setAddModalVisible(false)}
+                style={[
+                  styles.modalCancelBtn,
+                  { borderColor: theme.borderLight },
+                ]}
+              >
+                <Text style={[styles.modalCancelText, { color: theme.muted }]}>
+                  Cancelar
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={
+                  selectedRoom ? handleCreateDeviceInRoom : handleCreateRoom
+                }
+                style={[
+                  styles.modalConfirmBtn,
+                  { backgroundColor: theme.blue },
+                ]}
+              >
+                <Text style={styles.modalConfirmText}>Crear</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const appFont = typography.fontFamily.emphasis;
-
-const styles = StyleSheet.create({  accessButton: {
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#D8E4F7",
-    flexDirection: "row",
-    gap: 9,
-    justifyContent: "center",
-    marginTop: 14,
-    minHeight: 48,
-    paddingHorizontal: 14,
-  },
-  accessButtonText: {
-    flex: 1,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  bulkActions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 16,
-  },
-  onButton: {
-    alignItems: "center",
-    backgroundColor: GREEN,
-    borderRadius: 12,
-    flex: 1,
-    flexDirection: "row",
-    gap: 7,
-    justifyContent: "center",
-    minHeight: 46,
-    paddingHorizontal: 12,
-  },
-  actionHint: {
-    fontFamily: appFont,
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 8,
-    textAlign: "center",
-  },
-
+const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  container: {
-    alignItems: "center",
-    paddingBottom: 120,
   },
   content: {
+    width: "100%",
     alignSelf: "center",
-    width: "100%",
   },
-  heroCard: {
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
-    width: "100%",
-  },
-  heroTitle: {
-    color: "#FFFFFF",
-    fontFamily: appFont,
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  heroAmount: {
-    color: "#FFFFFF",
-    fontFamily: appFont,
-    fontSize: 28,
-    fontWeight: "800",
-    letterSpacing: 0,
-    marginTop: 13,
-  },
-  heroAmountTiny: {
-    fontSize: 24,
-  },
-  heroText: {
-    color: "#FFFFFF",
-    fontFamily: appFont,
-    fontSize: 16,
-    fontWeight: "800",
-    marginTop: 20,
-  },
-  backRow: {
-    alignItems: "center",
-    alignSelf: "flex-start",
+  topTabsScroll: {
     flexDirection: "row",
-    gap: 4,
+    gap: 8,
+    marginBottom: 16,
+  },
+  subTabItem: {
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  subTabItemActive: {
+    backgroundColor: "rgba(11, 74, 150, 0.2)",
+    borderWidth: 1,
+  },
+  subTabText: {
+    fontSize: 14,
+    fontWeight: "700",
+    fontFamily: typography.fontFamily.emphasis,
+  },
+  subTabTextActive: {
+    color: "#3B82F6",
+  },
+  estanciasContainer: {
+    width: "100%",
+  },
+  estanciasHeaderCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
     marginBottom: 14,
   },
-  backText: {
-    color: BLUE,
-    fontFamily: appFont,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  addRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 18,
-  },
-  addInput: {
-    backgroundColor: "#FBFBFD",
-    borderColor: "#DDE2F5",
-    borderRadius: 12,
-    borderWidth: 1,
-    color: TEXT,
-    flex: 1,
-    fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "700",
-    height: 48,
-    paddingHorizontal: 14,
-  },
-  addButton: {
-    alignItems: "center",
-    backgroundColor: BLUE,
-    borderRadius: 12,
-    height: 48,
-    justifyContent: "center",
-    width: 48,
-  },
-  sectionHeader: {
-    alignItems: "center",
-    alignSelf: "stretch",
+  estanciasHeaderTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 23,
+    alignItems: "center",
+    marginBottom: 14,
   },
-  sectionTitle: {
-    color: TEXT,
-    flex: 1,
-    fontFamily: appFont,
-    fontSize: 17,
+  estanciasTitle: {
+    fontSize: 24,
     fontWeight: "800",
+    fontFamily: typography.fontFamily.emphasis,
   },
-  sectionMeta: {
-    color: MUTED,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  list: {
-    alignSelf: "stretch",
-    gap: 12,
-    marginTop: 13,
-  },
-  homeCard: {
-    alignItems: "center",
-    backgroundColor: LILAC,
-    borderRadius: 12,
+  headerBtnGroup: {
     flexDirection: "row",
-    minHeight: 74,
-    paddingHorizontal: 14,
-  },
-  homeContent: {
     alignItems: "center",
-    flex: 1,
-    flexDirection: "row",
-    minWidth: 0,
-    paddingVertical: 8,
+    gap: 8,
   },
-
-  deviceContent: {
-    alignItems: "center",
-    flex: 1,
-    flexDirection: "row",
-    minWidth: 0,
-  },
-
-  deviceCard: {
-    alignItems: "center",
-    backgroundColor: "#FBFBFD",
-    borderRadius: 12,
-    flexDirection: "row",
-    minHeight: 76,
-    paddingHorizontal: 14,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  selectedCard: {
-    borderColor: BLUE,
-    borderWidth: 1.5,
-  },
-  itemIcon: {
-    alignItems: "center",
-    backgroundColor: "#EEF4FF",
-    borderRadius: 24,
-    height: 48,
+  actionSquareBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 9,
     justifyContent: "center",
-    width: 48,
-  },
-  itemIconOff: {
-    backgroundColor: "#ECEFF5",
-  },
-  itemCopy: {
-    flex: 1,
-    marginLeft: 14,
-    minWidth: 0,
-  },
-  itemTitle: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  itemSubtitle: {
-    color: MUTED,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  favoriteButton: {
     alignItems: "center",
-    height: 42,
+  },
+  actionRoundBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
-    width: 42,
-  },
-  homeAlertRow: {
     alignItems: "center",
+  },
+  searchInputWrapper: {
     flexDirection: "row",
-    gap: 4,
-    marginTop: 5,
-  },
-
-  homeAlertText: {
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-
-  deviceTitleRow: {
     alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-  },
-
-  deviceAlertText: {
-    fontFamily: appFont,
-    fontSize: 11,
-    fontWeight: "800",
-    marginTop: 3,
-  },
-
-  emptyCard: {
-    alignItems: "center",
-    backgroundColor: LILAC,
     borderRadius: 12,
-    flexDirection: "row",
-    gap: 10,
-    minHeight: 66,
-    paddingHorizontal: 14,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    height: 44,
   },
-  emptyText: {
-    color: TEXT,
+  searchInput: {
     flex: 1,
-    fontFamily: appFont,
     fontSize: 14,
-    fontWeight: "800",
+    fontFamily: typography.fontFamily.regular,
   },
-  detailAlertBox: {
+  adminAccessBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 14,
-    padding: 12,
+    marginBottom: 14,
   },
-
-  detailAlertCopy: {
-    flex: 1,
-  },
-
-  detailAlertTitleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-  },
-
-  detailAlertTitle: {
-    fontSize: 13,
-    fontWeight: "900",
-  },
-
-  detailAlertDescription: {
-    fontSize: 11,
-    fontWeight: "600",
-    lineHeight: 16,
-    marginTop: 4,
-  },
-
-  resolveDetailButton: {
-    alignItems: "center",
-    alignSelf: "center",
-    borderRadius: 10,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
-  },
-
-  resolveDetailButtonText: {
-    fontSize: 11,
-    fontWeight: "900",
-  },
-
-  detailHero: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 16,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.035,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  detailHeroTop: {
-    alignItems: "center",
-    flexDirection: "row",
-  },
-  detailHomeIcon: {
-    alignItems: "center",
-    borderRadius: 15,
-    height: 52,
-    justifyContent: "center",
-    width: 52,
-  },
-  detailHeroCopy: {
-    flex: 1,
-    marginHorizontal: 12,
-    minWidth: 0,
-  },
-  detailHeroTitle: {
-    fontFamily: appFont,
-    fontSize: 21,
-    fontWeight: "900",
-  },
-  detailHeroSubtitle: {
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 3,
-  },
-  statusBadge: {
-    alignItems: "center",
-    borderRadius: 11,
-    flexDirection: "row",
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-  },
-  statusDot: {
-    borderRadius: 4,
-    height: 7,
-    width: 7,
-  },
-  statusBadgeText: {
-    fontFamily: appFont,
-    fontSize: 11,
-    fontWeight: "900",
-  },
-  homeMetrics: {
-    borderTopWidth: 1,
-    flexDirection: "row",
-    marginTop: 16,
-    paddingTop: 14,
-  },
-  homeMetric: {
-    flex: 1,
-  },
-  homeMetricValue: {
-    fontFamily: appFont,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  homeMetricLabel: {
-    fontFamily: appFont,
-    fontSize: 10,
+  adminAccessText: {
+    fontSize: 14,
     fontWeight: "700",
-    marginTop: 3,
+    fontFamily: typography.fontFamily.emphasis,
   },
-
-  detailCard: {
-    alignSelf: "stretch",
-    borderRadius: 20,
-    marginTop: 16,
-    padding: 16,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.035,
-    shadowRadius: 10,
-    elevation: 2,
+  roomsList: {
+    width: "100%",
   },
-  detailTop: {
-    alignItems: "center",
+  roomDetailContainer: {
+    width: "100%",
+  },
+  roomDetailHeader: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 12,
   },
-  detailTitle: {
-    color: TEXT,
-    flex: 1,
-    fontFamily: appFont,
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  statusPill: {
-    borderRadius: 8,
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "800",
-    overflow: "hidden",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  statusOn: {
-    backgroundColor: "#D7FFE1",
-    color: GREEN,
-  },
-  statusOff: {
-    backgroundColor: "#FFE7E2",
-    color: RED,
-  },
-  metricRow: {
+  roomDetailHeaderLeft: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 14,
-  },
-  metric: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
+    alignItems: "center",
+    gap: 6,
     flex: 1,
-    minHeight: 64,
-    minWidth: 82,
-    padding: 8,
   },
-  metricValue: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 16,
+  roomBackBtn: {
+    padding: 2,
+  },
+  roomDetailTitle: {
+    fontSize: 20,
     fontWeight: "800",
+    fontFamily: typography.fontFamily.emphasis,
   },
-  metricLabel: {
-    color: MUTED,
-    fontFamily: appFont,
-    fontSize: 11,
-    fontWeight: "700",
-    marginTop: 5,
+  roomDetailHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
-  savingsInline: {
-    color: TEXT,
-    fontFamily: appFont,
+  roomFiltersRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+  },
+  roomFilterPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  roomFilterPillText: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "700",
+    fontFamily: typography.fontFamily.emphasis,
+  },
+  devicesSection: {
+    width: "100%",
+  },
+  emptyRoomCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 12,
   },
-  primaryButton: {
-    alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: RED,
-    borderRadius: 12,
+  emptyRoomTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: 10,
+    fontFamily: typography.fontFamily.emphasis,
+  },
+  emptyRoomSubtitle: {
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 4,
+    fontFamily: typography.fontFamily.regular,
+  },
+  primaryAddBtn: {
     flexDirection: "row",
-    gap: 8,
-    height: 46,
-    justifyContent: "center",
-    marginTop: 16,
-    width: 178,
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 14,
   },
-  powerOnButton: {
-    backgroundColor: GREEN,
-  },
-  primaryButtonPressed: {
-    opacity: 0.8,
-  },
-  primaryButtonText: {
+  primaryAddBtnText: {
     color: "#FFFFFF",
-    fontFamily: appFont,
+    fontSize: 14,
+    fontWeight: "700",
+    fontFamily: typography.fontFamily.emphasis,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  telemetryCard: {
+    width: "100%",
+    maxWidth: 420,
+    borderRadius: 20,
+    padding: 20,
+    elevation: 8,
+  },
+  telemetryHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  telemetryTitleGroup: {
+    flex: 1,
+  },
+  telemetryName: {
+    fontSize: 20,
+    fontWeight: "800",
+    fontFamily: typography.fontFamily.emphasis,
+  },
+  telemetryRoom: {
+    fontSize: 13,
+    marginTop: 2,
+    fontFamily: typography.fontFamily.regular,
+  },
+  telemetryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 18,
+  },
+  telemetryCell: {
+    width: "48%",
+    borderRadius: 12,
+    padding: 12,
+  },
+  telemetryLabel: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.regular,
+  },
+  telemetryValue: {
     fontSize: 17,
     fontWeight: "800",
+    marginTop: 4,
+    fontFamily: typography.fontFamily.emphasis,
   },
-  offButton: {
-    alignItems: "center",
-    backgroundColor: BLUE,
-    borderRadius: 15,
-    height: 50,
+  telemetryPowerBtn: {
+    flexDirection: "row",
     justifyContent: "center",
-    marginTop: 18,
-    paddingHorizontal: 20,
+    alignItems: "center",
+    gap: 8,
+    height: 48,
+    borderRadius: 12,
   },
-  offButtonPressed: {
-    backgroundColor: "#004FA5",
-  },
-  offButtonText: {
+  telemetryPowerBtnText: {
     color: "#FFFFFF",
-    fontFamily: appFont,
+    fontSize: 15,
+    fontWeight: "700",
+    fontFamily: typography.fontFamily.emphasis,
+  },
+  addModalCard: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 18,
+    padding: 20,
+  },
+  addModalTitle: {
     fontSize: 18,
     fontWeight: "800",
+    marginBottom: 14,
+    fontFamily: typography.fontFamily.emphasis,
   },
-
-  pressed: {
-    opacity: 0.7,
+  modalInput: {
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    marginBottom: 18,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+  modalCancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  modalCancelText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  modalConfirmBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  modalConfirmText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

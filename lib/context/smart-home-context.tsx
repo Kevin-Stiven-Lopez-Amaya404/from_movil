@@ -1,10 +1,12 @@
 import {
-  createContext,
-  PropsWithChildren,
-  useContext,
-  useMemo,
-  useState,
+    createContext,
+    PropsWithChildren,
+    useContext,
+    useMemo,
+    useState,
 } from "react";
+
+import { smartHomeService } from "@/lib/services/smart-home-service";
 
 // Tipos base usados por pantallas y reportes.
 export type DeviceCategory =
@@ -226,6 +228,22 @@ const initialDevices: SmartDevice[] = [
     state: "on",
     yesterday: 50,
   },
+  {
+    id: "stiven-relay",
+    homeId: "casa",
+    name: "Stiven",
+    category: "Electrodomesticos",
+    room: "Stiven",
+    icon: "hardware-chip-outline",
+    power: 0,
+    energy: 0,
+    voltage: 120,
+    current: 0,
+    frequency: 60,
+    online: false,
+    state: "off",
+    yesterday: 0,
+  },
 ];
 
 const reportData: Record<ReportRange, ReportPoint[]> = {
@@ -322,7 +340,9 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
   const [activeHomeId, setActiveHomeId] = useState(initialHomes[0].id);
   const [devices, setDevices] = useState(initialDevices);
   // Metas demo locales por hogar. Podrán sustituirse por datos del backend cuando exista contrato.
-  const [homeConsumptionGoals, setHomeConsumptionGoals] = useState<Record<string, number>>({
+  const [homeConsumptionGoals, setHomeConsumptionGoals] = useState<
+    Record<string, number>
+  >({
     casa: 5000,
     oficina: 3000,
   });
@@ -350,10 +370,13 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     "invitado@smarthome.com": ["casa"],
   });
 
-  const accessibleHomeIds = sessionRole === "admin"
-    ? homes.map((home) => home.id)
-    : homeAccess[sessionEmail] ?? [];
-  const accessibleHomes = homes.filter((home) => accessibleHomeIds.includes(home.id));
+  const accessibleHomeIds =
+    sessionRole === "admin"
+      ? homes.map((home) => home.id)
+      : (homeAccess[sessionEmail] ?? []);
+  const accessibleHomes = homes.filter((home) =>
+    accessibleHomeIds.includes(home.id),
+  );
 
   // `useMemo` evita reconstruir el objeto de contexto si sus dependencias no cambian.
   const value = useMemo<SmartHomeState>(
@@ -405,6 +428,15 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
             yesterday: 0,
           },
         ]);
+
+        smartHomeService
+          .createDevice({
+            homeId,
+            name: cleanName,
+            category: "Electrodomesticos",
+            room: "General",
+          })
+          .catch(() => null);
       },
       // Crea un hogar y lo marca como activo para que el usuario pueda administrarlo.
       addHome: (name) => {
@@ -423,6 +455,13 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         ]);
         setHomeConsumptionGoals((items) => ({ ...items, [id]: 5000 }));
         setActiveHomeId(id);
+
+        smartHomeService
+          .createHome({
+            name: cleanName,
+            location: "Nuevo hogar",
+          })
+          .catch(() => null);
       },
       setActiveHomeId,
       setAccountActive,
@@ -438,31 +477,46 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setOfflineMode,
       // Cambia el estado online/offline de un dispositivo.
       toggleDevice: (id) => {
-        setDevices((items) =>
-          items.map((item) =>
+        const timestamp = getTimeStamp();
+        setDevices((items) => {
+          const next: SmartDevice[] = items.map((item) =>
             item.id === id
               ? {
                   ...item,
-                  state: item.state === "on" ? "off" : "on",
-                  lastStateChange: getTimeStamp(),
+                  state: (item.state === "on" ? "off" : "on") as "on" | "off",
+                  lastStateChange: timestamp,
                 }
               : item,
-          ),
-        );
+          );
+          const updatedItem = next.find((item) => item.id === id);
+          if (updatedItem) {
+            smartHomeService
+              .updateDeviceState(id, updatedItem.state)
+              .catch(() => null);
+          }
+          return next;
+        });
       },
       // Marca o desmarca un hogar como favorito para el dashboard.
       toggleHomeFavorite: (homeId) => {
-        setHomes((items) =>
-          items.map((item) =>
+        setHomes((items) => {
+          const target = items.find((item) => item.id === homeId);
+          if (target) {
+            smartHomeService
+              .toggleHomeFavorite(homeId, !target.favorite)
+              .catch(() => null);
+          }
+          return items.map((item) =>
             item.id === homeId ? { ...item, favorite: !item.favorite } : item,
-          ),
-        );
+          );
+        });
       },
       // Fuerza un estado especifico para un dispositivo.
       setDeviceOnline: (id, online) => {
         setDevices((items) =>
           items.map((item) => (item.id === id ? { ...item, online } : item)),
         );
+        smartHomeService.updateDeviceStatus(id, { online }).catch(() => null);
 
         // Un cambio manual de estado inicia un nuevo ciclo de evaluación
         // para ese dispositivo.
@@ -473,16 +527,24 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setHomeDeviceState: (id, state) => {
         setDevices((items) =>
           items.map((item) =>
-            item.id === id ? { ...item, state, lastStateChange: getTimeStamp() } : item,
+            item.id === id
+              ? { ...item, state, lastStateChange: getTimeStamp() }
+              : item,
           ),
         );
+        smartHomeService.updateDeviceState(id, state).catch(() => null);
       },
       setAllHomeDevicesState: (homeId, state) => {
         setDevices((items) =>
           items.map((item) =>
-            item.homeId === homeId ? { ...item, state, lastStateChange: getTimeStamp() } : item,
+            item.homeId === homeId
+              ? { ...item, state, lastStateChange: getTimeStamp() }
+              : item,
           ),
         );
+        smartHomeService
+          .setAllHomeDevicesState(homeId, state)
+          .catch(() => null);
       },
       assignHomeAccess: (email, homeId, assigned) => {
         const cleanEmail = email.trim().toLowerCase();

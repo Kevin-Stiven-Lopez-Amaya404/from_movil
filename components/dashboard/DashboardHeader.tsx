@@ -7,20 +7,14 @@ import { typography } from "@/lib/theme/typography";
 type Props = {
   onNotificationsPress: () => void;
   onProfilePress: () => void;
-  onHomePress?: () => void;
   userName?: string;
-  activeHomeName?: string;
-  activeHomeLocation?: string;
   hasUnreadNotifications?: boolean;
 };
 
 export function DashboardHeader({
   onNotificationsPress,
   onProfilePress,
-  onHomePress,
   userName = "Usuario",
-  activeHomeName = "Casa",
-  activeHomeLocation = "Hogar principal",
   hasUnreadNotifications = false,
 }: Props) {
   const theme = useAppTheme();
@@ -131,60 +125,6 @@ export function DashboardHeader({
           Aquí tienes el resumen de tu hogar
         </Text>
       </View>
-
-      {/* Hogar activo */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Abrir ${activeHomeName}`}
-        onPress={onHomePress}
-        style={({ pressed }) => [
-          styles.homeSelector,
-          {
-            backgroundColor: theme.card,
-            borderColor: theme.borderLight,
-          },
-          pressed && styles.pressed,
-        ]}
-      >
-        <View
-          style={[
-            styles.homeIcon,
-            {
-              backgroundColor: theme.rowAlt,
-            },
-          ]}
-        >
-          <Ionicons name="home-outline" size={22} color={theme.blue} />
-        </View>
-
-        <View style={styles.homeCopy}>
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.homeName,
-              {
-                color: theme.text,
-              },
-            ]}
-          >
-            {activeHomeName}
-          </Text>
-
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.homeLocation,
-              {
-                color: theme.muted,
-              },
-            ]}
-          >
-            {activeHomeLocation}
-          </Text>
-        </View>
-
-        <Ionicons name="chevron-forward" size={20} color={theme.muted} />
-      </Pressable>
     </View>
   );
 }
@@ -265,40 +205,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: typography.weight.medium,
     marginTop: 4,
-  },
-
-  homeSelector: {
-    alignItems: "center",
-    borderRadius: 18,
-    borderWidth: 1,
-    flexDirection: "row",
-    marginTop: 18,
-    padding: 12,
-  },
-
-  homeIcon: {
-    alignItems: "center",
-    borderRadius: 14,
-    height: 46,
-    justifyContent: "center",
-    width: 46,
-  },
-
-  homeCopy: {
-    flex: 1,
-    marginHorizontal: 12,
-    minWidth: 0,
-  },
-
-  homeName: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
-    fontWeight: typography.weight.bold,
-  },
-
-  homeLocation: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
-    marginTop: 3,
   },
 });

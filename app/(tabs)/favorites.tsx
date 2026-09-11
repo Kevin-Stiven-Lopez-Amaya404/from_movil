@@ -12,9 +12,10 @@ export default function FavoritesScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
 
-  const { homes, setActiveHomeId, toggleHomeFavorite } = useSmartHome();
+  const { accessibleHomes, setActiveHomeId, toggleHomeFavorite } =
+    useSmartHome();
 
-  const favoriteHomes = homes.filter((home) => home.favorite);
+  const favoriteHomes = accessibleHomes.filter((home) => home.favorite);
 
   function openHome(homeId: string) {
     setActiveHomeId(homeId);
