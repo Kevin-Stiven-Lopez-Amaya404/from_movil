@@ -14,6 +14,7 @@ type ThemeLike = ReturnType<typeof useAppTheme>;
 
 type QuickCardProps = {
   description: string;
+  featured?: boolean;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   theme: ThemeLike;
@@ -22,6 +23,7 @@ type QuickCardProps = {
 
 function QuickCard({
   description,
+  featured = false,
   icon,
   onPress,
   theme,
@@ -34,17 +36,45 @@ function QuickCard({
       onPress={onPress}
       style={({ pressed }) => [
         styles.quickCard,
+        featured && styles.quickCardFeatured,
         { backgroundColor: theme.card, borderColor: theme.borderLight },
         pressed && styles.pressed,
       ]}
     >
-      <View style={[styles.quickIcon, { backgroundColor: theme.blue1 }]}>
-        <Ionicons name={icon} size={24} color={theme.blue} />
-      </View>
-      <Text style={[styles.quickTitle, { color: theme.text }]}>{title}</Text>
-      <Text style={[styles.quickDescription, { color: theme.muted }]}>
-        {description}
-      </Text>
+      {featured ? (
+        <>
+          <View style={styles.featuredCopy}>
+            <View style={styles.featuredTitleRow}>
+              <View
+                style={[styles.quickIcon, { backgroundColor: theme.blue1 }]}
+              >
+                <Ionicons name={icon} size={25} color={theme.blue} />
+              </View>
+              <Text style={[styles.featuredTitle, { color: theme.text }]}>
+                {title}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.featuredArrow}>
+            <Ionicons name="chevron-forward" size={18} color={theme.muted} />
+          </View>
+        </>
+      ) : (
+        <>
+          <View style={styles.quickTopRow}>
+            <View style={[styles.quickIcon, { backgroundColor: theme.blue1 }]}>
+              <Ionicons name={icon} size={24} color={theme.blue} />
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={theme.muted} />
+          </View>
+          <Text style={[styles.quickTitle, { color: theme.text }]}>
+            {title}
+          </Text>
+          <Text style={[styles.quickDescription, { color: theme.muted }]}>
+            {description}
+          </Text>
+        </>
+      )}
     </Pressable>
   );
 }
@@ -77,14 +107,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  const {
-    devices,
-    homes,
-    lastSync,
-    refreshSync,
-    resolvedSmartAlerts,
-    sessionName,
-  } = useSmartHome();
+  const { devices, homes, resolvedSmartAlerts, sessionName } = useSmartHome();
 
   const activeDeviceCount = devices.filter(
     (device) => device.online && device.state === "on",
@@ -96,7 +119,6 @@ export default function DashboardScreen() {
       !resolvedSmartAlerts.includes(device.id),
   ).length;
   const favoriteHomes = homes.filter((home) => home.favorite).length;
-  const initial = sessionName.trim().charAt(0).toUpperCase() || "U";
 
   return (
     <SafeAreaView
@@ -117,21 +139,20 @@ export default function DashboardScreen() {
           <View
             style={[
               styles.hero,
-              { backgroundColor: theme.card, borderColor: theme.borderLight },
+              {
+                backgroundColor: theme.card,
+                borderColor: theme.borderLight,
+              },
             ]}
           >
             <View style={styles.heroHeader}>
-              <View>
+              <View style={styles.brandBlock}>
                 <Text style={[styles.overline, { color: theme.blue }]}>
                   SMART HOME
                 </Text>
-                <Text style={[styles.greeting, { color: theme.text }]}>
-                  Hola, {sessionName}
-                </Text>
-                <Text style={[styles.subtitle, { color: theme.muted }]}>
-                  Perfil, hogares, mensajes y soporte.
-                </Text>
+                <View style={styles.brandLine} />
               </View>
+
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Abrir configuración"
@@ -139,7 +160,7 @@ export default function DashboardScreen() {
                 style={({ pressed }) => [
                   styles.settingsButton,
                   {
-                    backgroundColor: theme.rowAlt,
+                    backgroundColor: theme.blue1,
                     borderColor: theme.borderLight,
                   },
                   pressed && styles.pressed,
@@ -147,60 +168,64 @@ export default function DashboardScreen() {
               >
                 <Ionicons
                   name="settings-outline"
-                  size={21}
-                  color={theme.text}
+                  size={23}
+                  color={theme.blue}
                 />
               </Pressable>
             </View>
 
-            <View style={styles.identityRow}>
-              <View
-                style={[
-                  styles.avatar,
-                  {
-                    backgroundColor: theme.rowAlt,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <Text style={[styles.avatarText, { color: theme.blue }]}>
-                  {initial}
-                </Text>
-              </View>
-              <View style={styles.identityCopy}>
-                <Text style={[styles.identityName, { color: theme.text }]}>
-                  {sessionName}
-                </Text>
-                <Text style={[styles.identityRole, { color: theme.muted }]}>
-                  Cuenta y hogares
-                </Text>
-                <View style={styles.statusRow}>
-                  <View
-                    style={[
-                      styles.statusDot,
-                      { backgroundColor: theme.success },
-                    ]}
-                  />
-                  <Text style={[styles.statusText, { color: theme.muted }]}>
-                    {activeDeviceCount} dispositivos activos
-                  </Text>
-                </View>
-              </View>
+            <View style={styles.heroTitleBlock}>
+              <Text style={[styles.greeting, { color: "#0F172A" }]}>
+                Hola, {sessionName}
+              </Text>
+              <Text style={[styles.subtitle, { color: "#4B5A67" }]}>
+                Tu hogar, más inteligente.
+              </Text>
             </View>
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Editar información de perfil"
-              onPress={() => router.push("/(tabs)/profile")}
-              style={({ pressed }) => [
-                styles.editButton,
-                { backgroundColor: theme.blue },
-                pressed && styles.pressed,
-              ]}
-            >
-              <Ionicons name="create-outline" size={17} color="#FFFFFF" />
-              <Text style={styles.editText}>Editar información de perfil</Text>
-            </Pressable>
+            <View style={styles.summaryRow}>
+              <View
+                style={[styles.summaryCard, { backgroundColor: theme.blue1 }]}
+              >
+                <View
+                  style={[
+                    styles.summaryIconWrap,
+                    { backgroundColor: theme.card },
+                  ]}
+                >
+                  <Ionicons name="watch-outline" size={22} color={theme.blue} />
+                </View>
+                <Text style={[styles.summaryValue, { color: "#0F172A" }]}>
+                  {activeDeviceCount}
+                </Text>
+                <Text style={[styles.summaryLabel, { color: "#4B5A67" }]}>
+                  dispositivos activos
+                </Text>
+              </View>
+
+              <View
+                style={[styles.summaryCard, { backgroundColor: theme.blue1 }]}
+              >
+                <View
+                  style={[
+                    styles.summaryIconWrap,
+                    { backgroundColor: theme.card },
+                  ]}
+                >
+                  <Ionicons
+                    name="shield-checkmark-outline"
+                    size={22}
+                    color={theme.blue}
+                  />
+                </View>
+                <Text style={[styles.summaryValue, { color: "#0F172A" }]}>
+                  Hogar seguro
+                </Text>
+                <Text style={[styles.summaryLabel, { color: "#4B5A67" }]}>
+                  Sin alertas pendientes
+                </Text>
+              </View>
+            </View>
           </View>
 
           <View style={styles.statsRow}>
@@ -265,16 +290,10 @@ export default function DashboardScreen() {
             <QuickCard
               icon="star-outline"
               title="Favoritos"
-              description={`${favoriteHomes} guardados`}
+              description={`${favoriteHomes} ${favoriteHomes === 1 ? "guardado" : "guardados"}`}
               onPress={() => router.push("/(tabs)/favorites")}
               theme={theme}
-            />
-            <QuickCard
-              icon="sync-outline"
-              title="Sincronizar"
-              description={`Última: ${lastSync}`}
-              onPress={refreshSync}
-              theme={theme}
+              featured
             />
           </View>
         </View>
@@ -287,77 +306,137 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { alignItems: "center" },
   content: { alignSelf: "center", width: "100%" },
-  hero: { borderRadius: 20, borderWidth: 1, marginBottom: 12, padding: 14 },
+  hero: {
+    borderRadius: 28,
+    borderWidth: 1,
+    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 14,
+  },
   heroHeader: {
-    alignItems: "flex-start",
+    alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
   },
+  brandBlock: {
+    alignItems: "flex-start",
+    flex: 1,
+  },
   overline: {
-    fontFamily: appFont,
-    fontSize: 10,
+    fontFamily: typography.fontFamily.display,
+    fontSize: 14,
     fontWeight: "900",
     letterSpacing: 1.4,
   },
+  brandLine: {
+    backgroundColor: "#0047AB",
+    borderRadius: 999,
+    height: 3,
+    marginTop: 7,
+    width: 96,
+  },
+  heroTitleBlock: {
+    marginTop: 14,
+  },
   greeting: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: "900",
-    marginTop: 4,
+    lineHeight: 36,
   },
   subtitle: {
     fontFamily: appFont,
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: "600",
-    marginTop: 3,
+    marginTop: 5,
   },
   settingsButton: {
     alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
-  },
-  identityRow: { alignItems: "center", flexDirection: "row", marginTop: 18 },
-  avatar: {
-    alignItems: "center",
-    borderRadius: 27,
+    borderRadius: 18,
     borderWidth: 1,
     height: 54,
     justifyContent: "center",
     width: 54,
   },
+  identityRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    marginTop: 18,
+    marginBottom: 10,
+  },
+  avatar: {
+    alignItems: "center",
+    borderRadius: 32,
+    borderWidth: 1,
+    height: 64,
+    justifyContent: "center",
+    width: 64,
+  },
   avatarText: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: "900",
   },
-  identityCopy: { flex: 1, marginLeft: 11 },
-  identityName: { fontFamily: appFont, fontSize: 17, fontWeight: "900" },
+  identityCopy: { flex: 1, marginLeft: 12 },
+  identityName: { fontFamily: appFont, fontSize: 18, fontWeight: "900" },
   identityRole: {
     fontFamily: appFont,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "600",
     marginTop: 2,
   },
-  statusRow: { alignItems: "center", flexDirection: "row", marginTop: 5 },
-  statusDot: { borderRadius: 5, height: 8, marginRight: 5, width: 8 },
-  statusText: { fontFamily: appFont, fontSize: 10, fontWeight: "700" },
+  statusRow: { alignItems: "center", flexDirection: "row", marginTop: 7 },
+  statusDot: { borderRadius: 5, height: 9, marginRight: 6, width: 9 },
+  statusText: { fontFamily: appFont, fontSize: 11, fontWeight: "700" },
+  summaryRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+    marginBottom: 2,
+  },
+  summaryCard: {
+    borderRadius: 18,
+    flex: 1,
+    minHeight: 104,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+  },
+  summaryIconWrap: {
+    alignItems: "center",
+    borderRadius: 12,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+  },
+  summaryValue: {
+    fontFamily: typography.fontFamily.display,
+    fontSize: 18,
+    fontWeight: "900",
+    marginTop: 10,
+  },
+  summaryLabel: {
+    fontFamily: appFont,
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 4,
+  },
   editButton: {
     alignItems: "center",
-    borderRadius: 11,
+    borderRadius: 18,
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 17,
-    minHeight: 41,
+    minHeight: 60,
+    paddingHorizontal: 18,
   },
   editText: {
     color: "#FFFFFF",
+    flex: 1,
     fontFamily: appFont,
-    fontSize: 12,
+    fontSize: 19,
     fontWeight: "900",
-    marginLeft: 6,
+    marginLeft: 10,
+    textAlign: "center",
   },
   statsRow: { flexDirection: "row", gap: 8, marginBottom: 13 },
   statCard: {
@@ -404,8 +483,46 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexBasis: "48%",
     flexGrow: 1,
-    minHeight: 124,
+    minHeight: 112,
     padding: 12,
+  },
+  quickCardFeatured: {
+    flexBasis: "100%",
+    flexDirection: "row",
+    minHeight: 76,
+    overflow: "hidden",
+    padding: 10,
+  },
+  featuredCopy: {
+    flex: 1,
+    justifyContent: "center",
+    minWidth: 0,
+    zIndex: 2,
+  },
+  featuredTitleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 9,
+  },
+  featuredTitle: {
+    fontFamily: typography.fontFamily.display,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  featuredArrow: {
+    alignItems: "center",
+    height: 28,
+    justifyContent: "center",
+    position: "absolute",
+    right: 10,
+    top: 10,
+    width: 22,
+    zIndex: 3,
+  },
+  quickTopRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   quickIcon: {
     alignItems: "center",

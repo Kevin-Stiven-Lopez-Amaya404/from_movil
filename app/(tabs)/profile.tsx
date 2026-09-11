@@ -186,12 +186,6 @@ export default function ProfileScreen() {
               onPress={() => router.push("/(tabs)/settings")}
               theme={theme}
             />
-            <Row
-              icon="home-outline"
-              title="Mis hogares"
-              onPress={() => router.push("/(tabs)/homes")}
-              theme={theme}
-            />
           </Section>
 
           <Section icon="lock-closed-outline" title="Seguridad" theme={theme}>
