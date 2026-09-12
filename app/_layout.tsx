@@ -85,6 +85,12 @@ export default function RootLayout() {
           {splashDone && (
             <Stack>
               <Stack.Screen
+                name="index"
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
                 name="welcome"
                 options={{
                   headerShown: false,

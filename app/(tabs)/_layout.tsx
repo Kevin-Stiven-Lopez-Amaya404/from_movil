@@ -29,6 +29,9 @@ export default function TabLayout() {
       <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
       <Tabs.Screen name="personal-info" options={{ href: null }} />
       <Tabs.Screen name="account-security" options={{ href: null }} />
+      <Tabs.Screen name="login-locations" options={{ href: null }} />
+      <Tabs.Screen name="login-activity" options={{ href: null }} />
+      <Tabs.Screen name="close-sessions" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="language" options={{ href: null }} />
       <Tabs.Screen name="change-password" options={{ href: null }} />

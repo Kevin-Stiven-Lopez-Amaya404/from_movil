@@ -55,7 +55,7 @@ export default function NotificationsScreen() {
 
   const toneColor: Record<string, string> = {
     info: theme.blue,
-    warning: theme.warning,
+    warning: theme.danger,
     danger: theme.danger,
     success: theme.success,
   };
@@ -126,7 +126,7 @@ export default function NotificationsScreen() {
                   ]}
                 >
                   <Ionicons
-                    name={item.icon}
+                    name={item.icon as keyof typeof Ionicons.glyphMap}
                     size={18}
                     color={toneColor[item.tone]}
                   />

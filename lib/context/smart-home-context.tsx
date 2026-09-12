@@ -96,6 +96,7 @@ type SmartHomeState = {
   offlineMode: boolean;
   lastSync: string;
   deactivateAccount: () => void;
+  closeActiveDevices: (deviceIds: string[]) => void;
   addDeviceToHome: (homeId: string, name: string) => void;
   addHome: (name: string) => void;
   setActiveHomeId: (homeId: string) => void;
@@ -403,6 +404,11 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       deactivateAccount: () => {
         setAccountActive(false);
         setOfflineMode(false);
+      },
+      closeActiveDevices: (deviceIds) => {
+        setActiveDevices((items) =>
+          items.filter((item) => !deviceIds.includes(item.id)),
+        );
       },
       // Crea un dispositivo nuevo dentro de un hogar especifico.
       addDeviceToHome: (homeId, name) => {
