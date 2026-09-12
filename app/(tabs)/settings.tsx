@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ThemeModeSelector } from "@/components/settings/ThemeModeSelector";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
@@ -83,21 +82,11 @@ export default function SettingsScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const { t } = useTranslation();
-  const { colorMode, deactivateAccount, setColorMode, setLanguage } =
-    useSmartHome();
+  const { deactivateAccount } = useSmartHome();
 
   function showPending(title: string) {
     Alert.alert(title, t("common.readyBackend"), [
       { text: t("action.cancel") },
-    ]);
-  }
-
-  function chooseLanguage() {
-    Alert.alert(t("profile.language"), t("profile.languageDescription"), [
-      { text: "Español", onPress: () => setLanguage("es") },
-      { text: "English", onPress: () => setLanguage("en") },
-      { text: "Português", onPress: () => setLanguage("pt") },
-      { text: t("action.cancel"), style: "cancel" },
     ]);
   }
 
@@ -152,50 +141,6 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-
-          <Group icon="options-outline" title="Preferencias" theme={theme}>
-            <View style={styles.appearanceRow}>
-              <View style={[styles.rowIcon, { backgroundColor: theme.rowAlt }]}>
-                <Ionicons
-                  name="contrast-outline"
-                  size={17}
-                  color={theme.blue}
-                />
-              </View>
-              <View style={styles.rowCopy}>
-                <Text style={[styles.rowTitle, { color: theme.text }]}>
-                  {t("settings.appearance")}
-                </Text>
-                <Text style={[styles.rowDescription, { color: theme.muted }]}>
-                  {colorMode === "dark"
-                    ? t("settings.dark")
-                    : t("settings.light")}
-                </Text>
-              </View>
-            </View>
-            <ThemeModeSelector
-              activeMode={colorMode}
-              blueColor={theme.blue}
-              borderColor={theme.border}
-              labels={{ dark: t("settings.dark"), light: t("settings.light") }}
-              onChange={setColorMode}
-              rowColor={theme.row}
-            />
-            <SettingRow
-              icon="language-outline"
-              title="Idioma"
-              description="Español (Colombia)"
-              onPress={chooseLanguage}
-              theme={theme}
-            />
-            <SettingRow
-              icon="notifications-outline"
-              title="Notificaciones"
-              description="Configura tus alertas"
-              onPress={() => showPending(t("profile.messageCenter"))}
-              theme={theme}
-            />
-          </Group>
 
           <Group
             icon="help-circle-outline"

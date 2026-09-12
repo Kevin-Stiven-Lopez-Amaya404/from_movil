@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { profileFont } from "@/components/profile/profileTheme";
+import { ThemeModeSelector } from "@/components/settings/ThemeModeSelector";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
@@ -84,8 +85,16 @@ export default function ProfileScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const { t } = useTranslation();
-  const { devices, resolvedSmartAlerts, sessionName, sessionRole } =
-    useSmartHome();
+  const {
+    colorMode,
+    devices,
+    language,
+    resolvedSmartAlerts,
+    sessionEmail,
+    sessionName,
+    sessionRole,
+    setColorMode,
+  } = useSmartHome();
 
   const pendingAlerts = devices.filter(
     (device) =>
@@ -93,18 +102,18 @@ export default function ProfileScreen() {
       !resolvedSmartAlerts.includes(device.id),
   ).length;
   const initial = sessionName.trim().charAt(0).toUpperCase() || "U";
+  const languageLabel =
+    language === "en"
+      ? "English"
+      : language === "pt"
+        ? "Português (Brasil)"
+        : "Español (Colombia)";
   const roleLabel =
     sessionRole === "admin"
       ? "Administrador"
       : sessionRole === "miembro"
         ? "Miembro"
         : "Invitado";
-
-  function showPending(title: string) {
-    Alert.alert(title, t("common.readyBackend"), [
-      { text: t("action.cancel") },
-    ]);
-  }
 
   function confirmLogout() {
     Alert.alert(t("action.logout"), t("profile.logoutPrompt"), [
@@ -132,8 +141,8 @@ export default function ProfileScreen() {
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Abrir configuración"
-            onPress={() => router.push("/(tabs)/settings")}
+            accessibilityLabel="Ver información personal"
+            onPress={() => router.push("/(tabs)/personal-info")}
             style={({ pressed }) => [
               styles.identityCard,
               { backgroundColor: theme.card, borderColor: theme.borderLight },
@@ -158,7 +167,7 @@ export default function ProfileScreen() {
                 {sessionName}
               </Text>
               <Text style={[styles.identityEmail, { color: theme.muted }]}>
-                pepe@smarthome.com
+                {sessionEmail || "pepe@smarthome.com"}
               </Text>
               <View
                 style={[
@@ -183,7 +192,7 @@ export default function ProfileScreen() {
             <Row
               icon="person-outline"
               title="Información personal"
-              onPress={() => router.push("/(tabs)/settings")}
+              onPress={() => router.push("/(tabs)/personal-info")}
               theme={theme}
             />
           </Section>
@@ -192,35 +201,67 @@ export default function ProfileScreen() {
             <Row
               icon="lock-closed-outline"
               title="Cambiar contraseña"
-              onPress={() => router.push("/forgot-password")}
+              onPress={() => router.push("/(tabs)/change-password")}
               theme={theme}
             />
             <Row
               icon="shield-checkmark-outline"
               title="Seguridad de la cuenta"
               description={`${pendingAlerts} alertas pendientes`}
-              onPress={() => router.push("/(tabs)/alerts")}
+              onPress={() => router.push("/(tabs)/account-security")}
               theme={theme}
             />
           </Section>
 
           <Section icon="options-outline" title="Preferencias" theme={theme}>
-            <Row
-              icon="notifications-outline"
-              title="Notificaciones"
-              onPress={() => router.push("/(tabs)/alerts")}
-              theme={theme}
-            />
-            <Row
-              icon="contrast-outline"
-              title="Apariencia"
-              onPress={() => router.push("/(tabs)/settings")}
-              theme={theme}
-            />
+            <View style={styles.preferenceCard}>
+              <View style={styles.preferenceHeader}>
+                <View
+                  style={[
+                    styles.preferenceIcon,
+                    { backgroundColor: theme.rowAlt },
+                  ]}
+                >
+                  <Ionicons
+                    name="contrast-outline"
+                    size={18}
+                    color={theme.blue}
+                  />
+                </View>
+                <View style={styles.preferenceTextWrap}>
+                  <Text style={[styles.preferenceTitle, { color: theme.text }]}>
+                    Apariencia
+                  </Text>
+                  <Text
+                    style={[styles.preferenceSubtitle, { color: theme.muted }]}
+                  >
+                    {colorMode === "dark" ? "Oscuro" : "Claro"}
+                  </Text>
+                </View>
+              </View>
+
+              <ThemeModeSelector
+                activeMode={colorMode}
+                blueColor={theme.blue}
+                borderColor={theme.border}
+                labels={{ dark: "Oscuro", light: "Claro" }}
+                onChange={setColorMode}
+                rowColor={theme.row}
+              />
+            </View>
+
             <Row
               icon="language-outline"
               title="Idioma"
-              onPress={() => router.push("/(tabs)/settings")}
+              description={languageLabel}
+              onPress={() => router.push("/(tabs)/language")}
+              theme={theme}
+            />
+            <Row
+              icon="notifications-outline"
+              title="Notificaciones"
+              description="Configura tus alertas"
+              onPress={() => router.push("/(tabs)/notifications")}
               theme={theme}
             />
           </Section>
@@ -235,7 +276,7 @@ export default function ProfileScreen() {
             <Row
               icon="information-circle-outline"
               title="Acerca de Smart Home"
-              onPress={() => showPending("Acerca de Smart Home")}
+              onPress={() => router.push("/(tabs)/about-smart-home")}
               theme={theme}
             />
           </Section>
@@ -335,6 +376,35 @@ const styles = StyleSheet.create({
   rowCopy: { flex: 1, marginHorizontal: 10 },
   rowTitle: { fontFamily: appFont, fontSize: 13, fontWeight: "800" },
   rowDescription: { fontFamily: appFont, fontSize: 10, marginTop: 2 },
+  preferenceCard: {
+    borderBottomColor: "rgba(148,163,184,0.25)",
+    borderBottomWidth: 1,
+    paddingBottom: 12,
+    paddingTop: 8,
+  },
+  preferenceHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    marginBottom: 10,
+  },
+  preferenceIcon: {
+    alignItems: "center",
+    borderRadius: 12,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+  preferenceTextWrap: { flex: 1, marginLeft: 10 },
+  preferenceTitle: {
+    fontFamily: appFont,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  preferenceSubtitle: {
+    fontFamily: appFont,
+    fontSize: 10,
+    marginTop: 2,
+  },
   logout: {
     alignItems: "center",
     borderRadius: 14,

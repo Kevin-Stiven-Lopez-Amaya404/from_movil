@@ -1,11 +1,11 @@
 import { useRouter } from "expo-router";
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+    useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -87,16 +87,7 @@ export default function DashboardScreen() {
   /* ------------------------------------------------------------------------ */
 
   const showNotifications = () => {
-    const criticalDevice = devices.find(
-      (device) => device.critical && device.online,
-    );
-
-    Alert.alert(
-      criticalDevice ? "Ahorro recomendado" : "Todo en orden",
-      criticalDevice
-        ? `${criticalDevice.name} está consumiendo más de lo habitual.`
-        : "No hay alertas activas en tus dispositivos.",
-    );
+    router.push("/(tabs)/notifications");
   };
 
   /* ------------------------------------------------------------------------ */
