@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 import { formatWatts } from "@/lib/utils/formatters";
@@ -13,35 +14,81 @@ type Props = {
 
 export function HomeSummaryCard({ name, power, deviceCount, onPress }: Props) {
   const theme = useAppTheme();
+
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Abrir hogar ${name}`}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: theme.card },
+        {
+          backgroundColor: theme.card,
+          borderColor: theme.borderLight,
+        },
         pressed && styles.pressed,
       ]}
-      onPress={onPress}
     >
-      <View style={styles.row}>
-        <View style={styles.leftContent}>
-          <View style={[styles.iconContainer, { backgroundColor: `${theme.blue}15` }]}>
-            <Ionicons name="home-outline" size={22} color={theme.blue} />
-          </View>
-          <View>
-            <Text style={[styles.name, { color: theme.text }]}>
-              {name}
-            </Text>
-            <Text style={[styles.detail, { color: theme.muted }]}>
-              {deviceCount} dispositivo{deviceCount !== 1 ? "s" : ""}
-            </Text>
-          </View>
+      <View style={styles.content}>
+        <View
+          style={[
+            styles.iconContainer,
+            {
+              backgroundColor: theme.rowAlt,
+            },
+          ]}
+        >
+          <Ionicons name="home-outline" size={22} color={theme.blue} />
         </View>
-        <View style={styles.rightContent}>
-          <View style={[styles.powerBadge, { backgroundColor: theme.rowAlt }]}>
-            <Text style={[styles.powerText, { color: theme.text }]}>
+
+        <View style={styles.info}>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.name,
+              {
+                color: theme.text,
+              },
+            ]}
+          >
+            {name}
+          </Text>
+
+          <Text
+            style={[
+              styles.devices,
+              {
+                color: theme.muted,
+              },
+            ]}
+          >
+            {deviceCount} {deviceCount === 1 ? "dispositivo" : "dispositivos"}
+          </Text>
+        </View>
+
+        <View style={styles.right}>
+          <View
+            style={[
+              styles.powerContainer,
+              {
+                backgroundColor: theme.rowAlt,
+              },
+            ]}
+          >
+            <Ionicons name="flash-outline" size={14} color={theme.blue} />
+
+            <Text
+              style={[
+                styles.power,
+                {
+                  color: theme.text,
+                },
+              ]}
+            >
               {formatWatts(power)}
             </Text>
           </View>
+
           <Ionicons name="chevron-forward" size={20} color={theme.muted} />
         </View>
       </View>
@@ -51,58 +98,73 @@ export function HomeSummaryCard({ name, power, deviceCount, onPress }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
-    padding: 16,
-    marginVertical: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginTop: 10,
+    padding: 14,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.035,
     shadowRadius: 8,
     elevation: 2,
   },
+
   pressed: {
     opacity: 0.7,
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+
+  content: {
     alignItems: "center",
-  },
-  leftContent: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
   },
+
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: "center",
     alignItems: "center",
+    borderRadius: 14,
+    height: 46,
+    justifyContent: "center",
+    width: 46,
   },
+
+  info: {
+    flex: 1,
+    marginHorizontal: 12,
+    minWidth: 0,
+  },
+
   name: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: typography.size.bodyLarge,
-    fontWeight: typography.weight.semibold,
+    fontSize: 16,
+    fontWeight: typography.weight.bold,
   },
-  detail: {
+
+  devices: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.helper,
-    marginTop: 1,
+    fontSize: 12,
+    marginTop: 3,
   },
-  rightContent: {
-    flexDirection: "row",
+
+  right: {
     alignItems: "center",
-    gap: 8,
+    flexDirection: "row",
+    gap: 7,
   },
-  powerBadge: {
-    paddingHorizontal: 12,
+
+  powerContainer: {
+    alignItems: "center",
+    borderRadius: 10,
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: 8,
     paddingVertical: 6,
-    borderRadius: 12,
   },
-  powerText: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.helper,
-    fontWeight: typography.weight.semibold,
+
+  power: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 11,
+    fontWeight: typography.weight.bold,
   },
 });

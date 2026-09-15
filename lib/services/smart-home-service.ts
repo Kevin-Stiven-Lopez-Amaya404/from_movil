@@ -31,21 +31,50 @@ export type UpdateDeviceStatusRequest = {
 
 export interface SmartHomeService {
   listHomes(token?: string): Promise<SmartHomePlace[]>;
-  createHome(request: CreateHomeRequest, token?: string): Promise<SmartHomePlace>;
-  toggleHomeFavorite(homeId: string, favorite: boolean, token?: string): Promise<SmartHomePlace>;
+  createHome(
+    request: CreateHomeRequest,
+    token?: string,
+  ): Promise<SmartHomePlace>;
+  toggleHomeFavorite(
+    homeId: string,
+    favorite: boolean,
+    token?: string,
+  ): Promise<SmartHomePlace>;
   listDevices(homeId: string, token?: string): Promise<SmartDevice[]>;
-  createDevice(request: CreateDeviceRequest, token?: string): Promise<SmartDevice>;
-  updateDeviceStatus(deviceId: string, request: UpdateDeviceStatusRequest, token?: string): Promise<SmartDevice>;
+  createDevice(
+    request: CreateDeviceRequest,
+    token?: string,
+  ): Promise<SmartDevice>;
+  updateDeviceStatus(
+    deviceId: string,
+    request: UpdateDeviceStatusRequest,
+    token?: string,
+  ): Promise<SmartDevice>;
   getReports(range: ReportRange, token?: string): Promise<ReportPoint[]>;
 }
 
 function createMockId(value: string) {
-  return `${value.trim().toLowerCase().replace(/[^a-z0-9]+/gi, "-") || "item"}-${Date.now()}`;
+  return `${
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gi, "-") || "item"
+  }-${Date.now()}`;
 }
 
 const mockHomes: SmartHomePlace[] = [
-  { id: "casa", name: "Casa", location: "Hogar principal", favorite: true },
-  { id: "oficina", name: "Oficina", location: "Espacio de trabajo", favorite: false },
+  {
+    id: "casa",
+    name: "Casa",
+    location: "Hogar principal",
+    favorite: true,
+  },
+  {
+    id: "oficina",
+    name: "Oficina",
+    location: "Espacio de trabajo",
+    favorite: false,
+  },
 ];
 
 const mockDevices: SmartDevice[] = [
@@ -56,10 +85,15 @@ const mockDevices: SmartDevice[] = [
     category: "Climatizacion",
     room: "Sala",
     icon: "air-conditioner",
-    consumption: 0.78,
-    yesterday: 0.72,
+    power: 780,
+    energy: 780,
+    yesterday: 720,
+    voltage: 120,
+    current: 6.5,
+    frequency: 60,
     online: true,
     critical: true,
+    state: "on",
   },
   {
     id: "tv",
@@ -68,9 +102,14 @@ const mockDevices: SmartDevice[] = [
     category: "Electrodomesticos",
     room: "Habitacion",
     icon: "television-classic",
-    consumption: 0.15,
-    yesterday: 0.15,
+    power: 150,
+    energy: 150,
+    yesterday: 150,
+    voltage: 120,
+    current: 1.25,
+    frequency: 60,
     online: true,
+    state: "on",
   },
 ];
 
@@ -119,6 +158,7 @@ const mockSmartHomeService: SmartHomeService = {
     };
 
     mockHomes.push(home);
+
     return home;
   },
 
@@ -126,7 +166,11 @@ const mockSmartHomeService: SmartHomeService = {
     const index = mockHomes.findIndex((home) => home.id === homeId);
 
     if (index >= 0) {
-      mockHomes[index] = { ...mockHomes[index], favorite };
+      mockHomes[index] = {
+        ...mockHomes[index],
+        favorite,
+      };
+
       return mockHomes[index];
     }
 
@@ -145,12 +189,18 @@ const mockSmartHomeService: SmartHomeService = {
       category: request.category ?? "Electrodomesticos",
       room: request.room?.trim() || "General",
       icon: request.icon ?? "power-plug-outline",
-      consumption: 0,
+      power: 0,
+      energy: 0,
       yesterday: 0,
+      voltage: 120,
+      current: 0,
+      frequency: 60,
       online: true,
+      state: "off",
     };
 
     mockDevices.push(device);
+
     return device;
   },
 
@@ -158,7 +208,11 @@ const mockSmartHomeService: SmartHomeService = {
     const index = mockDevices.findIndex((device) => device.id === deviceId);
 
     if (index >= 0) {
-      mockDevices[index] = { ...mockDevices[index], online };
+      mockDevices[index] = {
+        ...mockDevices[index],
+        online,
+      };
+
       return mockDevices[index];
     }
 
@@ -176,11 +230,19 @@ const backendSmartHomeService: SmartHomeService = {
   },
 
   createHome(request, token) {
-    return apiClient.post<SmartHomePlace, CreateHomeRequest>("/homes", request, { token });
+    return apiClient.post<SmartHomePlace, CreateHomeRequest>(
+      "/homes",
+      request,
+      { token },
+    );
   },
 
   toggleHomeFavorite(homeId, favorite, token) {
-    return apiClient.patch<SmartHomePlace, { favorite: boolean }>(`/homes/${homeId}/favorite`, { favorite }, { token });
+    return apiClient.patch<SmartHomePlace, { favorite: boolean }>(
+      `/homes/${homeId}/favorite`,
+      { favorite },
+      { token },
+    );
   },
 
   listDevices(homeId, token) {
@@ -188,16 +250,29 @@ const backendSmartHomeService: SmartHomeService = {
   },
 
   createDevice(request, token) {
-    return apiClient.post<SmartDevice, CreateDeviceRequest>(`/homes/${request.homeId}/devices`, request, { token });
+    return apiClient.post<SmartDevice, CreateDeviceRequest>(
+      `/homes/${request.homeId}/devices`,
+      request,
+      { token },
+    );
   },
 
   updateDeviceStatus(deviceId, request, token) {
-    return apiClient.patch<SmartDevice, UpdateDeviceStatusRequest>(`/devices/${deviceId}/status`, request, { token });
+    return apiClient.patch<SmartDevice, UpdateDeviceStatusRequest>(
+      `/devices/${deviceId}/status`,
+      request,
+      { token },
+    );
   },
 
   getReports(range, token) {
-    return apiClient.get<ReportPoint[]>(`/reports?range=${encodeURIComponent(range)}`, { token });
+    return apiClient.get<ReportPoint[]>(
+      `/reports?range=${encodeURIComponent(range)}`,
+      { token },
+    );
   },
 };
 
-export const smartHomeService: SmartHomeService = useMockApi ? mockSmartHomeService : backendSmartHomeService;
+export const smartHomeService: SmartHomeService = useMockApi
+  ? mockSmartHomeService
+  : backendSmartHomeService;

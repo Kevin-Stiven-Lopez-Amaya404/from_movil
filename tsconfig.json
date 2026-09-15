@@ -4,19 +4,11 @@
     "strict": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ],
-  "exclude": [
-    ".expo",
-    "node_modules",
-    "smart-home"
-  ]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": [".expo", "node_modules", "smart-home"]
 }

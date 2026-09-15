@@ -1,306 +1,311 @@
-/**
- * Pantalla de perfil y preferencias del usuario.
- *
- * Agrupa informacion de cuenta, ajustes de idioma y opciones de seguridad.
- * Usa datos globales para mostrar el estado actual y acciones de usuario.
- */
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import {
+    Alert,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ProfileMenuItem } from "@/components/profile/ProfileMenuItem";
 import { ProfileModule } from "@/components/profile/ProfileModule";
-import { ProfileSectionHeader } from "@/components/profile/ProfileSectionHeader";
+import { ProfileShortcutCard } from "@/components/profile/ProfileShortcutCard";
 import { profileFont } from "@/components/profile/profileTheme";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
-const languages = [
-  { code: "es", label: "Español" },
-  { code: "en", label: "English" },
-  { code: "pt", label: "Português" },
-] as const;
+const appFont = profileFont;
+
+type ThemeLike = ReturnType<typeof useAppTheme>;
 
 export default function ProfileScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const { t } = useTranslation();
-
-  // Perfil consume y modifica preferencias globales del usuario.
   const {
-    activeDevices,
-    deactivateAccount,
+    activeHomeId,
     devices,
     homes,
-    language,
-    offlineMode,
+    lastSync,
+    refreshSync,
+    resolvedSmartAlerts,
     sessionName,
-    setLanguage,
-    setOfflineMode,
   } = useSmartHome();
 
-  // Datos derivados para mostrar estado de cuenta y auditoria.
-  const alerts = activeDevices.filter((device) => !device.verified).length;
   const onlineDevices = devices.filter((device) => device.online).length;
+  const activeDeviceCount = devices.filter(
+    (device) => device.online && device.state === "on",
+  ).length;
+  const smartHomeAlerts = devices.filter(
+    (device) =>
+      (device.critical || !device.online) &&
+      !resolvedSmartAlerts.includes(device.id),
+  ).length;
+  const favoriteHomes = homes.filter((home) => home.favorite).length;
+  const activeHome =
+    homes.find((home) => home.id === activeHomeId) ?? homes[0] ?? null;
+  const initial = sessionName.trim().charAt(0).toUpperCase() || "U";
 
-  /**
-   * Muestra una alerta para modulos que ya tienen entrada visual, pero aun no
-   * cuentan con backend o pantalla dedicada.
-   */
-  function showComingSoon(title: string) {
-    Alert.alert(title, t("common.readyBackend"));
-  }
-
-  /**
-   * Cierra la sesion local y vuelve a bienvenida.
-   */
   function confirmLogout() {
     Alert.alert(t("action.logout"), t("profile.logoutPrompt"), [
       { text: t("action.cancel"), style: "cancel" },
-      { text: t("action.logout"), style: "destructive", onPress: () => router.replace("/welcome") },
-    ]);
-  }
-
-  /**
-   * Desactiva la cuenta local despues de confirmacion.
-   * Es una accion sensible, por eso se solicita confirmacion.
-   */
-  function confirmDeactivation() {
-    Alert.alert(t("profile.deactivateAccount"), t("profile.deactivatePrompt"), [
-      { text: t("action.cancel"), style: "cancel" },
       {
-        text: t("action.deactivate"),
+        text: t("action.logout"),
         style: "destructive",
-        onPress: () => {
-          deactivateAccount();
-          router.replace("/welcome");
-        },
-      },
-    ]);
-  }
-
-  /**
-   * Muestra un resumen de auditoria basado en datos disponibles en memoria.
-   */
-  function showAuditDetail() {
-    Alert.alert(
-      t("profile.audit"),
-      t("profile.auditBody", {
-        alerts,
-        devices: onlineDevices,
-        offline: offlineMode ? t("common.active") : t("common.inactive"),
-      }),
-    );
-  }
-
-  /**
-   * Restaura preferencias locales a valores iniciales.
-   */
-  function confirmRestoreData() {
-    Alert.alert(t("profile.restoreDataAction"), t("profile.restorePrompt"), [
-      { text: t("action.cancel"), style: "cancel" },
-      {
-        text: t("action.restore"),
-        onPress: () => {
-          setLanguage("es");
-          setOfflineMode(false);
-          Alert.alert(t("profile.dataRestored"), t("profile.dataRestoredBody"));
-        },
+        onPress: () => router.replace("/welcome"),
       },
     ]);
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
+    >
       <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          {
-            paddingHorizontal: layout.gutter,
-            paddingBottom: layout.screenBottom,
-            paddingTop: layout.screenTop,
-          },
-        ]}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: layout.gutter,
+          paddingTop: layout.screenTop,
+          paddingBottom: layout.screenBottom,
+        }}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <View style={styles.topActions}>
-            <Pressable onPress={() => router.push("/(tabs)/homes")}>
-              <MaterialCommunityIcons name="home-city-outline" size={34} color={theme.text} />
-            </Pressable>
-            <Pressable onPress={() => router.push("/settings")} style={styles.settingsButton}>
-              <Ionicons name="settings-outline" size={30} color={theme.text} />
-            </Pressable>
-          </View>
-
-          <View style={styles.profileRow}>
-            <View style={[styles.avatar, { backgroundColor: theme.rowAlt }]}>
-              <Text style={[styles.avatarText, { color: theme.text }]}>{sessionName.charAt(0).toUpperCase()}</Text>
-            </View>
-            <View style={styles.profileCopy}>
-              <Text style={[styles.greeting, { color: theme.text }]}>{t("profile.greeting", { name: sessionName })}</Text>
-              <Text style={[styles.profileMeta, { color: theme.muted }]}>
-                {t("profile.activeDevices", { count: onlineDevices })}
-              </Text>
-            </View>
-          </View>
-
-          <View style={[styles.accountCard, { backgroundColor: theme.card }]}>
-            <View style={[styles.handle, { backgroundColor: theme.border }]} />
-
-            <View style={[styles.accountHeader, { backgroundColor: theme.row }]}>
-              <View style={styles.accountAvatar}>
-                <Text style={styles.accountInitial}>{sessionName.charAt(0).toUpperCase()}</Text>
-              </View>
-              <View style={styles.accountCopy}>
-                <Text numberOfLines={1} style={[styles.accountName, { color: theme.text }]}>
-                  {sessionName}@smarthome.local
+          <View
+            style={[
+              styles.profileHero,
+              { backgroundColor: theme.card, borderColor: theme.borderLight },
+            ]}
+          >
+            <View style={styles.heroTopRow}>
+              <View>
+                <Text style={[styles.overline, { color: theme.blue }]}>
+                  SMART HOME
                 </Text>
-                <Text numberOfLines={1} style={[styles.accountEmail, { color: theme.muted }]}>
-                  {sessionName.toLowerCase()}@smarthome.com
+                <Text style={[styles.heroTitle, { color: theme.text }]}>
+                  {t("profile.greeting", { name: sessionName })}
+                </Text>
+                <Text style={[styles.heroSubtitle, { color: theme.muted }]}>
+                  {t("profile.accountModuleSubtitle")}
                 </Text>
               </View>
-              <Ionicons name="swap-horizontal-outline" size={27} color={theme.text} />
+              <Pressable
+                onPress={() => router.push("/(tabs)/settings")}
+                style={({ pressed }) => [
+                  styles.iconButton,
+                  {
+                    backgroundColor: theme.rowAlt,
+                    borderColor: theme.borderLight,
+                  },
+                  pressed && styles.pressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t("settings.title")}
+              >
+                <Ionicons
+                  name="settings-outline"
+                  size={21}
+                  color={theme.text}
+                />
+              </Pressable>
             </View>
 
-            <Pressable style={[styles.homeAccountRow, { backgroundColor: theme.row }]} onPress={() => router.push("/(tabs)/homes")}>
-              <View style={[styles.homeAccountIcon, { backgroundColor: theme.rowAlt }]}>
-                <Ionicons name="home" size={20} color={theme.blue} />
+            <View style={styles.identityRow}>
+              <View
+                style={[
+                  styles.avatar,
+                  {
+                    backgroundColor: theme.rowAlt,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <Text style={[styles.avatarText, { color: theme.blue }]}>
+                  {initial}
+                </Text>
               </View>
-              <Text numberOfLines={1} style={[styles.homeAccountText, { color: theme.text }]}>
-                {t("profile.accountHome", { name: sessionName, count: homes.length })}
-              </Text>
-            </Pressable>
-          </View>
-
-          <ProfileModule title={t("profile.accountModule")} subtitle={t("profile.accountModuleSubtitle")}>
-            <ProfileMenuItem icon="person-add-outline" title={t("profile.editInfo")} onPress={() => router.push("/settings")} />
-            <ProfileMenuItem icon="home-outline" title={t("profile.manageHomes")} onPress={() => router.push("/(tabs)/homes")} />
-            <ProfileMenuItem
-              description={
-                alerts
-                  ? t(alerts === 1 ? "common.pendingAlert" : "common.pendingAlerts", { count: alerts })
-                  : t("common.noNews")
-              }
-              icon="chatbubble-outline"
-              intent="primary"
-              onPress={() => showComingSoon(t("profile.messageCenter"))}
-              title={t("profile.messageCenter")}
-              variant="boxed"
-            />
-            <ProfileMenuItem
-              description={t("profile.helpSubtitle")}
-              icon="help-circle-outline"
-              intent="primary"
-              onPress={() => showComingSoon(t("profile.helpCenter"))}
-              title={t("profile.helpCenter")}
-              variant="boxed"
-            />
-          </ProfileModule>
-
-          <ProfileModule title={t("profile.preferences")} subtitle={t("profile.preferencesSubtitle")}>
-            <ProfileSectionHeader
-              description={t("profile.languageDescription")}
-              icon="language-outline"
-              title={t("profile.language")}
-            />
-            <View style={styles.languageRow}>
-              {languages.map((item) => {
-                const active = language === item.code;
-
-                return (
-                  <Pressable
-                    key={item.code}
+              <View style={styles.identityCopy}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.profileName, { color: theme.text }]}
+                >
+                  {sessionName}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.profileEmail, { color: theme.muted }]}
+                >
+                  {t("profile.accountModule")}
+                </Text>
+                <View style={styles.statusRow}>
+                  <View
                     style={[
-                      styles.languageButton,
-                      { backgroundColor: theme.row, borderColor: theme.border },
-                      active && { backgroundColor: theme.blue, borderColor: theme.blue },
+                      styles.statusDot,
+                      { backgroundColor: theme.success },
                     ]}
-                    onPress={() => setLanguage(item.code)}
-                  >
-                    <Text style={[styles.languageText, { color: active ? "#FFFFFF" : theme.text }]}>{item.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={[styles.moduleDivider, { backgroundColor: theme.divider }]} />
-
-            <ProfileSectionHeader
-              description={t("profile.offlineDescription")}
-              icon="cloud-offline-outline"
-              title={t("profile.offline")}
-            />
-            <View style={[styles.settingRow, { backgroundColor: theme.row }]}>
-              <View style={styles.settingCopy}>
-                <Text style={[styles.settingTitle, { color: theme.text }]}>
-                  {offlineMode ? t("common.active") : t("common.inactive")}
-                </Text>
-                <Text style={[styles.settingText, { color: theme.muted }]}>
-                  {offlineMode ? t("profile.offlineOnText") : t("profile.offlineOffText")}
-                </Text>
+                  />
+                  <Text style={[styles.statusText, { color: theme.muted }]}>
+                    {t("profile.activeDevices", { count: activeDeviceCount })}
+                  </Text>
+                </View>
               </View>
-              <Switch
-                value={offlineMode}
-                onValueChange={setOfflineMode}
-                trackColor={{ false: "#CDD2E4", true: theme.successSoft }}
-                thumbColor={offlineMode ? theme.success : "#FFFFFF"}
-              />
             </View>
-          </ProfileModule>
 
-          <ProfileModule title={t("profile.securityData")} subtitle={t("profile.securityDataSubtitle")}>
-            <ProfileSectionHeader
-              description={t("profile.auditDescription")}
-              icon="shield-checkmark-outline"
-              title={t("profile.audit")}
-            />
             <Pressable
-              style={[styles.secondaryAction, { backgroundColor: theme.row, borderColor: theme.border }]}
-              onPress={showAuditDetail}
+              onPress={() => router.push("/(tabs)/settings")}
+              style={({ pressed }) => [
+                styles.editButton,
+                { backgroundColor: theme.blue },
+                pressed && styles.pressed,
+              ]}
+              accessibilityRole="button"
             >
-              <Ionicons name="list-outline" size={19} color={theme.blue} />
-              <Text style={[styles.secondaryActionText, { color: theme.blue }]}>{t("action.viewAudit")}</Text>
+              <Ionicons name="create-outline" size={17} color="#FFFFFF" />
+              <Text style={styles.editButtonText}>{t("profile.editInfo")}</Text>
             </Pressable>
+          </View>
 
-            <View style={[styles.moduleDivider, { backgroundColor: theme.divider }]} />
-
-            <ProfileSectionHeader
-              description={t("profile.restoreDescription")}
-              icon="refresh-circle-outline"
-              title={t("profile.restoreData")}
+          <View style={styles.statsRow}>
+            <StatCard
+              icon="home-outline"
+              label={t("profile.manageHomes")}
+              value={String(homes.length)}
+              theme={theme}
             />
-            <Pressable
-              style={[styles.secondaryAction, { backgroundColor: theme.row, borderColor: theme.border }]}
-              onPress={confirmRestoreData}
-            >
-              <Ionicons name="refresh-outline" size={19} color={theme.blue} />
-              <Text style={[styles.secondaryActionText, { color: theme.blue }]}>{t("profile.restoreDataAction")}</Text>
-            </Pressable>
-
-            <View style={[styles.moduleDivider, { backgroundColor: theme.divider }]} />
-
-            <ProfileSectionHeader
-              danger
-              description={t("profile.deactivateDescription")}
-              icon="person-remove-outline"
-              title={t("profile.deactivateAccount")}
+            <StatCard
+              icon="hardware-chip-outline"
+              label={t("profile.activeDevices", { count: activeDeviceCount })}
+              value={String(activeDeviceCount)}
+              theme={theme}
             />
-            <Pressable
-              style={[styles.deactivateButton, { backgroundColor: theme.dangerSoft }]}
-              onPress={confirmDeactivation}
-            >
-              <Ionicons name="person-remove-outline" size={19} color={theme.danger} />
-              <Text style={[styles.deactivateText, { color: theme.danger }]}>{t("profile.deactivateAccount")}</Text>
-            </Pressable>
+            <StatCard
+              icon="notifications-outline"
+              label={t(
+                smartHomeAlerts === 1
+                  ? "common.pendingAlert"
+                  : "common.pendingAlerts",
+                { count: smartHomeAlerts },
+              )}
+              value={String(smartHomeAlerts)}
+              theme={theme}
+            />
+          </View>
+
+          <Pressable
+            onPress={() => router.push("/(tabs)/homes")}
+            style={({ pressed }) => [
+              styles.homeCard,
+              { backgroundColor: theme.card, borderColor: theme.borderLight },
+              pressed && styles.pressed,
+            ]}
+          >
+            <View style={[styles.homeIcon, { backgroundColor: theme.rowAlt }]}>
+              <Ionicons name="home-outline" size={23} color={theme.blue} />
+            </View>
+            <View style={styles.homeCopy}>
+              <Text style={[styles.homeLabel, { color: theme.blue }]}>
+                {t("profile.accountHome", {
+                  name: sessionName,
+                  count: homes.length,
+                })}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={[styles.homeName, { color: theme.text }]}
+              >
+                {activeHome?.name ?? t("profile.noHomeConfigured")}
+              </Text>
+              <Text style={[styles.homeDescription, { color: theme.muted }]}>
+                {homes.length}{" "}
+                {homes.length === 1
+                  ? t("profile.homeAvailable")
+                  : t("profile.homesAvailable")}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.muted} />
+          </Pressable>
+
+          <View style={styles.sectionHeading}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {t("profile.quickAccess")}
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: theme.muted }]}>
+              {t("profile.quickAccessSubtitle")}
+            </Text>
+          </View>
+          <View style={styles.shortcutsGrid}>
+            <ProfileShortcutCard
+              icon="home-outline"
+              title={t("profile.myHomes")}
+              description={t("profile.availableCount", { count: homes.length })}
+              onPress={() => router.push("/(tabs)/homes")}
+            />
+            <ProfileShortcutCard
+              icon="hardware-chip-outline"
+              title={t("profile.devices")}
+              description={t("profile.connectedCount", {
+                count: onlineDevices,
+              })}
+              onPress={() => router.push("/(tabs)/devices")}
+            />
+            <ProfileShortcutCard
+              icon="bar-chart-outline"
+              title={t("profile.consumption")}
+              description={t("profile.consumptionDescription")}
+              onPress={() => router.push("/(tabs)/reports")}
+            />
+            <ProfileShortcutCard
+              icon="notifications-outline"
+              title={t("profile.alerts")}
+              description={
+                smartHomeAlerts
+                  ? `${smartHomeAlerts} pendiente${smartHomeAlerts === 1 ? "" : "s"}`
+                  : t("profile.noAlerts")
+              }
+              onPress={() => router.push("/(tabs)/alerts")}
+            />
+            <ProfileShortcutCard
+              icon="star-outline"
+              title={t("profile.favorites")}
+              description={t("profile.savedCount", { count: favoriteHomes })}
+              onPress={() => router.push("/(tabs)/favorites")}
+            />
+            <ProfileShortcutCard
+              icon="sync-outline"
+              title={t("profile.sync")}
+              description={t("profile.lastSync", { value: lastSync })}
+              onPress={refreshSync}
+            />
+          </View>
+
+          <ProfileModule
+            title={t("profile.accountModule")}
+            subtitle={t("profile.accountModuleSubtitle")}
+          >
+            <ProfileMenuItem
+              icon="person-outline"
+              title={t("profile.editInfo")}
+              onPress={() => router.push("/(tabs)/settings")}
+            />
+            <ProfileMenuItem
+              icon="home-outline"
+              title={t("profile.manageHomes")}
+              onPress={() => router.push("/(tabs)/homes")}
+            />
           </ProfileModule>
 
           <ProfileModule title={t("profile.session")}>
-            <ProfileMenuItem icon="close-circle-outline" intent="danger" title={t("action.logout")} onPress={confirmLogout} />
+            <ProfileMenuItem
+              icon="log-out-outline"
+              intent="danger"
+              title={t("action.logout")}
+              onPress={confirmLogout}
+            />
           </ProfileModule>
         </View>
       </ScrollView>
@@ -308,205 +313,175 @@ export default function ProfileScreen() {
   );
 }
 
-const appFont = profileFont;
+type StatCardProps = {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  theme: ThemeLike;
+};
+
+function StatCard({ icon, label, value, theme }: StatCardProps) {
+  return (
+    <View
+      style={[
+        styles.statCard,
+        { backgroundColor: theme.card, borderColor: theme.borderLight },
+      ]}
+    >
+      <View style={[styles.statIcon, { backgroundColor: theme.rowAlt }]}>
+        <Ionicons name={icon} size={18} color={theme.blue} />
+      </View>
+      <Text style={[styles.statValue, { color: theme.text }]}>{value}</Text>
+      <Text
+        numberOfLines={2}
+        style={[styles.statLabel, { color: theme.muted }]}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
+  safeArea: { flex: 1 },
+  content: { alignSelf: "center", width: "100%" },
+  profileHero: {
+    borderRadius: 22,
+    borderWidth: 1,
+    marginBottom: 12,
+    padding: 18,
   },
-  container: {
-    alignItems: "center",
-    paddingBottom: 128,
-  },
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-  topActions: {
-    alignItems: "center",
-    alignSelf: "flex-end",
+  heroTopRow: {
+    alignItems: "flex-start",
     flexDirection: "row",
-    gap: 14,
+    justifyContent: "space-between",
   },
-  settingsButton: {
-    padding: 4,
-  },
-  profileRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginTop: 24,
-  },
-  avatar: {
-    alignItems: "center",
-    borderRadius: 36,
-    height: 72,
-    justifyContent: "center",
-    width: 72,
-  },
-  avatarText: {
+  overline: {
     fontFamily: appFont,
-    fontSize: 28,
+    fontSize: 10,
     fontWeight: "900",
+    letterSpacing: 1.2,
   },
-  profileCopy: {
-    flex: 1,
-    marginLeft: 18,
-    minWidth: 0,
-  },
-  greeting: {
+  heroTitle: {
     fontFamily: appFont,
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: "900",
+    marginTop: 5,
   },
-  profileMeta: {
+  heroSubtitle: {
     fontFamily: appFont,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     marginTop: 5,
   },
-  accountCard: {
-    borderRadius: 18,
-    marginTop: 28,
-    padding: 14,
-  },
-  handle: {
-    alignSelf: "center",
-    borderRadius: 3,
-    height: 5,
-    marginBottom: 18,
-    width: 70,
-  },
-  accountHeader: {
+  iconButton: {
     alignItems: "center",
-    borderRadius: 14,
-    flexDirection: "row",
-    padding: 12,
-  },
-  accountAvatar: {
-    alignItems: "center",
-    backgroundColor: "#74D87C",
-    borderRadius: 24,
-    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 42,
     justifyContent: "center",
-    width: 48,
+    width: 42,
   },
-  accountInitial: {
-    color: "#102314",
+  identityRow: { alignItems: "center", flexDirection: "row", marginTop: 22 },
+  avatar: {
+    alignItems: "center",
+    borderRadius: 28,
+    borderWidth: 1,
+    height: 56,
+    justifyContent: "center",
+    width: 56,
+  },
+  avatarText: { fontFamily: appFont, fontSize: 24, fontWeight: "900" },
+  identityCopy: { flex: 1, marginLeft: 12 },
+  profileName: { fontFamily: appFont, fontSize: 18, fontWeight: "900" },
+  profileEmail: {
+    fontFamily: appFont,
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 3,
+  },
+  statusRow: { alignItems: "center", flexDirection: "row", marginTop: 7 },
+  statusDot: { borderRadius: 5, height: 9, marginRight: 6, width: 9 },
+  statusText: { fontFamily: appFont, fontSize: 11, fontWeight: "700" },
+  editButton: {
+    alignItems: "center",
+    borderRadius: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 18,
+    minHeight: 44,
+  },
+  editButtonText: {
+    color: "#FFFFFF",
+    fontFamily: appFont,
+    fontSize: 13,
+    fontWeight: "900",
+    marginLeft: 7,
+  },
+  statsRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  statCard: {
+    borderRadius: 15,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 108,
+    padding: 10,
+  },
+  statIcon: {
+    alignItems: "center",
+    borderRadius: 10,
+    height: 32,
+    justifyContent: "center",
+    width: 32,
+  },
+  statValue: {
     fontFamily: appFont,
     fontSize: 22,
     fontWeight: "900",
+    marginTop: 8,
   },
-  accountCopy: {
-    flex: 1,
-    marginLeft: 12,
-    minWidth: 0,
-  },
-  accountName: {
+  statLabel: {
     fontFamily: appFont,
-    fontSize: 16,
-    fontWeight: "900",
-  },
-  accountEmail: {
-    fontFamily: appFont,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "700",
     marginTop: 2,
   },
-  homeAccountRow: {
+  homeCard: {
     alignItems: "center",
-    borderRadius: 14,
-    flexDirection: "row",
-    marginTop: 8,
-    minHeight: 58,
-    paddingHorizontal: 12,
-  },
-  homeAccountIcon: {
-    alignItems: "center",
-    borderRadius: 10,
-    height: 38,
-    justifyContent: "center",
-    width: 38,
-  },
-  homeAccountText: {
-    flex: 1,
-    fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "900",
-    marginLeft: 12,
-  },
-  moduleDivider: {
-    height: 1,
-  },
-  languageRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  languageButton: {
-    alignItems: "center",
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 36,
-    paddingHorizontal: 12,
+    flexDirection: "row",
+    marginBottom: 20,
+    padding: 13,
   },
-  languageText: {
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  settingRow: {
+  homeIcon: {
     alignItems: "center",
     borderRadius: 12,
-    flexDirection: "row",
-    gap: 12,
-    padding: 12,
+    height: 45,
+    justifyContent: "center",
+    width: 45,
   },
-  settingCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  settingTitle: {
+  homeCopy: { flex: 1, marginHorizontal: 11 },
+  homeLabel: { fontFamily: appFont, fontSize: 11, fontWeight: "800" },
+  homeName: {
     fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  settingText: {
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "700",
-    lineHeight: 16,
+    fontSize: 16,
+    fontWeight: "900",
     marginTop: 3,
   },
-  secondaryAction: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "center",
-    minHeight: 44,
-  },
-  secondaryActionText: {
+  homeDescription: {
     fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "800",
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 2,
   },
-  deactivateButton: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    borderColor: "#FFD1CB",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "center",
-    minHeight: 44,
-  },
-  deactivateText: {
+  sectionHeading: { marginBottom: 11 },
+  sectionTitle: { fontFamily: appFont, fontSize: 18, fontWeight: "900" },
+  sectionSubtitle: {
     fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "800",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 3,
   },
+  shortcutsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  pressed: { opacity: 0.72 },
 });

@@ -1,13 +1,8 @@
 import {
   authService,
   normalizeEmail,
-  type AuthUser,
   type RegisterUserRequest,
 } from "@/lib/services/auth-service";
-
-export type SmartHomeUser = AuthUser & {
-  password: string;
-};
 
 export { normalizeEmail };
 
@@ -22,10 +17,17 @@ export async function registerUser(user: RegisterUserRequest) {
 }
 
 export async function authenticateUser(email: string, password: string) {
-  const session = await authService.login({ email: normalizeEmail(email), password });
+  const session = await authService.login({
+    email: normalizeEmail(email),
+    password,
+  });
+
   return session?.user ?? null;
 }
 
 export async function updateUserPassword(email: string, password: string) {
-  return authService.updatePassword({ email: normalizeEmail(email), password });
+  return authService.updatePassword({
+    email: normalizeEmail(email),
+    password,
+  });
 }

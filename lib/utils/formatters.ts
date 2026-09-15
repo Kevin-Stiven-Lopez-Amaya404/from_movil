@@ -6,17 +6,6 @@ export function formatKwh(value: number): string {
 }
 
 /**
- * Formatea valores monetarios en pesos colombianos (COP).
- */
-export function formatCOP(value: number): string {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-/**
  * Formatea potencia eléctrica en watts.
  */
 export function formatWatts(watts: number): string {

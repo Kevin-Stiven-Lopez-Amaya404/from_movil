@@ -50,6 +50,7 @@ export const theme = {
     divider: "#E0E8F5",
     error: "#D32F2F",
   },
+
   fontSize: {
     xs: 11,
     sm: typography.size.helper,
@@ -60,10 +61,15 @@ export const theme = {
     xxl: typography.size.screenTitle,
     logo: 28,
   },
+
   fontFamily: typography.fontFamily,
   fontWeight: typography.weight,
-  rounded: typography.fontFamily.regular,
+
+  // Radio general conservado para compatibilidad con posibles consumidores.
+  rounded: 10,
+
   mono: "monospace",
+
   spacing: {
     xs: 4,
     sm: 8,
@@ -72,6 +78,7 @@ export const theme = {
     xl: 28,
     xxl: 40,
   },
+
   radius: {
     input: 10,
     button: 10,

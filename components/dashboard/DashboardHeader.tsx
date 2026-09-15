@@ -1,138 +1,304 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
 type Props = {
   onNotificationsPress: () => void;
   onProfilePress: () => void;
+  onHomePress?: () => void;
   userName?: string;
+  activeHomeName?: string;
+  activeHomeLocation?: string;
   hasUnreadNotifications?: boolean;
 };
 
 export function DashboardHeader({
   onNotificationsPress,
   onProfilePress,
-  userName = "Natalia",
+  onHomePress,
+  userName = "Usuario",
+  activeHomeName = "Casa",
+  activeHomeLocation = "Hogar principal",
   hasUnreadNotifications = false,
 }: Props) {
   const theme = useAppTheme();
 
   return (
     <View style={styles.container}>
-      {/* Tarjeta azul con bordes redondeados ARRIBA y rectos ABAJO */}
-      <View style={[styles.headerCard, { backgroundColor: theme.blue }]}>
-        {/* Lado Izquierdo: Notificaciones */}
-        <Pressable
-          accessibilityLabel="Notificaciones"
-          style={({ pressed }) => [
-            styles.iconButton,
-            pressed && styles.buttonPressed,
-          ]}
-          onPress={onNotificationsPress}
-        >
-          <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
-          {hasUnreadNotifications && <View style={styles.unreadBadge} />}
-        </Pressable>
+      {/* Barra superior */}
+      <View style={styles.topBar}>
+        <View style={styles.brandContainer}>
+          <View
+            style={[
+              styles.brandIcon,
+              {
+                backgroundColor: theme.blue,
+              },
+            ]}
+          >
+            <Ionicons name="home" size={19} color="#FFFFFF" />
+          </View>
 
-        {/* Centro: Smart Home */}
-        <Text style={styles.brandTitle}>Smart Home</Text>
+          <Text
+            style={[
+              styles.brandTitle,
+              {
+                color: theme.text,
+              },
+            ]}
+          >
+            Smart Home
+          </Text>
+        </View>
 
-        {/* Lado Derecho: Perfil */}
-        <Pressable
-          accessibilityLabel="Perfil"
-          style={({ pressed }) => [
-            styles.iconButton,
-            pressed && styles.buttonPressed,
-          ]}
-          onPress={onProfilePress}
-        >
-          <Ionicons name="person-outline" size={20} color="#FFFFFF" />
-        </Pressable>
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              hasUnreadNotifications
+                ? `Notificaciones, ${"hay alertas pendientes"}`
+                : "Notificaciones"
+            }
+            onPress={onNotificationsPress}
+            style={({ pressed }) => [
+              styles.actionButton,
+              {
+                backgroundColor: theme.card,
+                borderColor: theme.borderLight,
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={21}
+              color={theme.text}
+            />
+
+            {hasUnreadNotifications && (
+              <View
+                style={[
+                  styles.notificationDot,
+                  {
+                    backgroundColor: theme.danger,
+                  },
+                ]}
+              />
+            )}
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Perfil"
+            onPress={onProfilePress}
+            style={({ pressed }) => [
+              styles.actionButton,
+              {
+                backgroundColor: theme.card,
+                borderColor: theme.borderLight,
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons name="person-outline" size={21} color={theme.text} />
+          </Pressable>
+        </View>
       </View>
 
-      {/* Saludo fuera de la cabecera */}
+      {/* Saludo */}
       <View style={styles.greetingContainer}>
-        <Text style={[styles.greetingText, { color: theme.text }]}>
-          ¡Hola, {userName}! 👋
+        <Text
+          style={[
+            styles.greeting,
+            {
+              color: theme.text,
+            },
+          ]}
+        >
+          Hola, {userName} 👋
         </Text>
-        <Text style={[styles.subGreetingText, { color: theme.muted }]}>
-          Casa principal ›
+
+        <Text
+          style={[
+            styles.subtitle,
+            {
+              color: theme.muted,
+            },
+          ]}
+        >
+          Aquí tienes el resumen de tu hogar
         </Text>
       </View>
+
+      {/* Hogar activo */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Abrir ${activeHomeName}`}
+        onPress={onHomePress}
+        style={({ pressed }) => [
+          styles.homeSelector,
+          {
+            backgroundColor: theme.card,
+            borderColor: theme.borderLight,
+          },
+          pressed && styles.pressed,
+        ]}
+      >
+        <View
+          style={[
+            styles.homeIcon,
+            {
+              backgroundColor: theme.rowAlt,
+            },
+          ]}
+        >
+          <Ionicons name="home-outline" size={22} color={theme.blue} />
+        </View>
+
+        <View style={styles.homeCopy}>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.homeName,
+              {
+                color: theme.text,
+              },
+            ]}
+          >
+            {activeHomeName}
+          </Text>
+
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.homeLocation,
+              {
+                color: theme.muted,
+              },
+            ]}
+          >
+            {activeHomeLocation}
+          </Text>
+        </View>
+
+        <Ionicons name="chevron-forward" size={20} color={theme.muted} />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
     marginBottom: 8,
+    width: "100%",
   },
-  headerCard: {
+
+  topBar: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 18,
-    width: "100%",
-    marginTop: 8,
-
-    // 👈 Redondeado en las esquinas superiores, recto abajo
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
   },
-  brandTitle: {
-    color: "#FFFFFF",
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.size.title,
-    fontWeight: typography.weight.bold,
-    textAlign: "center",
-  },
-  iconButton: {
+
+  brandContainer: {
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  brandIcon: {
+    alignItems: "center",
     borderRadius: 12,
+    height: 38,
+    justifyContent: "center",
+    width: 38,
+  },
+
+  brandTitle: {
+    fontFamily: typography.fontFamily.display,
+    fontSize: 20,
+    fontWeight: typography.weight.bold,
+  },
+
+  actions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  actionButton: {
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
     height: 40,
     justifyContent: "center",
     position: "relative",
     width: 40,
   },
-  unreadBadge: {
-    backgroundColor: "#FF3B20",
+
+  notificationDot: {
     borderRadius: 4,
     height: 8,
     position: "absolute",
-    right: 10,
-    top: 10,
+    right: 9,
+    top: 8,
     width: 8,
   },
-  buttonPressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.96 }],
+
+  pressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
   },
+
   greetingContainer: {
-    marginTop: 20,
-    paddingHorizontal: 4,
+    marginTop: 24,
   },
-  greetingText: {
+
+  greeting: {
     fontFamily: typography.fontFamily.display,
-    fontSize: typography.size.screenTitle,
+    fontSize: 28,
+    fontWeight: typography.weight.heavy,
+  },
+
+  subtitle: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 14,
+    fontWeight: typography.weight.medium,
+    marginTop: 4,
+  },
+
+  homeSelector: {
+    alignItems: "center",
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: "row",
+    marginTop: 18,
+    padding: 12,
+  },
+
+  homeIcon: {
+    alignItems: "center",
+    borderRadius: 14,
+    height: 46,
+    justifyContent: "center",
+    width: 46,
+  },
+
+  homeCopy: {
+    flex: 1,
+    marginHorizontal: 12,
+    minWidth: 0,
+  },
+
+  homeName: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 16,
     fontWeight: typography.weight.bold,
   },
-  subGreetingText: {
+
+  homeLocation: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.body,
-    fontWeight: typography.weight.medium,
-    marginTop: 2,
+    fontSize: 12,
+    marginTop: 3,
   },
 });

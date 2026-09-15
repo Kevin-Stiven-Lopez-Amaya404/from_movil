@@ -10,11 +10,26 @@ type Props = {
   yesterdayEnergy?: number;
 };
 
-export function EnergyAccumulatedCard({
-  energy,
-  yesterdayEnergy = 0,
-}: Props) {
+export function EnergyAccumulatedCard({ energy, yesterdayEnergy = 0 }: Props) {
   const theme = useAppTheme();
+
+  const difference = energy - yesterdayEnergy;
+  const hasComparison = yesterdayEnergy > 0;
+
+  const comparisonText = !hasComparison
+    ? "Sin comparación"
+    : difference > 0
+      ? `↑ ${Math.abs(difference).toFixed(0)} Wh`
+      : difference < 0
+        ? `↓ ${Math.abs(difference).toFixed(0)} Wh`
+        : "Sin cambios";
+
+  const comparisonColor =
+    difference > 0
+      ? theme.danger
+      : difference < 0
+        ? theme.success
+        : theme.muted;
 
   return (
     <View
@@ -22,22 +37,56 @@ export function EnergyAccumulatedCard({
         styles.card,
         {
           backgroundColor: theme.card,
-          borderColor: theme.borderLight ?? "#0047AB",
+          borderColor: theme.borderLight,
         },
       ]}
     >
-      <View style={styles.headerRow}>
-        <View style={[styles.iconCircle, { backgroundColor: "#EBF2FA" }]}>
+      <View style={styles.header}>
+        <View
+          style={[
+            styles.iconContainer,
+            {
+              backgroundColor: theme.rowAlt,
+            },
+          ]}
+        >
           <Ionicons name="flash-outline" size={20} color={theme.blue} />
         </View>
+
+        <Ionicons name="stats-chart-outline" size={18} color={theme.muted} />
       </View>
 
-      <Text style={[styles.label, { color: theme.muted }]}>
-        Energía
+      <Text
+        style={[
+          styles.label,
+          {
+            color: theme.muted,
+          },
+        ]}
+      >
+        Energía acumulada
       </Text>
 
-      <Text style={[styles.value, { color: theme.text }]}>
+      <Text
+        style={[
+          styles.value,
+          {
+            color: theme.text,
+          },
+        ]}
+      >
         {formatEnergy(energy)}
+      </Text>
+
+      <Text
+        style={[
+          styles.comparison,
+          {
+            color: comparisonColor,
+          },
+        ]}
+      >
+        {comparisonText}
       </Text>
     </View>
   );
@@ -46,38 +95,52 @@ export function EnergyAccumulatedCard({
 const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
-    borderWidth: 1.5,
-    padding: 16,
-    marginVertical: 6,
+    borderWidth: 1,
     flex: 1,
+    minHeight: 156,
+    padding: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 10,
     elevation: 2,
   },
-  headerRow: {
+
+  header: {
+    alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
   },
-  iconCircle: {
-    width: 38,
+
+  iconContainer: {
+    alignItems: "center",
+    borderRadius: 12,
     height: 38,
-    borderRadius: 19,
     justifyContent: "center",
-    alignItems: "center",
+    width: 38,
   },
+
   label: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.helper,
+    fontSize: 13,
     fontWeight: typography.weight.medium,
+    marginTop: 16,
   },
+
   value: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 22,
-    fontWeight: typography.weight.bold,
+    fontSize: 28,
+    fontWeight: typography.weight.heavy,
     marginTop: 2,
+  },
+
+  comparison: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 11,
+    fontWeight: typography.weight.bold,
+    marginTop: 4,
   },
 });

@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { SmartDevice } from "@/lib/context/smart-home-context";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
-import { SmartDevice } from "@/lib/context/smart-home-context";
 import { formatWatts } from "@/lib/utils/formatters";
 
 type Props = {
@@ -11,78 +12,211 @@ type Props = {
   onViewAll: () => void;
 };
 
-// Mapeo de categorías a iconos y colores
-const categoryMap: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  Iluminacion: { icon: "bulb-outline", color: "#FBBF24" },
-  Climatizacion: { icon: "snow-outline", color: "#60A5FA" },
-  Electrodomesticos: { icon: "tv-outline", color: "#34D399" },
-  Seguridad: { icon: "shield-checkmark-outline", color: "#F87171" },
-  default: { icon: "power-outline", color: "#9CA3AF" },
+const categoryMap: Record<
+  string,
+  {
+    icon: keyof typeof Ionicons.glyphMap;
+  }
+> = {
+  Iluminacion: {
+    icon: "bulb-outline",
+  },
+  Climatizacion: {
+    icon: "snow-outline",
+  },
+  Electrodomesticos: {
+    icon: "tv-outline",
+  },
+  Seguridad: {
+    icon: "shield-checkmark-outline",
+  },
 };
 
-export function ActiveDevicesCard({ devices, onDevicePress, onViewAll }: Props) {
+export function ActiveDevicesCard({
+  devices,
+  onDevicePress,
+  onViewAll,
+}: Props) {
   const theme = useAppTheme();
-  const active = devices.filter(d => d.online && d.state === "on" && d.power > 0);
 
-  const getCategoryInfo = (category: string) => {
-    return categoryMap[category] || categoryMap.default;
-  };
+  const active = devices
+    .filter(
+      (device) => device.online && device.state === "on" && device.power > 0,
+    )
+    .slice(0, 4);
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.card }]}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.card,
+          borderColor: theme.borderLight,
+        },
+      ]}
+    >
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          📱 Dispositivos Activos
-        </Text>
-        <Pressable onPress={onViewAll}>
-          <Text style={[styles.seeAll, { color: theme.blue }]}>Ver todo ›</Text>
+        <View>
+          <Text
+            style={[
+              styles.title,
+              {
+                color: theme.text,
+              },
+            ]}
+          >
+            Dispositivos activos
+          </Text>
+
+          <Text
+            style={[
+              styles.subtitle,
+              {
+                color: theme.muted,
+              },
+            ]}
+          >
+            {active.length} funcionando ahora
+          </Text>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={onViewAll}
+          style={({ pressed }) => [
+            styles.viewButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Text
+            style={[
+              styles.viewText,
+              {
+                color: theme.blue,
+              },
+            ]}
+          >
+            Ver todo
+          </Text>
+
+          <Ionicons name="chevron-forward" size={16} color={theme.blue} />
         </Pressable>
       </View>
 
       {active.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="power-outline" size={40} color={theme.muted} />
-          <Text style={[styles.empty, { color: theme.muted }]}>
+        <View style={styles.empty}>
+          <View
+            style={[
+              styles.emptyIcon,
+              {
+                backgroundColor: theme.rowAlt,
+              },
+            ]}
+          >
+            <Ionicons name="power-outline" size={24} color={theme.muted} />
+          </View>
+
+          <Text
+            style={[
+              styles.emptyText,
+              {
+                color: theme.muted,
+              },
+            ]}
+          >
             No hay dispositivos activos
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={active}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const categoryInfo = getCategoryInfo(item.category);
+        <View style={styles.list}>
+          {active.map((device, index) => {
+            const category = categoryMap[device.category];
+
+            const icon = category?.icon ?? "power-outline";
+
             return (
               <Pressable
-                style={[styles.deviceItem, { borderBottomColor: theme.border }]}
-                onPress={() => onDevicePress(item.id)}
+                key={device.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Abrir ${device.name}`}
+                onPress={() => onDevicePress(device.id)}
+                style={({ pressed }) => [
+                  styles.device,
+                  index < active.length - 1 && {
+                    borderBottomColor: theme.borderLight,
+                    borderBottomWidth: 1,
+                  },
+                  pressed && styles.pressed,
+                ]}
               >
-                <View style={styles.deviceLeft}>
-                  <View style={[styles.iconContainer, { backgroundColor: `${categoryInfo.color}20` }]}>
-                    <Ionicons name={categoryInfo.icon} size={20} color={categoryInfo.color} />
-                  </View>
-                  <View>
-                    <Text style={[styles.deviceName, { color: theme.text }]}>
-                      {item.name}
-                    </Text>
-                    <Text style={[styles.deviceRoom, { color: theme.muted }]}>
-                      {item.room}
-                    </Text>
-                  </View>
+                <View
+                  style={[
+                    styles.deviceIcon,
+                    {
+                      backgroundColor: theme.rowAlt,
+                    },
+                  ]}
+                >
+                  <Ionicons name={icon} size={19} color={theme.blue} />
                 </View>
-                <View style={styles.deviceRight}>
-                  <View style={[styles.statusBadge, { backgroundColor: theme.success }]}>
-                    <Text style={styles.statusText}>ON</Text>
-                  </View>
-                  <Text style={[styles.devicePower, { color: theme.text }]}>
-                    {formatWatts(item.power)}
+
+                <View style={styles.deviceInfo}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.deviceName,
+                      {
+                        color: theme.text,
+                      },
+                    ]}
+                  >
+                    {device.name}
                   </Text>
+
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.deviceRoom,
+                      {
+                        color: theme.muted,
+                      },
+                    ]}
+                  >
+                    {device.room}
+                  </Text>
+                </View>
+
+                <View style={styles.deviceRight}>
+                  <View
+                    style={[
+                      styles.activeDot,
+                      {
+                        backgroundColor: theme.success,
+                      },
+                    ]}
+                  />
+
+                  <Text
+                    style={[
+                      styles.power,
+                      {
+                        color: theme.text,
+                      },
+                    ]}
+                  >
+                    {formatWatts(device.power)}
+                  </Text>
+
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={theme.muted}
+                  />
                 </View>
               </Pressable>
             );
-          }}
-          scrollEnabled={false}
-        />
+          })}
+        </View>
       )}
     </View>
   );
@@ -90,91 +224,127 @@ export function ActiveDevicesCard({ devices, onDevicePress, onViewAll }: Props) 
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 14,
     padding: 16,
-    marginVertical: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.035,
+    shadowRadius: 10,
     elevation: 2,
   },
+
   header: {
+    alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 10,
   },
+
   title: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: typography.size.section,
-    fontWeight: typography.weight.semibold,
-  },
-  seeAll: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.body,
-    fontWeight: typography.weight.medium,
-  },
-  emptyContainer: {
-    alignItems: "center",
-    paddingVertical: 24,
-    gap: 8,
-  },
-  empty: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.body,
-  },
-  deviceItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  deviceLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  deviceName: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.body,
-    fontWeight: typography.weight.medium,
-  },
-  deviceRoom: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.caption,
-    marginTop: 1,
-  },
-  deviceRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  statusText: {
-    color: "#fff",
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.caption,
+    fontFamily: typography.fontFamily.display,
+    fontSize: 19,
     fontWeight: typography.weight.bold,
   },
-  devicePower: {
+
+  subtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.body,
-    fontWeight: typography.weight.semibold,
-    minWidth: 50,
-    textAlign: "right",
+    fontSize: 12,
+    marginTop: 3,
+  },
+
+  viewButton: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 2,
+    paddingVertical: 5,
+  },
+
+  viewText: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 12,
+    fontWeight: typography.weight.bold,
+  },
+
+  list: {
+    width: "100%",
+  },
+
+  device: {
+    alignItems: "center",
+    flexDirection: "row",
+    minHeight: 68,
+    paddingVertical: 9,
+  },
+
+  deviceIcon: {
+    alignItems: "center",
+    borderRadius: 12,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+
+  deviceInfo: {
+    flex: 1,
+    marginHorizontal: 10,
+    minWidth: 0,
+  },
+
+  deviceName: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 14,
+    fontWeight: typography.weight.bold,
+  },
+
+  deviceRoom: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 11,
+    marginTop: 2,
+  },
+
+  deviceRight: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 5,
+  },
+
+  activeDot: {
+    borderRadius: 4,
+    height: 7,
+    width: 7,
+  },
+
+  power: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 12,
+    fontWeight: typography.weight.bold,
+  },
+
+  empty: {
+    alignItems: "center",
+    paddingVertical: 24,
+  },
+
+  emptyIcon: {
+    alignItems: "center",
+    borderRadius: 20,
+    height: 48,
+    justifyContent: "center",
+    width: 48,
+  },
+
+  emptyText: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 13,
+    marginTop: 8,
+  },
+
+  pressed: {
+    opacity: 0.7,
   },
 });

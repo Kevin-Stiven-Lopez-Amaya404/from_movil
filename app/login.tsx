@@ -16,24 +16,14 @@ import { isValidEmail } from "@/lib/utils/validators";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function LoginScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
 
-  const {
-    accountActive,
-    colorMode,
-    setAccountActive,
-    setSessionName,
-  } = useSmartHome();
+  const { accountActive, colorMode, setAccountActive, setSessionName } =
+    useSmartHome();
 
   const palette = getAuthPalette(colorMode);
 
@@ -53,8 +43,6 @@ export default function LoginScreen() {
   });
 
   const [submitted, setSubmitted] = useState(false);
-
-  const [failedAttempts, setFailedAttempts] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   // ==========================================
@@ -73,13 +61,7 @@ export default function LoginScreen() {
       ? "La contraseña debe tener mínimo 4 caracteres."
       : "";
 
-  const canSubmit =
-    isValidEmail(cleanEmail) && password.length >= 4;
-
-  // ==========================================
-  // MENSAJE DE SEGURIDAD
-  // ==========================================
-
+  const canSubmit = isValidEmail(cleanEmail) && password.length >= 4;
 
   // ==========================================
   // ACCESO DEMO
@@ -93,6 +75,8 @@ export default function LoginScreen() {
       email: true,
       password: true,
     });
+
+    setSubmitted(false);
   }
 
   // ==========================================
@@ -102,7 +86,9 @@ export default function LoginScreen() {
   async function handleLogin() {
     setSubmitted(true);
 
-    if (submitting) return;
+    if (submitting) {
+      return;
+    }
 
     // ========================================
     // CUENTA DESACTIVADA
@@ -132,29 +118,25 @@ export default function LoginScreen() {
     // ========================================
 
     if (!canSubmit) {
-      Alert.alert(
-        "Datos incompletos",
-        "Corrige los campos marcados.",
-      );
+      Alert.alert("Datos incompletos", "Corrige los campos marcados.");
 
       return;
     }
 
+    // ========================================
+    // INICIAR AUTENTICACIÓN
+    // ========================================
+
     setSubmitting(true);
 
     try {
-      const user = await authenticateUser(
-        cleanEmail,
-        password,
-      );
+      const user = await authenticateUser(cleanEmail, password);
 
       // ======================================
       // CREDENCIALES INCORRECTAS
       // ======================================
 
       if (!user) {
-        setFailedAttempts((prev) => prev + 1);
-
         Alert.alert(
           "No pudimos iniciar sesión",
           "Correo o contraseña incorrectos.",
@@ -167,27 +149,15 @@ export default function LoginScreen() {
       // LOGIN EXITOSO
       // ======================================
 
-      setFailedAttempts(0);
+      setSessionName(user.name.split(" ")[0] || user.name);
 
-      setSessionName(
-        user.name.split(" ")[0] || user.name,
-      );
+      // ======================================
+      // IR AL DASHBOARD
+      // ======================================
 
-      Alert.alert(
-        "Bienvenido",
-        `Hola, ${user.name}.`,
-        [
-          {
-            text: "Entrar",
-            onPress: () => router.replace("/(tabs)"),
-          },
-        ],
-      );
+      router.replace("/(tabs)");
     } catch (error) {
-      Alert.alert(
-        "Error de conexión",
-        getApiErrorMessage(error),
-      );
+      Alert.alert("Error de conexión", getApiErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
@@ -199,31 +169,19 @@ export default function LoginScreen() {
 
   return (
     <AuthScreenLayout
-      backgroundColor={
-        colorMode === "dark"
-          ? "#08111F"
-          : "#ffffff"
-      }
+      backgroundColor={colorMode === "dark" ? "#08111F" : "#ffffff"}
       compact={layout.compact}
       title="Smart Home"
       titleColor={palette.title}
-      titleStyle={
-        layout.tiny
-          ? styles.titleTiny
-          : styles.brandTitle
-      }
+      titleStyle={layout.tiny ? styles.titleTiny : styles.brandTitle}
     >
       {/* ====================================== */}
       {/* BOTÓN VOLVER                           */}
       {/* ====================================== */}
 
       <View style={styles.header}>
-        <BackButton
-          color={palette.link}
-          fallbackHref="/welcome"
-        />
+        <BackButton color={palette.link} fallbackHref="/welcome" />
       </View>
-
 
       {/* ====================================== */}
       {/* FORMULARIO                             */}
@@ -305,9 +263,7 @@ export default function LoginScreen() {
               }))
             }
             onChangeText={setPassword}
-            onToggleVisibility={() =>
-              setShowPassword((prev) => !prev)
-            }
+            onToggleVisibility={() => setShowPassword((prev) => !prev)}
             placeholder="Contraseña"
             showPassword={showPassword}
             value={password}
@@ -326,18 +282,15 @@ export default function LoginScreen() {
               labelStyle={{
                 color: palette.text,
               }}
-              onToggle={() =>
-                setRememberMe((prev) => !prev)
-              }
+              onToggle={() => setRememberMe((prev) => !prev)}
             />
           </View>
 
           <Pressable
-            onPress={() =>
-              router.push("/forgot-password")
-            }
+            onPress={() => router.push("/forgot-password")}
             style={styles.forgotButton}
             accessibilityRole="button"
+            accessibilityLabel="Recuperar contraseña"
           >
             <Text
               style={[
@@ -347,7 +300,7 @@ export default function LoginScreen() {
                 },
               ]}
             >
-              ¿Olvidaste tú contraseña?
+              ¿Olvidaste tu contraseña?
             </Text>
           </Pressable>
         </View>
@@ -424,11 +377,7 @@ export default function LoginScreen() {
               },
             ]}
           >
-            <Ionicons
-              name="flash"
-              size={17}
-              color="#FFFFFF"
-            />
+            <Ionicons name="flash" size={17} color="#FFFFFF" />
           </View>
 
           <View style={styles.demoContent}>
@@ -455,13 +404,8 @@ export default function LoginScreen() {
             </Text>
           </View>
 
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={palette.muted}
-          />
+          <Ionicons name="chevron-forward" size={20} color={palette.muted} />
         </Pressable>
-
 
         {/* ==================================== */}
         {/* REGISTRO                              */}
@@ -480,10 +424,9 @@ export default function LoginScreen() {
           </Text>
 
           <Pressable
-            onPress={() =>
-              router.push("/register")
-            }
+            onPress={() => router.push("/register")}
             accessibilityRole="link"
+            accessibilityLabel="Registrarse"
           >
             <Text
               style={[
@@ -600,7 +543,7 @@ const styles = StyleSheet.create({
       width: 0,
       height: 3,
     },
-    shadowOpacity: 0.10,
+    shadowOpacity: 0.1,
     shadowRadius: 5,
 
     elevation: 3,

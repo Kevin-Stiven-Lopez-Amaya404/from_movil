@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -53,7 +53,7 @@ export function FilterChip<T extends string | number>({
   const theme = useAppTheme();
   const { compact, width } = useResponsiveLayout();
   const [focused, setFocused] = useState(false);
-  const scale = useRef(new Animated.Value(selected ? 1 : 0.98)).current;
+  const [scale] = useState(() => new Animated.Value(selected ? 1 : 0.98));
 
   const fontSize = compact ? 14 : width >= 768 ? 17 : 15;
   const height = compact ? 44 : width >= 768 ? 52 : 48;

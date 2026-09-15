@@ -1,20 +1,19 @@
-import React, { useEffect, useRef } from "react";
-import {
-  Alert,
-  Animated,
-  Easing,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
 import SmartHomeLogo from "@/components/common/SmartHomeLogo";
 import { GoogleIcon } from "@/components/icons/GoogleIcon";
 import { theme } from "@/constants/theme";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
-import { getAuthPalette } from "@/lib/theme/appearance";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+    Alert,
+    Animated,
+    Easing,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WelcomeScreen() {
@@ -22,7 +21,6 @@ export default function WelcomeScreen() {
   const layout = useResponsiveLayout();
 
   const { colorMode } = useSmartHome();
-  const palette = getAuthPalette(colorMode);
   const dark = colorMode === "dark";
 
   // ==========================================
@@ -30,13 +28,13 @@ export default function WelcomeScreen() {
   // ==========================================
 
   // Pequeño movimiento de escala del logo
-  const logoScale = useRef(new Animated.Value(1)).current;
+  const [logoScale] = useState(() => new Animated.Value(1));
 
   // Escala del halo
-  const glowScale = useRef(new Animated.Value(0.85)).current;
+  const [glowScale] = useState(() => new Animated.Value(0.85));
 
   // Intensidad del halo
-  const glowOpacity = useRef(new Animated.Value(0.10)).current;
+  const [glowOpacity] = useState(() => new Animated.Value(0.1));
 
   useEffect(() => {
     /*
@@ -109,7 +107,7 @@ export default function WelcomeScreen() {
           }),
 
           Animated.timing(glowOpacity, {
-            toValue: 0.10,
+            toValue: 0.1,
             duration: 800,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
@@ -121,7 +119,7 @@ export default function WelcomeScreen() {
         // ======================================
 
         Animated.delay(1800),
-      ])
+      ]),
     );
 
     animation.start();
@@ -133,7 +131,7 @@ export default function WelcomeScreen() {
       glowScale.stopAnimation();
       glowOpacity.stopAnimation();
     };
-  }, []);
+  }, [glowOpacity, glowScale, logoScale]);
 
   // ==========================================
   // GOOGLE LOGIN
@@ -148,7 +146,7 @@ export default function WelcomeScreen() {
           text: "Ir a iniciar sesión",
           onPress: () => router.push("/login"),
         },
-      ]
+      ],
     );
   }
 
@@ -179,10 +177,7 @@ export default function WelcomeScreen() {
       {/* FONDO LIMPIO                              */}
       {/* ========================================== */}
 
-      <View
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      />
+      <View style={StyleSheet.absoluteFill} pointerEvents="none" />
 
       {/* ========================================== */}
       {/* CONTENIDO PRINCIPAL                       */}
@@ -203,10 +198,7 @@ export default function WelcomeScreen() {
         {/* ========================================== */}
 
         <View
-          style={[
-            styles.logoArea,
-            layout.compact && styles.logoAreaCompact,
-          ]}
+          style={[styles.logoArea, layout.compact && styles.logoAreaCompact]}
         >
           <View style={styles.logoAnimationContainer}>
             {/* ====================================== */}
@@ -286,9 +278,7 @@ export default function WelcomeScreen() {
             ]}
             onPress={() => router.push("/login")}
           >
-            <Text style={styles.buttonFilledText}>
-              Iniciar sesión
-            </Text>
+            <Text style={styles.buttonFilledText}>Iniciar sesión</Text>
           </Pressable>
 
           {/* ====================================== */}
@@ -303,9 +293,7 @@ export default function WelcomeScreen() {
             ]}
             onPress={() => router.push("/register")}
           >
-            <Text style={styles.buttonOutlineText}>
-              Registrarse
-            </Text>
+            <Text style={styles.buttonOutlineText}>Registrarse</Text>
           </Pressable>
 
           {/* ====================================== */}
