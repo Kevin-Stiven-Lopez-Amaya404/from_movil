@@ -1,9 +1,8 @@
 /**
  * Pantalla de Estancias y Dispositivos.
  *
- * - Vista de Estancias con buscador, sub-pestañas y tarjetas con gradiente azul y consumo (⚡ 0 W).
- * - Detalle de Estancia con header de acciones, filtros (Dispositivos, Grupos, Escenas, Termostatos)
- *   y tarjetas de dispositivos con estado de red e interruptor.
+ * - Vista de Estancias con buscador y tarjetas compactas de consumo actual.
+ * - Detalle de Estancia con las vistas Dispositivos y Energía.
  */
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -20,6 +19,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { EnergyRealtimeCard } from "@/components/homes/EnergyRealtimeCard";
 import { RoomCard } from "@/components/homes/RoomCard";
 import { ShellyDeviceCard } from "@/components/homes/ShellyDeviceCard";
 import {
@@ -29,11 +29,7 @@ import {
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
-type TopSubTab =
-  | "Todas Las Estancias"
-  | "Todos Los Grupos"
-  | "Todos los Dispositivos";
-type RoomFilter = "Dispositivos" | "Grupos" | "Escenas" | "Termostatos";
+type RoomFilter = "Dispositivos" | "Energía";
 
 export default function HomesScreen() {
   const { homeId } = useLocalSearchParams<{
@@ -49,6 +45,8 @@ export default function HomesScreen() {
     addDeviceToHome,
     devices,
     accessibleHomes,
+    removeDevice,
+    updateDevice,
     sessionRole,
     setHomeDeviceState,
   } = useSmartHome();
@@ -57,9 +55,6 @@ export default function HomesScreen() {
   const canControl = sessionRole !== "invitado";
 
   // Estados de navegación interna
-  const [activeSubTab, setActiveSubTab] = useState<TopSubTab>(
-    "Todas Las Estancias",
-  );
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const [roomFilter, setRoomFilter] = useState<RoomFilter>("Dispositivos");
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,6 +66,14 @@ export default function HomesScreen() {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [newDeviceName, setNewDeviceName] = useState("");
+  const [deviceMenu, setDeviceMenu] = useState<SmartDevice | null>(null);
+  const [deviceEditor, setDeviceEditor] = useState<"rename" | "move" | null>(
+    null,
+  );
+  const [deviceDraftName, setDeviceDraftName] = useState("");
+  const [moveTargetRoom, setMoveTargetRoom] = useState("");
+  const [operationLoading, setOperationLoading] = useState(false);
+  const [pendingDeviceId, setPendingDeviceId] = useState<string | null>(null);
 
   // Hogar activo
   const selectedHome =
@@ -165,7 +168,7 @@ export default function HomesScreen() {
       return;
     }
     if (activeHome) {
-      addDeviceToHome(activeHome.id, clean);
+      addDeviceToHome(activeHome.id, clean, selectedRoom ?? undefined);
       Alert.alert(
         "Dispositivo agregado",
         `${clean} ha sido registrado en ${selectedRoom ?? "la estancia"}.`,
@@ -173,6 +176,111 @@ export default function HomesScreen() {
     }
     setNewDeviceName("");
     setAddModalVisible(false);
+  }
+
+  async function handleDeleteDevice(device: SmartDevice) {
+    Alert.alert(
+      "Eliminar dispositivo",
+      `¿Quieres eliminar ${device.name} de esta estancia?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            setOperationLoading(true);
+            try {
+              await removeDevice(device.id);
+              setTelemetryDevice(null);
+              Alert.alert(
+                "Dispositivo eliminado",
+                `${device.name} fue eliminado correctamente.`,
+              );
+            } catch (error) {
+              Alert.alert(
+                "No se pudo eliminar",
+                error instanceof Error ? error.message : "Intenta nuevamente.",
+              );
+            } finally {
+              setOperationLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  }
+
+  function handleDeviceMenu(device: SmartDevice) {
+    setDeviceMenu(device);
+  }
+
+  async function handleSaveDeviceEdit() {
+    if (!deviceMenu || !deviceEditor) return;
+    const value =
+      deviceEditor === "rename" ? deviceDraftName.trim() : moveTargetRoom;
+    if (!value) {
+      Alert.alert(
+        "Dato requerido",
+        deviceEditor === "rename"
+          ? "Escribe un nombre válido."
+          : "Selecciona una estancia.",
+      );
+      return;
+    }
+    if (deviceEditor === "rename" && (value.length < 2 || value.length > 60)) {
+      Alert.alert("Nombre no válido", "Usa entre 2 y 60 caracteres.");
+      return;
+    }
+    setOperationLoading(true);
+    try {
+      await updateDevice(
+        deviceMenu.id,
+        deviceEditor === "rename" ? { name: value } : { room: value },
+      );
+      setDeviceMenu(null);
+      setDeviceEditor(null);
+    } catch (error) {
+      Alert.alert(
+        "No se pudo guardar",
+        error instanceof Error ? error.message : "Intenta nuevamente.",
+      );
+    } finally {
+      setOperationLoading(false);
+    }
+  }
+
+  async function handleToggleDevice(device: SmartDevice) {
+    if (!canControl || pendingDeviceId) return;
+    setPendingDeviceId(device.id);
+    try {
+      await setHomeDeviceState(device.id, device.state === "on" ? "off" : "on");
+    } catch (error) {
+      Alert.alert(
+        "No se pudo cambiar el estado",
+        error instanceof Error ? error.message : "Intenta nuevamente.",
+      );
+    } finally {
+      setPendingDeviceId(null);
+    }
+  }
+
+  async function handleToggleTelemetryDevice() {
+    if (!telemetryDevice || !canControl || pendingDeviceId) return;
+    const nextState = telemetryDevice.state === "on" ? "off" : "on";
+    setPendingDeviceId(telemetryDevice.id);
+    try {
+      await setHomeDeviceState(telemetryDevice.id, nextState);
+      setTelemetryDevice((current) =>
+        current ? { ...current, state: nextState } : null,
+      );
+    } catch (error) {
+      Alert.alert(
+        "No se pudo cambiar el estado",
+        error instanceof Error ? error.message : "Intenta nuevamente.",
+      );
+    } finally {
+      setPendingDeviceId(null);
+    }
   }
 
   return (
@@ -191,44 +299,6 @@ export default function HomesScreen() {
         }}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          {/* ============================================================ */}
-          {/* CABECERA GENERAL DE ESTANCIAS (Sub-pestañas estilo Shelly)     */}
-          {/* ============================================================ */}
-          <View style={styles.topTabsScroll}>
-            {(
-              [
-                "Todas Las Estancias",
-                "Todos Los Grupos",
-                "Todos los Dispositivos",
-              ] as TopSubTab[]
-            ).map((tab) => {
-              const active = activeSubTab === tab;
-              return (
-                <Pressable
-                  key={tab}
-                  onPress={() => {
-                    setActiveSubTab(tab);
-                    setSelectedRoom(null);
-                  }}
-                  style={[
-                    styles.subTabItem,
-                    active && styles.subTabItemActive,
-                    active && { borderColor: theme.blue },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.subTabText,
-                      active ? styles.subTabTextActive : { color: theme.muted },
-                    ]}
-                  >
-                    {tab}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
           {/* ============================================================ */}
           {/* VISTA 1: DETALLE DE ESTANCIA ("Stiven") - IMAGEN 4           */}
           {/* ============================================================ */}
@@ -256,27 +326,28 @@ export default function HomesScreen() {
                       color={theme.text}
                     />
                   </Pressable>
-                  <Text
-                    numberOfLines={1}
-                    style={[styles.roomDetailTitle, { color: theme.text }]}
-                  >
-                    {selectedRoom}
-                  </Text>
+                  <View style={styles.roomDetailTitleGroup}>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.roomDetailTitle, { color: theme.text }]}
+                    >
+                      {selectedRoom}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.roomDetailSubtitle,
+                        { color: theme.muted },
+                      ]}
+                    >
+                      {activeRoomDevices.length}{" "}
+                      {activeRoomDevices.length === 1
+                        ? "dispositivo"
+                        : "dispositivos"}
+                    </Text>
+                  </View>
                 </View>
 
                 <View style={styles.roomDetailHeaderActions}>
-                  {canManage && (
-                    <Pressable
-                      onPress={() => setAddModalVisible(true)}
-                      style={[
-                        styles.actionSquareBtn,
-                        { backgroundColor: theme.blue },
-                      ]}
-                    >
-                      <Ionicons name="pencil" size={17} color="#FFFFFF" />
-                    </Pressable>
-                  )}
-
                   <Pressable
                     onPress={() => {
                       Alert.alert(
@@ -307,38 +378,16 @@ export default function HomesScreen() {
                       color="#FFFFFF"
                     />
                   </Pressable>
-
-                  <Pressable
-                    onPress={() => {
-                      Alert.alert(
-                        "Información de Estancia",
-                        `Estancia: ${selectedRoom}\nHogar: ${activeHome?.name ?? "Principal"}\nDispositivos: ${activeRoomDevices.length}`,
-                      );
-                    }}
-                    style={[
-                      styles.actionRoundBtn,
-                      { backgroundColor: theme.rowAlt },
-                    ]}
-                  >
-                    <Ionicons name="information" size={16} color={theme.text} />
-                  </Pressable>
                 </View>
               </View>
 
-              {/* Píldoras de Filtro (Dispositivos, Grupos, Escenas, Termostatos) */}
+              {/* Únicas vistas disponibles dentro de una estancia */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.roomFiltersRow}
               >
-                {(
-                  [
-                    "Dispositivos",
-                    "Grupos",
-                    "Escenas",
-                    "Termostatos",
-                  ] as RoomFilter[]
-                ).map((filter) => {
+                {(["Dispositivos", "Energía"] as RoomFilter[]).map((filter) => {
                   const active = roomFilter === filter;
                   return (
                     <Pressable
@@ -372,21 +421,50 @@ export default function HomesScreen() {
               {/* Lista de Dispositivos de la Estancia (Imagen 4) */}
               {roomFilter === "Dispositivos" ? (
                 <View style={styles.devicesSection}>
+                  <View
+                    style={[
+                      styles.deviceSectionHeader,
+                      {
+                        backgroundColor: theme.card,
+                        borderColor: theme.borderLight,
+                      },
+                    ]}
+                  >
+                    <View style={styles.deviceSectionCopy}>
+                      <Text
+                        style={[
+                          styles.deviceSectionTitle,
+                          { color: theme.text },
+                        ]}
+                      >
+                        Dispositivos de la estancia
+                      </Text>
+                    </View>
+                    <View style={styles.deviceSectionActions}>
+                      <Pressable
+                        accessibilityLabel="Añadir dispositivo"
+                        disabled={!canManage}
+                        onPress={() => setAddModalVisible(true)}
+                        style={[
+                          styles.deviceActionButton,
+                          { backgroundColor: theme.blue },
+                          !canManage && styles.disabledAction,
+                        ]}
+                      >
+                        <Ionicons name="add" size={16} color="#FFFFFF" />
+                        <Text style={styles.deviceActionText}>Añadir</Text>
+                      </Pressable>
+                    </View>
+                  </View>
                   {activeRoomDevices.map((device) => (
                     <ShellyDeviceCard
                       key={device.id}
                       device={device}
                       theme={theme}
-                      canControl={canControl}
+                      canControl={canControl && pendingDeviceId !== device.id}
                       onPress={() => setTelemetryDevice(device)}
-                      onToggleState={() => {
-                        if (canControl) {
-                          setHomeDeviceState(
-                            device.id,
-                            device.state === "on" ? "off" : "on",
-                          );
-                        }
-                      }}
+                      onMenu={() => handleDeviceMenu(device)}
+                      onToggleState={() => void handleToggleDevice(device)}
                     />
                   ))}
 
@@ -437,29 +515,50 @@ export default function HomesScreen() {
                   )}
                 </View>
               ) : (
-                <View
-                  style={[
-                    styles.emptyRoomCard,
-                    {
-                      backgroundColor: theme.card,
-                      borderColor: theme.borderLight,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name="sparkles-outline"
-                    size={34}
-                    color={theme.blue}
+                <View style={styles.energySection}>
+                  <EnergyRealtimeCard
+                    isOnline={activeRoomDevices.some((device) => device.online)}
+                    power={activeRoomDevices
+                      .filter(
+                        (device) => device.online && device.state === "on",
+                      )
+                      .reduce((sum, device) => sum + device.power, 0)}
+                    theme={theme}
                   />
-                  <Text style={[styles.emptyRoomTitle, { color: theme.text }]}>
-                    Módulo de {roomFilter}
-                  </Text>
-                  <Text
-                    style={[styles.emptyRoomSubtitle, { color: theme.muted }]}
+                  <View
+                    style={[
+                      styles.deviceSectionHeader,
+                      {
+                        backgroundColor: theme.card,
+                        borderColor: theme.borderLight,
+                      },
+                    ]}
                   >
-                    Gestiona automatizaciones y grupos para la estancia{" "}
-                    {selectedRoom}.
-                  </Text>
+                    <Text
+                      style={[styles.deviceSectionTitle, { color: theme.text }]}
+                    >
+                      Dispositivos de la estancia
+                    </Text>
+                    <Text
+                      style={[styles.deviceSectionCount, { color: theme.blue }]}
+                    >
+                      {activeRoomDevices.length}{" "}
+                      {activeRoomDevices.length === 1
+                        ? "dispositivo"
+                        : "dispositivos"}
+                    </Text>
+                  </View>
+                  {activeRoomDevices.map((device) => (
+                    <ShellyDeviceCard
+                      key={device.id}
+                      device={device}
+                      theme={theme}
+                      canControl={canControl && pendingDeviceId !== device.id}
+                      onPress={() => setTelemetryDevice(device)}
+                      onMenu={() => handleDeviceMenu(device)}
+                      onToggleState={() => void handleToggleDevice(device)}
+                    />
+                  ))}
                 </View>
               )}
             </View>
@@ -479,20 +578,34 @@ export default function HomesScreen() {
                 ]}
               >
                 <View style={styles.estanciasHeaderTop}>
-                  <Text style={[styles.estanciasTitle, { color: theme.text }]}>
-                    Estancias
-                  </Text>
+                  <View style={styles.estanciasHeading}>
+                    <Text
+                      style={[styles.estanciasTitle, { color: theme.text }]}
+                    >
+                      Estancias
+                    </Text>
+                    <Text
+                      style={[styles.estanciasSubtitle, { color: theme.muted }]}
+                    >
+                      {roomsData.length} estancias · {homeDevices.length}{" "}
+                      dispositivos
+                    </Text>
+                  </View>
 
                   <View style={styles.headerBtnGroup}>
                     {canManage && (
                       <Pressable
                         onPress={() => setAddModalVisible(true)}
+                        accessibilityLabel="Añadir estancia"
                         style={[
-                          styles.actionSquareBtn,
+                          styles.addRoomButton,
                           { backgroundColor: theme.blue },
                         ]}
                       >
                         <Ionicons name="add" size={20} color="#FFFFFF" />
+                        <Text style={styles.addRoomButtonText}>
+                          Añadir estancia
+                        </Text>
                       </Pressable>
                     )}
 
@@ -551,7 +664,7 @@ export default function HomesScreen() {
                   <TextInput
                     value={searchQuery}
                     onChangeText={setSearchQuery}
-                    placeholder="Buscar"
+                    placeholder="Buscar estancia..."
                     placeholderTextColor={theme.muted}
                     style={[styles.searchInput, { color: theme.text }]}
                   />
@@ -595,14 +708,21 @@ export default function HomesScreen() {
                 </Pressable>
               )}
 
-              {/* Listado de Tarjetas de Estancias en Gradiente Azul (Imagen 5) */}
+              {/* Listado de tarjetas compactas de estancias */}
               <View style={styles.roomsList}>
                 {filteredRooms.map((room) => (
                   <RoomCard
                     key={room.name}
                     name={room.name}
                     power={room.power}
-                    onPress={() => setSelectedRoom(room.name)}
+                    deviceCount={room.devices.length}
+                    isActive={room.devices.some(
+                      (device) => device.online && device.state === "on",
+                    )}
+                    onPress={() => {
+                      setRoomFilter("Dispositivos");
+                      setSelectedRoom(room.name);
+                    }}
                   />
                 ))}
 
@@ -767,17 +887,8 @@ export default function HomesScreen() {
 
             {telemetryDevice && canControl && (
               <Pressable
-                onPress={() => {
-                  setHomeDeviceState(
-                    telemetryDevice.id,
-                    telemetryDevice.state === "on" ? "off" : "on",
-                  );
-                  setTelemetryDevice((curr) =>
-                    curr
-                      ? { ...curr, state: curr.state === "on" ? "off" : "on" }
-                      : null,
-                  );
-                }}
+                disabled={pendingDeviceId === telemetryDevice.id}
+                onPress={() => void handleToggleTelemetryDevice()}
                 style={[
                   styles.telemetryPowerBtn,
                   {
@@ -796,6 +907,184 @@ export default function HomesScreen() {
                 </Text>
               </Pressable>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={!!deviceMenu && !deviceEditor}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeviceMenu(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[styles.deviceMenuCard, { backgroundColor: theme.card }]}
+          >
+            <Text style={[styles.addModalTitle, { color: theme.text }]}>
+              {deviceMenu?.name}
+            </Text>
+            <Pressable
+              disabled={!canManage || operationLoading}
+              onPress={() => {
+                setDeviceDraftName(deviceMenu?.name ?? "");
+                setDeviceEditor("rename");
+              }}
+              style={[
+                styles.deviceMenuItem,
+                !canManage && styles.disabledAction,
+              ]}
+            >
+              <Ionicons name="pencil-outline" size={19} color={theme.blue} />
+              <Text style={[styles.deviceMenuText, { color: theme.text }]}>
+                Renombrar
+              </Text>
+            </Pressable>
+            <Pressable
+              disabled={!canManage || operationLoading}
+              onPress={() => {
+                setMoveTargetRoom(
+                  roomNames.find((room) => room !== deviceMenu?.room) ?? "",
+                );
+                setDeviceEditor("move");
+              }}
+              style={[
+                styles.deviceMenuItem,
+                !canManage && styles.disabledAction,
+              ]}
+            >
+              <Ionicons
+                name="swap-horizontal-outline"
+                size={19}
+                color={theme.blue}
+              />
+              <Text style={[styles.deviceMenuText, { color: theme.text }]}>
+                Mover de estancia
+              </Text>
+            </Pressable>
+            <Pressable
+              disabled={!canManage || operationLoading}
+              onPress={() => {
+                setDeviceMenu(null);
+                if (deviceMenu) void handleDeleteDevice(deviceMenu);
+              }}
+              style={[
+                styles.deviceMenuItem,
+                !canManage && styles.disabledAction,
+              ]}
+            >
+              <Ionicons name="trash-outline" size={19} color={theme.danger} />
+              <Text style={[styles.deviceMenuText, { color: theme.danger }]}>
+                Eliminar dispositivo
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setDeviceMenu(null)}
+              style={styles.modalCancelBtn}
+            >
+              <Text style={[styles.modalCancelText, { color: theme.muted }]}>
+                Cancelar
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={!!deviceEditor && !!deviceMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeviceEditor(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.addModalCard, { backgroundColor: theme.card }]}>
+            <Text style={[styles.addModalTitle, { color: theme.text }]}>
+              {deviceEditor === "rename"
+                ? "Renombrar dispositivo"
+                : "Mover de estancia"}
+            </Text>
+            {deviceEditor === "rename" ? (
+              <TextInput
+                value={deviceDraftName}
+                onChangeText={setDeviceDraftName}
+                autoFocus
+                placeholder="Nombre del dispositivo"
+                placeholderTextColor={theme.muted}
+                style={[
+                  styles.modalInput,
+                  {
+                    color: theme.text,
+                    borderColor: theme.borderLight,
+                    backgroundColor: theme.rowAlt,
+                  },
+                ]}
+              />
+            ) : (
+              <View style={styles.roomChoiceList}>
+                {roomNames
+                  .filter((room) => room !== deviceMenu?.room)
+                  .map((room) => (
+                    <Pressable
+                      key={room}
+                      onPress={() => setMoveTargetRoom(room)}
+                      style={[
+                        styles.roomChoice,
+                        {
+                          backgroundColor:
+                            moveTargetRoom === room
+                              ? theme.blue1
+                              : theme.rowAlt,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.roomChoiceText,
+                          {
+                            color:
+                              moveTargetRoom === room ? theme.blue : theme.text,
+                          },
+                        ]}
+                      >
+                        {room}
+                      </Text>
+                      {moveTargetRoom === room && (
+                        <Ionicons
+                          name="checkmark"
+                          size={18}
+                          color={theme.blue}
+                        />
+                      )}
+                    </Pressable>
+                  ))}
+              </View>
+            )}
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => setDeviceEditor(null)}
+                style={[
+                  styles.modalCancelBtn,
+                  { borderColor: theme.borderLight },
+                ]}
+              >
+                <Text style={[styles.modalCancelText, { color: theme.muted }]}>
+                  Cancelar
+                </Text>
+              </Pressable>
+              <Pressable
+                disabled={operationLoading}
+                onPress={() => void handleSaveDeviceEdit()}
+                style={[
+                  styles.modalConfirmBtn,
+                  { backgroundColor: theme.blue },
+                  operationLoading && styles.disabledAction,
+                ]}
+              >
+                <Text style={styles.modalConfirmText}>
+                  {operationLoading ? "Guardando..." : "Guardar"}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -888,30 +1177,6 @@ const styles = StyleSheet.create({
     width: "100%",
     alignSelf: "center",
   },
-  topTabsScroll: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 16,
-  },
-  subTabItem: {
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  subTabItemActive: {
-    backgroundColor: "rgba(11, 74, 150, 0.2)",
-    borderWidth: 1,
-  },
-  subTabText: {
-    fontSize: 14,
-    fontWeight: "700",
-    fontFamily: typography.fontFamily.emphasis,
-  },
-  subTabTextActive: {
-    color: "#3B82F6",
-  },
   estanciasContainer: {
     width: "100%",
   },
@@ -927,10 +1192,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 14,
   },
+  estanciasHeading: {
+    flex: 1,
+    minWidth: 0,
+  },
   estanciasTitle: {
     fontSize: 24,
     fontWeight: "800",
     fontFamily: typography.fontFamily.emphasis,
+  },
+  estanciasSubtitle: {
+    fontSize: 13,
+    marginTop: 3,
+    fontFamily: typography.fontFamily.regular,
   },
   headerBtnGroup: {
     flexDirection: "row",
@@ -950,6 +1224,20 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
+  },
+  addRoomButton: {
+    alignItems: "center",
+    borderRadius: 10,
+    flexDirection: "row",
+    gap: 4,
+    minHeight: 38,
+    paddingHorizontal: 11,
+  },
+  addRoomButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+    fontFamily: typography.fontFamily.emphasis,
   },
   searchInputWrapper: {
     flexDirection: "row",
@@ -999,6 +1287,10 @@ const styles = StyleSheet.create({
     gap: 6,
     flex: 1,
   },
+  roomDetailTitleGroup: {
+    flex: 1,
+    minWidth: 0,
+  },
   roomBackBtn: {
     padding: 2,
   },
@@ -1006,6 +1298,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "800",
     fontFamily: typography.fontFamily.emphasis,
+  },
+  roomDetailSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+    fontFamily: typography.fontFamily.regular,
   },
   roomDetailHeaderActions: {
     flexDirection: "row",
@@ -1030,6 +1327,59 @@ const styles = StyleSheet.create({
   },
   devicesSection: {
     width: "100%",
+  },
+  energySection: {
+    width: "100%",
+  },
+  deviceSectionHeader: {
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+  },
+  deviceSectionCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  deviceSectionActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+    marginLeft: 8,
+  },
+  deviceActionButton: {
+    alignItems: "center",
+    borderRadius: 9,
+    flexDirection: "row",
+    gap: 4,
+    minHeight: 34,
+    paddingHorizontal: 9,
+  },
+  deactivateButton: {
+    borderWidth: 1,
+  },
+  deviceActionText: {
+    color: "#FFFFFF",
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  disabledAction: {
+    opacity: 0.45,
+  },
+  deviceSectionTitle: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 17,
+    fontWeight: "800",
+  },
+  deviceSectionCount: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 13,
+    fontWeight: "700",
   },
   emptyRoomCard: {
     borderRadius: 16,
@@ -1139,6 +1489,42 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     borderRadius: 18,
     padding: 20,
+  },
+  deviceMenuCard: {
+    borderRadius: 18,
+    padding: 20,
+    width: "100%",
+    maxWidth: 340,
+  },
+  deviceMenuItem: {
+    alignItems: "center",
+    borderRadius: 10,
+    flexDirection: "row",
+    gap: 12,
+    minHeight: 46,
+    paddingHorizontal: 10,
+  },
+  deviceMenuText: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  roomChoiceList: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  roomChoice: {
+    alignItems: "center",
+    borderRadius: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 44,
+    paddingHorizontal: 12,
+  },
+  roomChoiceText: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 14,
+    fontWeight: "600",
   },
   addModalTitle: {
     fontSize: 18,

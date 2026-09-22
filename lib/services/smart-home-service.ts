@@ -29,6 +29,11 @@ export type UpdateDeviceStatusRequest = {
   online: boolean;
 };
 
+export type UpdateDeviceRequest = {
+  name?: string;
+  room?: string;
+};
+
 export interface SmartHomeService {
   listHomes(token?: string): Promise<SmartHomePlace[]>;
   createHome(
@@ -55,6 +60,12 @@ export interface SmartHomeService {
     state: "on" | "off",
     token?: string,
   ): Promise<SmartDevice>;
+  updateDevice(
+    deviceId: string,
+    request: UpdateDeviceRequest,
+    token?: string,
+  ): Promise<SmartDevice>;
+  deleteDevice(deviceId: string, token?: string): Promise<void>;
   setAllHomeDevicesState(
     homeId: string,
     state: "on" | "off",
@@ -334,6 +345,20 @@ const mockSmartHomeService: SmartHomeService = {
     throw new Error("Dispositivo no encontrado.");
   },
 
+  async updateDevice(deviceId, request) {
+    const index = mockDevices.findIndex((device) => device.id === deviceId);
+    if (index < 0) throw new Error("Dispositivo no encontrado.");
+
+    mockDevices[index] = { ...mockDevices[index], ...request };
+    return mockDevices[index];
+  },
+
+  async deleteDevice(deviceId) {
+    const index = mockDevices.findIndex((device) => device.id === deviceId);
+    if (index < 0) throw new Error("Dispositivo no encontrado.");
+    mockDevices.splice(index, 1);
+  },
+
   async setAllHomeDevicesState(homeId, state) {
     const timestamp = getLocalTimestamp();
     const updated: SmartDevice[] = [];
@@ -405,6 +430,18 @@ const backendSmartHomeService: SmartHomeService = {
       { state },
       { token },
     );
+  },
+
+  updateDevice(deviceId, request, token) {
+    return apiClient.patch<SmartDevice, UpdateDeviceRequest>(
+      `/devices/${deviceId}`,
+      request,
+      { token },
+    );
+  },
+
+  deleteDevice(deviceId, token) {
+    return apiClient.delete<void>(`/devices/${deviceId}`, { token });
   },
 
   setAllHomeDevicesState(homeId, state, token) {

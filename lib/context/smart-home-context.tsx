@@ -97,7 +97,12 @@ type SmartHomeState = {
   lastSync: string;
   deactivateAccount: () => void;
   closeActiveDevices: (deviceIds: string[]) => void;
-  addDeviceToHome: (homeId: string, name: string) => void;
+  addDeviceToHome: (homeId: string, name: string, room?: string) => void;
+  removeDevice: (deviceId: string) => Promise<void>;
+  updateDevice: (
+    deviceId: string,
+    updates: { name?: string; room?: string },
+  ) => Promise<void>;
   addHome: (name: string) => void;
   setActiveHomeId: (homeId: string) => void;
   setAccountActive: (active: boolean) => void;
@@ -108,7 +113,7 @@ type SmartHomeState = {
   setSessionEmail: (email: string) => void;
   setSessionRole: (role: UserRole) => void;
   setOfflineMode: (enabled: boolean) => void;
-  setHomeDeviceState: (id: string, state: "on" | "off") => void;
+  setHomeDeviceState: (id: string, state: "on" | "off") => Promise<void>;
   setAllHomeDevicesState: (homeId: string, state: "on" | "off") => void;
   assignHomeAccess: (email: string, homeId: string, assigned: boolean) => void;
   toggleDevice: (id: string) => void;
@@ -411,7 +416,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         );
       },
       // Crea un dispositivo nuevo dentro de un hogar especifico.
-      addDeviceToHome: (homeId, name) => {
+      addDeviceToHome: (homeId, name, room) => {
         const cleanName = name.trim();
         if (!cleanName) return;
 
@@ -422,7 +427,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
             homeId,
             name: cleanName,
             category: "Electrodomesticos",
-            room: "General",
+            room: room?.trim() || "General",
             icon: "power-plug-outline",
             power: 0,
             energy: 0,
@@ -440,9 +445,19 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
             homeId,
             name: cleanName,
             category: "Electrodomesticos",
-            room: "General",
+            room: room?.trim() || "General",
           })
           .catch(() => null);
+      },
+      removeDevice: async (deviceId) => {
+        await smartHomeService.deleteDevice(deviceId);
+        setDevices((items) => items.filter((device) => device.id !== deviceId));
+      },
+      updateDevice: async (deviceId, updates) => {
+        const updated = await smartHomeService.updateDevice(deviceId, updates);
+        setDevices((items) =>
+          items.map((device) => (device.id === deviceId ? updated : device)),
+        );
       },
       // Crea un hogar y lo marca como activo para que el usuario pueda administrarlo.
       addHome: (name) => {
@@ -530,15 +545,27 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           alerts.filter((alertId) => alertId !== id),
         );
       },
-      setHomeDeviceState: (id, state) => {
+      setHomeDeviceState: async (id, state) => {
+        let previousState: "on" | "off" | undefined;
         setDevices((items) =>
-          items.map((item) =>
-            item.id === id
-              ? { ...item, state, lastStateChange: getTimeStamp() }
-              : item,
-          ),
+          items.map((item) => {
+            if (item.id !== id) return item;
+            previousState = item.state;
+            return { ...item, state, lastStateChange: getTimeStamp() };
+          }),
         );
-        smartHomeService.updateDeviceState(id, state).catch(() => null);
+        try {
+          await smartHomeService.updateDeviceState(id, state);
+        } catch (error) {
+          if (previousState) {
+            setDevices((items) =>
+              items.map((item) =>
+                item.id === id ? { ...item, state: previousState! } : item,
+              ),
+            );
+          }
+          throw error;
+        }
       },
       setAllHomeDevicesState: (homeId, state) => {
         setDevices((items) =>

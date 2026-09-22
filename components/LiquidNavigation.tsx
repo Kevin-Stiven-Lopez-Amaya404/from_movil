@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import type { BottomTabBarProps } from "expo-router/build/react-navigation/bottom-tabs";
 import { useEffect, useState } from "react";
 import {
@@ -17,14 +16,13 @@ import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
 const ITEMS = [
-  { route: "index", label: "Dashboard", icon: "speedometer-outline" as const },
+  { route: "index", label: "Inicio", icon: "home" as const },
   { route: "homes", label: "Estancias", icon: "home-outline" as const },
   { route: "reports", label: "Energía", icon: "flash-outline" as const },
-  { route: "profile", label: "Perfil", icon: "person" as const, central: true },
+  { route: "profile", label: "Perfil", icon: "person-outline" as const },
 ];
 
 const BAR_HORIZONTAL_PADDING = 8;
-const INDICATOR_WIDTH = 20;
 
 export function LiquidNavigation({
   state,
@@ -59,11 +57,8 @@ export function LiquidNavigation({
   const indicatorTranslateX = indicatorPosition.interpolate({
     inputRange: [0, Math.max(ITEMS.length - 1, 1)],
     outputRange: [
-      BAR_HORIZONTAL_PADDING + itemWidth / 2 - INDICATOR_WIDTH / 2,
-      BAR_HORIZONTAL_PADDING +
-        itemWidth * (ITEMS.length - 1) +
-        itemWidth / 2 -
-        INDICATOR_WIDTH / 2,
+      BAR_HORIZONTAL_PADDING,
+      BAR_HORIZONTAL_PADDING + itemWidth * (ITEMS.length - 1),
     ],
   });
 
@@ -100,30 +95,15 @@ export function LiquidNavigation({
           },
         ]}
       >
-        <BlurView
-          intensity={theme.dark ? 18 : 22}
-          tint={theme.dark ? "dark" : "light"}
-          style={styles.blur}
-        />
-        <View
-          pointerEvents="none"
-          style={[
-            styles.glassOverlay,
-            {
-              backgroundColor: theme.dark
-                ? "rgba(17, 24, 39, 0.82)"
-                : "rgba(255, 255, 255, 0.88)",
-            },
-          ]}
-        />
         <Animated.View
           pointerEvents="none"
           style={[
             styles.activeIndicator,
             {
-              backgroundColor: theme.tab.activeBorder,
+              backgroundColor: "#EAF3FF",
               shadowColor: theme.tab.activeShadow,
               transform: [{ translateX: indicatorTranslateX }],
+              width: itemWidth,
             },
           ]}
         />
@@ -144,29 +124,20 @@ export function LiquidNavigation({
               }
               accessibilityState={{ selected }}
               onPress={() => handlePress(item.route)}
-              style={({ pressed }) => [
-                styles.item,
-                item.central && styles.centralItem,
-                pressed && styles.pressed,
-              ]}
+              style={({ pressed }) => [styles.item, pressed && styles.pressed]}
             >
-              <View
-                style={[
-                  item.central && styles.centralIcon,
-                  selected && !item.central && styles.selectedIcon,
-                ]}
-              >
+              <View style={styles.iconWrap}>
                 <Ionicons
                   name={item.icon}
-                  size={item.central ? 24 : 21}
-                  color={item.central || selected ? "#FFFFFF" : "#B8C2D2"}
+                  size={22}
+                  color={selected ? "#0B5ED7" : "#64748B"}
                 />
               </View>
               <Text
                 style={[
                   styles.label,
                   {
-                    color: selected && !item.central ? "#19B66A" : "#B8C2D2",
+                    color: selected ? "#0B5ED7" : "#64748B",
                   },
                 ]}
               >
@@ -188,11 +159,11 @@ const styles = StyleSheet.create({
   },
   bar: {
     alignItems: "stretch",
-    backgroundColor: "#101D33",
-    borderRadius: 31,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
-    height: 70,
+    height: 72,
     maxWidth: 520,
     paddingHorizontal: BAR_HORIZONTAL_PADDING,
     position: "relative",
@@ -201,60 +172,35 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     width: "92%",
   },
-  blur: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 30,
-  },
-  glassOverlay: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 30,
-  },
   item: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    minWidth: 52,
-    paddingVertical: 4,
+    minWidth: 58,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
+    zIndex: 1,
   },
   pressed: {
     opacity: 0.68,
   },
-  centralItem: {
-    marginTop: -20,
-  },
-  centralIcon: {
+  iconWrap: {
     alignItems: "center",
-    backgroundColor: "#16B86A",
-    borderColor: "#D7F9E8",
-    borderRadius: 30,
-    borderWidth: 3,
-    height: 58,
     justifyContent: "center",
-    shadowColor: "#16B86A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    width: 58,
+    height: 25,
   },
   activeIndicator: {
-    borderRadius: 2,
-    bottom: 6,
-    height: 2,
+    borderRadius: 20,
+    bottom: 5,
+    height: 62,
     position: "absolute",
-    width: INDICATOR_WIDTH,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 1,
-    zIndex: 2,
-  },
-  selectedIcon: {
-    alignItems: "center",
-    justifyContent: "center",
+    shadowOpacity: 0,
+    zIndex: 0,
   },
   label: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 9,
-    fontWeight: "800",
+    fontSize: 10,
+    fontWeight: "600",
     marginTop: 4,
   },
 });

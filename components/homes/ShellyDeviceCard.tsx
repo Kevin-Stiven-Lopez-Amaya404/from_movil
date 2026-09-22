@@ -11,16 +11,16 @@ type ShellyDeviceCardProps = {
   theme: AppTheme;
   canControl: boolean;
   onPress: () => void;
+  onMenu: () => void;
   onToggleState: () => void;
 };
-
-const GREEN = "#2AAF5D";
 
 export function ShellyDeviceCard({
   device,
   theme,
   canControl,
   onPress,
+  onMenu,
   onToggleState,
 }: ShellyDeviceCardProps) {
   const isOnline = device.online;
@@ -128,6 +128,13 @@ export function ShellyDeviceCard({
 
           <Text
             numberOfLines={1}
+            style={[styles.deviceModel, { color: theme.muted }]}
+          >
+            Shelly Plus 1PM
+          </Text>
+
+          <Text
+            numberOfLines={1}
             style={[
               styles.deviceStatus,
               {
@@ -145,17 +152,24 @@ export function ShellyDeviceCard({
           </Text>
         </View>
 
-        {/* Switch de control */}
-        <Switch
-          value={isOn}
-          onValueChange={onToggleState}
-          disabled={!canControl || !isOnline}
-          trackColor={{
-            false: "#3A4556",
-            true: "#2A7C4F",
-          }}
-          thumbColor={isOnline && isOn ? GREEN : "#E0E0E0"}
-        />
+        <View style={styles.deviceActions}>
+          <Switch
+            value={isOn}
+            onValueChange={onToggleState}
+            disabled={!canControl || !isOnline}
+            trackColor={{ false: "#CBD5E1", true: "#0B5ED7" }}
+            thumbColor={isOnline && isOn ? "#FFFFFF" : "#F8FAFC"}
+          />
+          <Pressable
+            accessibilityLabel={`Acciones de ${device.name}`}
+            onPress={onMenu}
+            hitSlop={8}
+            style={styles.menuButton}
+          >
+            <Ionicons name="ellipsis-vertical" size={21} color={theme.muted} />
+          </Pressable>
+          <Ionicons name="chevron-forward" size={20} color={theme.muted} />
+        </View>
       </Pressable>
     </View>
   );
@@ -218,9 +232,25 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: typography.fontFamily.emphasis,
   },
+  deviceModel: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 12,
+    marginTop: 2,
+  },
   deviceStatus: {
     fontSize: 13,
     marginTop: 2,
     fontFamily: typography.fontFamily.regular,
+  },
+  deviceActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  menuButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 32,
+    minWidth: 24,
   },
 });

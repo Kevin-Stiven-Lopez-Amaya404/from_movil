@@ -2,12 +2,11 @@
  * Pantalla de Análisis Energético y Reportes.
  *
  * Sub-pestañas disponibles:
- * 1. Tiempo Real: Medición circular/gauge y telemetría activa en kW.
- * 2. Historia: Selector desplegable (24h, Día, 7d, Semana, 30d, Mes), selector de fecha,
+ * Historia: Selector desplegable (24h, Día, 7d, Semana, 30d, Mes), selector de fecha,
  *    gráfica de telemetría horaria en Wh/kWh, zona horaria (America/Bogota) y tarjetas de descarga.
  */
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
     Alert,
     Pressable,
@@ -22,8 +21,6 @@ import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
-
-type ReportTab = "Tiempo Real" | "Historia";
 
 type HistoryPeriod =
   | "Últimas 24 horas"
@@ -61,26 +58,13 @@ export default function ReportsScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
 
-  const { devices, accessibleHomes, activeHomeId } = useSmartHome();
-  const accessibleHomeIds = new Set(accessibleHomes.map((h) => h.id));
-  const visibleDevices = devices.filter((d) => accessibleHomeIds.has(d.homeId));
-
-  // Estados de navegación superior
-  const [activeTab, setActiveTab] = useState<ReportTab>("Historia");
+  const { accessibleHomes, activeHomeId } = useSmartHome();
 
   // Estados de la pestaña "Historia"
   const [historyPeriod, setHistoryPeriod] =
     useState<HistoryPeriod>("Últimas 24 horas");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dateRangeIndex, setDateRangeIndex] = useState(0);
-
-  // Cálculos de potencia y energía
-  const realTimePowerKw = useMemo(() => {
-    const watts = visibleDevices
-      .filter((d) => d.online && d.state === "on")
-      .reduce((sum, d) => sum + d.power, 0);
-    return watts / 1000;
-  }, [visibleDevices]);
 
   // Rangos de fecha simulados
   const dateRanges = [
@@ -140,465 +124,274 @@ export default function ReportsScreen() {
           </View>
 
           {/* ============================================================ */}
-          {/* SUB-PESTAÑAS SUPERIORES (Tiempo Real | Historia | etc.)      */}
-          {/* ============================================================ */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.topTabsBar}
-          >
-            {(["Tiempo Real", "Historia"] as ReportTab[]).map((tab) => {
-              const active = activeTab === tab;
-              return (
-                <Pressable
-                  key={tab}
-                  onPress={() => setActiveTab(tab)}
-                  style={[
-                    styles.tabButton,
-                    active && styles.tabButtonActive,
-                    active && { borderBottomColor: "#3B82F6" },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.tabButtonText,
-                      active
-                        ? styles.tabButtonTextActive
-                        : { color: theme.muted },
-                    ]}
-                  >
-                    {tab}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          {/* ============================================================ */}
           {/* PESTAÑA 1: HISTORIA (IMÁGENES 2 Y 3)                         */}
           {/* ============================================================ */}
-          {activeTab === "Historia" && (
-            <View style={styles.historySection}>
-              {/* Tarjeta de Selección de Período y Dropdown */}
-              <View
+          <View style={styles.historySection}>
+            {/* Tarjeta de Selección de Período y Dropdown */}
+            <View
+              style={[
+                styles.cardContainer,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.borderLight,
+                },
+              ]}
+            >
+              <Text style={[styles.cardTitle, { color: theme.text }]}>
+                Historia
+              </Text>
+
+              {/* Selector Desplegable (Dropdown) */}
+              <Pressable
+                onPress={() => setDropdownOpen(!dropdownOpen)}
                 style={[
-                  styles.cardContainer,
+                  styles.dropdownHeader,
                   {
-                    backgroundColor: theme.card,
-                    borderColor: theme.borderLight,
+                    backgroundColor: theme.dark ? "#0E1829" : theme.rowAlt,
+                    borderColor: "#2563EB",
                   },
                 ]}
               >
-                <Text style={[styles.cardTitle, { color: theme.text }]}>
-                  Historia
-                </Text>
+                <View style={styles.dropdownHeaderLeft}>
+                  <Ionicons name="time-outline" size={18} color={theme.text} />
+                  <Text
+                    style={[styles.dropdownHeaderText, { color: theme.text }]}
+                  >
+                    {historyPeriod}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={dropdownOpen ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color={theme.muted}
+                />
+              </Pressable>
 
-                {/* Selector Desplegable (Dropdown) */}
-                <Pressable
-                  onPress={() => setDropdownOpen(!dropdownOpen)}
+              {/* Lista Desplegable (Imagen 2) */}
+              {dropdownOpen && (
+                <View
                   style={[
-                    styles.dropdownHeader,
+                    styles.dropdownMenu,
                     {
                       backgroundColor: theme.dark ? "#0E1829" : theme.rowAlt,
                       borderColor: "#2563EB",
                     },
                   ]}
                 >
-                  <View style={styles.dropdownHeaderLeft}>
-                    <Ionicons
-                      name="time-outline"
-                      size={18}
-                      color={theme.text}
-                    />
-                    <Text
-                      style={[styles.dropdownHeaderText, { color: theme.text }]}
-                    >
-                      {historyPeriod}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name={dropdownOpen ? "chevron-up" : "chevron-down"}
-                    size={18}
-                    color={theme.muted}
-                  />
+                  {HISTORY_PERIODS.map((period) => {
+                    const isSelected = historyPeriod === period;
+                    return (
+                      <Pressable
+                        key={period}
+                        onPress={() => {
+                          setHistoryPeriod(period);
+                          setDropdownOpen(false);
+                        }}
+                        style={[
+                          styles.dropdownItem,
+                          isSelected && styles.dropdownItemSelected,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            { color: isSelected ? "#3B82F6" : theme.text },
+                          ]}
+                        >
+                          {period}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Navegador de Rango de Fechas (< 09.09.2026 - 10.09.2026 >) - Imagen 3 */}
+              <View
+                style={[
+                  styles.dateNavigator,
+                  {
+                    backgroundColor: theme.dark ? "#0E1829" : theme.rowAlt,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <Pressable
+                  onPress={() => setDateRangeIndex((prev) => prev - 1)}
+                  hitSlop={8}
+                  style={styles.dateNavArrow}
+                >
+                  <Ionicons name="chevron-back" size={18} color={theme.text} />
                 </Pressable>
 
-                {/* Lista Desplegable (Imagen 2) */}
-                {dropdownOpen && (
-                  <View
-                    style={[
-                      styles.dropdownMenu,
-                      {
-                        backgroundColor: theme.dark ? "#0E1829" : theme.rowAlt,
-                        borderColor: "#2563EB",
-                      },
-                    ]}
-                  >
-                    {HISTORY_PERIODS.map((period) => {
-                      const isSelected = historyPeriod === period;
-                      return (
-                        <Pressable
-                          key={period}
-                          onPress={() => {
-                            setHistoryPeriod(period);
-                            setDropdownOpen(false);
-                          }}
-                          style={[
-                            styles.dropdownItem,
-                            isSelected && styles.dropdownItemSelected,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.dropdownItemText,
-                              { color: isSelected ? "#3B82F6" : theme.text },
-                            ]}
-                          >
-                            {period}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                )}
-
-                {/* Navegador de Rango de Fechas (< 09.09.2026 - 10.09.2026 >) - Imagen 3 */}
-                <View
-                  style={[
-                    styles.dateNavigator,
-                    {
-                      backgroundColor: theme.dark ? "#0E1829" : theme.rowAlt,
-                      borderColor: theme.borderLight,
-                    },
-                  ]}
-                >
-                  <Pressable
-                    onPress={() => setDateRangeIndex((prev) => prev - 1)}
-                    hitSlop={8}
-                    style={styles.dateNavArrow}
-                  >
-                    <Ionicons
-                      name="chevron-back"
-                      size={18}
-                      color={theme.text}
-                    />
-                  </Pressable>
-
-                  <Text style={[styles.dateNavText, { color: theme.text }]}>
-                    {currentDateRange}
-                  </Text>
-
-                  <Pressable
-                    onPress={() => setDateRangeIndex((prev) => prev + 1)}
-                    hitSlop={8}
-                    style={styles.dateNavArrow}
-                  >
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color={theme.text}
-                    />
-                  </Pressable>
-                </View>
-              </View>
-
-              {/* Tarjeta: "Energía Total - Últimas 24 horas" (Imagen 3) */}
-              <View
-                style={[
-                  styles.cardContainer,
-                  {
-                    backgroundColor: theme.card,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <View style={styles.chartCardHeader}>
-                  <Text style={[styles.chartCardTitle, { color: theme.text }]}>
-                    Energía Total - {historyPeriod}
-                  </Text>
-                  <Pressable
-                    onPress={() =>
-                      handleDownloadReport(`Energía Total (${historyPeriod})`)
-                    }
-                    hitSlop={8}
-                    style={[
-                      styles.exportBtn,
-                      { backgroundColor: theme.rowAlt },
-                    ]}
-                  >
-                    <Ionicons
-                      name="download-outline"
-                      size={18}
-                      color={theme.text}
-                    />
-                  </Pressable>
-                </View>
-
-                {/* Área de la Gráfica */}
-                <View style={styles.chartArea}>
-                  {/* Ejes Y de referencia (1 Wh, 0.5 Wh, 0 Wh) */}
-                  <View style={styles.yAxisRow}>
-                    <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                      1 Wh
-                    </Text>
-                    <View
-                      style={[
-                        styles.gridLine,
-                        { backgroundColor: theme.borderLight },
-                      ]}
-                    />
-                  </View>
-
-                  <View style={styles.yAxisRow}>
-                    <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                      0.5 Wh
-                    </Text>
-                    <View
-                      style={[
-                        styles.gridLine,
-                        { backgroundColor: theme.borderLight },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.noDataOverlayText,
-                          { color: theme.muted },
-                        ]}
-                      >
-                        ¡Datos no disponibles!
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.yAxisRow}>
-                    <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                      0 Wh
-                    </Text>
-                    <View
-                      style={[
-                        styles.gridLine,
-                        { backgroundColor: theme.borderLight },
-                      ]}
-                    />
-                  </View>
-
-                  {/* Marcas de tiempo en el eje X (19:00, 21:00, 23:00...) */}
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.xAxisTimestamps}
-                  >
-                    {TIMESTAMPS_24H.map((time) => (
-                      <View key={time} style={styles.timestampCol}>
-                        <View
-                          style={[
-                            styles.timestampTick,
-                            { backgroundColor: theme.borderLight },
-                          ]}
-                        />
-                        <Text
-                          style={[styles.timestampText, { color: theme.muted }]}
-                        >
-                          {time}
-                        </Text>
-                      </View>
-                    ))}
-                  </ScrollView>
-                </View>
-
-                {/* Pie de zona horaria */}
-                <Text style={[styles.timezoneFooter, { color: theme.muted }]}>
-                  Zona horaria local de la cuenta de usuario: America/Bogota
+                <Text style={[styles.dateNavText, { color: theme.text }]}>
+                  {currentDateRange}
                 </Text>
-              </View>
 
-              {/* Tarjeta Individual: "Stiven - Últimas 24 horas" (Imagen 2) */}
-              <View
-                style={[
-                  styles.cardContainer,
-                  {
-                    backgroundColor: theme.card,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <View style={styles.chartCardHeader}>
-                  <Text style={[styles.chartCardTitle, { color: theme.text }]}>
-                    Stiven - {historyPeriod}
-                  </Text>
-                  <Pressable
-                    onPress={() =>
-                      handleDownloadReport(`Estancia Stiven (${historyPeriod})`)
-                    }
-                    hitSlop={8}
-                    style={[
-                      styles.exportBtn,
-                      { backgroundColor: theme.rowAlt },
-                    ]}
-                  >
-                    <Ionicons
-                      name="download-outline"
-                      size={18}
-                      color={theme.text}
-                    />
-                  </Pressable>
-                </View>
-
-                <Text
-                  style={[styles.deviceHistoryMeta, { color: theme.muted }]}
+                <Pressable
+                  onPress={() => setDateRangeIndex((prev) => prev + 1)}
+                  hitSlop={8}
+                  style={styles.dateNavArrow}
                 >
-                  Consumo acumulado registrado en el dispositivo de la estancia
-                  Stiven.
-                </Text>
-                <View
-                  style={[
-                    styles.deviceStatBadge,
-                    { backgroundColor: theme.rowAlt },
-                  ]}
-                >
-                  <Ionicons name="flash-outline" size={16} color={theme.blue} />
-                  <Text style={[styles.deviceStatText, { color: theme.text }]}>
-                    0 Wh consumidos en este período
-                  </Text>
-                </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={theme.text}
+                  />
+                </Pressable>
               </View>
             </View>
-          )}
 
-          {/* ============================================================ */}
-          {/* PESTAÑA 3: TIEMPO REAL                                       */}
-          {/* ============================================================ */}
-          {activeTab === "Tiempo Real" && (
-            <View style={styles.realTimeSection}>
-              <View
-                style={[
-                  styles.realTimeCard,
-                  {
-                    backgroundColor: theme.card,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <View style={styles.realTimeTop}>
-                  <Text style={[styles.realTimeTitle, { color: theme.text }]}>
-                    Consumo en tiempo real
+            {/* Tarjeta: "Energía Total - Últimas 24 horas" (Imagen 3) */}
+            <View
+              style={[
+                styles.cardContainer,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.borderLight,
+                },
+              ]}
+            >
+              <View style={styles.chartCardHeader}>
+                <Text style={[styles.chartCardTitle, { color: theme.text }]}>
+                  Energía Total - {historyPeriod}
+                </Text>
+                <Pressable
+                  onPress={() =>
+                    handleDownloadReport(`Energía Total (${historyPeriod})`)
+                  }
+                  hitSlop={8}
+                  style={[styles.exportBtn, { backgroundColor: theme.rowAlt }]}
+                >
+                  <Ionicons
+                    name="download-outline"
+                    size={18}
+                    color={theme.text}
+                  />
+                </Pressable>
+              </View>
+
+              {/* Área de la Gráfica */}
+              <View style={styles.chartArea}>
+                {/* Ejes Y de referencia (1 Wh, 0.5 Wh, 0 Wh) */}
+                <View style={styles.yAxisRow}>
+                  <Text style={[styles.axisLabel, { color: theme.muted }]}>
+                    1 Wh
                   </Text>
-                  <Ionicons name="pulse-outline" size={22} color={theme.blue} />
-                </View>
-
-                {/* Medidor circular / Gauge */}
-                <View style={styles.gaugeContainer}>
                   <View
                     style={[
-                      styles.gaugeOuterRing,
-                      {
-                        borderColor: theme.blue,
-                        borderLeftColor: "#22C55E",
-                        borderRightColor: theme.danger,
-                      },
+                      styles.gridLine,
+                      { backgroundColor: theme.borderLight },
+                    ]}
+                  />
+                </View>
+
+                <View style={styles.yAxisRow}>
+                  <Text style={[styles.axisLabel, { color: theme.muted }]}>
+                    0.5 Wh
+                  </Text>
+                  <View
+                    style={[
+                      styles.gridLine,
+                      { backgroundColor: theme.borderLight },
                     ]}
                   >
-                    <View
-                      style={[
-                        styles.gaugeCenter,
-                        { backgroundColor: theme.card },
-                      ]}
+                    <Text
+                      style={[styles.noDataOverlayText, { color: theme.muted }]}
                     >
-                      <Ionicons name="flash" size={32} color={theme.blue} />
-                      <Text
-                        style={[styles.gaugePowerValue, { color: theme.text }]}
-                      >
-                        {realTimePowerKw.toFixed(2)}
-                      </Text>
-                      <Text
-                        style={[styles.gaugePowerUnit, { color: theme.muted }]}
-                      >
-                        kW
-                      </Text>
-                    </View>
+                      ¡Datos no disponibles!
+                    </Text>
                   </View>
                 </View>
 
-                <Text style={[styles.realTimeFooter, { color: theme.muted }]}>
-                  Actualizado en tiempo real ·{" "}
-                  {
-                    visibleDevices.filter((d) => d.online && d.state === "on")
-                      .length
-                  }{" "}
-                  dispositivos encendidos
-                </Text>
-              </View>
-
-              <View
-                style={[
-                  styles.cardContainer,
-                  {
-                    backgroundColor: theme.card,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <Text style={[styles.cardTitle, { color: theme.text }]}>
-                  Distribución por Categoría
-                </Text>
-                {[
-                  {
-                    name: "Climatización",
-                    icon: "thermometer-outline",
-                    kwh: "12.4",
-                    color: "#3B82F6",
-                  },
-                  {
-                    name: "Electrodomésticos",
-                    icon: "hardware-chip-outline",
-                    kwh: "8.6",
-                    color: "#10B981",
-                  },
-                  {
-                    name: "Iluminación",
-                    icon: "bulb-outline",
-                    kwh: "3.2",
-                    color: "#F59E0B",
-                  },
-                  {
-                    name: "Seguridad",
-                    icon: "shield-checkmark-outline",
-                    kwh: "1.1",
-                    color: "#EC4899",
-                  },
-                ].map((cat) => (
+                <View style={styles.yAxisRow}>
+                  <Text style={[styles.axisLabel, { color: theme.muted }]}>
+                    0 Wh
+                  </Text>
                   <View
-                    key={cat.name}
                     style={[
-                      styles.categoryRow,
-                      { borderColor: theme.borderLight },
+                      styles.gridLine,
+                      { backgroundColor: theme.borderLight },
                     ]}
-                  >
-                    <View style={styles.categoryLeft}>
+                  />
+                </View>
+
+                {/* Marcas de tiempo en el eje X (19:00, 21:00, 23:00...) */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.xAxisTimestamps}
+                >
+                  {TIMESTAMPS_24H.map((time) => (
+                    <View key={time} style={styles.timestampCol}>
                       <View
                         style={[
-                          styles.catIconWrap,
-                          { backgroundColor: theme.rowAlt },
+                          styles.timestampTick,
+                          { backgroundColor: theme.borderLight },
                         ]}
+                      />
+                      <Text
+                        style={[styles.timestampText, { color: theme.muted }]}
                       >
-                        <Ionicons
-                          name={cat.icon as never}
-                          size={18}
-                          color={cat.color}
-                        />
-                      </View>
-                      <Text style={[styles.catName, { color: theme.text }]}>
-                        {cat.name}
+                        {time}
                       </Text>
                     </View>
-                    <Text style={[styles.catKwh, { color: theme.text }]}>
-                      {cat.kwh} kWh
-                    </Text>
-                  </View>
-                ))}
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Pie de zona horaria */}
+              <Text style={[styles.timezoneFooter, { color: theme.muted }]}>
+                Zona horaria local de la cuenta de usuario: America/Bogota
+              </Text>
+            </View>
+
+            {/* Tarjeta Individual: "Stiven - Últimas 24 horas" (Imagen 2) */}
+            <View
+              style={[
+                styles.cardContainer,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.borderLight,
+                },
+              ]}
+            >
+              <View style={styles.chartCardHeader}>
+                <Text style={[styles.chartCardTitle, { color: theme.text }]}>
+                  Stiven - {historyPeriod}
+                </Text>
+                <Pressable
+                  onPress={() =>
+                    handleDownloadReport(`Estancia Stiven (${historyPeriod})`)
+                  }
+                  hitSlop={8}
+                  style={[styles.exportBtn, { backgroundColor: theme.rowAlt }]}
+                >
+                  <Ionicons
+                    name="download-outline"
+                    size={18}
+                    color={theme.text}
+                  />
+                </Pressable>
+              </View>
+
+              <Text style={[styles.deviceHistoryMeta, { color: theme.muted }]}>
+                Consumo acumulado registrado en el dispositivo de la estancia
+                Stiven.
+              </Text>
+              <View
+                style={[
+                  styles.deviceStatBadge,
+                  { backgroundColor: theme.rowAlt },
+                ]}
+              >
+                <Ionicons name="flash-outline" size={16} color={theme.blue} />
+                <Text style={[styles.deviceStatText, { color: theme.text }]}>
+                  0 Wh consumidos en este período
+                </Text>
               </View>
             </View>
-          )}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -630,30 +423,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
-  },
-  topTabsBar: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.08)",
-  },
-  tabButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
-  },
-  tabButtonActive: {
-    borderBottomWidth: 2,
-  },
-  tabButtonText: {
-    fontSize: 14,
-    fontWeight: "700",
-    fontFamily: typography.fontFamily.emphasis,
-  },
-  tabButtonTextActive: {
-    color: "#3B82F6",
   },
   historySection: {
     width: "100%",
@@ -879,91 +648,6 @@ const styles = StyleSheet.create({
   monthlyDownloadText: {
     fontSize: 12,
     fontWeight: "700",
-    fontFamily: typography.fontFamily.emphasis,
-  },
-  realTimeSection: {
-    width: "100%",
-  },
-  realTimeCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 20,
-    marginBottom: 14,
-  },
-  realTimeTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  realTimeTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    fontFamily: typography.fontFamily.emphasis,
-  },
-  gaugeContainer: {
-    alignItems: "center",
-    marginVertical: 14,
-  },
-  gaugeOuterRing: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    borderWidth: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  gaugeCenter: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  gaugePowerValue: {
-    fontSize: 32,
-    fontWeight: "900",
-    marginTop: 2,
-    fontFamily: typography.fontFamily.emphasis,
-  },
-  gaugePowerUnit: {
-    fontSize: 14,
-    fontWeight: "700",
-    fontFamily: typography.fontFamily.emphasis,
-  },
-  realTimeFooter: {
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 8,
-    fontFamily: typography.fontFamily.regular,
-  },
-  categoryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-  },
-  categoryLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  catIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 9,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  catName: {
-    fontSize: 14,
-    fontWeight: "700",
-    fontFamily: typography.fontFamily.emphasis,
-  },
-  catKwh: {
-    fontSize: 14,
-    fontWeight: "800",
     fontFamily: typography.fontFamily.emphasis,
   },
   tariffSection: {
