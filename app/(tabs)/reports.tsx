@@ -6,7 +6,7 @@
  *    gráfica de telemetría horaria en Wh/kWh, zona horaria (America/Bogota) y tarjetas de descarga.
  */
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Alert,
     Pressable,
@@ -17,8 +17,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useMockApi } from "@/lib/config/api-config";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { consumptionService } from "@/lib/services/consumption-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
@@ -59,6 +61,42 @@ export default function ReportsScreen() {
   const theme = useAppTheme();
 
   const { accessibleHomes, activeHomeId } = useSmartHome();
+  const activeHomeName =
+    accessibleHomes.find((home) => home.id === activeHomeId)?.name ?? "Hogar";
+  const [realConsumptionKwh, setRealConsumptionKwh] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (useMockApi || !activeHomeId) return;
+
+    let active = true;
+    consumptionService
+      .listHome(activeHomeId, { limit: 200 })
+      .then((records) => {
+        if (!active) return;
+        setRealConsumptionKwh(
+          records.reduce(
+            (sum, record) => sum + (record.energyDeltaKwh ?? 0),
+            0,
+          ),
+        );
+      })
+      .catch(() => {
+        if (active) setRealConsumptionKwh(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeHomeId]);
+
+  const consumptionLabel =
+    realConsumptionKwh !== null
+      ? `${(realConsumptionKwh * 1000).toFixed(0)} Wh consumidos en este período`
+      : useMockApi
+        ? "Conecta el backend para consultar datos reales"
+        : "Datos no disponibles para este período";
 
   // Estados de la pestaña "Historia"
   const [historyPeriod, setHistoryPeriod] =
@@ -296,11 +334,18 @@ export default function ReportsScreen() {
                       { backgroundColor: theme.borderLight },
                     ]}
                   >
-                    <Text
-                      style={[styles.noDataOverlayText, { color: theme.muted }]}
-                    >
-                      ¡Datos no disponibles!
-                    </Text>
+                    {realConsumptionKwh === null ? (
+                      <Text
+                        style={[
+                          styles.noDataOverlayText,
+                          { color: theme.muted },
+                        ]}
+                      >
+                        {useMockApi
+                          ? "Conecta el backend para consultar datos"
+                          : "¡Datos no disponibles!"}
+                      </Text>
+                    ) : null}
                   </View>
                 </View>
 
@@ -346,7 +391,7 @@ export default function ReportsScreen() {
               </Text>
             </View>
 
-            {/* Tarjeta Individual: "Stiven - Últimas 24 horas" (Imagen 2) */}
+            {/* Resumen de consumo del hogar activo */}
             <View
               style={[
                 styles.cardContainer,
@@ -358,11 +403,11 @@ export default function ReportsScreen() {
             >
               <View style={styles.chartCardHeader}>
                 <Text style={[styles.chartCardTitle, { color: theme.text }]}>
-                  Stiven - {historyPeriod}
+                  {activeHomeName} - {historyPeriod}
                 </Text>
                 <Pressable
                   onPress={() =>
-                    handleDownloadReport(`Estancia Stiven (${historyPeriod})`)
+                    handleDownloadReport(`${activeHomeName} (${historyPeriod})`)
                   }
                   hitSlop={8}
                   style={[styles.exportBtn, { backgroundColor: theme.rowAlt }]}
@@ -376,8 +421,8 @@ export default function ReportsScreen() {
               </View>
 
               <Text style={[styles.deviceHistoryMeta, { color: theme.muted }]}>
-                Consumo acumulado registrado en el dispositivo de la estancia
-                Stiven.
+                Consumo incremental registrado en el hogar durante el período
+                seleccionado.
               </Text>
               <View
                 style={[
@@ -387,7 +432,7 @@ export default function ReportsScreen() {
               >
                 <Ionicons name="flash-outline" size={16} color={theme.blue} />
                 <Text style={[styles.deviceStatText, { color: theme.text }]}>
-                  0 Wh consumidos en este período
+                  {consumptionLabel}
                 </Text>
               </View>
             </View>

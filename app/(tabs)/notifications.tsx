@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { profileFont } from "@/components/profile/profileTheme";
+import { useMockApi } from "@/lib/config/api-config";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
@@ -12,9 +13,15 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  const { devices, resolvedSmartAlerts } = useSmartHome();
+  const {
+    devices,
+    resolvedSmartAlerts,
+    notifications: remoteNotifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+  } = useSmartHome();
 
-  const notifications = [
+  const demoNotifications = [
     {
       id: "welcome",
       title: "Bienvenido a Smart Home",
@@ -52,6 +59,20 @@ export default function NotificationsScreen() {
       tone: "success" as const,
     },
   ];
+
+  const notifications = useMockApi
+    ? demoNotifications
+    : remoteNotifications.map((item) => ({
+        id: item.id,
+        title: item.title ?? item.type ?? "Notificación",
+        description: item.message ?? item.description ?? "",
+        time: item.createdAt
+          ? new Date(item.createdAt).toLocaleString()
+          : "Ahora",
+        icon: "notifications-outline" as const,
+        tone:
+          item.status === "UNREAD" ? ("warning" as const) : ("info" as const),
+      }));
 
   const toneColor: Record<string, string> = {
     info: theme.blue,
@@ -109,6 +130,20 @@ export default function NotificationsScreen() {
                 Todo lo relevante de la app
               </Text>
             </View>
+            {!useMockApi && remoteNotifications.length > 0 ? (
+              <Pressable
+                onPress={() => void markAllNotificationsAsRead()}
+                style={({ pressed }) => [
+                  styles.markAllButton,
+                  { borderColor: theme.borderLight },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={[styles.markAllText, { color: theme.blue }]}>
+                  Marcar todas como leídas
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
 
           <View
@@ -118,7 +153,18 @@ export default function NotificationsScreen() {
             ]}
           >
             {notifications.map((item) => (
-              <View key={item.id} style={styles.notificationRow}>
+              <Pressable
+                key={item.id}
+                onPress={
+                  useMockApi
+                    ? undefined
+                    : () => void markNotificationAsRead(item.id)
+                }
+                style={({ pressed }) => [
+                  styles.notificationRow,
+                  pressed && styles.pressed,
+                ]}
+              >
                 <View
                   style={[
                     styles.notificationIcon,
@@ -146,7 +192,7 @@ export default function NotificationsScreen() {
                 <Text style={[styles.notificationTime, { color: theme.muted }]}>
                   {item.time}
                 </Text>
-              </View>
+              </Pressable>
             ))}
           </View>
         </View>
@@ -237,4 +283,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   pressed: { opacity: 0.72 },
+  markAllButton: {
+    alignSelf: "flex-end",
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  markAllText: {
+    fontFamily: profileFont,
+    fontSize: 12,
+    fontWeight: "800",
+  },
 });

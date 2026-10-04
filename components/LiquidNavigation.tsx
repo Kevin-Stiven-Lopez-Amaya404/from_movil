@@ -17,12 +17,16 @@ import { typography } from "@/lib/theme/typography";
 
 const ITEMS = [
   { route: "index", label: "Inicio", icon: "home" as const },
-  { route: "homes", label: "Estancias", icon: "home-outline" as const },
+  { route: "homes", label: "Hogares", icon: "home-outline" as const },
   { route: "reports", label: "Energía", icon: "flash-outline" as const },
   { route: "profile", label: "Perfil", icon: "person-outline" as const },
 ];
 
 const BAR_HORIZONTAL_PADDING = 8;
+const BAR_BOTTOM_GAP = 12;
+const BAR_HEIGHT = 72;
+const ACTIVE_PILL_WIDTH_RATIO = 0.84;
+const ACTIVE_PILL_HEIGHT = 60;
 
 export function LiquidNavigation({
   state,
@@ -41,8 +45,15 @@ export function LiquidNavigation({
     () => new Animated.Value(safeActiveIndex),
   );
   const resolvedBarWidth = barWidth > 0 ? barWidth : windowWidth * 0.92;
-  const itemWidth =
-    (resolvedBarWidth - BAR_HORIZONTAL_PADDING * 2) / ITEMS.length;
+  const itemWidth = Math.max(
+    (resolvedBarWidth - BAR_HORIZONTAL_PADDING * 2) / ITEMS.length,
+    0,
+  );
+  const activePillWidth = Math.min(
+    itemWidth * ACTIVE_PILL_WIDTH_RATIO,
+    72,
+  );
+  const activePillInset = (itemWidth - activePillWidth) / 2;
   const activeRoute = state.routes[state.index]?.name;
 
   useEffect(() => {
@@ -57,8 +68,10 @@ export function LiquidNavigation({
   const indicatorTranslateX = indicatorPosition.interpolate({
     inputRange: [0, Math.max(ITEMS.length - 1, 1)],
     outputRange: [
-      BAR_HORIZONTAL_PADDING,
-      BAR_HORIZONTAL_PADDING + itemWidth * (ITEMS.length - 1),
+      BAR_HORIZONTAL_PADDING + activePillInset,
+      BAR_HORIZONTAL_PADDING +
+        activePillInset +
+        itemWidth * (ITEMS.length - 1),
     ],
   });
 
@@ -82,7 +95,13 @@ export function LiquidNavigation({
 
   return (
     <View
-      style={[styles.safeArea, { paddingBottom: Math.max(insets.bottom, 8) }]}
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor: theme.background,
+          paddingBottom: Math.max(insets.bottom, 0) + BAR_BOTTOM_GAP,
+        },
+      ]}
       pointerEvents="box-none"
     >
       <View
@@ -90,8 +109,9 @@ export function LiquidNavigation({
         style={[
           styles.bar,
           {
-            borderColor: theme.dark ? theme.border : theme.borderLight,
-            shadowColor: theme.shadow,
+            backgroundColor: theme.tabBar,
+            borderColor: theme.borderLight,
+            shadowColor: "#0A192F",
           },
         ]}
       >
@@ -100,10 +120,11 @@ export function LiquidNavigation({
           style={[
             styles.activeIndicator,
             {
-              backgroundColor: "#EAF3FF",
-              shadowColor: theme.tab.activeShadow,
+              backgroundColor: theme.tab.activeBackground,
               transform: [{ translateX: indicatorTranslateX }],
-              width: itemWidth,
+              height: ACTIVE_PILL_HEIGHT,
+              opacity: activeIndex >= 0 ? 1 : 0,
+              width: activePillWidth,
             },
           ]}
         />
@@ -129,15 +150,16 @@ export function LiquidNavigation({
               <View style={styles.iconWrap}>
                 <Ionicons
                   name={item.icon}
-                  size={22}
-                  color={selected ? "#0B5ED7" : "#64748B"}
+                  size={25}
+                  color={selected ? theme.tab.activeText : theme.muted}
                 />
               </View>
               <Text
                 style={[
                   styles.label,
                   {
-                    color: selected ? "#0B5ED7" : "#64748B",
+                    color: selected ? theme.tab.activeText : theme.muted,
+                    fontWeight: selected ? "600" : "500",
                   },
                 ]}
               >
@@ -154,31 +176,29 @@ export function LiquidNavigation({
 const styles = StyleSheet.create({
   safeArea: {
     alignItems: "center",
-    paddingTop: 10,
     width: "100%",
   },
   bar: {
     alignItems: "stretch",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 28,
+    borderRadius: 30,
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
-    height: 72,
+    height: BAR_HEIGHT,
     maxWidth: 520,
     paddingHorizontal: BAR_HORIZONTAL_PADDING,
     position: "relative",
+    elevation: 10,
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.08,
-    shadowRadius: 10,
-    width: "92%",
+    shadowRadius: 14,
+    width: "90%",
   },
   item: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    minWidth: 58,
-    paddingHorizontal: 5,
-    paddingVertical: 5,
+    paddingHorizontal: 2,
+    paddingVertical: 4,
     zIndex: 1,
   },
   pressed: {
@@ -187,20 +207,17 @@ const styles = StyleSheet.create({
   iconWrap: {
     alignItems: "center",
     justifyContent: "center",
-    height: 25,
+    height: 29,
   },
   activeIndicator: {
-    borderRadius: 20,
-    bottom: 5,
-    height: 62,
+    borderRadius: 24,
+    bottom: 7,
     position: "absolute",
-    shadowOpacity: 0,
     zIndex: 0,
   },
   label: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 10,
-    fontWeight: "600",
-    marginTop: 4,
+    fontSize: 12,
+    marginTop: 2,
   },
 });

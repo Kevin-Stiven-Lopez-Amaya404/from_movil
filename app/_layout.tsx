@@ -109,6 +109,12 @@ export default function RootLayout() {
                 }}
               />
               <Stack.Screen
+                name="activate-account"
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
                 name="forgot-password"
                 options={{
                   headerShown: false,
@@ -122,6 +128,12 @@ export default function RootLayout() {
               />
               <Stack.Screen
                 name="new-password"
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="reset-password"
                 options={{
                   headerShown: false,
                 }}

@@ -76,9 +76,8 @@ export function DeviceListItem({
           </View>
 
           <Text style={[styles.itemSubtitle, { color: theme.muted }]}>
-            {device.room} ·{" "}
             {device.online
-              ? `${(device.energy / 1000).toFixed(2)} kWh hoy`
+              ? `${(device.energy / 1000).toFixed(2)} kWh acumulados`
               : "Sin conexión"}
           </Text>
 

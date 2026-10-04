@@ -10,4 +10,15 @@ export const apiConfig = {
   timeoutMs: 12000,
 };
 
-export const useMockApi = apiConfig.baseUrl.length === 0;
+let demoModeEnabled = false;
+
+export let useMockApi = apiConfig.baseUrl.length === 0;
+
+export function isDemoModeEnabled(): boolean {
+  return demoModeEnabled;
+}
+
+export function setDemoModeEnabled(enabled: boolean): void {
+  demoModeEnabled = enabled;
+  useMockApi = apiConfig.baseUrl.length === 0 || demoModeEnabled;
+}

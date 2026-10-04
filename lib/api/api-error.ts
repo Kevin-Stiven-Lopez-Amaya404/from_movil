@@ -4,6 +4,7 @@ export type ApiErrorCode =
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "VALIDATION_ERROR"
+  | "CONFLICT"
   | "SERVER_ERROR"
   | "UNKNOWN_ERROR";
 
@@ -11,7 +12,11 @@ export class ApiError extends Error {
   code: ApiErrorCode;
   status?: number;
 
-  constructor(message: string, code: ApiErrorCode = "UNKNOWN_ERROR", status?: number) {
+  constructor(
+    message: string,
+    code: ApiErrorCode = "UNKNOWN_ERROR",
+    status?: number,
+  ) {
     super(message);
     this.name = "ApiError";
     this.code = code;
@@ -19,7 +24,10 @@ export class ApiError extends Error {
   }
 }
 
-export function getApiErrorMessage(error: unknown, fallback = "No se pudo completar la solicitud.") {
+export function getApiErrorMessage(
+  error: unknown,
+  fallback = "No se pudo completar la solicitud.",
+) {
   if (error instanceof ApiError) {
     return error.message;
   }

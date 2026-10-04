@@ -1,4 +1,9 @@
 import { apiConfig } from "@/lib/config/api-config";
+import {
+    clearSession,
+    getAccessToken,
+    refreshSession,
+} from "@/lib/session/session-store";
 
 import { ApiError, type ApiErrorCode } from "./api-error";
 
@@ -8,36 +13,24 @@ type RequestOptions<Body> = {
   body?: Body;
   headers?: Record<string, string>;
   token?: string;
+  skipAuthRefresh?: boolean;
 };
 
 type ErrorPayload = {
-  message?: string;
+  message?: string | string[];
 };
 
 function statusToErrorCode(status: number): ApiErrorCode {
   if (status === 401) return "UNAUTHORIZED";
   if (status === 403) return "FORBIDDEN";
   if (status === 404) return "NOT_FOUND";
+  if (status === 409) return "CONFLICT";
   if (status === 400 || status === 422) return "VALIDATION_ERROR";
   if (status >= 500) return "SERVER_ERROR";
 
   return "UNKNOWN_ERROR";
 }
 
-/**
- * Cliente HTTP tipado para el backend.
- *
- * Centraliza:
- * - URL base
- * - método HTTP
- * - headers
- * - token Bearer
- * - timeout
- * - transformación de errores HTTP a ApiError
- *
- * Las pantallas no deben utilizar fetch directamente.
- * Las peticiones deben pasar por los servicios.
- */
 export class ApiClient {
   constructor(private readonly baseUrl = apiConfig.baseUrl) {}
 
@@ -98,22 +91,23 @@ export class ApiClient {
     }
 
     const controller = new AbortController();
-
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, apiConfig.timeoutMs);
+    const timeout = setTimeout(() => controller.abort(), apiConfig.timeoutMs);
+    const accessToken = options?.token ?? getAccessToken();
+    const apiRootPrefix = "/api/v1";
+    const requestPath =
+      this.baseUrl.endsWith(apiRootPrefix) &&
+      path.startsWith(`${apiRootPrefix}/`)
+        ? path.slice(apiRootPrefix.length)
+        : path;
 
     try {
-      const response = await fetch(`${this.baseUrl}${path}`, {
+      const response = await fetch(`${this.baseUrl}${requestPath}`, {
         method,
+        credentials: "include",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          ...(options?.token
-            ? {
-                Authorization: `Bearer ${options.token}`,
-              }
-            : {}),
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           ...options?.headers,
         },
         body:
@@ -123,22 +117,44 @@ export class ApiClient {
         signal: controller.signal,
       });
 
-      /*
-       * Algunas respuestas HTTP pueden no tener cuerpo,
-       * por ejemplo 204 No Content.
-       */
       const payload = (await response.json().catch(() => null)) as
         | Response
         | ErrorPayload
         | null;
 
       if (!response.ok) {
+        if (
+          response.status === 401 &&
+          !options?.skipAuthRefresh &&
+          path !== "/api/v1/auth/refresh"
+        ) {
+          let nextSession;
+          try {
+            nextSession = await refreshSession();
+          } catch (refreshError) {
+            await clearSession();
+            throw refreshError;
+          }
+
+          if (nextSession) {
+            return this.request<Response, Body>(method, path, {
+              ...options,
+              token: nextSession.accessToken,
+              skipAuthRefresh: true,
+            });
+          }
+
+          await clearSession();
+        }
+
         const message =
           payload &&
           typeof payload === "object" &&
           "message" in payload &&
           payload.message
-            ? String(payload.message)
+            ? Array.isArray(payload.message)
+              ? payload.message.join(" ")
+              : payload.message
             : "El servidor no pudo procesar la solicitud.";
 
         throw new ApiError(
@@ -150,25 +166,8 @@ export class ApiClient {
 
       return payload as Response;
     } catch (error) {
-      /*
-       * Los errores que nosotros mismos transformamos deben
-       * conservar su código y status.
-       */
-      if (error instanceof ApiError) {
-        throw error;
-      }
+      if (error instanceof ApiError) throw error;
 
-      /*
-       * fetch puede fallar por:
-       * - pérdida de conexión
-       * - timeout
-       * - DNS
-       * - servidor inaccesible
-       * - AbortController
-       *
-       * En todos estos casos la capa superior recibe
-       * un NETWORK_ERROR.
-       */
       throw new ApiError(
         "No se pudo conectar con el servidor.",
         "NETWORK_ERROR",

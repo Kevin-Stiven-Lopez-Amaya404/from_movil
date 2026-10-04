@@ -182,7 +182,7 @@ export function ActiveDevicesCard({
                       },
                     ]}
                   >
-                    {device.room}
+                    {device.online ? "Conectado" : "Sin conexión"}
                   </Text>
                 </View>
 

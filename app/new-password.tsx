@@ -3,7 +3,7 @@ import { AuthPasswordField } from "@/components/auth/AuthTextField";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { BackButton } from "@/components/common/BackButton";
 import { getApiErrorMessage } from "@/lib/api/api-error";
-import { updateUserPassword } from "@/lib/auth/auth-store";
+import { resetUserPassword } from "@/lib/auth/auth-store";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { typography } from "@/lib/theme/typography";
 import { getPasswordRules } from "@/lib/utils/validators";
@@ -19,11 +19,9 @@ export default function NewPasswordScreen() {
   // PARÁMETROS
   // ==========================================
 
-  const params = useLocalSearchParams<{ email?: string }>();
-
-  const email = String(params.email ?? "")
-    .trim()
-    .toLowerCase();
+  const params = useLocalSearchParams<{ token?: string | string[] }>();
+  const token =
+    typeof params.token === "string" ? params.token : (params.token?.[0] ?? "");
 
   // ==========================================
   // ESTADO
@@ -74,10 +72,10 @@ export default function NewPasswordScreen() {
       return;
     }
 
-    if (!email) {
+    if (!token) {
       Alert.alert(
         "Solicitud inválida",
-        "No se encontró el correo asociado a esta recuperación.",
+        "El enlace de recuperación no contiene un token válido.",
       );
 
       return;
@@ -101,16 +99,7 @@ export default function NewPasswordScreen() {
     setSubmitting(true);
 
     try {
-      const updated = await updateUserPassword(email, password);
-
-      if (!updated) {
-        Alert.alert(
-          "Solicitud inválida",
-          "No encontramos una cuenta asociada a esta recuperación.",
-        );
-
-        return;
-      }
+      await resetUserPassword(token, password, confirmPassword);
 
       Alert.alert("Contraseña actualizada", "Ya puedes entrar a tu cuenta.", [
         {
@@ -136,7 +125,7 @@ export default function NewPasswordScreen() {
       {/* ====================================== */}
 
       <View style={styles.header}>
-        <BackButton fallbackHref="/otp-verification" />
+        <BackButton fallbackHref="/forgot-password" />
       </View>
 
       {/* ====================================== */}

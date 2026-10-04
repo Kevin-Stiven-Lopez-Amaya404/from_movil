@@ -79,7 +79,7 @@ export default function DashboardScreen() {
       return;
     }
 
-    Alert.alert(device.name, `${device.room}\n${device.power} W`);
+    Alert.alert(device.name, `${device.power} W`);
   };
 
   /* ------------------------------------------------------------------------ */

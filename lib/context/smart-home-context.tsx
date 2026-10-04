@@ -1,12 +1,31 @@
+import { useRouter } from "expo-router";
 import {
     createContext,
     PropsWithChildren,
     useContext,
+    useEffect,
     useMemo,
     useState,
 } from "react";
 
-import { smartHomeService } from "@/lib/services/smart-home-service";
+import { useMockApi } from "@/lib/config/api-config";
+import { authService } from "@/lib/services/auth-service";
+import {
+    notificationsService,
+    type SmartNotification,
+} from "@/lib/services/notifications-service";
+import {
+    realtimeService,
+    type DeviceStatusUpdatedEvent,
+} from "@/lib/services/realtime-service";
+import {
+    smartHomeService, type HomeMember,
+    type HomeRole
+} from "@/lib/services/smart-home-service";
+import {
+    loadSession,
+    subscribeToSessionChanges,
+} from "@/lib/session/session-store";
 
 // Tipos base usados por pantallas y reportes.
 export type DeviceCategory =
@@ -29,6 +48,7 @@ export type SmartHomePlace = {
   name: string;
   location: string;
   favorite: boolean;
+  homeRole?: HomeRole;
 };
 
 /**
@@ -41,7 +61,6 @@ export type SmartDevice = {
   homeId: string;
   name: string;
   category: DeviceCategory;
-  room: string;
   icon: string;
   // Nuevos campos del Shelly
   power: number; // W (potencia instantánea)
@@ -83,8 +102,11 @@ type SmartHomeState = {
   accountActive: boolean;
   colorMode: ColorMode;
   devices: SmartDevice[];
+  notifications: SmartNotification[];
+  unreadNotificationCount: number;
   homeConsumptionGoals: Record<string, number>;
   homes: SmartHomePlace[];
+  homeMembersByHome: Record<string, HomeMember[]>;
   sessionEmail: string;
   sessionRole: UserRole;
   accessibleHomes: SmartHomePlace[];
@@ -97,12 +119,8 @@ type SmartHomeState = {
   lastSync: string;
   deactivateAccount: () => void;
   closeActiveDevices: (deviceIds: string[]) => void;
-  addDeviceToHome: (homeId: string, name: string, room?: string) => void;
   removeDevice: (deviceId: string) => Promise<void>;
-  updateDevice: (
-    deviceId: string,
-    updates: { name?: string; room?: string },
-  ) => Promise<void>;
+  updateDevice: (deviceId: string, updates: { name?: string }) => Promise<void>;
   addHome: (name: string) => void;
   setActiveHomeId: (homeId: string) => void;
   setAccountActive: (active: boolean) => void;
@@ -115,13 +133,19 @@ type SmartHomeState = {
   setOfflineMode: (enabled: boolean) => void;
   setHomeDeviceState: (id: string, state: "on" | "off") => Promise<void>;
   setAllHomeDevicesState: (homeId: string, state: "on" | "off") => void;
-  assignHomeAccess: (email: string, homeId: string, assigned: boolean) => void;
+  inviteHomeMember: (
+    homeId: string,
+    email: string,
+    role: Exclude<HomeRole, "OWNER">,
+  ) => Promise<void>;
   toggleDevice: (id: string) => void;
   toggleHomeFavorite: (homeId: string) => void;
   setDeviceOnline: (id: string, online: boolean) => void;
   resolveDeviceAlert: (id: string) => void;
   resolveSmartDeviceAlert: (id: string) => void;
   refreshSync: () => void;
+  markNotificationAsRead: (notificationId: string) => Promise<void>;
+  markAllNotificationsAsRead: () => Promise<void>;
 };
 
 // Datos iniciales de prueba. En una version real vendrian de backend/base de datos.
@@ -142,7 +166,6 @@ const initialDevices: SmartDevice[] = [
     homeId: "casa",
     name: "Aire acondicionado",
     category: "Climatizacion",
-    room: "Sala",
     icon: "air-conditioner",
     power: 780,
     energy: 780,
@@ -159,7 +182,6 @@ const initialDevices: SmartDevice[] = [
     homeId: "oficina",
     name: "Servidor domestico",
     category: "Electrodomesticos",
-    room: "Estudio",
     icon: "server",
     power: 320,
     energy: 320,
@@ -175,7 +197,6 @@ const initialDevices: SmartDevice[] = [
     homeId: "casa",
     name: "TV",
     category: "Electrodomesticos",
-    room: "Habitacion",
     icon: "television-classic",
     power: 150,
     energy: 150,
@@ -191,7 +212,6 @@ const initialDevices: SmartDevice[] = [
     homeId: "casa",
     name: "Cargador",
     category: "Electrodomesticos",
-    room: "Dormitorio",
     icon: "power-plug-outline",
     power: 80,
     energy: 80,
@@ -207,7 +227,6 @@ const initialDevices: SmartDevice[] = [
     homeId: "casa",
     name: "Luces inteligentes",
     category: "Iluminacion",
-    room: "Cocina",
     icon: "lightbulb-on-outline",
     power: 110,
     energy: 110,
@@ -223,7 +242,6 @@ const initialDevices: SmartDevice[] = [
     homeId: "casa",
     name: "Camara principal",
     category: "Seguridad",
-    room: "Entrada",
     icon: "cctv",
     power: 60,
     energy: 60,
@@ -233,22 +251,6 @@ const initialDevices: SmartDevice[] = [
     online: true,
     state: "on",
     yesterday: 50,
-  },
-  {
-    id: "stiven-relay",
-    homeId: "casa",
-    name: "Stiven",
-    category: "Electrodomesticos",
-    room: "Stiven",
-    icon: "hardware-chip-outline",
-    power: 0,
-    energy: 0,
-    voltage: 120,
-    current: 0,
-    frequency: 60,
-    online: false,
-    state: "off",
-    yesterday: 0,
   },
 ];
 
@@ -341,10 +343,20 @@ function createId(value: string) {
  * hogares, dispositivos, tema, idioma, sesion y acciones de modificacion.
  */
 export function SmartHomeProvider({ children }: PropsWithChildren) {
+  const router = useRouter();
   // Estados principales compartidos entre pantallas.
-  const [homes, setHomes] = useState(initialHomes);
-  const [activeHomeId, setActiveHomeId] = useState(initialHomes[0].id);
-  const [devices, setDevices] = useState(initialDevices);
+  const [homes, setHomes] = useState(() => (useMockApi ? initialHomes : []));
+  const [homeMembersByHome, setHomeMembersByHome] = useState<
+    Record<string, HomeMember[]>
+  >({});
+  const [activeHomeId, setActiveHomeId] = useState(
+    useMockApi ? initialHomes[0].id : "",
+  );
+  const [devices, setDevices] = useState(() =>
+    useMockApi ? initialDevices : [],
+  );
+  const [notifications, setNotifications] = useState<SmartNotification[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   // Metas demo locales por hogar. Podrán sustituirse por datos del backend cuando exista contrato.
   const [homeConsumptionGoals, setHomeConsumptionGoals] = useState<
     Record<string, number>
@@ -357,32 +369,281 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
   const [colorMode, setColorMode] = useState<ColorMode>("light");
   const [language, setLanguage] = useState<AppLanguage>("es");
   const [offlineMode, setOfflineMode] = useState(false);
-  const [sessionName, setSessionName] = useState("Pepe");
-  const [sessionEmail, setSessionEmail] = useState("pepe@smarthome.com");
+  const [sessionName, setSessionName] = useState(useMockApi ? "Pepe" : "");
+  const [sessionEmail, setSessionEmail] = useState(
+    useMockApi ? "pepe@smarthome.com" : "",
+  );
   const [sessionRole, setSessionRole] = useState<UserRole>("miembro");
   const [lastSync, setLastSync] = useState(getTimeStamp());
+  const [sessionRevision, setSessionRevision] = useState(0);
+
+  useEffect(() => {
+    return subscribeToSessionChanges((session) => {
+      setSessionRevision((revision) => revision + 1);
+      if (!session) {
+        setSessionName("");
+        setSessionEmail("");
+        setSessionRole("miembro");
+        router.replace("/login");
+        return;
+      }
+
+      if (session.mode === "demo") {
+        setSessionName(session.user.name.split(" ")[0] || session.user.name);
+        setSessionEmail(session.user.email);
+        setSessionRole(session.user.role ?? "miembro");
+        setHomes(initialHomes);
+        setHomeMembersByHome({});
+        setDevices(initialDevices);
+        setActiveHomeId(initialHomes[0].id);
+        setNotifications([]);
+        setUnreadNotificationCount(0);
+        setOfflineMode(false);
+      }
+    });
+  }, [router]);
+
+  useEffect(() => {
+    let active = true;
+
+    loadSession()
+      .then((session) => {
+        if (!active) return;
+        if (!session) {
+          setSessionName("");
+          setSessionEmail("");
+          setSessionRole("miembro");
+          return;
+        }
+
+        setSessionName(session.user.name.split(" ")[0] || session.user.name);
+        setSessionEmail(session.user.email);
+        setSessionRole(session.user.role ?? "miembro");
+      })
+      .catch(() => {
+        // La pantalla de autenticación mostrará el error de red al reintentar.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [sessionRevision]);
+
+  useEffect(() => {
+    if (useMockApi) return;
+
+    let active = true;
+    const unsubscribers: Array<() => void> = [];
+
+    loadSession()
+      .then((session) => {
+        if (!active || !session) return;
+
+        realtimeService.connect();
+        unsubscribers.push(
+          realtimeService.on(
+            "device.status.updated",
+            (event: DeviceStatusUpdatedEvent) => {
+              const deviceId = event.deviceId ?? event.id;
+              if (!deviceId) return;
+
+              setDevices((items) =>
+                items.map((device) =>
+                  device.id === deviceId
+                    ? {
+                        ...device,
+                        ...(event.homeId ? { homeId: event.homeId } : {}),
+                        ...(event.currentPowerW !== undefined
+                          ? { power: event.currentPowerW ?? 0 }
+                          : {}),
+                        ...(event.energyTotalKwh !== undefined
+                          ? { energy: (event.energyTotalKwh ?? 0) * 1000 }
+                          : {}),
+                        ...(event.voltageV !== undefined
+                          ? { voltage: event.voltageV ?? 0 }
+                          : {}),
+                        ...(event.currentA !== undefined
+                          ? { current: event.currentA ?? 0 }
+                          : {}),
+                        ...(event.frequencyHz !== undefined
+                          ? { frequency: event.frequencyHz ?? 0 }
+                          : {}),
+                        ...(event.temperatureC !== undefined
+                          ? { temperature: event.temperatureC ?? undefined }
+                          : {}),
+                        ...(event.connectivityStatus !== undefined
+                          ? { online: event.connectivityStatus === "ONLINE" }
+                          : {}),
+                        ...(event.isOn !== undefined
+                          ? { state: event.isOn ? "on" : "off" }
+                          : {}),
+                        ...(event.readAt
+                          ? { lastStateChange: event.readAt }
+                          : {}),
+                      }
+                    : device,
+                ),
+              );
+            },
+          ),
+          realtimeService.on("notification.created", (event) => {
+            const notification = event as SmartNotification;
+            if (!notification.id) return;
+            setNotifications((items) => [
+              notification,
+              ...items.filter((item) => item.id !== notification.id),
+            ]);
+            if (notification.status === "UNREAD") {
+              setUnreadNotificationCount((count) => count + 1);
+            }
+          }),
+          realtimeService.on("notification.unread_count.updated", (event) => {
+            if (event.unreadCount !== undefined) {
+              setUnreadNotificationCount(event.unreadCount);
+            }
+          }),
+          realtimeService.on("consumption.created", () => {
+            setLastSync(getTimeStamp());
+          }),
+          realtimeService.on("realtime.connected", () => {
+            setOfflineMode(false);
+            setLastSync(getTimeStamp());
+          }),
+          realtimeService.on("realtime.error", () => {
+            setOfflineMode(true);
+          }),
+        );
+      })
+      .catch(() => {
+        if (active) setOfflineMode(true);
+      });
+
+    return () => {
+      active = false;
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+      realtimeService.disconnect();
+    };
+  }, [sessionRevision]);
+
+  useEffect(() => {
+    if (useMockApi) return;
+
+    let active = true;
+
+    loadSession()
+      .then((session) => {
+        if (!active || !session) {
+          setNotifications([]);
+          setUnreadNotificationCount(0);
+          return;
+        }
+        return Promise.all([
+          notificationsService.list({ limit: 50 }),
+          notificationsService.unreadCount(),
+        ]).then(([items, count]) => {
+          if (!active) return;
+          setNotifications(items);
+          setUnreadNotificationCount(count);
+        });
+      })
+      .catch(() => {
+        if (active) setOfflineMode(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [sessionRevision]);
+
+  useEffect(() => {
+    if (useMockApi) return;
+
+    let active = true;
+
+    loadSession()
+      .then(async (session) => {
+        if (!session) {
+          if (active) {
+            setHomes([]);
+            setHomeMembersByHome({});
+            setDevices([]);
+            setActiveHomeId("");
+            setOfflineMode(false);
+          }
+          return;
+        }
+
+        const [listedHomes, currentUser] = await Promise.all([
+          smartHomeService.listHomes(),
+          authService.getCurrentUser(),
+        ]);
+        const memberEntries = await Promise.all(
+          listedHomes.map(
+            async (home) =>
+              [
+                home.id,
+                await smartHomeService.listHomeMembers(home.id),
+              ] as const,
+          ),
+        );
+        const membersByHome = Object.fromEntries(memberEntries);
+        const remoteHomes = listedHomes.map((home) => {
+          const currentMembership = membersByHome[home.id]?.find(
+            (member) =>
+              member.userId === currentUser.userId &&
+              member.status === "ACTIVE",
+          );
+          return {
+            ...home,
+            homeRole: currentMembership?.role,
+          };
+        });
+        if (!active) return;
+
+        const firstHome = remoteHomes[0];
+        setHomes(remoteHomes);
+        setHomeMembersByHome(membersByHome);
+        const firstMembership = remoteHomes.find(
+          (home) => home.homeRole,
+        )?.homeRole;
+        if (firstMembership) {
+          setSessionRole(
+            firstMembership === "OWNER"
+              ? "admin"
+              : firstMembership === "GUEST"
+                ? "invitado"
+                : "miembro",
+          );
+        }
+        setActiveHomeId((current) =>
+          remoteHomes.some((home) => home.id === current)
+            ? current
+            : (firstHome?.id ?? ""),
+        );
+
+        const remoteDevices = (
+          await Promise.all(
+            remoteHomes.map((home) => smartHomeService.listDevices(home.id)),
+          )
+        ).flat();
+
+        if (active) setDevices(remoteDevices);
+      })
+      .catch(() => {
+        if (active) setOfflineMode(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [sessionRevision]);
 
   // Alertas Smart Home ya resueltas por el usuario.
   // Se mantiene separado de activeDevices porque ese estado pertenece
   // a la seguridad/sesiones de la cuenta.
   const [resolvedSmartAlerts, setResolvedSmartAlerts] = useState<string[]>([]);
 
-  // Asignaciones demo: el administrador decide qué hogar puede ver cada cuenta.
-  // En producción estas relaciones deben venir del backend/BD.
-  const [homeAccess, setHomeAccess] = useState<Record<string, string[]>>({
-    "admin@smarthome.com": ["casa", "oficina"],
-    "pepe@smarthome.com": ["casa"],
-    "miembro@smarthome.com": ["casa"],
-    "invitado@smarthome.com": ["casa"],
-  });
-
-  const accessibleHomeIds =
-    sessionRole === "admin"
-      ? homes.map((home) => home.id)
-      : (homeAccess[sessionEmail] ?? []);
-  const accessibleHomes = homes.filter((home) =>
-    accessibleHomeIds.includes(home.id),
-  );
+  const accessibleHomes = homes;
 
   // `useMemo` evita reconstruir el objeto de contexto si sus dependencias no cambian.
   const value = useMemo<SmartHomeState>(
@@ -394,6 +655,9 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       devices,
       homeConsumptionGoals,
       homes,
+      homeMembersByHome,
+      notifications,
+      unreadNotificationCount,
       sessionEmail,
       sessionRole,
       accessibleHomes,
@@ -415,46 +679,20 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           items.filter((item) => !deviceIds.includes(item.id)),
         );
       },
-      // Crea un dispositivo nuevo dentro de un hogar especifico.
-      addDeviceToHome: (homeId, name, room) => {
-        const cleanName = name.trim();
-        if (!cleanName) return;
-
-        setDevices((items) => [
-          ...items,
-          {
-            id: createId(cleanName),
-            homeId,
-            name: cleanName,
-            category: "Electrodomesticos",
-            room: room?.trim() || "General",
-            icon: "power-plug-outline",
-            power: 0,
-            energy: 0,
-            voltage: 120,
-            current: 0,
-            frequency: 60,
-            online: true,
-            state: "off",
-            yesterday: 0,
-          },
-        ]);
-
-        smartHomeService
-          .createDevice({
-            homeId,
-            name: cleanName,
-            category: "Electrodomesticos",
-            room: room?.trim() || "General",
-          })
-          .catch(() => null);
-      },
       removeDevice: async (deviceId) => {
-        await smartHomeService.deleteDevice(deviceId);
+        const device = devices.find((item) => item.id === deviceId);
+        if (!device) return;
+        await smartHomeService.deleteDevice(device.homeId, deviceId);
         setDevices((items) => items.filter((device) => device.id !== deviceId));
       },
       updateDevice: async (deviceId, updates) => {
-        const updated = await smartHomeService.updateDevice(deviceId, updates);
+        const device = devices.find((item) => item.id === deviceId);
+        if (!device) return;
+        const updated = await smartHomeService.updateDevice(
+          device.homeId,
+          deviceId,
+          updates,
+        );
         setDevices((items) =>
           items.map((device) => (device.id === deviceId ? updated : device)),
         );
@@ -512,7 +750,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           const updatedItem = next.find((item) => item.id === id);
           if (updatedItem) {
             smartHomeService
-              .updateDeviceState(id, updatedItem.state)
+              .updateDeviceState(updatedItem.homeId, id, updatedItem.state)
               .catch(() => null);
           }
           return next;
@@ -537,8 +775,6 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         setDevices((items) =>
           items.map((item) => (item.id === id ? { ...item, online } : item)),
         );
-        smartHomeService.updateDeviceStatus(id, { online }).catch(() => null);
-
         // Un cambio manual de estado inicia un nuevo ciclo de evaluación
         // para ese dispositivo.
         setResolvedSmartAlerts((alerts) =>
@@ -555,7 +791,9 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           }),
         );
         try {
-          await smartHomeService.updateDeviceState(id, state);
+          const device = devices.find((item) => item.id === id);
+          if (!device) return;
+          await smartHomeService.updateDeviceState(device.homeId, id, state);
         } catch (error) {
           if (previousState) {
             setDevices((items) =>
@@ -579,16 +817,21 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           .setAllHomeDevicesState(homeId, state)
           .catch(() => null);
       },
-      assignHomeAccess: (email, homeId, assigned) => {
-        const cleanEmail = email.trim().toLowerCase();
-        if (!cleanEmail) return;
-        setHomeAccess((items) => {
-          const current = items[cleanEmail] ?? [];
-          const next = assigned
-            ? Array.from(new Set([...current, homeId]))
-            : current.filter((id) => id !== homeId);
-          return { ...items, [cleanEmail]: next };
-        });
+      inviteHomeMember: async (homeId, email, role) => {
+        const member = await smartHomeService.inviteHomeMember(
+          homeId,
+          email,
+          role,
+        );
+        setHomeMembersByHome((membersByHome) => ({
+          ...membersByHome,
+          [homeId]: [
+            member,
+            ...(membersByHome[homeId] ?? []).filter(
+              (existing) => existing.id !== member.id,
+            ),
+          ],
+        }));
       },
       // Marca una alerta/dispositivo activo como verificado.
       resolveDeviceAlert: (id) => {
@@ -608,6 +851,24 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         );
       },
 
+      markNotificationAsRead: async (notificationId) => {
+        await notificationsService.markAsRead(notificationId);
+        setNotifications((items) =>
+          items.map((item) =>
+            item.id === notificationId ? { ...item, status: "READ" } : item,
+          ),
+        );
+        setUnreadNotificationCount((count) => Math.max(0, count - 1));
+      },
+
+      markAllNotificationsAsRead: async () => {
+        await notificationsService.markAllAsRead();
+        setNotifications((items) =>
+          items.map((item) => ({ ...item, status: "READ" })),
+        );
+        setUnreadNotificationCount(0);
+      },
+
       refreshSync: () => setLastSync(getTimeStamp()),
     }),
     [
@@ -618,6 +879,8 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       devices,
       homeConsumptionGoals,
       homes,
+      homeMembersByHome,
+      notifications,
       sessionEmail,
       sessionRole,
       accessibleHomes,
@@ -626,6 +889,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       offlineMode,
       resolvedSmartAlerts,
       sessionName,
+      unreadNotificationCount,
     ],
   );
 

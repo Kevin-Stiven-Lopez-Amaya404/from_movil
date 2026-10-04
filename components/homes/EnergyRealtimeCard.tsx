@@ -31,7 +31,7 @@ export function EnergyRealtimeCard({
             Consumo en tiempo real
           </Text>
           <Text style={[styles.subtitle, { color: theme.muted }]}>
-            Potencia actual de la estancia
+            Potencia actual del hogar
           </Text>
         </View>
         <View

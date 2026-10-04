@@ -14,8 +14,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthPasswordField } from "@/components/auth/AuthTextField";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { profileFont } from "@/components/profile/profileTheme";
-import { updateUserPassword } from "@/lib/auth/auth-store";
-import { useSmartHome } from "@/lib/context/smart-home-context";
+import { getApiErrorMessage } from "@/lib/api/api-error";
+import { changeUserPassword } from "@/lib/auth/auth-store";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { getPasswordRules } from "@/lib/utils/validators";
@@ -24,7 +24,6 @@ export default function ChangePasswordScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  const { sessionEmail } = useSmartHome();
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -68,23 +67,18 @@ export default function ChangePasswordScreen() {
     setSubmitting(true);
 
     try {
-      const updated = await updateUserPassword(sessionEmail, newPassword);
-
-      if (!updated) {
-        Alert.alert(
-          "No se pudo actualizar",
-          "No encontramos este usuario en el sistema.",
-        );
-        return;
-      }
+      await changeUserPassword(currentPassword, newPassword, confirmPassword);
 
       Alert.alert(
         "Contraseña actualizada",
         "Tu contraseña se ha cambiado correctamente.",
         [{ text: "Aceptar", onPress: () => router.back() }],
       );
-    } catch (error) {
-      Alert.alert("Error", "No se pudo cambiar la contraseña en este momento.");
+    } catch (error: unknown) {
+      Alert.alert(
+        "No se pudo cambiar la contraseña",
+        getApiErrorMessage(error),
+      );
     } finally {
       setSubmitting(false);
     }

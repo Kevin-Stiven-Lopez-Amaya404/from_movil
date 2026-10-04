@@ -1,7 +1,7 @@
 import { apiClient } from "@/lib/api/api-client";
+import { ApiError } from "@/lib/api/api-error";
 import { useMockApi } from "@/lib/config/api-config";
 import {
-    type DeviceCategory,
     type ReportRange,
     type SmartDevice,
     type SmartHomePlace,
@@ -20,22 +20,85 @@ export type CreateHomeRequest = {
 export type CreateDeviceRequest = {
   homeId: string;
   name: string;
-  category?: DeviceCategory;
-  room?: string;
-  icon?: string;
-};
-
-export type UpdateDeviceStatusRequest = {
-  online: boolean;
+  deviceTypeId?: string;
+  manufacturerDeviceId?: string;
+  transportType?: "WIFI" | "BLUETOOTH";
+  messagingProtocol?: "MQTT";
 };
 
 export type UpdateDeviceRequest = {
   name?: string;
-  room?: string;
+  deviceTypeId?: string;
+  transportType?: "WIFI" | "BLUETOOTH";
+  messagingProtocol?: "MQTT";
 };
+
+export type HomeRole = "OWNER" | "MEMBER" | "GUEST";
+export type HomeMemberStatus = "PENDING" | "ACTIVE" | "REVOKED" | "LEFT";
+
+export type HomeMember = {
+  id: string;
+  homeId: string;
+  userId: string;
+  role: HomeRole;
+  status: HomeMemberStatus | string;
+  invitedBy: string | null;
+  invitedAt: string;
+  acceptedAt?: string | null;
+  endedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type BackendDevice = {
+  id: string;
+  homeId: string;
+  deviceTypeId?: string;
+  name: string;
+  status?: string;
+  connectivityStatus?: "ONLINE" | "OFFLINE";
+  isOn?: boolean;
+  currentPowerW?: number | null;
+  energyTotalKwh?: number | null;
+  voltageV?: number | null;
+  currentA?: number | null;
+  frequencyHz?: number | null;
+  temperatureC?: number | null;
+  manufacturerDeviceId?: string | null;
+  transportType?: "WIFI" | "BLUETOOTH" | null;
+  messagingProtocol?: "MQTT" | null;
+  updatedAt?: string;
+};
+
+function mapBackendDevice(device: BackendDevice): SmartDevice {
+  return {
+    id: device.id,
+    homeId: device.homeId,
+    name: device.name,
+    category: "Electrodomesticos",
+    icon: "power-plug-outline",
+    power: device.currentPowerW ?? 0,
+    energy: (device.energyTotalKwh ?? 0) * 1000,
+    voltage: device.voltageV ?? 0,
+    current: device.currentA ?? 0,
+    frequency: device.frequencyHz ?? 0,
+    online: device.connectivityStatus === "ONLINE",
+    temperature: device.temperatureC ?? undefined,
+    state: device.isOn ? "on" : "off",
+    yesterday: 0,
+    lastStateChange: device.updatedAt,
+  };
+}
 
 export interface SmartHomeService {
   listHomes(token?: string): Promise<SmartHomePlace[]>;
+  listHomeMembers(homeId: string, token?: string): Promise<HomeMember[]>;
+  inviteHomeMember(
+    homeId: string,
+    email: string,
+    role: Exclude<HomeRole, "OWNER">,
+    token?: string,
+  ): Promise<HomeMember>;
   createHome(
     request: CreateHomeRequest,
     token?: string,
@@ -50,22 +113,29 @@ export interface SmartHomeService {
     request: CreateDeviceRequest,
     token?: string,
   ): Promise<SmartDevice>;
-  updateDeviceStatus(
-    deviceId: string,
-    request: UpdateDeviceStatusRequest,
-    token?: string,
-  ): Promise<SmartDevice>;
   updateDeviceState(
+    homeId: string,
     deviceId: string,
     state: "on" | "off",
     token?: string,
   ): Promise<SmartDevice>;
   updateDevice(
+    homeId: string,
     deviceId: string,
     request: UpdateDeviceRequest,
     token?: string,
   ): Promise<SmartDevice>;
-  deleteDevice(deviceId: string, token?: string): Promise<void>;
+  deleteDevice(homeId: string, deviceId: string, token?: string): Promise<void>;
+  activateDevice(
+    homeId: string,
+    deviceId: string,
+    token?: string,
+  ): Promise<SmartDevice>;
+  deactivateDevice(
+    homeId: string,
+    deviceId: string,
+    token?: string,
+  ): Promise<SmartDevice>;
   setAllHomeDevicesState(
     homeId: string,
     state: "on" | "off",
@@ -111,7 +181,6 @@ const mockDevices: SmartDevice[] = [
     homeId: "casa",
     name: "Aire acondicionado",
     category: "Climatizacion",
-    room: "Sala",
     icon: "air-conditioner",
     power: 780,
     energy: 780,
@@ -128,7 +197,6 @@ const mockDevices: SmartDevice[] = [
     homeId: "oficina",
     name: "Servidor domestico",
     category: "Electrodomesticos",
-    room: "Estudio",
     icon: "server",
     power: 320,
     energy: 320,
@@ -144,7 +212,6 @@ const mockDevices: SmartDevice[] = [
     homeId: "casa",
     name: "TV",
     category: "Electrodomesticos",
-    room: "Habitacion",
     icon: "television-classic",
     power: 150,
     energy: 150,
@@ -160,7 +227,6 @@ const mockDevices: SmartDevice[] = [
     homeId: "casa",
     name: "Cargador",
     category: "Electrodomesticos",
-    room: "Dormitorio",
     icon: "power-plug-outline",
     power: 80,
     energy: 80,
@@ -176,7 +242,6 @@ const mockDevices: SmartDevice[] = [
     homeId: "casa",
     name: "Luces inteligentes",
     category: "Iluminacion",
-    room: "Cocina",
     icon: "lightbulb-on-outline",
     power: 110,
     energy: 110,
@@ -192,7 +257,6 @@ const mockDevices: SmartDevice[] = [
     homeId: "casa",
     name: "Camara principal",
     category: "Seguridad",
-    room: "Entrada",
     icon: "cctv",
     power: 60,
     energy: 60,
@@ -202,22 +266,6 @@ const mockDevices: SmartDevice[] = [
     online: true,
     state: "on",
     yesterday: 50,
-  },
-  {
-    id: "stiven-relay",
-    homeId: "casa",
-    name: "Stiven",
-    category: "Electrodomesticos",
-    room: "Stiven",
-    icon: "hardware-chip-outline",
-    power: 0,
-    energy: 0,
-    voltage: 120,
-    current: 0,
-    frequency: 60,
-    online: false,
-    state: "off",
-    yesterday: 0,
   },
 ];
 
@@ -258,6 +306,20 @@ const mockSmartHomeService: SmartHomeService = {
     return [...mockHomes];
   },
 
+  async listHomeMembers() {
+    throw new ApiError(
+      "Las membresías requieren conexión con el backend.",
+      "NETWORK_ERROR",
+    );
+  },
+
+  async inviteHomeMember() {
+    throw new ApiError(
+      "Las invitaciones requieren conexión con el backend.",
+      "NETWORK_ERROR",
+    );
+  },
+
   async createHome({ name, location }) {
     const home: SmartHomePlace = {
       id: createMockId(name),
@@ -296,9 +358,8 @@ const mockSmartHomeService: SmartHomeService = {
       id: createMockId(request.name),
       homeId: request.homeId,
       name: request.name.trim(),
-      category: request.category ?? "Electrodomesticos",
-      room: request.room?.trim() || "General",
-      icon: request.icon ?? "power-plug-outline",
+      category: "Electrodomesticos",
+      icon: "power-plug-outline",
       power: 0,
       energy: 0,
       yesterday: 0,
@@ -314,22 +375,7 @@ const mockSmartHomeService: SmartHomeService = {
     return device;
   },
 
-  async updateDeviceStatus(deviceId, { online }) {
-    const index = mockDevices.findIndex((device) => device.id === deviceId);
-
-    if (index >= 0) {
-      mockDevices[index] = {
-        ...mockDevices[index],
-        online,
-      };
-
-      return mockDevices[index];
-    }
-
-    throw new Error("Dispositivo no encontrado.");
-  },
-
-  async updateDeviceState(deviceId, state) {
+  async updateDeviceState(_homeId, deviceId, state) {
     const index = mockDevices.findIndex((device) => device.id === deviceId);
 
     if (index >= 0) {
@@ -345,7 +391,7 @@ const mockSmartHomeService: SmartHomeService = {
     throw new Error("Dispositivo no encontrado.");
   },
 
-  async updateDevice(deviceId, request) {
+  async updateDevice(_homeId, deviceId, request) {
     const index = mockDevices.findIndex((device) => device.id === deviceId);
     if (index < 0) throw new Error("Dispositivo no encontrado.");
 
@@ -353,10 +399,24 @@ const mockSmartHomeService: SmartHomeService = {
     return mockDevices[index];
   },
 
-  async deleteDevice(deviceId) {
+  async deleteDevice(_homeId, deviceId) {
     const index = mockDevices.findIndex((device) => device.id === deviceId);
     if (index < 0) throw new Error("Dispositivo no encontrado.");
     mockDevices.splice(index, 1);
+  },
+
+  async activateDevice(_homeId, deviceId) {
+    const device = mockDevices.find((item) => item.id === deviceId);
+    if (!device) throw new Error("Dispositivo no encontrado.");
+    device.online = true;
+    return device;
+  },
+
+  async deactivateDevice(_homeId, deviceId) {
+    const device = mockDevices.find((item) => item.id === deviceId);
+    if (!device) throw new Error("Dispositivo no encontrado.");
+    device.online = false;
+    return device;
   },
 
   async setAllHomeDevicesState(homeId, state) {
@@ -384,71 +444,129 @@ const mockSmartHomeService: SmartHomeService = {
 
 const backendSmartHomeService: SmartHomeService = {
   listHomes(token) {
-    return apiClient.get<SmartHomePlace[]>("/homes", { token });
+    return apiClient
+      .get<Array<SmartHomePlace & { favorite?: boolean }>>("/api/v1/homes", {
+        token,
+      })
+      .then((homes) =>
+        homes.map((home) => ({
+          id: home.id,
+          name: home.name,
+          location: home.location ?? "Hogar",
+          favorite: home.favorite ?? false,
+        })),
+      );
   },
 
-  createHome(request, token) {
-    return apiClient.post<SmartHomePlace, CreateHomeRequest>(
-      "/homes",
-      request,
+  listHomeMembers(homeId, token) {
+    return apiClient.get<HomeMember[]>(
+      `/api/v1/homes/${encodeURIComponent(homeId)}/members`,
       { token },
     );
   },
 
-  toggleHomeFavorite(homeId, favorite, token) {
-    return apiClient.patch<SmartHomePlace, { favorite: boolean }>(
-      `/homes/${homeId}/favorite`,
-      { favorite },
+  inviteHomeMember(homeId, email, role, token) {
+    return apiClient.post<
+      HomeMember,
+      { email: string; role: Exclude<HomeRole, "OWNER"> }
+    >(
+      `/api/v1/homes/${encodeURIComponent(homeId)}/invitations`,
+      { email: email.trim().toLowerCase(), role },
       { token },
+    );
+  },
+
+  createHome(request, token) {
+    return apiClient
+      .post<SmartHomePlace, { name: string }>(
+        "/api/v1/homes",
+        {
+          name: request.name,
+        },
+        { token },
+      )
+      .then((home) => ({
+        ...home,
+        location: home.location ?? request.location ?? "Hogar",
+        favorite: home.favorite ?? false,
+      }));
+  },
+
+  toggleHomeFavorite() {
+    throw new ApiError(
+      "El backend todavía no expone favoritos de hogares.",
+      "UNKNOWN_ERROR",
     );
   },
 
   listDevices(homeId, token) {
-    const path = homeId ? `/homes/${homeId}/devices` : "/devices";
-    return apiClient.get<SmartDevice[]>(path, { token });
+    if (!homeId) return Promise.resolve([]);
+
+    return apiClient
+      .get<BackendDevice[]>(`/api/v1/homes/${homeId}/devices`, { token })
+      .then((devices) => devices.map((device) => mapBackendDevice(device)));
   },
 
   createDevice(request, token) {
-    return apiClient.post<SmartDevice, CreateDeviceRequest>(
-      `/homes/${request.homeId}/devices`,
-      request,
-      { token },
-    );
+    if (!request.deviceTypeId) {
+      throw new ApiError(
+        "Selecciona un tipo de dispositivo válido.",
+        "VALIDATION_ERROR",
+      );
+    }
+
+    return apiClient
+      .post<BackendDevice, Record<string, unknown>>(
+        `/api/v1/homes/${request.homeId}/devices`,
+        {
+          deviceTypeId: request.deviceTypeId,
+          name: request.name,
+          ...(request.manufacturerDeviceId
+            ? { manufacturerDeviceId: request.manufacturerDeviceId }
+            : {}),
+          ...(request.transportType
+            ? { transportType: request.transportType }
+            : {}),
+          ...(request.messagingProtocol
+            ? { messagingProtocol: request.messagingProtocol }
+            : {}),
+        },
+        { token },
+      )
+      .then(mapBackendDevice);
   },
 
-  updateDeviceStatus(deviceId, request, token) {
-    return apiClient.patch<SmartDevice, UpdateDeviceStatusRequest>(
-      `/devices/${deviceId}/status`,
-      request,
-      { token },
-    );
+  updateDeviceState(homeId, deviceId, state, token) {
+    return apiClient
+      .patch<
+        BackendDevice,
+        { command: "TURN_ON" | "TURN_OFF" }
+      >(`/api/v1/homes/${homeId}/devices/${deviceId}/control`, { command: state === "on" ? "TURN_ON" : "TURN_OFF" }, { token })
+      .then(mapBackendDevice);
   },
 
-  updateDeviceState(deviceId, state, token) {
-    return apiClient.patch<SmartDevice, { state: "on" | "off" }>(
-      `/devices/${deviceId}/state`,
-      { state },
-      { token },
-    );
+  updateDevice(homeId, deviceId, request, token) {
+    return apiClient
+      .patch<
+        BackendDevice,
+        UpdateDeviceRequest
+      >(`/api/v1/homes/${homeId}/devices/${deviceId}`, request, { token })
+      .then(mapBackendDevice);
   },
 
-  updateDevice(deviceId, request, token) {
-    return apiClient.patch<SmartDevice, UpdateDeviceRequest>(
-      `/devices/${deviceId}`,
-      request,
+  deleteDevice(homeId, deviceId, token) {
+    return apiClient.delete<void>(
+      `/api/v1/homes/${homeId}/devices/${deviceId}`,
       { token },
     );
-  },
-
-  deleteDevice(deviceId, token) {
-    return apiClient.delete<void>(`/devices/${deviceId}`, { token });
   },
 
   setAllHomeDevicesState(homeId, state, token) {
-    return apiClient.patch<SmartDevice[], { state: "on" | "off" }>(
-      `/homes/${homeId}/devices/state`,
-      { state },
-      { token },
+    return Promise.reject(
+      new ApiError(
+        "El backend sólo permite controlar dispositivos individualmente.",
+        "UNKNOWN_ERROR",
+      ),
     );
   },
 
@@ -458,8 +576,37 @@ const backendSmartHomeService: SmartHomeService = {
       { token },
     );
   },
+
+  activateDevice(homeId, deviceId, token) {
+    return apiClient
+      .patch<BackendDevice>(
+        `/api/v1/homes/${homeId}/devices/${deviceId}/activate`,
+        undefined,
+        { token },
+      )
+      .then(mapBackendDevice);
+  },
+
+  deactivateDevice(homeId, deviceId, token) {
+    return apiClient
+      .patch<BackendDevice>(
+        `/api/v1/homes/${homeId}/devices/${deviceId}/deactivate`,
+        undefined,
+        { token },
+      )
+      .then(mapBackendDevice);
+  },
 };
 
-export const smartHomeService: SmartHomeService = useMockApi
-  ? mockSmartHomeService
-  : backendSmartHomeService;
+export const smartHomeService: SmartHomeService = new Proxy(
+  mockSmartHomeService,
+  {
+    get(_target, property) {
+      const service = useMockApi
+        ? mockSmartHomeService
+        : backendSmartHomeService;
+      const value: unknown = Reflect.get(service, property, service);
+      return typeof value === "function" ? value.bind(service) : value;
+    },
+  },
+);

@@ -1,12 +1,12 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,11 +19,19 @@ export default function DevicesScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
 
-  const { devices, homes, accessibleHomes, resolvedSmartAlerts, setActiveHomeId, toggleDevice } =
-    useSmartHome();
+  const {
+    devices,
+    homes,
+    accessibleHomes,
+    resolvedSmartAlerts,
+    setActiveHomeId,
+    toggleDevice,
+  } = useSmartHome();
 
   const accessibleHomeIds = new Set(accessibleHomes.map((home) => home.id));
-  const visibleDevices = devices.filter((device) => accessibleHomeIds.has(device.homeId));
+  const visibleDevices = devices.filter((device) =>
+    accessibleHomeIds.has(device.homeId),
+  );
 
   const onlineCount = visibleDevices.filter((device) => device.online).length;
 
@@ -268,7 +276,7 @@ export default function DevicesScreen() {
                           },
                         ]}
                       >
-                        {home?.name ?? "Hogar"} · {device.room}
+                        {home?.name ?? "Hogar"}
                       </Text>
 
                       <Text

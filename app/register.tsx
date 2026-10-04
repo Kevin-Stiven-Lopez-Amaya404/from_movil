@@ -1,8 +1,8 @@
 import { AuthCheckboxRow } from "@/components/auth/AuthCheckboxRow";
 import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
 import {
-  AuthPasswordField,
-  AuthTextField,
+    AuthPasswordField,
+    AuthTextField,
 } from "@/components/auth/AuthTextField";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { BackButton } from "@/components/common/BackButton";
@@ -102,6 +102,7 @@ export default function RegisterScreen() {
         email: cleanEmail,
         name: cleanName,
         password,
+        passwordConfirmation: confirmPassword,
       });
 
       // ======================================
@@ -121,12 +122,16 @@ export default function RegisterScreen() {
       // REGISTRO EXITOSO
       // ======================================
 
-      Alert.alert("Cuenta creada", "Tu cuenta se creó correctamente.", [
-        {
-          text: "Iniciar sesión",
-          onPress: () => router.replace("/login"),
-        },
-      ]);
+      Alert.alert(
+        "Revisa tu correo",
+        "Te enviamos un enlace para activar tu cuenta. Ábrelo desde este teléfono para continuar.",
+        [
+          {
+            text: "Entendido",
+            onPress: () => router.replace("/login"),
+          },
+        ],
+      );
     } catch (error) {
       Alert.alert("Error", getApiErrorMessage(error));
     } finally {

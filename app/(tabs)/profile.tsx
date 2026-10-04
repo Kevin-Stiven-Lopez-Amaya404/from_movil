@@ -21,6 +21,7 @@ const appFont = profileFont;
 type ThemeLike = ReturnType<typeof useAppTheme>;
 
 type RowProps = {
+  danger?: boolean;
   description?: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
@@ -28,7 +29,14 @@ type RowProps = {
   title: string;
 };
 
-function Row({ description, icon, onPress, theme, title }: RowProps) {
+function Row({
+  danger = false,
+  description,
+  icon,
+  onPress,
+  theme,
+  title,
+}: RowProps) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -37,10 +45,21 @@ function Row({ description, icon, onPress, theme, title }: RowProps) {
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <View style={[styles.rowIcon, { backgroundColor: theme.rowAlt }]}>
-        <Ionicons name={icon} size={20} color={theme.blue} />
+        <Ionicons
+          name={icon}
+          size={20}
+          color={danger ? theme.danger : theme.blue}
+        />
       </View>
       <View style={styles.rowCopy}>
-        <Text style={[styles.rowTitle, { color: theme.text }]}>{title}</Text>
+        <Text
+          style={[
+            styles.rowTitle,
+            { color: danger ? theme.danger : theme.text },
+          ]}
+        >
+          {title}
+        </Text>
         {!!description && (
           <Text style={[styles.rowDescription, { color: theme.muted }]}>
             {description}
@@ -87,6 +106,7 @@ export default function ProfileScreen() {
   const { t } = useTranslation();
   const {
     colorMode,
+    deactivateAccount,
     devices,
     language,
     resolvedSmartAlerts,
@@ -122,6 +142,20 @@ export default function ProfileScreen() {
         text: t("action.logout"),
         style: "destructive",
         onPress: () => router.replace("/welcome"),
+      },
+    ]);
+  }
+
+  function confirmDeactivation() {
+    Alert.alert(t("profile.deactivateAccount"), t("profile.deactivatePrompt"), [
+      { text: t("action.cancel"), style: "cancel" },
+      {
+        text: t("action.deactivate"),
+        style: "destructive",
+        onPress: () => {
+          deactivateAccount();
+          router.replace("/welcome");
+        },
       },
     ]);
   }
@@ -193,6 +227,14 @@ export default function ProfileScreen() {
               icon="person-outline"
               title="Información personal"
               onPress={() => router.push("/(tabs)/personal-info")}
+              theme={theme}
+            />
+            <Row
+              danger
+              icon="person-remove-outline"
+              title={t("profile.deactivateAccount")}
+              description={t("profile.deactivateDescription")}
+              onPress={confirmDeactivation}
               theme={theme}
             />
           </Section>
