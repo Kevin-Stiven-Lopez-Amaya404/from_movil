@@ -39,8 +39,11 @@ export type RegisteredUser = {
 };
 
 export type AuthenticatedUser = {
-  userId: string;
-  role: string;
+  id?: string;
+  userId?: string;
+  role?: string;
+  name?: string;
+  email?: string;
 };
 
 export type RegisterUserRequest = {

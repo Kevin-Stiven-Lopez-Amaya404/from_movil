@@ -140,7 +140,7 @@ export default function HomesScreen() {
   }
 
   async function toggleDevice(device: SmartDevice) {
-    if (!canControl || pendingDeviceId) return;
+    if (!canControl || !device.online || pendingDeviceId) return;
     setPendingDeviceId(device.id);
     try {
       await setHomeDeviceState(device.id, device.state === "on" ? "off" : "on");
@@ -155,7 +155,7 @@ export default function HomesScreen() {
   }
 
   async function toggleTelemetryDevice() {
-    if (!telemetryDevice || !canControl || pendingDeviceId) return;
+    if (!telemetryDevice || !canControl || !telemetryDevice.online || pendingDeviceId) return;
     const nextState = telemetryDevice.state === "on" ? "off" : "on";
     setPendingDeviceId(telemetryDevice.id);
     try {

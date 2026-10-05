@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
@@ -36,6 +37,7 @@ export function LiquidNavigation({
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const theme = useAppTheme();
+  const { unreadNotificationCount } = useSmartHome();
   const [barWidth, setBarWidth] = useState(0);
   const activeIndex = ITEMS.findIndex(
     (item) => item.route === state.routes[state.index]?.name,
@@ -135,6 +137,7 @@ export function LiquidNavigation({
 
           const options = descriptors[route.key]?.options;
           const selected = activeRoute === item.route;
+          const showBadge = item.route === "profile" && unreadNotificationCount > 0;
 
           return (
             <Pressable
@@ -153,6 +156,15 @@ export function LiquidNavigation({
                   size={25}
                   color={selected ? theme.tab.activeText : theme.muted}
                 />
+                {showBadge ? (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {unreadNotificationCount > 9
+                        ? "9+"
+                        : String(unreadNotificationCount)}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               <Text
                 style={[
@@ -208,6 +220,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     height: 29,
+    position: "relative",
+  },
+  badge: {
+    alignItems: "center",
+    backgroundColor: "#FF4D4F",
+    borderRadius: 999,
+    justifyContent: "center",
+    minWidth: 18,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    position: "absolute",
+    right: -8,
+    top: -4,
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 9,
+    fontWeight: "800",
   },
   activeIndicator: {
     borderRadius: 24,

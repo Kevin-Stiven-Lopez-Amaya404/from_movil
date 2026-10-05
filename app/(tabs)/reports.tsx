@@ -6,7 +6,7 @@
  *    gráfica de telemetría horaria en Wh/kWh, zona horaria (America/Bogota) y tarjetas de descarga.
  */
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     Alert,
     Pressable,
@@ -66,24 +66,71 @@ export default function ReportsScreen() {
   const [realConsumptionKwh, setRealConsumptionKwh] = useState<number | null>(
     null,
   );
+  const [dailySeries, setDailySeries] = useState<Array<{ label: string; value: number }>>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (useMockApi || !activeHomeId) return;
+    if (useMockApi || !activeHomeId) {
+      setDailySeries([]);
+      setRealConsumptionKwh(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     let active = true;
-    consumptionService
-      .listHome(activeHomeId, { limit: 200 })
-      .then((records) => {
+
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      consumptionService.getHomeSummary(activeHomeId),
+      consumptionService.getHomeDaily(activeHomeId, { limit: 12 }),
+    ])
+      .then(([summary, daily]) => {
         if (!active) return;
-        setRealConsumptionKwh(
-          records.reduce(
-            (sum, record) => sum + (record.energyDeltaKwh ?? 0),
-            0,
-          ),
+
+        const summaryValue = Number(summary?.energyDeltaKwh ?? 0);
+        const fallbackValue = daily.reduce(
+          (sum, record) => sum + (Number(record.energyDeltaKwh ?? 0) || 0),
+          0,
         );
+
+        setRealConsumptionKwh(
+          Number.isFinite(summaryValue) && summaryValue > 0
+            ? summaryValue
+            : fallbackValue,
+        );
+
+        const mappedSeries = daily
+          .map((record) => {
+            const timestamp =
+              record.recordedAt ?? record.timestamp ?? new Date().toISOString();
+            const date = new Date(timestamp);
+            if (Number.isNaN(date.getTime())) return null;
+
+            return {
+              label: date.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              value: Number(record.energyDeltaKwh ?? 0),
+            };
+          })
+          .filter((point): point is { label: string; value: number } => !!point);
+
+        setDailySeries(mappedSeries.slice(-12));
       })
       .catch(() => {
-        if (active) setRealConsumptionKwh(null);
+        if (active) {
+          setRealConsumptionKwh(null);
+          setDailySeries([]);
+          setError("No se pudo cargar el consumo real del hogar.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
 
     return () => {
@@ -98,26 +145,30 @@ export default function ReportsScreen() {
         ? "Conecta el backend para consultar datos reales"
         : "Datos no disponibles para este período";
 
+  const chartPoints = useMemo(() => {
+    if (dailySeries.length > 0) return dailySeries;
+    return TIMESTAMPS_24H.map((label) => ({ label, value: 0 }));
+  }, [dailySeries]);
+
   // Estados de la pestaña "Historia"
   const [historyPeriod, setHistoryPeriod] =
     useState<HistoryPeriod>("Últimas 24 horas");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dateRangeIndex, setDateRangeIndex] = useState(0);
 
-  // Rangos de fecha simulados
   const dateRanges = [
-    "09.09.2026 - 10.09.2026",
-    "08.09.2026 - 09.09.2026",
-    "07.09.2026 - 08.09.2026",
-    "06.09.2026 - 07.09.2026",
+    "Período actual",
+    "Últimos 7 días",
+    "Últimos 30 días",
+    "Período anterior",
   ];
   const currentDateRange =
     dateRanges[Math.abs(dateRangeIndex) % dateRanges.length];
 
   function handleDownloadReport(title: string) {
     Alert.alert(
-      "Descarga de reporte",
-      `Generando informe de ${title} para el período ${currentDateRange}.\nFormato: PDF / CSV listo para exportar.`,
+      "Exportación no disponible",
+      `La exportación de ${title} aún no está publicada en el backend actual. El frontend solo muestra datos del período disponible en la API actual.`,
       [{ text: "Entendido" }],
     );
   }
@@ -311,78 +362,89 @@ export default function ReportsScreen() {
 
               {/* Área de la Gráfica */}
               <View style={styles.chartArea}>
-                {/* Ejes Y de referencia (1 Wh, 0.5 Wh, 0 Wh) */}
-                <View style={styles.yAxisRow}>
-                  <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                    1 Wh
+                {loading ? (
+                  <Text style={[styles.noDataOverlayText, { color: theme.muted }]}>
+                    Cargando consumo real…
                   </Text>
-                  <View
-                    style={[
-                      styles.gridLine,
-                      { backgroundColor: theme.borderLight },
-                    ]}
-                  />
-                </View>
-
-                <View style={styles.yAxisRow}>
-                  <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                    0.5 Wh
+                ) : error ? (
+                  <Text style={[styles.noDataOverlayText, { color: theme.muted }]}>
+                    {error}
                   </Text>
-                  <View
-                    style={[
-                      styles.gridLine,
-                      { backgroundColor: theme.borderLight },
-                    ]}
-                  >
-                    {realConsumptionKwh === null ? (
-                      <Text
-                        style={[
-                          styles.noDataOverlayText,
-                          { color: theme.muted },
-                        ]}
-                      >
-                        {useMockApi
-                          ? "Conecta el backend para consultar datos"
-                          : "¡Datos no disponibles!"}
+                ) : (
+                  <>
+                    {/* Ejes Y de referencia (1 Wh, 0.5 Wh, 0 Wh) */}
+                    <View style={styles.yAxisRow}>
+                      <Text style={[styles.axisLabel, { color: theme.muted }]}>
+                        1 Wh
                       </Text>
-                    ) : null}
-                  </View>
-                </View>
-
-                <View style={styles.yAxisRow}>
-                  <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                    0 Wh
-                  </Text>
-                  <View
-                    style={[
-                      styles.gridLine,
-                      { backgroundColor: theme.borderLight },
-                    ]}
-                  />
-                </View>
-
-                {/* Marcas de tiempo en el eje X (19:00, 21:00, 23:00...) */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.xAxisTimestamps}
-                >
-                  {TIMESTAMPS_24H.map((time) => (
-                    <View key={time} style={styles.timestampCol}>
                       <View
                         style={[
-                          styles.timestampTick,
+                          styles.gridLine,
                           { backgroundColor: theme.borderLight },
                         ]}
                       />
-                      <Text
-                        style={[styles.timestampText, { color: theme.muted }]}
-                      >
-                        {time}
-                      </Text>
                     </View>
-                  ))}
-                </ScrollView>
+
+                    <View style={styles.yAxisRow}>
+                      <Text style={[styles.axisLabel, { color: theme.muted }]}>
+                        0.5 Wh
+                      </Text>
+                      <View
+                        style={[
+                          styles.gridLine,
+                          { backgroundColor: theme.borderLight },
+                        ]}
+                      >
+                        {realConsumptionKwh === null ? (
+                          <Text
+                            style={[
+                              styles.noDataOverlayText,
+                              { color: theme.muted },
+                            ]}
+                          >
+                            {useMockApi
+                              ? "Conecta el backend para consultar datos"
+                              : "¡Datos no disponibles!"}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+
+                    <View style={styles.yAxisRow}>
+                      <Text style={[styles.axisLabel, { color: theme.muted }]}>
+                        0 Wh
+                      </Text>
+                      <View
+                        style={[
+                          styles.gridLine,
+                          { backgroundColor: theme.borderLight },
+                        ]}
+                      />
+                    </View>
+
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.xAxisTimestamps}
+                    >
+                      {chartPoints.map((point) => (
+                        <View key={`${point.label}-${point.value}`} style={styles.timestampCol}>
+                          <View
+                            style={[
+                              styles.timestampTick,
+                              { backgroundColor: theme.borderLight },
+                            ]}
+                          />
+                          <Text
+                            style={[styles.timestampText, { color: theme.muted }]}
+                          >
+                            {point.label}
+                          </Text>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </>
+                )}
               </View>
 
               {/* Pie de zona horaria */}
@@ -432,7 +494,7 @@ export default function ReportsScreen() {
               >
                 <Ionicons name="flash-outline" size={16} color={theme.blue} />
                 <Text style={[styles.deviceStatText, { color: theme.text }]}>
-                  {consumptionLabel}
+                  {loading ? "Consultando consumo real…" : consumptionLabel}
                 </Text>
               </View>
             </View>

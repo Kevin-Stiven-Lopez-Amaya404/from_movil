@@ -14,6 +14,24 @@ import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
+function formatLastSeenAt(lastSeenAt?: string | null) {
+  if (!lastSeenAt) return "Sin último reporte";
+
+  const timestamp = new Date(lastSeenAt).getTime();
+  if (Number.isNaN(timestamp)) return "Sin último reporte";
+
+  const diffMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+
+  if (diffMinutes < 1) return "Último reporte: ahora";
+  if (diffMinutes < 60) return `Último reporte: hace ${diffMinutes} min`;
+
+  const hours = Math.floor(diffMinutes / 60);
+  if (hours < 24) return `Último reporte: hace ${hours} h`;
+
+  const days = Math.floor(hours / 24);
+  return `Último reporte: hace ${days} d`;
+}
+
 export default function DevicesScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
@@ -289,19 +307,23 @@ export default function DevicesScreen() {
                       >
                         {statusText}
                       </Text>
+                      <Text style={[styles.deviceLastSeen, { color: theme.muted }]}>
+                        {formatLastSeenAt(device.lastSeenAt)}
+                      </Text>
                     </View>
                   </Pressable>
 
                   {/* DEVICE SWITCH */}
                   <Switch
-                    value={device.online}
+                    value={device.state === "on"}
+                    disabled={!device.online}
                     onValueChange={() => toggleDevice(device.id)}
                     accessibilityLabel={`Cambiar estado de ${device.name}`}
                     trackColor={{
                       false: "#CDD2E4",
                       true: "#BDE8CB",
                     }}
-                    thumbColor={device.online ? "#2AAF5D" : "#FFFFFF"}
+                    thumbColor={device.state === "on" ? "#2AAF5D" : "#FFFFFF"}
                   />
                 </View>
               );
@@ -453,6 +475,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "800",
     marginTop: 4,
+  },
+  deviceLastSeen: {
+    fontSize: 10,
+    fontWeight: "600",
+    marginTop: 2,
   },
 
   pressed: {

@@ -45,6 +45,8 @@ Cada pantalla debe consumir funciones de servicios:
 | Listar/crear hogares                 | `GET`, `POST`  | `/api/v1/homes`                                                                                       |
 | Listar miembros/invitar              | `GET`, `POST`  | `/api/v1/homes/:homeId/members`, `/api/v1/homes/:homeId/invitations`                                  |
 | Listar/aceptar/rechazar invitaciones | `GET`, `PATCH` | `/api/v1/invitations`, `/api/v1/invitations/:memberId/accept`, `/api/v1/invitations/:memberId/reject` |
+| Cambiar rol/revocar miembro          | `PATCH`        | `/api/v1/homes/:homeId/members/:memberId/role`, `/api/v1/homes/:homeId/members/:memberId/revoke`     |
+| Salir del hogar                     | `POST`         | `/api/v1/homes/:homeId/leave`                                                                         |
 | Listar dispositivos por hogar        | `GET`          | `/api/v1/homes/:homeId/devices`                                                                       |
 | Controlar dispositivo                | `PATCH`        | `/api/v1/homes/:homeId/devices/:deviceId/control`                                                     |
 | Consumo hogar                        | `GET`          | `/api/v1/homes/:homeId/consumption[/(summary                                                          | daily)]` |
@@ -58,7 +60,8 @@ Cada pantalla debe consumir funciones de servicios:
 - Recuperación recibe `{ email }`; el enlace incluye un token. El restablecimiento recibe `{ token, password, passwordConfirmation }`.
 - Cambio de contraseña usa `PATCH /api/v1/auth/change-password` con `currentPassword`, `newPassword` y `newPasswordConfirmation`.
 - Login responde con `accessToken`, `tokenType` y `user` (`id`, `name`, `email`, `role`). El refresh token no viene en JSON: el backend lo administra en una cookie `HttpOnly`; `/auth/refresh` devuelve un nuevo access token. El cliente móvil envía cookies con `credentials: "include"`, pero ese comportamiento debe validarse en Android/iOS contra el entorno desplegado.
-- Control de dispositivo usa `PATCH /api/v1/homes/:homeId/devices/:deviceId/control` con `command: "TURN_ON" | "TURN_OFF"`. Crear un dispositivo requiere `deviceTypeId` UUID y `name`.
+- Control de dispositivo usa `PATCH /api/v1/homes/:homeId/devices/:deviceId/control` con `command: "TURN_ON" | "TURN_OFF"`. Crear un dispositivo no usa `deviceTypeId`; el backend actual eliminó `device_type`.
+- Invitaciones y membresía del hogar usan `GET /api/v1/invitations`, `PATCH /api/v1/invitations/:id/accept`, `PATCH /api/v1/invitations/:id/reject`, `PATCH /api/v1/homes/:homeId/members/:memberId/role`, `PATCH /api/v1/homes/:homeId/members/:memberId/revoke` y `POST /api/v1/homes/:homeId/leave`.
 - Consumo real usa las rutas del servicio `consumption`; el backend no define `/reports`.
 - Notificaciones incluyen `GET /notifications/unread-count`, `PATCH /notifications/read-all`, `PATCH /notifications/:notificationId/read` y `PATCH /notifications/:notificationId/dismiss`.
 

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -7,17 +8,20 @@ import { profileFont } from "@/components/profile/profileTheme";
 import { useMockApi } from "@/lib/config/api-config";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import type { NotificationStatus } from "@/lib/services/notifications-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
 export default function NotificationsScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
+  const [filter, setFilter] = useState<NotificationStatus | "ALL">("ALL");
   const {
     devices,
     resolvedSmartAlerts,
     notifications: remoteNotifications,
     markNotificationAsRead,
+    dismissNotification,
     markAllNotificationsAsRead,
   } = useSmartHome();
 
@@ -29,6 +33,7 @@ export default function NotificationsScreen() {
       time: "Hace 1 min",
       icon: "sparkles-outline" as const,
       tone: "info" as const,
+      status: "UNREAD" as const,
     },
     ...devices
       .filter(
@@ -49,6 +54,7 @@ export default function NotificationsScreen() {
           ? "alert-circle-outline"
           : "cloud-offline-outline",
         tone: device.critical ? "warning" : "danger",
+        status: "UNREAD" as const,
       })),
     {
       id: "summary",
@@ -57,6 +63,7 @@ export default function NotificationsScreen() {
       time: "Hace 2 h",
       icon: "stats-chart-outline" as const,
       tone: "success" as const,
+      status: "READ" as const,
     },
   ];
 
@@ -69,10 +76,23 @@ export default function NotificationsScreen() {
         time: item.createdAt
           ? new Date(item.createdAt).toLocaleString()
           : "Ahora",
-        icon: "notifications-outline" as const,
+        icon:
+          item.type === "ALERT" || item.priority === "alta"
+            ? ("alert-circle-outline" as const)
+            : ("notifications-outline" as const),
         tone:
-          item.status === "UNREAD" ? ("warning" as const) : ("info" as const),
+          item.priority === "alta" || item.type === "ALERT"
+            ? ("danger" as const)
+            : item.status === "UNREAD"
+              ? ("warning" as const)
+              : ("info" as const),
+        status: item.status,
       }));
+
+  const visibleNotifications = useMemo(() => {
+    if (filter === "ALL") return notifications;
+    return notifications.filter((item) => item.status === filter);
+  }, [filter, notifications]);
 
   const toneColor: Record<string, string> = {
     info: theme.blue,
@@ -80,6 +100,13 @@ export default function NotificationsScreen() {
     danger: theme.danger,
     success: theme.success,
   };
+
+  const filterOptions: Array<{ key: NotificationStatus | "ALL"; label: string }> = [
+    { key: "ALL", label: "Todas" },
+    { key: "UNREAD", label: "Sin leer" },
+    { key: "READ", label: "Leídas" },
+    { key: "DISMISSED", label: "Descartadas" },
+  ];
 
   return (
     <SafeAreaView
@@ -146,54 +173,105 @@ export default function NotificationsScreen() {
             ) : null}
           </View>
 
+          {!useMockApi ? (
+            <View style={[styles.filtersRow, { gap: 8 }]}>
+              {filterOptions.map((option) => {
+                const selected = filter === option.key;
+                return (
+                  <Pressable
+                    key={option.key}
+                    onPress={() => setFilter(option.key)}
+                    style={[
+                      styles.filterChip,
+                      {
+                        backgroundColor: selected ? theme.rowAlt : theme.card,
+                        borderColor: selected ? theme.blue : theme.borderLight,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.filterText,
+                        { color: selected ? theme.blue : theme.muted },
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
           <View
             style={[
               styles.card,
               { backgroundColor: theme.card, borderColor: theme.borderLight },
             ]}
           >
-            {notifications.map((item) => (
-              <Pressable
-                key={item.id}
-                onPress={
-                  useMockApi
-                    ? undefined
-                    : () => void markNotificationAsRead(item.id)
-                }
-                style={({ pressed }) => [
-                  styles.notificationRow,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.notificationIcon,
-                    { backgroundColor: `${toneColor[item.tone]}1A` },
-                  ]}
-                >
-                  <Ionicons
-                    name={item.icon as keyof typeof Ionicons.glyphMap}
-                    size={18}
-                    color={toneColor[item.tone]}
-                  />
-                </View>
-                <View style={styles.notificationCopy}>
-                  <Text
-                    style={[styles.notificationTitle, { color: theme.text }]}
+            {visibleNotifications.length === 0 ? (
+              <Text style={[styles.emptyState, { color: theme.muted }]}>
+                No hay notificaciones en este filtro.
+              </Text>
+            ) : (
+              visibleNotifications.map((item) => (
+                <View key={item.id} style={styles.notificationRow}>
+                  <Pressable
+                    onPress={
+                      useMockApi
+                        ? undefined
+                        : () => void markNotificationAsRead(item.id)
+                    }
+                    style={({ pressed }) => [
+                      styles.notificationContent,
+                      pressed && styles.pressed,
+                    ]}
                   >
-                    {item.title}
-                  </Text>
-                  <Text
-                    style={[styles.notificationText, { color: theme.muted }]}
-                  >
-                    {item.description}
-                  </Text>
+                    <View
+                      style={[
+                        styles.notificationIcon,
+                        { backgroundColor: `${toneColor[item.tone]}1A` },
+                      ]}
+                    >
+                      <Ionicons
+                        name={item.icon as keyof typeof Ionicons.glyphMap}
+                        size={18}
+                        color={toneColor[item.tone]}
+                      />
+                    </View>
+                    <View style={styles.notificationCopy}>
+                      <Text
+                        style={[styles.notificationTitle, { color: theme.text }]}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text
+                        style={[styles.notificationText, { color: theme.muted }]}
+                      >
+                        {item.description}
+                      </Text>
+                    </View>
+                    <Text style={[styles.notificationTime, { color: theme.muted }]}>
+                      {item.time}
+                    </Text>
+                  </Pressable>
+
+                  {!useMockApi ? (
+                    <Pressable
+                      onPress={() => void dismissNotification(item.id)}
+                      style={({ pressed }) => [
+                        styles.dismissButton,
+                        { borderColor: theme.borderLight },
+                        pressed && styles.pressed,
+                      ]}
+                      accessibilityLabel={`Descartar notificación ${item.title}`}
+                    >
+                      <Ionicons name="trash-outline" size={15} color={theme.muted} />
+                    </Pressable>
+                  ) : null}
                 </View>
-                <Text style={[styles.notificationTime, { color: theme.muted }]}>
-                  {item.time}
-                </Text>
-              </Pressable>
-            ))}
+              ))
+            )}
           </View>
         </View>
       </ScrollView>
@@ -251,12 +329,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   notificationRow: {
-    alignItems: "flex-start",
+    alignItems: "center",
     borderBottomColor: "rgba(148,163,184,0.25)",
     borderBottomWidth: 1,
     flexDirection: "row",
     paddingHorizontal: 14,
     paddingVertical: 14,
+  },
+  notificationContent: {
+    alignItems: "flex-start",
+    flex: 1,
+    flexDirection: "row",
   },
   notificationIcon: {
     alignItems: "center",
@@ -266,6 +349,15 @@ const styles = StyleSheet.create({
     width: 36,
   },
   notificationCopy: { flex: 1, marginLeft: 12 },
+  dismissButton: {
+    alignItems: "center",
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: "center",
+    marginLeft: 10,
+    width: 32,
+  },
   notificationTitle: {
     fontFamily: profileFont,
     fontSize: 14,
@@ -295,5 +387,28 @@ const styles = StyleSheet.create({
     fontFamily: profileFont,
     fontSize: 12,
     fontWeight: "800",
+  },
+  filtersRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 14,
+  },
+  filterChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  filterText: {
+    fontFamily: profileFont,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  emptyState: {
+    fontFamily: profileFont,
+    fontSize: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    textAlign: "center",
   },
 });

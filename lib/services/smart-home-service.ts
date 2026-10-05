@@ -20,7 +20,6 @@ export type CreateHomeRequest = {
 export type CreateDeviceRequest = {
   homeId: string;
   name: string;
-  deviceTypeId?: string;
   manufacturerDeviceId?: string;
   transportType?: "WIFI" | "BLUETOOTH";
   messagingProtocol?: "MQTT";
@@ -28,7 +27,6 @@ export type CreateDeviceRequest = {
 
 export type UpdateDeviceRequest = {
   name?: string;
-  deviceTypeId?: string;
   transportType?: "WIFI" | "BLUETOOTH";
   messagingProtocol?: "MQTT";
 };
@@ -50,10 +48,22 @@ export type HomeMember = {
   updatedAt?: string;
 };
 
+export type HomeInvitation = {
+  id: string;
+  homeId?: string;
+  homeName?: string;
+  memberId?: string;
+  userId?: string;
+  role: HomeRole;
+  status?: HomeMemberStatus | string;
+  invitedBy?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 type BackendDevice = {
   id: string;
   homeId: string;
-  deviceTypeId?: string;
   name: string;
   status?: string;
   connectivityStatus?: "ONLINE" | "OFFLINE";
@@ -67,7 +77,10 @@ type BackendDevice = {
   manufacturerDeviceId?: string | null;
   transportType?: "WIFI" | "BLUETOOTH" | null;
   messagingProtocol?: "MQTT" | null;
+  lastSeenAt?: string | null;
+  createdAt?: string;
   updatedAt?: string;
+  deletedAt?: string | null;
 };
 
 function mapBackendDevice(device: BackendDevice): SmartDevice {
@@ -86,13 +99,25 @@ function mapBackendDevice(device: BackendDevice): SmartDevice {
     temperature: device.temperatureC ?? undefined,
     state: device.isOn ? "on" : "off",
     yesterday: 0,
-    lastStateChange: device.updatedAt,
+  lastSeenAt: device.lastSeenAt ?? null,
+  lastStateChange: device.updatedAt ?? device.lastSeenAt ?? undefined,
   };
 }
 
 export interface SmartHomeService {
   listHomes(token?: string): Promise<SmartHomePlace[]>;
   listHomeMembers(homeId: string, token?: string): Promise<HomeMember[]>;
+  listIncomingInvitations(token?: string): Promise<HomeInvitation[]>;
+  acceptInvitation(invitationId: string, token?: string): Promise<HomeInvitation>;
+  rejectInvitation(invitationId: string, token?: string): Promise<HomeInvitation>;
+  updateMemberRole(
+    homeId: string,
+    memberId: string,
+    role: HomeRole,
+    token?: string,
+  ): Promise<HomeMember>;
+  revokeMember(homeId: string, memberId: string, token?: string): Promise<HomeMember>;
+  leaveHome(homeId: string, token?: string): Promise<void>;
   inviteHomeMember(
     homeId: string,
     email: string,
@@ -313,6 +338,48 @@ const mockSmartHomeService: SmartHomeService = {
     );
   },
 
+  async listIncomingInvitations() {
+    throw new ApiError(
+      "Las invitaciones recibidas requieren conexión con el backend.",
+      "NETWORK_ERROR",
+    );
+  },
+
+  async acceptInvitation() {
+    throw new ApiError(
+      "Aceptar invitaciones requiere conexión con el backend.",
+      "NETWORK_ERROR",
+    );
+  },
+
+  async rejectInvitation() {
+    throw new ApiError(
+      "Rechazar invitaciones requiere conexión con el backend.",
+      "NETWORK_ERROR",
+    );
+  },
+
+  async updateMemberRole() {
+    throw new ApiError(
+      "Cambiar rol de miembro requiere conexión con el backend.",
+      "NETWORK_ERROR",
+    );
+  },
+
+  async revokeMember() {
+    throw new ApiError(
+      "Revocar membresía requiere conexión con el backend.",
+      "NETWORK_ERROR",
+    );
+  },
+
+  async leaveHome() {
+    throw new ApiError(
+      "Salir del hogar requiere conexión con el backend.",
+      "NETWORK_ERROR",
+    );
+  },
+
   async inviteHomeMember() {
     throw new ApiError(
       "Las invitaciones requieren conexión con el backend.",
@@ -465,6 +532,50 @@ const backendSmartHomeService: SmartHomeService = {
     );
   },
 
+  listIncomingInvitations(token) {
+    return apiClient.get<HomeInvitation[]>("/api/v1/invitations", { token });
+  },
+
+  acceptInvitation(invitationId, token) {
+    return apiClient.patch<HomeInvitation>(
+      `/api/v1/invitations/${encodeURIComponent(invitationId)}/accept`,
+      undefined,
+      { token },
+    );
+  },
+
+  rejectInvitation(invitationId, token) {
+    return apiClient.patch<HomeInvitation>(
+      `/api/v1/invitations/${encodeURIComponent(invitationId)}/reject`,
+      undefined,
+      { token },
+    );
+  },
+
+  updateMemberRole(homeId, memberId, role, token) {
+    return apiClient.patch<HomeMember, { role: HomeRole }>(
+      `/api/v1/homes/${encodeURIComponent(homeId)}/members/${encodeURIComponent(memberId)}/role`,
+      { role },
+      { token },
+    );
+  },
+
+  revokeMember(homeId, memberId, token) {
+    return apiClient.patch<HomeMember>(
+      `/api/v1/homes/${encodeURIComponent(homeId)}/members/${encodeURIComponent(memberId)}/revoke`,
+      undefined,
+      { token },
+    );
+  },
+
+  leaveHome(homeId, token) {
+    return apiClient.post<void>(
+      `/api/v1/homes/${encodeURIComponent(homeId)}/leave`,
+      undefined,
+      { token },
+    );
+  },
+
   inviteHomeMember(homeId, email, role, token) {
     return apiClient.post<
       HomeMember,
@@ -508,18 +619,10 @@ const backendSmartHomeService: SmartHomeService = {
   },
 
   createDevice(request, token) {
-    if (!request.deviceTypeId) {
-      throw new ApiError(
-        "Selecciona un tipo de dispositivo válido.",
-        "VALIDATION_ERROR",
-      );
-    }
-
     return apiClient
       .post<BackendDevice, Record<string, unknown>>(
-        `/api/v1/homes/${request.homeId}/devices`,
+        `/api/v1/homes/${encodeURIComponent(request.homeId)}/devices`,
         {
-          deviceTypeId: request.deviceTypeId,
           name: request.name,
           ...(request.manufacturerDeviceId
             ? { manufacturerDeviceId: request.manufacturerDeviceId }
@@ -570,10 +673,12 @@ const backendSmartHomeService: SmartHomeService = {
     );
   },
 
-  getReports(range, token) {
-    return apiClient.get<ReportPoint[]>(
-      `/reports?range=${encodeURIComponent(range)}`,
-      { token },
+  getReports() {
+    return Promise.reject(
+      new ApiError(
+        "El backend actual no expone un endpoint /reports; usa /consumption para los datos reales.",
+        "UNKNOWN_ERROR",
+      ),
     );
   },
 

@@ -26,8 +26,15 @@ export default function AccessScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  const { homes, activeHomeId, homeMembersByHome, inviteHomeMember } =
-    useSmartHome();
+  const {
+    homes,
+    activeHomeId,
+    homeMembersByHome,
+    incomingInvitations,
+    inviteHomeMember,
+    acceptInvitation,
+    rejectInvitation,
+  } = useSmartHome();
   const ownerHomes = useMemo(
     () => homes.filter((home) => home.homeRole === "OWNER"),
     [homes],
@@ -226,6 +233,48 @@ export default function AccessScreen() {
             </Pressable>
           </View>
 
+          {incomingInvitations.length > 0 ? (
+            <View
+              style={[
+                styles.summary,
+                { backgroundColor: theme.card, borderColor: theme.borderLight },
+              ]}
+            >
+              <Text style={[styles.label, { color: theme.text }]}>
+                Invitaciones pendientes
+              </Text>
+              {incomingInvitations.map((invitation) => (
+                <View key={invitation.id} style={styles.invitationRow}>
+                  <View style={styles.invitationCopy}>
+                    <Text style={[styles.roleText, { color: theme.text }]}>
+                      {invitation.homeName ?? "Hogar"}
+                    </Text>
+                    <Text style={[styles.note, { color: theme.muted }]}>
+                      {invitation.role} · {invitation.status ?? "PENDING"}
+                    </Text>
+                  </View>
+                  <View style={styles.invitationActions}>
+                    <Pressable
+                      onPress={() => void acceptInvitation(invitation.id)}
+                      style={[styles.smallAction, { backgroundColor: theme.blue }]}
+                    >
+                      <Text style={styles.smallActionText}>Aceptar</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => void rejectInvitation(invitation.id)}
+                      style={[
+                        styles.smallAction,
+                        { backgroundColor: theme.rowAlt, borderColor: theme.borderLight },
+                      ]}
+                    >
+                      <Text style={[styles.smallActionText, { color: theme.text }]}>Rechazar</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
           <View
             style={[
               styles.summary,
@@ -238,6 +287,51 @@ export default function AccessScreen() {
             <Text style={[styles.subtitle, { color: theme.muted }]}>
               {memberCount} activas · {pendingCount} pendientes
             </Text>
+
+            {selectedMembers.length > 0 ? (
+              <View style={styles.memberList}>
+                {selectedMembers.map((member) => (
+                  <View key={member.id} style={styles.memberRow}>
+                    <View style={styles.memberMeta}>
+                      <Text style={[styles.memberId, { color: theme.text }]}>
+                        {member.userId || member.id}
+                      </Text>
+                      <Text style={[styles.note, { color: theme.muted }]}>
+                        {member.role} · {member.status}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.statusPill,
+                        {
+                          backgroundColor:
+                            member.status === "ACTIVE"
+                              ? `${theme.success}22`
+                              : `${theme.muted}22`,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          {
+                            color:
+                              member.status === "ACTIVE" ? theme.success : theme.muted,
+                          },
+                        ]}
+                      >
+                        {member.status === "ACTIVE" ? "Activo" : member.status}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={[styles.note, { color: theme.muted }]}>
+                Todavía no hay miembros asociados a este hogar.
+              </Text>
+            )}
+
             <Text style={[styles.note, { color: theme.muted }]}>
               El backend actual solo devuelve el identificador de usuario, rol y
               estado de cada membresía; no expone nombres ni correos para
@@ -334,6 +428,64 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   summary: { borderRadius: 17, borderWidth: 1, marginTop: 18, padding: 15 },
+  invitationRow: {
+    alignItems: "center",
+    borderTopColor: "rgba(148, 163, 184, 0.25)",
+    borderTopWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingTop: 12,
+  },
+  invitationCopy: { flex: 1, marginRight: 10 },
+  invitationActions: { flexDirection: "row", gap: 8 },
+  smallAction: {
+    alignItems: "center",
+    borderRadius: 10,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 32,
+    paddingHorizontal: 10,
+  },
+  smallActionText: {
+    color: "#FFFFFF",
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  memberList: {
+    gap: 8,
+    marginTop: 12,
+  },
+  memberRow: {
+    alignItems: "center",
+    borderColor: "rgba(148,163,184,0.2)",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  memberMeta: {
+    flex: 1,
+    marginRight: 8,
+  },
+  memberId: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  statusPill: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  statusText: {
+    fontFamily: typography.fontFamily.emphasis,
+    fontSize: 10,
+    fontWeight: "800",
+  },
   note: {
     fontFamily: typography.fontFamily.regular,
     fontSize: 11,

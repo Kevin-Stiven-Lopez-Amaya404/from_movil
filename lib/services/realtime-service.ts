@@ -16,6 +16,7 @@ export type DeviceStatusUpdatedEvent = {
   frequencyHz?: number | null;
   temperatureC?: number | null;
   readAt?: string;
+  updatedAt?: string;
 };
 
 export type RealtimeEventMap = {

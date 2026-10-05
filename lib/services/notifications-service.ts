@@ -8,10 +8,12 @@ export type SmartNotification = {
   title?: string;
   message?: string;
   description?: string;
-  type?: string;
+  type?: "ALERT" | string;
   status: NotificationStatus;
+  priority?: "baja" | "media" | "alta" | string;
   createdAt?: string;
   readAt?: string | null;
+  dismissedAt?: string | null;
 };
 
 export interface NotificationsService {
@@ -22,6 +24,10 @@ export interface NotificationsService {
   }): Promise<SmartNotification[]>;
   unreadCount(token?: string): Promise<number>;
   markAsRead(
+    notificationId: string,
+    token?: string,
+  ): Promise<SmartNotification>;
+  dismiss(
     notificationId: string,
     token?: string,
   ): Promise<SmartNotification>;
@@ -43,6 +49,14 @@ const mockNotificationsService: NotificationsService = {
     );
     if (!notification) throw new Error("Notificación no encontrada.");
     notification.status = "READ";
+    return notification;
+  },
+  async dismiss(notificationId) {
+    const notification = mockNotifications.find(
+      (item) => item.id === notificationId,
+    );
+    if (!notification) throw new Error("Notificación no encontrada.");
+    notification.status = "DISMISSED";
     return notification;
   },
   async markAllAsRead() {
@@ -75,6 +89,13 @@ const backendNotificationsService: NotificationsService = {
   markAsRead(notificationId, token) {
     return apiClient.patch<SmartNotification>(
       `/api/v1/notifications/${notificationId}/read`,
+      undefined,
+      { token },
+    );
+  },
+  dismiss(notificationId, token) {
+    return apiClient.patch<SmartNotification>(
+      `/api/v1/notifications/${notificationId}/dismiss`,
       undefined,
       { token },
     );

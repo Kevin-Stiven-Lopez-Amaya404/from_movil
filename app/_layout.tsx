@@ -14,6 +14,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import SplashAnimation from "@/components/common/SplashAnimation";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { SmartHomeProvider } from "@/lib/context/smart-home-context";
+import { loadSession } from "@/lib/session/session-store";
 
 /**
  * Configuracion inicial de Expo Router.
@@ -62,6 +63,55 @@ export default function RootLayout() {
     if (pathname === "/") {
       router.replace("/welcome");
     }
+  }, [pathname, router]);
+
+  useEffect(() => {
+    let active = true;
+
+    const publicRoutes = new Set([
+      "/",
+      "/welcome",
+      "/login",
+      "/register",
+      "/forgot-password",
+      "/activate-account",
+      "/reset-password",
+      "/new-password",
+      "/otp-verification",
+    ]);
+
+    const isProtectedTabRoute =
+      pathname === "/(tabs)" ||
+      pathname.startsWith("/(tabs)/") ||
+      pathname === "/index";
+
+    loadSession()
+      .then((session) => {
+        if (!active) return;
+
+        if (!session && isProtectedTabRoute) {
+          router.replace("/welcome");
+          return;
+        }
+
+        if (!session && !publicRoutes.has(pathname) && pathname !== "/") {
+          router.replace("/welcome");
+          return;
+        }
+
+        if (session && publicRoutes.has(pathname)) {
+          router.replace("/(tabs)");
+        }
+      })
+      .catch(() => {
+        if (active && !publicRoutes.has(pathname) && pathname !== "/") {
+          router.replace("/welcome");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [pathname, router]);
 
   /**
