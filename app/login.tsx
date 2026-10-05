@@ -1,17 +1,13 @@
 import { AuthCheckboxRow } from "@/components/auth/AuthCheckboxRow";
 import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
 import {
-    AuthPasswordField,
-    AuthTextField,
+  AuthPasswordField,
+  AuthTextField,
 } from "@/components/auth/AuthTextField";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { BackButton } from "@/components/common/BackButton";
-import { ApiError, getApiErrorMessage } from "@/lib/api/api-error";
-import {
-    authenticateDemoUser,
-    authenticateUser,
-    resendActivationEmail,
-} from "@/lib/auth/auth-store";
+import { getApiErrorMessage } from "@/lib/api/api-error";
+import { useAuthSession } from "@/lib/auth/auth-session-context";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { getAuthPalette } from "@/lib/theme/appearance";
@@ -24,9 +20,10 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login } = useAuthSession();
   const layout = useResponsiveLayout();
 
-  const { colorMode, setSessionName, setSessionEmail, setSessionRole } =
+  const { accountActive, colorMode, setAccountActive, setSessionName, setSessionEmail, setSessionRole } =
     useSmartHome();
 
   const palette = getAuthPalette(colorMode);
@@ -48,7 +45,6 @@ export default function LoginScreen() {
 
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [resendingActivation, setResendingActivation] = useState(false);
 
   // ==========================================
   // VALIDACIONES
@@ -72,67 +68,49 @@ export default function LoginScreen() {
   // ACCESO DEMO
   // ==========================================
 
-  async function handleDemoLogin() {
-    if (submitting) return;
-    setSubmitting(true);
+  function fillDemoUser() {
+    setEmail("pepe@smarthome.com");
+    setPassword("Smart123!");
 
-    try {
-      const user = await authenticateDemoUser();
-      if (!user) {
-        Alert.alert(
-          "No se pudo iniciar la demo",
-          "Inténtalo de nuevo. La demo utiliza datos locales de ejemplo.",
-        );
-        return;
-      }
+    setTouched({
+      email: true,
+      password: true,
+    });
 
-      setSessionName(user.name.split(" ")[0] || user.name);
-      setSessionEmail(user.email);
-      setSessionRole(user.role ?? "miembro");
-      router.replace("/(tabs)");
-    } catch (error: unknown) {
-      Alert.alert(
-        "No se pudo iniciar la demo",
-        error instanceof Error ? error.message : "Inténtalo de nuevo.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
+    setSubmitted(false);
   }
 
   // ==========================================
   // LOGIN
   // ==========================================
 
-  async function handleResendActivation() {
-    if (!isValidEmail(cleanEmail)) {
-      Alert.alert(
-        "Correo requerido",
-        "Escribe primero el correo de la cuenta que necesitas activar.",
-      );
-      return;
-    }
-
-    if (resendingActivation) return;
-    setResendingActivation(true);
-
-    try {
-      await resendActivationEmail(cleanEmail);
-      Alert.alert(
-        "Solicitud procesada",
-        "Si la cuenta está pendiente de activación, el backend enviará un nuevo enlace. Revisa también Spam y Promociones.",
-      );
-    } catch (error: unknown) {
-      Alert.alert("No se pudo enviar el enlace", getApiErrorMessage(error));
-    } finally {
-      setResendingActivation(false);
-    }
-  }
-
   async function handleLogin() {
     setSubmitted(true);
 
     if (submitting) {
+      return;
+    }
+
+    // ========================================
+    // CUENTA DESACTIVADA
+    // ========================================
+
+    if (!accountActive) {
+      Alert.alert(
+        "Cuenta desactivada",
+        "Esta cuenta fue desactivada. Puedes reactivarla para continuar en esta versión de prueba.",
+        [
+          {
+            text: "Cancelar",
+            style: "cancel",
+          },
+          {
+            text: "Reactivar",
+            onPress: () => setAccountActive(true),
+          },
+        ],
+      );
+
       return;
     }
 
@@ -153,13 +131,13 @@ export default function LoginScreen() {
     setSubmitting(true);
 
     try {
-      const user = await authenticateUser(cleanEmail, password);
+      const loggedUser = await login(cleanEmail, password);
 
       // ======================================
       // CREDENCIALES INCORRECTAS
       // ======================================
 
-      if (!user) {
+      if (!loggedUser) {
         Alert.alert(
           "No pudimos iniciar sesión",
           "Correo o contraseña incorrectos.",
@@ -172,9 +150,9 @@ export default function LoginScreen() {
       // LOGIN EXITOSO
       // ======================================
 
-      setSessionName(user.name.split(" ")[0] || user.name);
-      setSessionEmail(user.email);
-      setSessionRole(user.role ?? "miembro");
+      setSessionName(loggedUser.name.split(" ")[0] || loggedUser.name);
+      setSessionEmail(loggedUser.email);
+      setSessionRole(loggedUser.role ?? "miembro");
 
       // ======================================
       // IR AL DASHBOARD
@@ -182,30 +160,7 @@ export default function LoginScreen() {
 
       router.replace("/(tabs)");
     } catch (error) {
-      const normalizedErrorMessage =
-        error instanceof ApiError
-          ? error.message
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-              .toLowerCase()
-          : "";
-      if (
-        error instanceof ApiError &&
-        error.status === 403 &&
-        /(cuenta.*(activa|activada)|no esta activa|pendiente de activacion)/i.test(
-          normalizedErrorMessage,
-        )
-      ) {
-        Alert.alert("Cuenta sin activar", error.message, [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Reenviar enlace",
-            onPress: () => void handleResendActivation(),
-          },
-        ]);
-      } else {
-        Alert.alert("No se pudo iniciar sesión", getApiErrorMessage(error));
-      }
+      Alert.alert("Error de conexión", getApiErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
@@ -366,25 +321,6 @@ export default function LoginScreen() {
           text="Iniciar sesión"
         />
 
-        <Pressable
-          accessibilityRole="button"
-          disabled={resendingActivation}
-          onPress={() => void handleResendActivation()}
-          style={styles.activationResendButton}
-        >
-          <Text
-            style={[
-              styles.activationResendText,
-              { color: palette.link },
-              resendingActivation && styles.activationResendDisabled,
-            ]}
-          >
-            {resendingActivation
-              ? "Enviando solicitud..."
-              : "¿No recibiste el correo de activación? Reenviar"}
-          </Text>
-        </Pressable>
-
         {/* ==================================== */}
         {/* SEPARADOR                             */}
         {/* ==================================== */}
@@ -432,10 +368,9 @@ export default function LoginScreen() {
               borderColor: palette.fieldBorder,
             },
           ]}
-          onPress={() => void handleDemoLogin()}
+          onPress={fillDemoUser}
           accessibilityRole="button"
           accessibilityLabel="Usar acceso demo"
-          disabled={submitting}
         >
           <View
             style={[
@@ -468,7 +403,7 @@ export default function LoginScreen() {
                 },
               ]}
             >
-              Datos de ejemplo locales, sin conectar al backend
+              Prueba la aplicación sin crear una cuenta
             </Text>
           </View>
 
@@ -638,19 +573,6 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingLeft: 8,
   },
-  activationResendButton: {
-    alignSelf: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-  },
-  activationResendText: {
-    fontSize: 13,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  activationResendDisabled: {
-    opacity: 0.55,
-  },
 
   forgotText: {
     fontSize: 14,
@@ -777,3 +699,7 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
 });
+
+
+
+
