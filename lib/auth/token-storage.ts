@@ -1,15 +1,29 @@
-import * as SecureStore from "expo-secure-store";
+import {
+  clearSession,
+  getAccessToken as getSessionAccessToken,
+  loadSession,
+  saveSession,
+} from "@/lib/session/session-store";
 
-const ACCESS_TOKEN_KEY = "smart-home-access-token";
-
+/**
+ * Compatibilidad temporal para imports antiguos.
+ * La sesión real se guarda únicamente en session-store.
+ */
 export async function saveAccessToken(token: string): Promise<void> {
-  await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token);
+  const currentSession = await loadSession();
+
+  if (!currentSession) return;
+
+  await saveSession({
+    ...currentSession,
+    accessToken: token,
+  });
 }
 
 export async function getAccessToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+  return getSessionAccessToken() ?? (await loadSession())?.accessToken ?? null;
 }
 
 export async function clearAccessToken(): Promise<void> {
-  await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+  await clearSession();
 }

@@ -8,12 +8,19 @@ import {
   type ReactNode,
 } from "react";
 
-import { normalizeEmail, authService, type AuthUser } from "@/lib/services/auth-service";
 import {
-  clearAccessToken,
-  getAccessToken,
-  saveAccessToken,
-} from "@/lib/auth/token-storage";
+  authService,
+  normalizeEmail,
+  type AuthSession,
+  type AuthUser,
+} from "@/lib/services/auth-service";
+import {
+  clearSession,
+  loadSession,
+  saveSession,
+  subscribeToSessionChanges,
+  type StoredSession,
+} from "@/lib/session/session-store";
 
 type AuthSessionContextValue = {
   user: AuthUser | null;
@@ -21,12 +28,29 @@ type AuthSessionContextValue = {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
-  logout: () => Promise<void>;
+  logout: (allSessions?: boolean) => Promise<void>;
 };
 
 const AuthSessionContext = createContext<AuthSessionContextValue | undefined>(
   undefined,
 );
+
+function toStoredSession(session: AuthSession): StoredSession {
+  const accessToken = session.accessToken ?? session.token;
+
+  if (!accessToken) {
+    throw new Error("El backend no devolvió un access token válido.");
+  }
+
+  return {
+    accessToken,
+    refreshToken: session.refreshToken,
+    sessionVersion: session.sessionVersion,
+    expiresAt: session.expiresAt,
+    user: session.user,
+    mode: session.mode,
+  };
+}
 
 export function AuthSessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -36,26 +60,29 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    async function restoreSession() {
-      try {
-        const storedToken = await getAccessToken();
+    function applySession(session: StoredSession | null): void {
+      if (!mounted) return;
 
-        if (!mounted) return;
-
-        if (storedToken) {
-          setToken(storedToken);
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
+      setUser(session?.user ?? null);
+      setToken(session?.accessToken ?? null);
     }
 
-    void restoreSession();
+    const unsubscribe = subscribeToSessionChanges(applySession);
+
+    void loadSession()
+      .then((session) => {
+        applySession(session);
+      })
+      .catch(() => {
+        applySession(null);
+      })
+      .finally(() => {
+        if (mounted) setIsLoading(false);
+      });
 
     return () => {
       mounted = false;
+      unsubscribe();
     };
   }, []);
 
@@ -66,26 +93,23 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     });
 
     if (!session) {
-      throw new Error("Correo o contrase�a incorrectos.");
+      throw new Error("Correo o contraseña incorrectos.");
     }
 
-    if (session.token) {
-      await saveAccessToken(session.token);
-      setToken(session.token);
-    } else {
-      await clearAccessToken();
-      setToken(null);
-    }
+    const storedSession = toStoredSession(session);
+    await saveSession(storedSession);
 
-    setUser(session.user);
-
-    return session.user;
+    return storedSession.user;
   }, []);
 
-  const logout = useCallback(async () => {
-    await clearAccessToken();
-    setToken(null);
-    setUser(null);
+  const logout = useCallback(async (allSessions = false) => {
+    try {
+      await authService.logout(allSessions);
+    } finally {
+      await clearSession();
+      setUser(null);
+      setToken(null);
+    }
   }, []);
 
   const value = useMemo<AuthSessionContextValue>(

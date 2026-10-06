@@ -38,16 +38,24 @@ function isStoredSession(value: unknown): value is StoredSession {
 }
 
 export async function loadSession(): Promise<StoredSession | null> {
-  if (memorySession) return memorySession;
+  if (memorySession) {
+    setDemoModeEnabled(memorySession.mode === "demo");
+    return memorySession;
+  }
 
   const serialized = await SecureStore.getItemAsync(SESSION_KEY);
-  if (!serialized) return null;
+  if (!serialized) {
+    setDemoModeEnabled(false);
+    return null;
+  }
 
   try {
     const parsed: unknown = JSON.parse(serialized);
     memorySession = isStoredSession(parsed) ? parsed : null;
+    setDemoModeEnabled(memorySession?.mode === "demo");
   } catch {
     memorySession = null;
+    setDemoModeEnabled(false);
     await SecureStore.deleteItemAsync(SESSION_KEY);
   }
 

@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { profileFont } from "@/components/profile/profileTheme";
+import { useAuthSession } from "@/lib/auth/auth-session-context";
 import { ThemeModeSelector } from "@/components/settings/ThemeModeSelector";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useTranslation } from "@/lib/i18n/i18n";
@@ -104,6 +105,7 @@ export default function ProfileScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const { t } = useTranslation();
+  const { logout } = useAuthSession();
   const {
     colorMode,
     deactivateAccount,
@@ -141,7 +143,17 @@ export default function ProfileScreen() {
       {
         text: t("action.logout"),
         style: "destructive",
-        onPress: () => router.replace("/welcome"),
+        onPress: () => {
+          void (async () => {
+            try {
+              await logout();
+            } catch {
+              // El contexto siempre limpia la sesión local aunque el backend no responda.
+            } finally {
+              router.replace("/welcome");
+            }
+          })();
+        },
       },
     ]);
   }

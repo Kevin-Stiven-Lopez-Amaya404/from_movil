@@ -1,4 +1,3 @@
-import { useRouter } from "expo-router";
 import {
     createContext,
     PropsWithChildren,
@@ -357,7 +356,6 @@ function createId(value: string) {
  * hogares, dispositivos, tema, idioma, sesion y acciones de modificacion.
  */
 export function SmartHomeProvider({ children }: PropsWithChildren) {
-  const router = useRouter();
   // Estados principales compartidos entre pantallas.
   const [homes, setHomes] = useState(() => (useMockApi ? initialHomes : []));
   const [homeMembersByHome, setHomeMembersByHome] = useState<
@@ -399,7 +397,6 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         setSessionName("");
         setSessionEmail("");
         setSessionRole("miembro");
-        router.replace("/login");
         return;
       }
 

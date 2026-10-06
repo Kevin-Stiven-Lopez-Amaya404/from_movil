@@ -2,17 +2,12 @@ import {
   authService,
   normalizeEmail,
   type AuthSession,
+  type ChangePasswordRequest,
   type RegisterUserRequest,
 } from "@/lib/services/auth-service";
 
 export { normalizeEmail };
 
-/**
- * Fachada de autenticacion usada por las pantallas.
- *
- * Delega al servicio mock local cuando no hay backend configurado
- * y al servicio HTTP cuando EXPO_PUBLIC_API_URL existe.
- */
 export async function registerUser(user: RegisterUserRequest) {
   return authService.register(user);
 }
@@ -27,9 +22,40 @@ export async function authenticateUser(
   });
 }
 
-export async function updateUserPassword(email: string, password: string) {
-  return authService.updatePassword({
-    email: normalizeEmail(email),
+export async function activateUserAccount(token: string): Promise<void> {
+  await authService.activateAccount(token);
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  await authService.requestPasswordReset(normalizeEmail(email));
+}
+
+export async function resetUserPassword(
+  token: string,
+  password: string,
+  passwordConfirmation: string,
+): Promise<void> {
+  await authService.resetPassword({
+    token,
     password,
+    passwordConfirmation,
   });
+}
+
+export async function changeUserPassword(
+  currentPassword: string,
+  newPassword: string,
+  newPasswordConfirmation: string,
+): Promise<void> {
+  const request: ChangePasswordRequest = {
+    currentPassword,
+    newPassword,
+    newPasswordConfirmation,
+  };
+
+  await authService.changePassword(request);
+}
+
+export async function logoutUser(allSessions = false): Promise<void> {
+  await authService.logout(allSessions);
 }

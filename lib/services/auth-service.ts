@@ -27,6 +27,7 @@ export type AuthSession = {
   refreshToken?: string;
   sessionVersion?: number;
   expiresAt?: string;
+  mode?: "demo";
   user: AuthUser;
 };
 
@@ -154,6 +155,7 @@ const mockAuthService: AuthService = {
 
     return {
       accessToken: "mock-session-token",
+      mode: "demo",
       user: withoutPassword(user),
     };
   },
@@ -209,6 +211,7 @@ const backendAuthService: AuthService = {
         email: normalizeEmail(credentials.email),
         password: credentials.password,
       },
+      { skipAuthRefresh: true },
     );
 
     return {
@@ -225,7 +228,7 @@ const backendAuthService: AuthService = {
       >("/api/v1/auth/register", {
         ...user,
         email: normalizeEmail(user.email),
-      });
+      }, { skipAuthRefresh: true });
 
       return {
         ok: true,
@@ -255,6 +258,7 @@ const backendAuthService: AuthService = {
     await apiClient.post<Record<string, unknown>, { token: string }>(
       "/api/v1/auth/activate",
       { token },
+      { skipAuthRefresh: true },
     );
   },
 
@@ -262,6 +266,7 @@ const backendAuthService: AuthService = {
     await apiClient.post<Record<string, unknown>, { email: string }>(
       "/api/v1/auth/resend-activation",
       { email: normalizeEmail(email) },
+      { skipAuthRefresh: true },
     );
   },
 
@@ -269,6 +274,7 @@ const backendAuthService: AuthService = {
     await apiClient.post<Record<string, unknown>, { email: string }>(
       "/api/v1/auth/forgot-password",
       { email: normalizeEmail(email) },
+      { skipAuthRefresh: true },
     );
   },
 
@@ -276,6 +282,7 @@ const backendAuthService: AuthService = {
     await apiClient.post<Record<string, unknown>, PasswordResetRequest>(
       "/api/v1/auth/reset-password",
       request,
+      { skipAuthRefresh: true },
     );
   },
 

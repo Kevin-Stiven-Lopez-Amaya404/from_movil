@@ -2,6 +2,7 @@ import { apiConfig } from "@/lib/config/api-config";
 import {
     clearSession,
     getAccessToken,
+    loadSession,
     refreshSession,
 } from "@/lib/session/session-store";
 
@@ -92,7 +93,9 @@ export class ApiClient {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), apiConfig.timeoutMs);
-    const accessToken = options?.token ?? getAccessToken();
+    const storedSession = options?.token ? null : await loadSession();
+    const accessToken =
+      options?.token ?? storedSession?.accessToken ?? getAccessToken();
     const apiRootPrefix = "/api/v1";
     const requestPath =
       this.baseUrl.endsWith(apiRootPrefix) &&
