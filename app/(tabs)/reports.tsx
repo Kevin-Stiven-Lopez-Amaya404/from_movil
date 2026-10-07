@@ -63,92 +63,108 @@ export default function ReportsScreen() {
   const { accessibleHomes, activeHomeId } = useSmartHome();
   const activeHomeName =
     accessibleHomes.find((home) => home.id === activeHomeId)?.name ?? "Hogar";
-  const [realConsumptionKwh, setRealConsumptionKwh] = useState<number | null>(
-    null,
-  );
-  const [dailySeries, setDailySeries] = useState<Array<{ label: string; value: number }>>([]);
-  const [loading, setLoading] = useState(false);
+  const [realConsumptionKwh, setRealConsumptionKwh] =
+  useState<number | null>(null);
+  const [dailySeries, setDailySeries] = useState<
+    { label: string; value: number }[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
+  const [loadedHomeId, setLoadedHomeId] = useState<string | null>(null);
+
+  const hasRealConsumptionSource = !useMockApi && Boolean(activeHomeId);
+  const hasCurrentHomeData =
+    hasRealConsumptionSource && loadedHomeId === activeHomeId;
+
+  const visibleRealConsumptionKwh = hasCurrentHomeData
+    ? realConsumptionKwh
+    : null;
+
+  const visibleDailySeries = useMemo(
+    () => (hasCurrentHomeData ? dailySeries : []),
+    [hasCurrentHomeData, dailySeries],);
+  const visibleError = hasCurrentHomeData ? error : null;
+  const isLoading = hasRealConsumptionSource && !hasCurrentHomeData;
 
   useEffect(() => {
-    if (useMockApi || !activeHomeId) {
-      setDailySeries([]);
-      setRealConsumptionKwh(null);
+  const homeId = activeHomeId;
+
+  if (useMockApi || !homeId) {
+    return;
+  }
+
+  let active = true;
+
+  Promise.all([
+    consumptionService.getHomeSummary(homeId),
+    consumptionService.getHomeDaily(homeId, { limit: 12 }),
+  ])
+    .then(([summary, daily]) => {
+      if (!active) return;
+
+      const summaryValue = Number(summary?.energyDeltaKwh ?? 0);
+      const fallbackValue = daily.reduce(
+        (sum, record) => sum + (Number(record.energyDeltaKwh ?? 0) || 0),
+        0,
+      );
+
+      setRealConsumptionKwh(
+        Number.isFinite(summaryValue) && summaryValue > 0
+          ? summaryValue
+          : fallbackValue,
+      );
+
+      const mappedSeries = daily
+        .map((record) => {
+          const timestamp =
+            record.recordedAt ?? record.timestamp ?? new Date().toISOString();
+          const date = new Date(timestamp);
+
+          if (Number.isNaN(date.getTime())) {
+            return null;
+          }
+
+          return {
+            label: date.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            value: Number(record.energyDeltaKwh ?? 0),
+          };
+        })
+        .filter(
+          (point): point is { label: string; value: number } => !!point,
+        );
+
+      setDailySeries(mappedSeries.slice(-12));
       setError(null);
-      setLoading(false);
-      return;
-    }
+      setLoadedHomeId(homeId);
+    })
+    .catch(() => {
+      if (!active) return;
 
-    let active = true;
+      setRealConsumptionKwh(null);
+      setDailySeries([]);
+      setError("No se pudo cargar el consumo real del hogar.");
+      setLoadedHomeId(homeId);
+    });
 
-    setLoading(true);
-    setError(null);
+  return () => {
+    active = false;
+  };
+}, [activeHomeId]);
 
-    Promise.all([
-      consumptionService.getHomeSummary(activeHomeId),
-      consumptionService.getHomeDaily(activeHomeId, { limit: 12 }),
-    ])
-      .then(([summary, daily]) => {
-        if (!active) return;
-
-        const summaryValue = Number(summary?.energyDeltaKwh ?? 0);
-        const fallbackValue = daily.reduce(
-          (sum, record) => sum + (Number(record.energyDeltaKwh ?? 0) || 0),
-          0,
-        );
-
-        setRealConsumptionKwh(
-          Number.isFinite(summaryValue) && summaryValue > 0
-            ? summaryValue
-            : fallbackValue,
-        );
-
-        const mappedSeries = daily
-          .map((record) => {
-            const timestamp =
-              record.recordedAt ?? record.timestamp ?? new Date().toISOString();
-            const date = new Date(timestamp);
-            if (Number.isNaN(date.getTime())) return null;
-
-            return {
-              label: date.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-              value: Number(record.energyDeltaKwh ?? 0),
-            };
-          })
-          .filter((point): point is { label: string; value: number } => !!point);
-
-        setDailySeries(mappedSeries.slice(-12));
-      })
-      .catch(() => {
-        if (active) {
-          setRealConsumptionKwh(null);
-          setDailySeries([]);
-          setError("No se pudo cargar el consumo real del hogar.");
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [activeHomeId]);
 
   const consumptionLabel =
-    realConsumptionKwh !== null
-      ? `${(realConsumptionKwh * 1000).toFixed(0)} Wh consumidos en este período`
+    visibleRealConsumptionKwh !== null
+      ? `${(visibleRealConsumptionKwh * 1000).toFixed(0)} Wh consumidos en este período`
       : useMockApi
         ? "Conecta el backend para consultar datos reales"
         : "Datos no disponibles para este período";
 
   const chartPoints = useMemo(() => {
-    if (dailySeries.length > 0) return dailySeries;
+    if (visibleDailySeries.length > 0) return visibleDailySeries;
     return TIMESTAMPS_24H.map((label) => ({ label, value: 0 }));
-  }, [dailySeries]);
+  }, [visibleDailySeries]);
 
   // Estados de la pestaña "Historia"
   const [historyPeriod, setHistoryPeriod] =
@@ -362,13 +378,13 @@ export default function ReportsScreen() {
 
               {/* Área de la Gráfica */}
               <View style={styles.chartArea}>
-                {loading ? (
+                {isLoading ? (
                   <Text style={[styles.noDataOverlayText, { color: theme.muted }]}>
                     Cargando consumo real…
                   </Text>
-                ) : error ? (
+                ) : visibleError ? (
                   <Text style={[styles.noDataOverlayText, { color: theme.muted }]}>
-                    {error}
+                    {visibleError}
                   </Text>
                 ) : (
                   <>
@@ -395,7 +411,7 @@ export default function ReportsScreen() {
                           { backgroundColor: theme.borderLight },
                         ]}
                       >
-                        {realConsumptionKwh === null ? (
+                        {visibleRealConsumptionKwh === null ? (
                           <Text
                             style={[
                               styles.noDataOverlayText,
@@ -494,7 +510,7 @@ export default function ReportsScreen() {
               >
                 <Ionicons name="flash-outline" size={16} color={theme.blue} />
                 <Text style={[styles.deviceStatText, { color: theme.text }]}>
-                  {loading ? "Consultando consumo real…" : consumptionLabel}
+                  {isLoading ? "Consultando consumo real…" : consumptionLabel}
                 </Text>
               </View>
             </View>

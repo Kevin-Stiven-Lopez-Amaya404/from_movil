@@ -101,12 +101,10 @@ export default function NotificationsScreen() {
     success: theme.success,
   };
 
-  const filterOptions: Array<{ key: NotificationStatus | "ALL"; label: string }> = [
-    { key: "ALL", label: "Todas" },
-    { key: "UNREAD", label: "Sin leer" },
-    { key: "READ", label: "Leídas" },
-    { key: "DISMISSED", label: "Descartadas" },
-  ];
+  const filterOptions: {
+  key: NotificationStatus | "ALL";
+  label: string;
+  }[] = [];
 
   return (
     <SafeAreaView

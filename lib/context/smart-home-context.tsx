@@ -413,7 +413,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         setOfflineMode(false);
       }
     });
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     let active = true;
