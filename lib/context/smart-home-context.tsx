@@ -40,6 +40,7 @@ import { smartHomeService } from "@/lib/services/smart-home-service";
 import { useSessionLifecycle } from "@/lib/hooks/use-session-lifecycle";
 import { loadSession } from "@/lib/session/session-store";
 import { useHomeDataLoader } from "@/lib/hooks/use-home-data-loader";
+import { useDeviceActions } from "@/lib/hooks/use-device-actions";
 
 export type {
   ActiveDevice,
@@ -513,37 +514,17 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
 
   const accessibleHomes = homes;
 
-  const applyDeviceControlState = async (id: string, state: "on" | "off") => {
-    const device = devices.find((item) => item.id === id);
-    if (!device || !device.online) return;
-
-    const previousDevice = device;
-
-    setDevices((items) =>
-      items.map((item) =>
-        item.id === id
-          ? { ...item, state, lastStateChange: getTimeStamp() }
-          : item,
-      ),
-    );
-
-    try {
-      const updated = await smartHomeService.updateDeviceState(
-        device.homeId,
-        id,
-        state,
-      );
-
-      setDevices((items) =>
-        items.map((item) => (item.id === id ? updated : item)),
-      );
-    } catch (error) {
-      setDevices((items) =>
-        items.map((item) => (item.id === id ? previousDevice : item)),
-      );
-      throw error;
-    }
-  };
+  const {
+    removeDevice,
+    updateDevice,
+    setHomeDeviceState,
+    setAllHomeDevicesState,
+    toggleDevice,
+  } = useDeviceActions({
+    devices,
+    setDevices,
+    getTimeStamp,
+  });
 
   // `useMemo` evita reconstruir el objeto de contexto si sus dependencias no cambian.
   const value = useMemo<SmartHomeState>(
@@ -580,24 +561,8 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           items.filter((item) => !deviceIds.includes(item.id)),
         );
       },
-      removeDevice: async (deviceId) => {
-        const device = devices.find((item) => item.id === deviceId);
-        if (!device) return;
-        await smartHomeService.deleteDevice(device.homeId, deviceId);
-        setDevices((items) => items.filter((device) => device.id !== deviceId));
-      },
-      updateDevice: async (deviceId, updates) => {
-        const device = devices.find((item) => item.id === deviceId);
-        if (!device) return;
-        const updated = await smartHomeService.updateDevice(
-          device.homeId,
-          deviceId,
-          updates,
-        );
-        setDevices((items) =>
-          items.map((device) => (device.id === deviceId ? updated : device)),
-        );
-      },
+      removeDevice,
+      updateDevice,
       // Crea un hogar y lo marca como activo para que el usuario pueda administrarlo.
       addHome: async (name) => {
         const cleanName = name.trim();
@@ -651,13 +616,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setSessionEmail,
       setSessionRole,
       setOfflineMode,
-      // Cambia el estado online/offline de un dispositivo.
-      toggleDevice: (id) => {
-        const device = devices.find((item) => item.id === id);
-        if (!device || !device.online) return;
-
-        void applyDeviceControlState(id, device.state === "on" ? "off" : "on");
-      },
+      toggleDevice,
       // Marca o desmarca un hogar como favorito para el dashboard.
       toggleHomeFavorite: (homeId) => {
         setHomes((items) => {
@@ -683,19 +642,8 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           alerts.filter((alertId) => alertId !== id),
         );
       },
-      setHomeDeviceState: applyDeviceControlState,
-      setAllHomeDevicesState: (homeId, state) => {
-        setDevices((items) =>
-          items.map((item) =>
-            item.homeId === homeId
-              ? { ...item, state, lastStateChange: getTimeStamp() }
-              : item,
-          ),
-        );
-        smartHomeService
-          .setAllHomeDevicesState(homeId, state)
-          .catch(() => null);
-      },
+      setHomeDeviceState,
+      setAllHomeDevicesState,
       inviteHomeMember: async (homeId, email, role) => {
         const member = await smartHomeService.inviteHomeMember(
           homeId,
@@ -824,15 +772,20 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       homeMembersByHome,
       incomingInvitations,
       notifications,
+      removeDevice,
       sessionEmail,
       sessionRole,
+      setAllHomeDevicesState,
+      setHomeDeviceState,
       accessibleHomes,
       language,
       lastSync,
       offlineMode,
       resolvedSmartAlerts,
       sessionName,
+      toggleDevice,
       unreadNotificationCount,
+      updateDevice,
     ],
   );
 
