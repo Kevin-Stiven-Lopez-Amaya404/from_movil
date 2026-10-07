@@ -41,6 +41,7 @@ import { useSessionLifecycle } from "@/lib/hooks/use-session-lifecycle";
 import { loadSession } from "@/lib/session/session-store";
 import { useHomeDataLoader } from "@/lib/hooks/use-home-data-loader";
 import { useDeviceActions } from "@/lib/hooks/use-device-actions";
+import { useNotificationActions } from "@/lib/hooks/use-notification-actions";
 
 export type {
   ActiveDevice,
@@ -526,6 +527,16 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     getTimeStamp,
   });
 
+  const {
+    markNotificationAsRead,
+    dismissNotification,
+    markAllNotificationsAsRead,
+  } = useNotificationActions({
+    notifications,
+    setNotifications,
+    setUnreadNotificationCount,
+  });
+
   // `useMemo` evita reconstruir el objeto de contexto si sus dependencias no cambian.
   const value = useMemo<SmartHomeState>(
     () => ({
@@ -726,38 +737,9 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         );
       },
 
-      markNotificationAsRead: async (notificationId) => {
-        await notificationsService.markAsRead(notificationId);
-        setNotifications((items) =>
-          items.map((item) =>
-            item.id === notificationId ? { ...item, status: "READ" } : item,
-          ),
-        );
-        setUnreadNotificationCount((count) => Math.max(0, count - 1));
-      },
-
-      dismissNotification: async (notificationId) => {
-        const target = notifications.find((item) => item.id === notificationId);
-        const next = await notificationsService.dismiss(notificationId);
-        setNotifications((items) =>
-          items.map((item) =>
-            item.id === notificationId
-              ? { ...item, status: next.status ?? "DISMISSED" }
-              : item,
-          ),
-        );
-        if (target?.status === "UNREAD") {
-          setUnreadNotificationCount((count) => Math.max(0, count - 1));
-        }
-      },
-
-      markAllNotificationsAsRead: async () => {
-        await notificationsService.markAllAsRead();
-        setNotifications((items) =>
-          items.map((item) => ({ ...item, status: "READ" })),
-        );
-        setUnreadNotificationCount(0);
-      },
+      markNotificationAsRead,
+      dismissNotification,
+      markAllNotificationsAsRead,
 
       refreshSync: () => setLastSync(getTimeStamp()),
     }),
@@ -772,6 +754,9 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       homeMembersByHome,
       incomingInvitations,
       notifications,
+      dismissNotification,
+      markAllNotificationsAsRead,
+      markNotificationAsRead,
       removeDevice,
       sessionEmail,
       sessionRole,
