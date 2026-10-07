@@ -28,10 +28,7 @@ import type {
   HomeRole,
   SmartHomePlace,
 } from "@/lib/domain/home";
-import {
-  notificationsService,
-  type SmartNotification,
-} from "@/lib/services/notifications-service";
+import type { SmartNotification } from "@/lib/services/notifications-service";
 import {
   realtimeService,
   type DeviceStatusUpdatedEvent,
@@ -42,6 +39,7 @@ import { loadSession } from "@/lib/session/session-store";
 import { useHomeDataLoader } from "@/lib/hooks/use-home-data-loader";
 import { useDeviceActions } from "@/lib/hooks/use-device-actions";
 import { useNotificationActions } from "@/lib/hooks/use-notification-actions";
+import { useNotificationSync } from "@/lib/hooks/use-notification-sync";
 
 export type {
   ActiveDevice,
@@ -478,36 +476,6 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     };
   }, [sessionRevision]);
 
-  useEffect(() => {
-    if (useMockApi) return;
-
-    let active = true;
-
-    loadSession()
-      .then((session) => {
-        if (!active || !session) {
-          setNotifications([]);
-          setUnreadNotificationCount(0);
-          return;
-        }
-        return Promise.all([
-          notificationsService.list({ limit: 50 }),
-          notificationsService.unreadCount(),
-        ]).then(([items, count]) => {
-          if (!active) return;
-          setNotifications(items);
-          setUnreadNotificationCount(count);
-        });
-      })
-      .catch(() => {
-        if (active) setOfflineMode(true);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [sessionRevision]);
-
   // Alertas Smart Home ya resueltas por el usuario.
   // Se mantiene separado de activeDevices porque ese estado pertenece
   // a la seguridad/sesiones de la cuenta.
@@ -525,6 +493,13 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     devices,
     setDevices,
     getTimeStamp,
+  });
+
+  useNotificationSync({
+    sessionRevision,
+    setNotifications,
+    setUnreadNotificationCount,
+    setOfflineMode,
   });
 
   const {
