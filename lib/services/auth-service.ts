@@ -328,7 +328,10 @@ setSessionRefreshHandler(async (): Promise<StoredSession | null> => {
   const response = await apiClient.post<{ accessToken?: string }>(
     "/api/v1/auth/refresh",
     undefined,
-    { skipAuthRefresh: true },
+    {
+      skipAuthRefresh: true,
+      skipAuthHeader: true,
+    },
   );
 
   const currentSession = await loadSession();

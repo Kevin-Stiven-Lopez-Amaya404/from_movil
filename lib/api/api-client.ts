@@ -15,6 +15,7 @@ type RequestOptions<Body> = {
   headers?: Record<string, string>;
   token?: string;
   skipAuthRefresh?: boolean;
+  skipAuthHeader?: boolean;
 };
 
 type ErrorPayload = {
@@ -110,7 +111,9 @@ export class ApiClient {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...(accessToken && !options?.skipAuthHeader
+            ? { Authorization: `Bearer ${accessToken}` }
+            : {}),
           ...options?.headers,
         },
         body:

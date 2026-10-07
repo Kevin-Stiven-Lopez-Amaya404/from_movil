@@ -6,7 +6,6 @@ import type { AuthUser } from "@/lib/services/auth-service";
 
 export type StoredSession = {
   accessToken: string;
-  refreshToken?: string;
   sessionVersion?: number;
   expiresAt?: string;
   user: AuthUser;
@@ -17,7 +16,7 @@ const SESSION_KEY = "smart-home.session";
 
 let memorySession: StoredSession | null = null;
 let refreshHandler:
-  | ((refreshToken?: string) => Promise<StoredSession | null>)
+  | (() => Promise<StoredSession | null>)
   | null = null;
 let refreshPromise: Promise<StoredSession | null> | null = null;
 const sessionListeners = new Set<(session: StoredSession | null) => void>();
@@ -37,6 +36,22 @@ function isStoredSession(value: unknown): value is StoredSession {
   );
 }
 
+function normalizeStoredSession(
+  value: unknown,
+): StoredSession | null {
+  if (!isStoredSession(value)) return null;
+
+  const candidate = value as StoredSession;
+
+  return {
+    accessToken: candidate.accessToken,
+    sessionVersion: candidate.sessionVersion,
+    expiresAt: candidate.expiresAt,
+    user: candidate.user,
+    ...(candidate.mode === "demo" ? { mode: "demo" } : {}),
+  };
+}
+
 export async function loadSession(): Promise<StoredSession | null> {
   if (memorySession) {
     setDemoModeEnabled(memorySession.mode === "demo");
@@ -51,8 +66,17 @@ export async function loadSession(): Promise<StoredSession | null> {
 
   try {
     const parsed: unknown = JSON.parse(serialized);
-    memorySession = isStoredSession(parsed) ? parsed : null;
+    const normalized = normalizeStoredSession(parsed);
+
+    memorySession = normalized;
     setDemoModeEnabled(memorySession?.mode === "demo");
+
+    if (normalized && JSON.stringify(normalized) !== serialized) {
+      await SecureStore.setItemAsync(
+        SESSION_KEY,
+        JSON.stringify(normalized),
+      );
+    }
   } catch {
     memorySession = null;
     setDemoModeEnabled(false);
@@ -63,10 +87,21 @@ export async function loadSession(): Promise<StoredSession | null> {
 }
 
 export async function saveSession(session: StoredSession): Promise<void> {
-  setDemoModeEnabled(session.mode === "demo");
-  await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(session));
-  memorySession = session;
-  notifySessionListeners(session);
+  const safeSession = normalizeStoredSession(session);
+
+  if (!safeSession) {
+    throw new Error("La sesión no tiene un formato válido.");
+  }
+
+  setDemoModeEnabled(safeSession.mode === "demo");
+
+  await SecureStore.setItemAsync(
+    SESSION_KEY,
+    JSON.stringify(safeSession),
+  );
+
+  memorySession = safeSession;
+  notifySessionListeners(safeSession);
 }
 
 export async function setDemoSession(session: StoredSession): Promise<void> {
@@ -103,7 +138,7 @@ export function getAccessToken(): string | undefined {
 }
 
 export function setSessionRefreshHandler(
-  handler: (refreshToken?: string) => Promise<StoredSession | null>,
+  handler: () => Promise<StoredSession | null>,
 ): void {
   refreshHandler = handler;
 }
@@ -115,7 +150,7 @@ export async function refreshSession(): Promise<StoredSession | null> {
   if (!current) return null;
 
   if (!refreshPromise) {
-    refreshPromise = refreshHandler(current.refreshToken)
+    refreshPromise = refreshHandler()
       .then(async (nextSession) => {
         if (nextSession) await saveSession(nextSession);
         return nextSession;

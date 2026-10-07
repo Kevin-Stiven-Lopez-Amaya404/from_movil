@@ -44,7 +44,6 @@ function toStoredSession(session: AuthSession): StoredSession {
 
   return {
     accessToken,
-    refreshToken: session.refreshToken,
     sessionVersion: session.sessionVersion,
     expiresAt: session.expiresAt,
     user: session.user,
