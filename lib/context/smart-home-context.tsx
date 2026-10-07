@@ -9,7 +9,6 @@ import {
 } from "react";
 
 import { useMockApi } from "@/lib/config/api-config";
-import { authService } from "@/lib/services/auth-service";
 import type { SmartDevice } from "@/lib/domain/device";
 import type {
   AppLanguage,
@@ -40,6 +39,7 @@ import {
 import { smartHomeService } from "@/lib/services/smart-home-service";
 import { useSessionLifecycle } from "@/lib/hooks/use-session-lifecycle";
 import { loadSession } from "@/lib/session/session-store";
+import { useHomeDataLoader } from "@/lib/hooks/use-home-data-loader";
 
 export type {
   ActiveDevice,
@@ -369,6 +369,17 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     onDemoSession: resetDemoSession,
   });
 
+  useHomeDataLoader({
+    sessionRevision,
+    setHomes,
+    setHomeMembersByHome,
+    setIncomingInvitations,
+    setActiveHomeId,
+    setDevices,
+    setSessionRole,
+    setOfflineMode,
+  });
+
   useEffect(() => {
     if (useMockApi) return;
 
@@ -485,93 +496,6 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           setNotifications(items);
           setUnreadNotificationCount(count);
         });
-      })
-      .catch(() => {
-        if (active) setOfflineMode(true);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [sessionRevision]);
-
-  useEffect(() => {
-    if (useMockApi) return;
-
-    let active = true;
-
-    loadSession()
-      .then(async (session) => {
-        if (!session) {
-          if (active) {
-            setHomes([]);
-            setHomeMembersByHome({});
-            setIncomingInvitations([]);
-            setDevices([]);
-            setActiveHomeId("");
-            setOfflineMode(false);
-          }
-          return;
-        }
-
-        const [listedHomes, currentUser, pendingInvitations] = await Promise.all([
-          smartHomeService.listHomes(),
-          authService.getCurrentUser(),
-          smartHomeService.listIncomingInvitations(),
-        ]);
-        const currentUserId = currentUser.userId ?? currentUser.id ?? "";
-        const memberEntries = await Promise.all(
-          listedHomes.map(
-            async (home) =>
-              [
-                home.id,
-                await smartHomeService.listHomeMembers(home.id),
-              ] as const,
-          ),
-        );
-        const membersByHome = Object.fromEntries(memberEntries);
-        const remoteHomes = listedHomes.map((home) => {
-          const currentMembership = membersByHome[home.id]?.find(
-            (member) =>
-              member.userId === currentUserId &&
-              member.status === "ACTIVE",
-          );
-          return {
-            ...home,
-            homeRole: currentMembership?.role,
-          };
-        });
-        if (!active) return;
-
-        const firstHome = remoteHomes[0];
-        setHomes(remoteHomes);
-        setHomeMembersByHome(membersByHome);
-        setIncomingInvitations(pendingInvitations);
-        const firstMembership = remoteHomes.find(
-          (home) => home.homeRole,
-        )?.homeRole;
-        if (firstMembership) {
-          setSessionRole(
-            firstMembership === "OWNER"
-              ? "admin"
-              : firstMembership === "GUEST"
-                ? "invitado"
-                : "miembro",
-          );
-        }
-        setActiveHomeId((current) =>
-          remoteHomes.some((home) => home.id === current)
-            ? current
-            : (firstHome?.id ?? ""),
-        );
-
-        const remoteDevices = (
-          await Promise.all(
-            remoteHomes.map((home) => smartHomeService.listDevices(home.id)),
-          )
-        ).flat();
-
-        if (active) setDevices(remoteDevices);
       })
       .catch(() => {
         if (active) setOfflineMode(true);
