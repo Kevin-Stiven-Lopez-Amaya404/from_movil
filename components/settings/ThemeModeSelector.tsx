@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { ColorMode } from "@/lib/context/smart-home-context";
+import type { ColorMode } from "@/lib/domain/preferences";
 import { typography } from "@/lib/theme/typography";
 
 type ThemeModeSelectorProps = {

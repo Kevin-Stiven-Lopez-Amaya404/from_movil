@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 
-import { AppLanguage, useSmartHome } from "@/lib/context/smart-home-context";
+import { useSmartHome } from "@/lib/context/smart-home-context";
+import type { AppLanguage } from "@/lib/domain/preferences";
 
 /**
  * Diccionarios de traducción de la aplicación.

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
-import { ColorMode, useSmartHome } from "@/lib/context/smart-home-context";
+import { useSmartHome } from "@/lib/context/smart-home-context";
+import type { ColorMode } from "@/lib/domain/preferences";
 
 export type AppTheme = ReturnType<typeof getAppTheme>;
 

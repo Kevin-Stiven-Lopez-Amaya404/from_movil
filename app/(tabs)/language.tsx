@@ -12,7 +12,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { profileFont } from "@/components/profile/profileTheme";
-import { AppLanguage, useSmartHome } from "@/lib/context/smart-home-context";
+import { useSmartHome } from "@/lib/context/smart-home-context";
+import type { AppLanguage } from "@/lib/domain/preferences";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 

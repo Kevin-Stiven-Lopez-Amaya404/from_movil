@@ -16,10 +16,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { EnergyRealtimeCard } from "@/components/homes/EnergyRealtimeCard";
 import { ShellyDeviceCard } from "@/components/homes/ShellyDeviceCard";
 import { useMockApi } from "@/lib/config/api-config";
-import {
-    type SmartDevice,
-    useSmartHome,
-} from "@/lib/context/smart-home-context";
+import { useSmartHome } from "@/lib/context/smart-home-context";
+import type { SmartDevice } from "@/lib/domain/device";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";

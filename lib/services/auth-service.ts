@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/api/api-client";
 import { ApiError } from "@/lib/api/api-error";
 import { useMockApi } from "@/lib/config/api-config";
+import type { UserRole } from "@/lib/domain/session";
 import {
     clearSession,
     loadSession,
@@ -8,7 +9,7 @@ import {
     type StoredSession,
 } from "@/lib/session/session-store";
 
-export type UserRole = "admin" | "miembro" | "invitado";
+export type { UserRole } from "@/lib/domain/session";
 
 export type AuthUser = {
   id?: string;

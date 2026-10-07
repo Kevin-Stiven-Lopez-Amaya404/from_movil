@@ -9,6 +9,25 @@ import {
 
 import { useMockApi } from "@/lib/config/api-config";
 import { authService } from "@/lib/services/auth-service";
+import type { SmartDevice } from "@/lib/domain/device";
+import type {
+  AppLanguage,
+  ColorMode,
+} from "@/lib/domain/preferences";
+import type {
+  ReportPoint,
+  ReportRange,
+} from "@/lib/domain/report";
+import type {
+  ActiveDevice,
+  UserRole,
+} from "@/lib/domain/session";
+import type {
+  HomeInvitation,
+  HomeMember,
+  HomeRole,
+  SmartHomePlace,
+} from "@/lib/domain/home";
 import {
     notificationsService,
     type SmartNotification,
@@ -17,53 +36,27 @@ import {
     realtimeService,
     type DeviceStatusUpdatedEvent,
 } from "@/lib/services/realtime-service";
-import {
-    smartHomeService,
-    type HomeInvitation,
-    type HomeMember,
-    type HomeRole,
-} from "@/lib/services/smart-home-service";
+import { smartHomeService } from "@/lib/services/smart-home-service";
 import {
     loadSession,
     subscribeToSessionChanges,
 } from "@/lib/session/session-store";
 
-// Tipos base usados por pantallas y reportes.
-export type DeviceCategory =
-  | "Electrodomesticos"
-  | "Iluminacion"
-  | "Climatizacion"
-  | "Seguridad";
-export type ReportRange = "Diario" | "Semana" | "Mes" | "Rango";
-export type AppLanguage = "es" | "en" | "pt";
-export type ColorMode = "light" | "dark";
-export type UserRole = "admin" | "miembro" | "invitado";
-
-/**
- * Representa un hogar registrado.
- *
- * `favorite` permite que el dashboard decida que hogares mostrar como acceso rapido.
- */
-export type SmartHomePlace = {
-  id: string;
-  name: string;
-  location: string;
-  favorite: boolean;
-  homeRole?: HomeRole;
+export type {
+  ActiveDevice,
+  AppLanguage,
+  ColorMode,
+  HomeInvitation,
+  HomeMember,
+  HomeRole,
+  ReportPoint,
+  ReportRange,
+  SmartDevice,
+  SmartHomePlace,
+  UserRole,
 };
 
-/**
- * Representa un dispositivo inteligente.
- *
- * La relacion clave es `homeId`: cada dispositivo pertenece a un hogar.
- */
-export type SmartDevice = {
-  id: string;
-  homeId: string;
-  name: string;
-  category: DeviceCategory;
-  icon: string;
-  // Nuevos campos del Shelly
+/*
   power: number; // W (potencia instantánea)
   energy: number; // Wh (energía acumulada)
   voltage: number; // V
@@ -76,21 +69,7 @@ export type SmartDevice = {
   critical?: boolean;
   lastSeenAt?: string | null;
   lastStateChange?: string;
-};
-
-// Dispositivos activos usados para auditoria/perfil.
-type ActiveDevice = {
-  id: string;
-  name: string;
-  lastAccess: string;
-  verified: boolean;
-};
-
-// Punto simple para graficas de reportes.
-type ReportPoint = {
-  label: string;
-  value: number;
-};
+}; */
 
 /**
  * Contrato completo del contexto global.

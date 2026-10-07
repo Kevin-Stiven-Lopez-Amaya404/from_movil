@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { SmartDevice } from "@/lib/context/smart-home-context";
+import type { SmartDevice } from "@/lib/domain/device";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 import { formatWatts } from "@/lib/utils/formatters";

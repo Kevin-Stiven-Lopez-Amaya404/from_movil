@@ -14,8 +14,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useSmartHome } from "@/lib/context/smart-home-context";
+import type { HomeRole } from "@/lib/domain/home";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
-import { type HomeRole } from "@/lib/services/smart-home-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 import { isValidEmail } from "@/lib/utils/validators";

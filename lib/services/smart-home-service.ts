@@ -1,16 +1,19 @@
+
 import { apiClient } from "@/lib/api/api-client";
 import { ApiError } from "@/lib/api/api-error";
 import { useMockApi } from "@/lib/config/api-config";
-import {
-    type ReportRange,
-    type SmartDevice,
-    type SmartHomePlace,
-} from "@/lib/context/smart-home-context";
 
-export type ReportPoint = {
-  label: string;
-  value: number;
-};
+import type { SmartDevice } from "@/lib/domain/device";
+import type {
+  HomeInvitation,
+  HomeMember,
+  HomeRole,
+  SmartHomePlace,
+} from "@/lib/domain/home";
+import type {
+  ReportPoint,
+  ReportRange,
+} from "@/lib/domain/report";
 
 export type CreateHomeRequest = {
   name: string;
@@ -29,36 +32,6 @@ export type UpdateDeviceRequest = {
   name?: string;
   transportType?: "WIFI" | "BLUETOOTH";
   messagingProtocol?: "MQTT";
-};
-
-export type HomeRole = "OWNER" | "MEMBER" | "GUEST";
-export type HomeMemberStatus = "PENDING" | "ACTIVE" | "REVOKED" | "LEFT";
-
-export type HomeMember = {
-  id: string;
-  homeId: string;
-  userId: string;
-  role: HomeRole;
-  status: HomeMemberStatus | string;
-  invitedBy: string | null;
-  invitedAt: string;
-  acceptedAt?: string | null;
-  endedAt?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-export type HomeInvitation = {
-  id: string;
-  homeId?: string;
-  homeName?: string;
-  memberId?: string;
-  userId?: string;
-  role: HomeRole;
-  status?: HomeMemberStatus | string;
-  invitedBy?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
 };
 
 type BackendDevice = {
