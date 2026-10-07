@@ -1,10 +1,11 @@
 import {
-    createContext,
-    PropsWithChildren,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  createContext,
+  PropsWithChildren,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 
 import { useMockApi } from "@/lib/config/api-config";
@@ -29,18 +30,16 @@ import type {
   SmartHomePlace,
 } from "@/lib/domain/home";
 import {
-    notificationsService,
-    type SmartNotification,
+  notificationsService,
+  type SmartNotification,
 } from "@/lib/services/notifications-service";
 import {
-    realtimeService,
-    type DeviceStatusUpdatedEvent,
+  realtimeService,
+  type DeviceStatusUpdatedEvent,
 } from "@/lib/services/realtime-service";
 import { smartHomeService } from "@/lib/services/smart-home-service";
-import {
-    loadSession,
-    subscribeToSessionChanges,
-} from "@/lib/session/session-store";
+import { useSessionLifecycle } from "@/lib/hooks/use-session-lifecycle";
+import { loadSession } from "@/lib/session/session-store";
 
 export type {
   ActiveDevice,
@@ -55,21 +54,6 @@ export type {
   SmartHomePlace,
   UserRole,
 };
-
-/*
-  power: number; // W (potencia instantánea)
-  energy: number; // Wh (energía acumulada)
-  voltage: number; // V
-  current: number; // A
-  frequency: number; // Hz
-  online: boolean;
-  temperature?: number; // °C
-  state: "on" | "off"; // estado del relé
-  yesterday: number; // Wh (consumo del día anterior)
-  critical?: boolean;
-  lastSeenAt?: string | null;
-  lastStateChange?: string;
-}; */
 
 /**
  * Contrato completo del contexto global.
@@ -361,64 +345,29 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
   const [colorMode, setColorMode] = useState<ColorMode>("light");
   const [language, setLanguage] = useState<AppLanguage>("es");
   const [offlineMode, setOfflineMode] = useState(false);
-  const [sessionName, setSessionName] = useState(useMockApi ? "Pepe" : "");
-  const [sessionEmail, setSessionEmail] = useState(
-    useMockApi ? "pepe@smarthome.com" : "",
-  );
-  const [sessionRole, setSessionRole] = useState<UserRole>("miembro");
+
   const [lastSync, setLastSync] = useState(getTimeStamp());
-  const [sessionRevision, setSessionRevision] = useState(0);
-
-  useEffect(() => {
-    return subscribeToSessionChanges((session) => {
-      setSessionRevision((revision) => revision + 1);
-      if (!session) {
-        setSessionName("");
-        setSessionEmail("");
-        setSessionRole("miembro");
-        return;
-      }
-
-      if (session.mode === "demo") {
-        setSessionName(session.user.name.split(" ")[0] || session.user.name);
-        setSessionEmail(session.user.email);
-        setSessionRole(session.user.role ?? "miembro");
-        setHomes(initialHomes);
-        setHomeMembersByHome({});
-        setDevices(initialDevices);
-        setActiveHomeId(initialHomes[0].id);
-        setNotifications([]);
-        setUnreadNotificationCount(0);
-        setOfflineMode(false);
-      }
-    });
+  const resetDemoSession = useCallback(() => {
+    setHomes(initialHomes);
+    setHomeMembersByHome({});
+    setDevices(initialDevices);
+    setActiveHomeId(initialHomes[0].id);
+    setNotifications([]);
+    setUnreadNotificationCount(0);
+    setOfflineMode(false);
   }, []);
 
-  useEffect(() => {
-    let active = true;
-
-    loadSession()
-      .then((session) => {
-        if (!active) return;
-        if (!session) {
-          setSessionName("");
-          setSessionEmail("");
-          setSessionRole("miembro");
-          return;
-        }
-
-        setSessionName(session.user.name.split(" ")[0] || session.user.name);
-        setSessionEmail(session.user.email);
-        setSessionRole(session.user.role ?? "miembro");
-      })
-      .catch(() => {
-        // La pantalla de autenticación mostrará el error de red al reintentar.
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [sessionRevision]);
+  const {
+    sessionName,
+    sessionEmail,
+    sessionRole,
+    sessionRevision,
+    setSessionName,
+    setSessionEmail,
+    setSessionRole,
+  } = useSessionLifecycle({
+    onDemoSession: resetDemoSession,
+  });
 
   useEffect(() => {
     if (useMockApi) return;
