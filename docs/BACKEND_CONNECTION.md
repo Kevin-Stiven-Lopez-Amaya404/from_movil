@@ -15,7 +15,29 @@ EXPO_PUBLIC_API_URL=http://<HOST_ACCESIBLE_DESDE_EL_TELEFONO>:3000/api/v1
 
 La URL puede terminar en `/api/v1` (como en el ejemplo) o ser solo el origen. El cliente HTTP evita duplicar el prefijo `/api/v1`; Socket.IO conecta al namespace `/realtime` desde el origen. En un teléfono físico, `localhost` apunta al propio dispositivo. Usa una dirección LAN, staging o producción accesible desde el teléfono. Reinicia Expo después de cambiar variables.
 
-El esquema Expo `smarthome` permite abrir rutas de la app con enlaces `smarthome://...`. Para que los enlaces de activación y recuperación enviados por correo abran la app en producción, el dominio de `FRONTEND_URL` debe tener App Links/Universal Links asociados con el identificador de la aplicación, o redirigir a su esquema móvil. El backend construye estos enlaces como `/activate-account?token=...` y `/reset-password?token=...`; el dominio debe conservar la ruta y el parámetro `token`.
+## App móvil y enlaces de activación
+
+La aplicación genera destinos nativos solo para Android e iOS. El esquema `smarthome` permite abrir rutas durante desarrollo. En producción, la configuración también crea Android App Links e iOS Universal Links para `/activate-account?token=...` y `/reset-password?token=...`, conservando el parámetro `token`.
+
+Define estas variables en el entorno de producción de EAS:
+
+- `EXPO_PUBLIC_API_URL`: URL HTTPS real del backend, por ejemplo `https://api.tudominio.com/api/v1`.
+- `APP_LINK_DOMAIN`: dominio HTTPS que aparece en los enlaces del correo, sin ruta. Debe coincidir con el host configurado como `FRONTEND_URL` en el backend.
+- `ANDROID_PACKAGE`: identificador de publicación real de Android.
+- `IOS_BUNDLE_IDENTIFIER`: identificador de publicación real de iOS.
+
+El build `production` se detiene si falta alguno de estos valores o si contiene un marcador de ejemplo. No uses `localhost`, direcciones LAN ni HTTP para producción. Para desarrollo local, copia `.env.example`, usa una IP LAN accesible desde el teléfono y deja los marcadores de enlaces sin reemplazar hasta conocer los identificadores definitivos.
+
+El dominio de enlaces puede servir únicamente los archivos de asociación; no hace falta publicar una web de producto. Para completar la verificación, publica `/.well-known/assetlinks.json` con el paquete Android y la huella SHA-256 del certificado de firma, y `/.well-known/apple-app-site-association` con el identificador de equipo Apple y el Bundle ID. Ambos archivos deben servirse por HTTPS en el mismo dominio. Expo Router ya resuelve las rutas existentes `activate-account` y `reset-password` y sus parámetros.
+
+Comandos de compilación:
+
+```bash
+eas build --profile preview --platform android
+eas build --profile preview --platform ios
+eas build --profile production --platform android
+eas build --profile production --platform ios
+```
 
 ## Servicios frontend
 

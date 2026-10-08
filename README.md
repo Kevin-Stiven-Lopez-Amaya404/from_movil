@@ -1,23 +1,21 @@
 # Smart Home
 
-Aplicacion movil desarrollada con Expo Router y React Native para gestionar hogares inteligentes, dispositivos asociados, reportes energeticos, perfil y configuracion.
+Aplicación móvil nativa para Android e iOS, desarrollada con Expo Router y React Native. Gestiona hogares inteligentes, dispositivos asociados, reportes energéticos, perfil y configuración. El proyecto no publica una versión web.
 
-## Documentacion
+## Documentación
 
-La documentacion completa del proyecto esta organizada en la carpeta [`docs`](docs/):
-
-- [`DOCUMENTACION_PROYECTO_SMART_HOME.md`](docs/DOCUMENTACION_PROYECTO_SMART_HOME.md)
-- [`DOCUMENTACION_CODIGO_PANTALLAS_SMART_HOME.md`](docs/DOCUMENTACION_CODIGO_PANTALLAS_SMART_HOME.md)
-- [`FLUJO_USUARIO.md`](docs/FLUJO_USUARIO.md)
-- [`FLUJO_FINAL.md`](docs/FLUJO_FINAL.md)
-- [`GUIA_RAPIDA.md`](docs/GUIA_RAPIDA.md)
-- [`RESUMEN.md`](docs/RESUMEN.md)
+La documentación completa del proyecto está organizada en la carpeta [docs](docs/).
 
 ## Comandos principales
 
 ```bash
 npm install
 npm run start
+npm run android
+npm run ios
 npm run lint
+npm run test:mobile-config
 npx tsc --noEmit
 ```
+
+Para compilar versiones de prueba o producción con EAS, consulta [docs/BACKEND_CONNECTION.md](docs/BACKEND_CONNECTION.md).
