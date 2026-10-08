@@ -56,6 +56,15 @@ type BackendDevice = {
   deletedAt?: string | null;
 };
 
+export type ControlDeviceResponse = {
+  id: string;
+  homeId: string;
+  command: "TURN_ON" | "TURN_OFF";
+  status: "COMMAND_PUBLISHED";
+  previousIsOn: boolean;
+  connectivityStatus: "ONLINE" | "OFFLINE";
+};
+
 function mapBackendDevice(device: BackendDevice): SmartDevice {
   return {
     id: device.id,
@@ -116,7 +125,7 @@ export interface SmartHomeService {
     deviceId: string,
     state: "on" | "off",
     token?: string,
-  ): Promise<SmartDevice>;
+  ): Promise<ControlDeviceResponse>;
   updateDevice(
     homeId: string,
     deviceId: string,
@@ -164,12 +173,14 @@ const mockHomes: SmartHomePlace[] = [
     name: "Casa",
     location: "Hogar principal",
     favorite: true,
+    homeRole: "OWNER",
   },
   {
     id: "oficina",
     name: "Oficina",
     location: "Espacio de trabajo",
     favorite: false,
+    homeRole: "OWNER",
   },
 ];
 
@@ -366,6 +377,7 @@ const mockSmartHomeService: SmartHomeService = {
       name: name.trim(),
       location: location?.trim() || "Nuevo hogar",
       favorite: mockHomes.length === 0,
+      homeRole: "OWNER",
     };
 
     mockHomes.push(home);
@@ -415,17 +427,26 @@ const mockSmartHomeService: SmartHomeService = {
     return device;
   },
 
-  async updateDeviceState(_homeId, deviceId, state) {
+  async updateDeviceState(homeId, deviceId, state) {
     const index = mockDevices.findIndex((device) => device.id === deviceId);
 
     if (index >= 0) {
+      const previousIsOn = mockDevices[index].state === "on";
+
       mockDevices[index] = {
         ...mockDevices[index],
         state,
         lastStateChange: getLocalTimestamp(),
       };
 
-      return mockDevices[index];
+      return {
+        id: mockDevices[index].id,
+        homeId,
+        command: state === "on" ? "TURN_ON" : "TURN_OFF",
+        status: "COMMAND_PUBLISHED",
+        previousIsOn,
+        connectivityStatus: mockDevices[index].online ? "ONLINE" : "OFFLINE",
+      };
     }
 
     throw new Error("Dispositivo no encontrado.");
@@ -615,10 +636,9 @@ const backendSmartHomeService: SmartHomeService = {
   updateDeviceState(homeId, deviceId, state, token) {
     return apiClient
       .patch<
-        BackendDevice,
+        ControlDeviceResponse,
         { command: "TURN_ON" | "TURN_OFF" }
       >(`/api/v1/homes/${homeId}/devices/${deviceId}/control`, { command: state === "on" ? "TURN_ON" : "TURN_OFF" }, { token })
-      .then(mapBackendDevice);
   },
 
   updateDevice(homeId, deviceId, request, token) {

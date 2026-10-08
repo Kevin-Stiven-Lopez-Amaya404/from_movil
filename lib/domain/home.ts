@@ -1,5 +1,9 @@
 export type HomeRole = "OWNER" | "MEMBER" | "GUEST";
 
+export function canControlHome(role?: HomeRole): boolean {
+  return role === "OWNER" || role === "MEMBER";
+}
+
 export type HomeMemberStatus =
   | "PENDING"
   | "ACTIVE"

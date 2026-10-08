@@ -1,6 +1,8 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
+    Alert,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -11,8 +13,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useSmartHome } from "@/lib/context/smart-home-context";
+import { canControlHome } from "@/lib/domain/home";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { getDeviceControlErrorMessage } from "@/lib/utils/control-error-message";
 
 function formatLastSeenAt(lastSeenAt?: string | null) {
   if (!lastSeenAt) return "Sin último reporte";
@@ -36,6 +40,7 @@ export default function DevicesScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
+  const [pendingDeviceId, setPendingDeviceId] = useState<string | null>(null);
 
   const {
     devices,
@@ -66,6 +71,23 @@ export default function DevicesScreen() {
       pathname: "/(tabs)/homes",
       params: { homeId },
     });
+  }
+
+  async function handleToggleDevice(deviceId: string) {
+    if (pendingDeviceId) return;
+
+    setPendingDeviceId(deviceId);
+
+    try {
+      await toggleDevice(deviceId);
+    } catch (error) {
+      Alert.alert(
+        "No se pudo cambiar el estado",
+        getDeviceControlErrorMessage(error),
+      );
+    } finally {
+      setPendingDeviceId(null);
+    }
   }
 
   return (
@@ -206,6 +228,7 @@ export default function DevicesScreen() {
 
             {visibleDevices.map((device) => {
               const home = homes.find((item) => item.id === device.homeId);
+              const canControlDevice = canControlHome(home?.homeRole);
 
               const hasAlert =
                 (device.critical || !device.online) &&
@@ -316,8 +339,14 @@ export default function DevicesScreen() {
                   {/* DEVICE SWITCH */}
                   <Switch
                     value={device.state === "on"}
-                    disabled={!device.online}
-                    onValueChange={() => toggleDevice(device.id)}
+                    disabled={
+                      !device.online ||
+                      !canControlDevice ||
+                      pendingDeviceId === device.id
+                    }
+                    onValueChange={() => {
+                      void handleToggleDevice(device.id);
+                    }}
                     accessibilityLabel={`Cambiar estado de ${device.name}`}
                     trackColor={{
                       false: "#CDD2E4",

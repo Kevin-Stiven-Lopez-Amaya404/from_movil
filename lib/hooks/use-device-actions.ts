@@ -1,8 +1,12 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import type { SmartDevice } from "@/lib/domain/device";
+import { canControlHome } from "@/lib/domain/home";
+import type { SmartHomePlace } from "@/lib/domain/home";
 import { smartHomeService } from "@/lib/services/smart-home-service";
+
+const DEVICE_STATUS_CONFIRMATION_TIMEOUT_MS = 2000;
 
 type DeviceState = SmartDevice["state"];
 
@@ -12,59 +16,82 @@ type DeviceUpdates = {
 
 type UseDeviceActionsOptions = {
   devices: SmartDevice[];
+  homes: SmartHomePlace[];
   setDevices: Dispatch<SetStateAction<SmartDevice[]>>;
   getTimeStamp: () => string;
 };
 
 export function useDeviceActions({
   devices,
+  homes,
   setDevices,
   getTimeStamp,
 }: UseDeviceActionsOptions) {
+  const devicesRef = useRef(devices);
+  devicesRef.current = devices;
+
   const setHomeDeviceState = useCallback(
     async (id: string, state: DeviceState) => {
-      const device = devices.find((item) => item.id === id);
+      const device = devicesRef.current.find((item) => item.id === id);
 
       if (!device || !device.online) return;
 
-      const previousDevice = device;
+      const home = homes.find((item) => item.id === device.homeId);
 
-      setDevices((items) =>
-        items.map((item) =>
-          item.id === id
-            ? { ...item, state, lastStateChange: getTimeStamp() }
-            : item,
-        ),
-      );
+      if (!canControlHome(home?.homeRole)) {
+        throw new Error(
+          home?.homeRole === "GUEST"
+            ? "Tu rol de invitado permite consultar, pero no controlar dispositivos."
+            : "No se pudo verificar tu rol en este hogar. Actualiza los hogares e inténtalo de nuevo.",
+        );
+      }
+
+      await smartHomeService.updateDeviceState(device.homeId, id, state);
+
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, DEVICE_STATUS_CONFIRMATION_TIMEOUT_MS);
+      });
+
+      const latestDevice = devicesRef.current.find((item) => item.id === id);
+
+      // El listener realtime ya confirmó el estado solicitado.
+      if (latestDevice?.state === state) return;
 
       try {
-        const updated = await smartHomeService.updateDeviceState(
+        const refreshedDevices = await smartHomeService.listDevices(
           device.homeId,
-          id,
-          state,
         );
+        const refreshedDevice = refreshedDevices.find((item) => item.id === id);
+
+        if (!refreshedDevice) return;
 
         setDevices((items) =>
-          items.map((item) => (item.id === id ? updated : item)),
-        );
-      } catch (error) {
-        setDevices((items) =>
-          items.map((item) => (item.id === id ? previousDevice : item)),
-        );
+          items.map((item) => {
+            if (item.id !== id || item.state === state) return item;
 
-        throw error;
+            return {
+              ...item,
+              state: refreshedDevice.state,
+              online: refreshedDevice.online,
+              lastStateChange:
+                refreshedDevice.lastStateChange ?? item.lastStateChange,
+            };
+          }),
+        );
+      } catch {
+        // Conserva el último estado conocido si falla la lectura de respaldo.
       }
     },
-    [devices, getTimeStamp, setDevices],
+    [homes, setDevices],
   );
 
   const toggleDevice = useCallback(
-    (id: string) => {
+    async (id: string) => {
       const device = devices.find((item) => item.id === id);
 
       if (!device || !device.online) return;
 
-      void setHomeDeviceState(
+      await setHomeDeviceState(
         id,
         device.state === "on" ? "off" : "on",
       );
@@ -73,7 +100,17 @@ export function useDeviceActions({
   );
 
   const setAllHomeDevicesState = useCallback(
-    (homeId: string, state: DeviceState) => {
+    async (homeId: string, state: DeviceState) => {
+      const home = homes.find((item) => item.id === homeId);
+
+      if (!canControlHome(home?.homeRole)) {
+        throw new Error(
+          home?.homeRole === "GUEST"
+            ? "Tu rol de invitado permite consultar, pero no controlar dispositivos."
+            : "No se pudo verificar tu rol en este hogar. Actualiza los hogares e inténtalo de nuevo.",
+        );
+      }
+
       setDevices((items) =>
         items.map((item) =>
           item.homeId === homeId
@@ -82,11 +119,9 @@ export function useDeviceActions({
         ),
       );
 
-      smartHomeService
-        .setAllHomeDevicesState(homeId, state)
-        .catch(() => null);
+      await smartHomeService.setAllHomeDevicesState(homeId, state);
     },
-    [getTimeStamp, setDevices],
+    [getTimeStamp, homes, setDevices],
   );
 
   const removeDevice = useCallback(

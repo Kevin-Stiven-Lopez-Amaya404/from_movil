@@ -18,9 +18,11 @@ import { ShellyDeviceCard } from "@/components/homes/ShellyDeviceCard";
 import { useMockApi } from "@/lib/config/api-config";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { SmartDevice } from "@/lib/domain/device";
+import { canControlHome } from "@/lib/domain/home";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
+import { getDeviceControlErrorMessage } from "@/lib/utils/control-error-message";
 
 export default function HomesScreen() {
   const { homeId } = useLocalSearchParams<{ homeId?: string }>();
@@ -44,9 +46,7 @@ export default function HomesScreen() {
     accessibleHomes[0];
   const canManage =
     activeHome?.homeRole === "OWNER" || (useMockApi && sessionRole === "admin");
-  const canControl =
-    activeHome?.homeRole !== "GUEST" &&
-    (activeHome?.homeRole !== undefined || useMockApi);
+  const canControl = canControlHome(activeHome?.homeRole);
   const homeDevices = useMemo(
     () =>
       activeHome
@@ -145,7 +145,7 @@ export default function HomesScreen() {
     } catch (error) {
       Alert.alert(
         "No se pudo cambiar el estado",
-        error instanceof Error ? error.message : "Intenta nuevamente.",
+        getDeviceControlErrorMessage(error),
       );
     } finally {
       setPendingDeviceId(null);
@@ -164,7 +164,7 @@ export default function HomesScreen() {
     } catch (error) {
       Alert.alert(
         "No se pudo cambiar el estado",
-        error instanceof Error ? error.message : "Intenta nuevamente.",
+        getDeviceControlErrorMessage(error),
       );
     } finally {
       setPendingDeviceId(null);

@@ -93,7 +93,10 @@ type SmartHomeState = {
   setSessionRole: (role: UserRole) => void;
   setOfflineMode: (enabled: boolean) => void;
   setHomeDeviceState: (id: string, state: "on" | "off") => Promise<void>;
-  setAllHomeDevicesState: (homeId: string, state: "on" | "off") => void;
+  setAllHomeDevicesState: (
+    homeId: string,
+    state: "on" | "off",
+  ) => Promise<void>;
   inviteHomeMember: (
     homeId: string,
     email: string,
@@ -108,7 +111,7 @@ type SmartHomeState = {
   ) => Promise<void>;
   revokeHomeMember: (homeId: string, memberId: string) => Promise<void>;
   leaveHome: (homeId: string) => Promise<void>;
-  toggleDevice: (id: string) => void;
+  toggleDevice: (id: string) => Promise<void>;
   toggleHomeFavorite: (homeId: string) => void;
   setDeviceOnline: (id: string, online: boolean) => void;
   resolveDeviceAlert: (id: string) => void;
@@ -121,12 +124,19 @@ type SmartHomeState = {
 
 // Datos iniciales de prueba. En una version real vendrian de backend/base de datos.
 const initialHomes: SmartHomePlace[] = [
-  { id: "casa", name: "Casa", location: "Hogar principal", favorite: true },
+  {
+    id: "casa",
+    name: "Casa",
+    location: "Hogar principal",
+    favorite: true,
+    homeRole: "OWNER",
+  },
   {
     id: "oficina",
     name: "Oficina",
     location: "Espacio de trabajo",
     favorite: false,
+    homeRole: "OWNER",
   },
 ];
 
@@ -390,6 +400,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     toggleDevice,
   } = useDeviceActions({
     devices,
+    homes,
     setDevices,
     getTimeStamp,
   });

@@ -96,39 +96,33 @@ export default function ReportsScreen() {
 
   Promise.all([
     consumptionService.getHomeSummary(homeId),
-    consumptionService.getHomeDaily(homeId, { limit: 12 }),
+    consumptionService.getHomeDaily(homeId),
   ])
     .then(([summary, daily]) => {
       if (!active) return;
 
-      const summaryValue = Number(summary?.energyDeltaKwh ?? 0);
-      const fallbackValue = daily.reduce(
-        (sum, record) => sum + (Number(record.energyDeltaKwh ?? 0) || 0),
-        0,
-      );
+      setRealConsumptionKwh(summary.totalEnergyDeltaKwh);
 
-      setRealConsumptionKwh(
-        Number.isFinite(summaryValue) && summaryValue > 0
-          ? summaryValue
-          : fallbackValue,
-      );
-
-      const mappedSeries = daily
+      const mappedSeries = [...daily]
+        .sort((a, b) => a.periodStart.localeCompare(b.periodStart))
         .map((record) => {
-          const timestamp =
-            record.recordedAt ?? record.timestamp ?? new Date().toISOString();
-          const date = new Date(timestamp);
+          const [year, month, day] = record.periodStart
+            .slice(0, 10)
+            .split("-")
+            .map(Number);
+
+          const date = new Date(year, month - 1, day);
 
           if (Number.isNaN(date.getTime())) {
             return null;
           }
 
           return {
-            label: date.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
+            label: date.toLocaleDateString("es-CO", {
+              day: "2-digit",
+              month: "short",
             }),
-            value: Number(record.energyDeltaKwh ?? 0),
+            value: record.totalEnergyDeltaKwh,
           };
         })
         .filter(
