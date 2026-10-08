@@ -6,6 +6,20 @@ export type ConsumptionQuery = {
   limit?: number;
 };
 
+export type ConsumptionRangeQuery = {
+  from?: string;
+  to?: string;
+};
+
+export type HomeConsumptionSummaryResponse = {
+  totalEnergyDeltaKwh: number;
+};
+
+export type HomeDailyConsumptionRecord = {
+  periodStart: string;
+  totalEnergyDeltaKwh: number;
+};
+
 export type ConsumptionRecord = Record<string, unknown> & {
   energyDeltaKwh?: number | null;
   energyTotalKwh?: number | null;
@@ -13,12 +27,14 @@ export type ConsumptionRecord = Record<string, unknown> & {
   timestamp?: string;
 };
 
-function queryString(query?: ConsumptionQuery): string {
+function queryString(query?: ConsumptionQuery | ConsumptionRangeQuery): string {
   if (!query) return "";
   const params = new URLSearchParams();
   if (query.from) params.set("from", query.from);
   if (query.to) params.set("to", query.to);
-  if (query.limit) params.set("limit", String(query.limit));
+  if ("limit" in query && query.limit) {
+    params.set("limit", String(query.limit));
+  }
   const value = params.toString();
   return value ? `?${value}` : "";
 }
@@ -30,14 +46,22 @@ export const consumptionService = {
       { token },
     );
   },
-  getHomeSummary(homeId: string, query?: ConsumptionQuery, token?: string) {
-    return apiClient.get<ConsumptionRecord>(
+  getHomeSummary(
+    homeId: string,
+    query?: ConsumptionRangeQuery,
+    token?: string,
+  ) {
+    return apiClient.get<HomeConsumptionSummaryResponse>(
       `/api/v1/homes/${homeId}/consumption/summary${queryString(query)}`,
       { token },
     );
   },
-  getHomeDaily(homeId: string, query?: ConsumptionQuery, token?: string) {
-    return apiClient.get<ConsumptionRecord[]>(
+  getHomeDaily(
+    homeId: string,
+    query?: ConsumptionRangeQuery,
+    token?: string,
+  ) {
+    return apiClient.get<HomeDailyConsumptionRecord[]>(
       `/api/v1/homes/${homeId}/consumption/daily${queryString(query)}`,
       { token },
     );
