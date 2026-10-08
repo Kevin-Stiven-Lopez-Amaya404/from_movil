@@ -2,6 +2,8 @@ import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
 import { AuthTextField } from "@/components/auth/AuthTextField";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { BackButton } from "@/components/common/BackButton";
+import { getApiErrorMessage } from "@/lib/api/api-error";
+import { requestPasswordReset } from "@/lib/auth/auth-store";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { typography } from "@/lib/theme/typography";
 import { isValidEmail } from "@/lib/utils/validators";
@@ -15,6 +17,7 @@ export default function ForgotPasswordScreen() {
 
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // ==========================================
   // DATOS NORMALIZADOS
@@ -33,10 +36,10 @@ export default function ForgotPasswordScreen() {
   const canSubmit = !emailError;
 
   // ==========================================
-  // ENVIAR CÓDIGO
+  // ENVIAR ENLACE
   // ==========================================
 
-  function handleSendCode() {
+  async function handleSendCode() {
     setSubmitted(true);
 
     if (!cleanEmail) {
@@ -51,19 +54,19 @@ export default function ForgotPasswordScreen() {
       return;
     }
 
-    /*
-     * Por ahora el flujo continúa hacia OTP.
-     *
-     * El envío real del código debe conectarse cuando
-     * implementemos el servicio de recuperación de
-     * contraseña en el backend.
-     */
-    router.push({
-      pathname: "/otp-verification",
-      params: {
-        email: cleanEmail,
-      },
-    });
+    setSubmitting(true);
+    try {
+      await requestPasswordReset(cleanEmail);
+      Alert.alert(
+        "Revisa tu correo",
+        "Si existe una cuenta con ese correo, recibirás un enlace para restablecer la contraseña.",
+        [{ text: "Aceptar", onPress: () => router.replace("/login") }],
+      );
+    } catch (error) {
+      Alert.alert("No se pudo enviar el enlace", getApiErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -99,9 +102,10 @@ export default function ForgotPasswordScreen() {
         />
 
         <PrimaryButton
-          onPress={handleSendCode}
+          loading={submitting}
+          onPress={() => void handleSendCode()}
           style={styles.button}
-          text="Enviar código"
+          text="Enviar enlace"
         />
       </View>
     </AuthScreenLayout>

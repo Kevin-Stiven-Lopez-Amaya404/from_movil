@@ -1,6 +1,7 @@
 # Componentes - homes
 
 ## AddNameRow
+
 - Ruta: `components/homes/AddNameRow.tsx`
 - Descripción: Fila reutilizable para crear o renombrar hogares/dispositivos.
 - Props:
@@ -13,6 +14,7 @@
   - `textColor: string` — color del texto ingresado.
   - `value: string` — texto actual del campo.
 - Ejemplo:
+
 ```
 <AddNameRow
   backgroundColor="#ffffff"
@@ -27,6 +29,7 @@
 ```
 
 ## DeviceListItem
+
 - Ruta: `components/homes/DeviceListItem.tsx`
 - Descripción: Item de lista de dispositivo con icono, nombre, estado y switch de encendido.
 - Props:
@@ -36,17 +39,16 @@
   - `online: boolean` — estado del dispositivo.
   - `onPress: () => void` — callback al presionar el item.
   - `onToggle: () => void` — callback al cambiar el switch.
-  - `room: string` — nombre de la habitación.
   - `rowAltColor: string` — color alterno para el ícono.
   - `rowColor: string` — fondo del item.
   - `selected: boolean` — indica si el item está seleccionado.
   - `textColor: string` — color del texto principal.
   - `mutedColor: string` — color del texto secundario.
 - Ejemplo:
+
 ```
 <DeviceListItem
   name="Lámpara Sala"
-  room="Sala"
   icon="lamp"
   online={true}
   consumption={0.75}
@@ -61,6 +63,7 @@
 ```
 
 ## HomeHeroCard
+
 - Ruta: `components/homes/HomeHeroCard.tsx`
 - Descripción: Tarjeta principal de resumen de hogar; se usa para mostrar métricas destacadas.
 - Props:
@@ -72,6 +75,7 @@
   - `compactValue?: boolean` — reduce el tamaño del texto del valor si se requiere.
   - `textColor: string` — color del texto principal.
 - Ejemplo:
+
 ```
 <HomeHeroCard
   title="Consumo mensual"
@@ -84,6 +88,7 @@
 ```
 
 ## HomeListItem
+
 - Ruta: `components/homes/HomeListItem.tsx`
 - Descripción: Item de la lista de hogares registrados; permite marcar como favorito.
 - Props:
@@ -98,6 +103,7 @@
   - `textColor: string` — color del texto principal.
   - `mutedColor: string` — color del texto secundario.
 - Ejemplo:
+
 ```
 <HomeListItem
   name="Casa Centro"

@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import Svg, { Rect, Text as SvgText } from "react-native-svg";
 
-import type { SmartDevice } from "@/lib/context/smart-home-context";
+import type { SmartDevice } from "@/lib/domain/device";
 import type { AppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 

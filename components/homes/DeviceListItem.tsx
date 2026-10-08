@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 
-import type { SmartDevice } from "@/lib/context/smart-home-context";
+import type { SmartDevice } from "@/lib/domain/device";
 import type { AppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
@@ -76,9 +76,8 @@ export function DeviceListItem({
           </View>
 
           <Text style={[styles.itemSubtitle, { color: theme.muted }]}>
-            {device.room} ·{" "}
             {device.online
-              ? `${(device.energy / 1000).toFixed(2)} kWh hoy`
+              ? `${(device.energy / 1000).toFixed(2)} kWh acumulados`
               : "Sin conexión"}
           </Text>
 

@@ -1,10 +1,10 @@
 import {
-    DarkTheme,
-    DefaultTheme,
-    Stack,
-    ThemeProvider,
-    usePathname,
-    useRouter,
+  DarkTheme,
+  DefaultTheme,
+  Stack,
+  ThemeProvider,
+  useRouter,
+  useSegments,
 } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
@@ -13,133 +13,118 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import SplashAnimation from "@/components/common/SplashAnimation";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { AuthSessionProvider, useAuthSession } from "@/lib/auth/auth-session-context";
 import { SmartHomeProvider } from "@/lib/context/smart-home-context";
 
-/**
- * Configuracion inicial de Expo Router.
- *
- * `initialRouteName` indica que, cuando la app arranca, la ruta principal
- * esperada es `welcome`. Esto ayuda a que el flujo comience en la pantalla
- * de bienvenida y no en una ruta vacia.
- */
 export const unstable_settings = {
   initialRouteName: "welcome",
 };
 
-/**
- * Layout raiz de la aplicacion.
- *
- * Este componente es el punto de entrada visual del proyecto. Su funcion no es
- * mostrar una pantalla especifica, sino envolver toda la app con proveedores
- * globales y registrar las rutas principales.
- *
- * Capas que configura:
- * - SafeAreaProvider: respeta notch, status bar y barra inferior en Android/iOS.
- * - ThemeProvider: entrega tema claro/oscuro a React Navigation.
- * - SmartHomeProvider: estado global de hogares, dispositivos, sesion, tema e idioma.
- * - Stack: define el flujo de pantallas antes y despues del login.
- */
-export default function RootLayout() {
-  // Detecta el modo de color del sistema para el tema base de navegacion.
-  const colorScheme = useColorScheme();
+const PUBLIC_AUTH_SEGMENTS = new Set([
+  "welcome",
+  "login",
+  "register",
+  "forgot-password",
+  "otp-verification",
+  "new-password",
+  "reset-password",
+  "activate-account",
+]);
 
-  // Controla si la animacion inicial ya termino. Mientras sea false se muestra SplashAnimation.
+function RootNavigator({
+  splashDone,
+  onSplashFinish,
+}: {
+  splashDone: boolean;
+  onSplashFinish: () => void;
+}) {
+  const router = useRouter();
+  const segments = useSegments();
+  const { isAuthenticated, isLoading } = useAuthSession();
+  const firstSegment = segments[0];
+  const isTabsRoute = firstSegment === "(tabs)";
+  const isRootRoute = !firstSegment || firstSegment === "index";
+  const isPublicAuthRoute =
+    typeof firstSegment === "string" &&
+    PUBLIC_AUTH_SEGMENTS.has(firstSegment);
+
+  useEffect(() => {
+    if (!splashDone || isLoading) return;
+
+    if (isRootRoute) {
+      router.replace(isAuthenticated ? "/(tabs)" : "/welcome");
+      return;
+    }
+
+    if (!isAuthenticated && isTabsRoute) {
+      router.replace("/welcome");
+      return;
+    }
+
+    if (isAuthenticated && isPublicAuthRoute) {
+      router.replace("/(tabs)");
+    }
+  }, [
+    isAuthenticated,
+    isLoading,
+    isPublicAuthRoute,
+    isRootRoute,
+    isTabsRoute,
+    router,
+    splashDone,
+  ]);
+
+  return (
+    <>
+      {splashDone && (
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="welcome" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="forgot-password"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="otp-verification"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="new-password" options={{ headerShown: false }} />
+          <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="activate-account"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
+      )}
+
+      {!splashDone && <SplashAnimation onFinish={onSplashFinish} />}
+    </>
+  );
+}
+
+export default function RootLayout() {
+  const colorScheme = useColorScheme();
   const [splashDone, setSplashDone] = useState(false);
 
-  // Router y pathname permiten redirigir despues del splash si la app esta en la ruta raiz.
-  const router = useRouter();
-  const pathname = usePathname();
-
-  /**
-   * Finaliza el splash y garantiza que el usuario llegue a la pantalla de bienvenida.
-   *
-   * Si la app quedo en `/`, se reemplaza la ruta por `/welcome`.
-   * Se usa `replace` para no dejar la ruta vacia en el historial.
-   */
   const finishSplash = useCallback(() => {
     setSplashDone(true);
-
-    if (pathname === "/") {
-      router.replace("/welcome");
-    }
-  }, [pathname, router]);
-
-  /**
-   * Respaldo de seguridad para evitar pantalla blanca.
-   *
-   * Si por alguna razon la animacion no ejecuta `onFinish` en web o Android,
-   * este temporizador libera la app y envia al usuario a bienvenida.
-   */
-  useEffect(() => {
-    if (splashDone) return;
-
-    const timeout = setTimeout(finishSplash, 2600);
-
-    return () => clearTimeout(timeout);
-  }, [finishSplash, splashDone]);
+  }, []);
 
   return (
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <SmartHomeProvider>
-          {splashDone && (
-            <Stack>
-              <Stack.Screen
-                name="index"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="welcome"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="login"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="register"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="forgot-password"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="otp-verification"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="new-password"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="(tabs)"
-                options={{
-                  headerShown: false,
-                }}
-              />
-            </Stack>
-          )}
+        <AuthSessionProvider>
+          <SmartHomeProvider>
+            <RootNavigator
+              onSplashFinish={finishSplash}
+              splashDone={splashDone}
+            />
+          </SmartHomeProvider>
+        </AuthSessionProvider>
 
-          {/* Capa visual inicial. Se desmonta cuando llama `finishSplash`. */}
-          {!splashDone && <SplashAnimation onFinish={finishSplash} />}
-        </SmartHomeProvider>
-
-        {/* La barra de estado cambia cuando el splash desaparece. */}
         <StatusBar style={splashDone ? "auto" : "light"} />
       </ThemeProvider>
     </SafeAreaProvider>

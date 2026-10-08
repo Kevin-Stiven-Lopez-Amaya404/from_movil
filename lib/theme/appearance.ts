@@ -1,4 +1,4 @@
-import { ColorMode } from "@/lib/context/smart-home-context";
+import type { ColorMode } from "@/lib/domain/preferences";
 
 /**
  * Paleta especifica para pantallas de autenticacion.

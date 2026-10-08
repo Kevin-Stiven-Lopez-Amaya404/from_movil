@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
@@ -82,25 +81,10 @@ export default function SettingsScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const { t } = useTranslation();
-  const { deactivateAccount } = useSmartHome();
 
   function showPending(title: string) {
     Alert.alert(title, t("common.readyBackend"), [
       { text: t("action.cancel") },
-    ]);
-  }
-
-  function confirmDeactivation() {
-    Alert.alert(t("profile.deactivateAccount"), t("profile.deactivatePrompt"), [
-      { text: t("action.cancel"), style: "cancel" },
-      {
-        text: t("action.deactivate"),
-        style: "destructive",
-        onPress: () => {
-          deactivateAccount();
-          router.replace("/welcome");
-        },
-      },
     ]);
   }
 
@@ -162,37 +146,6 @@ export default function SettingsScreen() {
               theme={theme}
             />
           </Group>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("profile.deactivateAccount")}
-            onPress={confirmDeactivation}
-            style={({ pressed }) => [
-              styles.dangerRow,
-              {
-                backgroundColor: theme.dangerSoft,
-                borderColor: theme.dangerSoft,
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            <View style={styles.dangerIcon}>
-              <Ionicons
-                name="person-remove-outline"
-                size={17}
-                color={theme.danger}
-              />
-            </View>
-            <View style={styles.rowCopy}>
-              <Text style={[styles.rowTitle, { color: theme.danger }]}>
-                {t("profile.deactivateAccount")}
-              </Text>
-              <Text style={[styles.rowDescription, { color: theme.danger }]}>
-                {t("profile.deactivateDescription")}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={theme.danger} />
-          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -259,21 +212,5 @@ const styles = StyleSheet.create({
   rowCopy: { flex: 1, marginHorizontal: 9 },
   rowTitle: { fontFamily: appFont, fontSize: 11, fontWeight: "800" },
   rowDescription: { fontFamily: appFont, fontSize: 9, marginTop: 2 },
-  dangerRow: {
-    alignItems: "center",
-    borderRadius: 13,
-    borderWidth: 1,
-    flexDirection: "row",
-    minHeight: 54,
-    paddingHorizontal: 10,
-  },
-  dangerIcon: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF99",
-    borderRadius: 9,
-    height: 30,
-    justifyContent: "center",
-    width: 30,
-  },
   pressed: { opacity: 0.72 },
 });

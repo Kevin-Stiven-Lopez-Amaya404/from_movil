@@ -6,7 +6,7 @@
  *    gráfica de telemetría horaria en Wh/kWh, zona horaria (America/Bogota) y tarjetas de descarga.
  */
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     Alert,
     Pressable,
@@ -17,8 +17,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useMockApi } from "@/lib/config/api-config";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { consumptionService } from "@/lib/services/consumption-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
@@ -59,6 +61,110 @@ export default function ReportsScreen() {
   const theme = useAppTheme();
 
   const { accessibleHomes, activeHomeId } = useSmartHome();
+  const activeHomeName =
+    accessibleHomes.find((home) => home.id === activeHomeId)?.name ?? "Hogar";
+  const [realConsumptionKwh, setRealConsumptionKwh] =
+  useState<number | null>(null);
+  const [dailySeries, setDailySeries] = useState<
+    { label: string; value: number }[]
+  >([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loadedHomeId, setLoadedHomeId] = useState<string | null>(null);
+
+  const hasRealConsumptionSource = !useMockApi && Boolean(activeHomeId);
+  const hasCurrentHomeData =
+    hasRealConsumptionSource && loadedHomeId === activeHomeId;
+
+  const visibleRealConsumptionKwh = hasCurrentHomeData
+    ? realConsumptionKwh
+    : null;
+
+  const visibleDailySeries = useMemo(
+    () => (hasCurrentHomeData ? dailySeries : []),
+    [hasCurrentHomeData, dailySeries],);
+  const visibleError = hasCurrentHomeData ? error : null;
+  const isLoading = hasRealConsumptionSource && !hasCurrentHomeData;
+
+  useEffect(() => {
+  const homeId = activeHomeId;
+
+  if (useMockApi || !homeId) {
+    return;
+  }
+
+  let active = true;
+
+  Promise.all([
+    consumptionService.getHomeSummary(homeId),
+    consumptionService.getHomeDaily(homeId, { limit: 12 }),
+  ])
+    .then(([summary, daily]) => {
+      if (!active) return;
+
+      const summaryValue = Number(summary?.energyDeltaKwh ?? 0);
+      const fallbackValue = daily.reduce(
+        (sum, record) => sum + (Number(record.energyDeltaKwh ?? 0) || 0),
+        0,
+      );
+
+      setRealConsumptionKwh(
+        Number.isFinite(summaryValue) && summaryValue > 0
+          ? summaryValue
+          : fallbackValue,
+      );
+
+      const mappedSeries = daily
+        .map((record) => {
+          const timestamp =
+            record.recordedAt ?? record.timestamp ?? new Date().toISOString();
+          const date = new Date(timestamp);
+
+          if (Number.isNaN(date.getTime())) {
+            return null;
+          }
+
+          return {
+            label: date.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            value: Number(record.energyDeltaKwh ?? 0),
+          };
+        })
+        .filter(
+          (point): point is { label: string; value: number } => !!point,
+        );
+
+      setDailySeries(mappedSeries.slice(-12));
+      setError(null);
+      setLoadedHomeId(homeId);
+    })
+    .catch(() => {
+      if (!active) return;
+
+      setRealConsumptionKwh(null);
+      setDailySeries([]);
+      setError("No se pudo cargar el consumo real del hogar.");
+      setLoadedHomeId(homeId);
+    });
+
+  return () => {
+    active = false;
+  };
+}, [activeHomeId]);
+
+
+  const consumptionLabel =
+    visibleRealConsumptionKwh !== null
+      ? `${(visibleRealConsumptionKwh * 1000).toFixed(0)} Wh consumidos en este período`
+      : useMockApi
+        ? "Conecta el backend para consultar datos reales"
+        : "Datos no disponibles para este período";
+
+  const chartPoints = useMemo(() => {
+    if (visibleDailySeries.length > 0) return visibleDailySeries;
+    return TIMESTAMPS_24H.map((label) => ({ label, value: 0 }));
+  }, [visibleDailySeries]);
 
   // Estados de la pestaña "Historia"
   const [historyPeriod, setHistoryPeriod] =
@@ -66,20 +172,19 @@ export default function ReportsScreen() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dateRangeIndex, setDateRangeIndex] = useState(0);
 
-  // Rangos de fecha simulados
   const dateRanges = [
-    "09.09.2026 - 10.09.2026",
-    "08.09.2026 - 09.09.2026",
-    "07.09.2026 - 08.09.2026",
-    "06.09.2026 - 07.09.2026",
+    "Período actual",
+    "Últimos 7 días",
+    "Últimos 30 días",
+    "Período anterior",
   ];
   const currentDateRange =
     dateRanges[Math.abs(dateRangeIndex) % dateRanges.length];
 
   function handleDownloadReport(title: string) {
     Alert.alert(
-      "Descarga de reporte",
-      `Generando informe de ${title} para el período ${currentDateRange}.\nFormato: PDF / CSV listo para exportar.`,
+      "Exportación no disponible",
+      `La exportación de ${title} aún no está publicada en el backend actual. El frontend solo muestra datos del período disponible en la API actual.`,
       [{ text: "Entendido" }],
     );
   }
@@ -273,71 +378,89 @@ export default function ReportsScreen() {
 
               {/* Área de la Gráfica */}
               <View style={styles.chartArea}>
-                {/* Ejes Y de referencia (1 Wh, 0.5 Wh, 0 Wh) */}
-                <View style={styles.yAxisRow}>
-                  <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                    1 Wh
+                {isLoading ? (
+                  <Text style={[styles.noDataOverlayText, { color: theme.muted }]}>
+                    Cargando consumo real…
                   </Text>
-                  <View
-                    style={[
-                      styles.gridLine,
-                      { backgroundColor: theme.borderLight },
-                    ]}
-                  />
-                </View>
-
-                <View style={styles.yAxisRow}>
-                  <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                    0.5 Wh
+                ) : visibleError ? (
+                  <Text style={[styles.noDataOverlayText, { color: theme.muted }]}>
+                    {visibleError}
                   </Text>
-                  <View
-                    style={[
-                      styles.gridLine,
-                      { backgroundColor: theme.borderLight },
-                    ]}
-                  >
-                    <Text
-                      style={[styles.noDataOverlayText, { color: theme.muted }]}
-                    >
-                      ¡Datos no disponibles!
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.yAxisRow}>
-                  <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                    0 Wh
-                  </Text>
-                  <View
-                    style={[
-                      styles.gridLine,
-                      { backgroundColor: theme.borderLight },
-                    ]}
-                  />
-                </View>
-
-                {/* Marcas de tiempo en el eje X (19:00, 21:00, 23:00...) */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.xAxisTimestamps}
-                >
-                  {TIMESTAMPS_24H.map((time) => (
-                    <View key={time} style={styles.timestampCol}>
+                ) : (
+                  <>
+                    {/* Ejes Y de referencia (1 Wh, 0.5 Wh, 0 Wh) */}
+                    <View style={styles.yAxisRow}>
+                      <Text style={[styles.axisLabel, { color: theme.muted }]}>
+                        1 Wh
+                      </Text>
                       <View
                         style={[
-                          styles.timestampTick,
+                          styles.gridLine,
                           { backgroundColor: theme.borderLight },
                         ]}
                       />
-                      <Text
-                        style={[styles.timestampText, { color: theme.muted }]}
-                      >
-                        {time}
-                      </Text>
                     </View>
-                  ))}
-                </ScrollView>
+
+                    <View style={styles.yAxisRow}>
+                      <Text style={[styles.axisLabel, { color: theme.muted }]}>
+                        0.5 Wh
+                      </Text>
+                      <View
+                        style={[
+                          styles.gridLine,
+                          { backgroundColor: theme.borderLight },
+                        ]}
+                      >
+                        {visibleRealConsumptionKwh === null ? (
+                          <Text
+                            style={[
+                              styles.noDataOverlayText,
+                              { color: theme.muted },
+                            ]}
+                          >
+                            {useMockApi
+                              ? "Conecta el backend para consultar datos"
+                              : "¡Datos no disponibles!"}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+
+                    <View style={styles.yAxisRow}>
+                      <Text style={[styles.axisLabel, { color: theme.muted }]}>
+                        0 Wh
+                      </Text>
+                      <View
+                        style={[
+                          styles.gridLine,
+                          { backgroundColor: theme.borderLight },
+                        ]}
+                      />
+                    </View>
+
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.xAxisTimestamps}
+                    >
+                      {chartPoints.map((point) => (
+                        <View key={`${point.label}-${point.value}`} style={styles.timestampCol}>
+                          <View
+                            style={[
+                              styles.timestampTick,
+                              { backgroundColor: theme.borderLight },
+                            ]}
+                          />
+                          <Text
+                            style={[styles.timestampText, { color: theme.muted }]}
+                          >
+                            {point.label}
+                          </Text>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </>
+                )}
               </View>
 
               {/* Pie de zona horaria */}
@@ -346,7 +469,7 @@ export default function ReportsScreen() {
               </Text>
             </View>
 
-            {/* Tarjeta Individual: "Stiven - Últimas 24 horas" (Imagen 2) */}
+            {/* Resumen de consumo del hogar activo */}
             <View
               style={[
                 styles.cardContainer,
@@ -358,11 +481,11 @@ export default function ReportsScreen() {
             >
               <View style={styles.chartCardHeader}>
                 <Text style={[styles.chartCardTitle, { color: theme.text }]}>
-                  Stiven - {historyPeriod}
+                  {activeHomeName} - {historyPeriod}
                 </Text>
                 <Pressable
                   onPress={() =>
-                    handleDownloadReport(`Estancia Stiven (${historyPeriod})`)
+                    handleDownloadReport(`${activeHomeName} (${historyPeriod})`)
                   }
                   hitSlop={8}
                   style={[styles.exportBtn, { backgroundColor: theme.rowAlt }]}
@@ -376,8 +499,8 @@ export default function ReportsScreen() {
               </View>
 
               <Text style={[styles.deviceHistoryMeta, { color: theme.muted }]}>
-                Consumo acumulado registrado en el dispositivo de la estancia
-                Stiven.
+                Consumo incremental registrado en el hogar durante el período
+                seleccionado.
               </Text>
               <View
                 style={[
@@ -387,7 +510,7 @@ export default function ReportsScreen() {
               >
                 <Ionicons name="flash-outline" size={16} color={theme.blue} />
                 <Text style={[styles.deviceStatText, { color: theme.text }]}>
-                  0 Wh consumidos en este período
+                  {isLoading ? "Consultando consumo real…" : consumptionLabel}
                 </Text>
               </View>
             </View>

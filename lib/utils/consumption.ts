@@ -1,4 +1,4 @@
-import type { SmartDevice } from "@/lib/context/smart-home-context";
+import type { SmartDevice } from "@/lib/domain/device";
 
 export type ConsumptionGoalStatus = "within" | "warning" | "exceeded";
 

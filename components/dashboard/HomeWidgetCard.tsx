@@ -61,29 +61,34 @@ export function HomeWidgetCard({
       accessibilityRole="button"
       accessibilityLabel={`Abrir detalles del hogar ${name}`}
       style={({ pressed }) => [
-        styles.roomCard,
+        styles.homeCard,
         { backgroundColor: rowColor },
         pressed && styles.cardPressed,
       ]}
       onPress={onPress}
     >
       {/* Barra superior azul que sirve de cabecera visual para la tarjeta. */}
-      <View style={styles.roomStrip}>
-        <View style={styles.roomBadge}>
+      <View style={styles.homeStrip}>
+        <View style={styles.homeBadge}>
           {/* Icono fijo de puerta abierta para indicar que es un hogar. */}
           <MaterialCommunityIcons name="door-open" size={16} color={BLUE} />
-          <Text style={styles.roomBadgeText}>Hogar</Text>
+          <Text style={styles.homeBadgeText}>Hogar</Text>
         </View>
       </View>
 
       {/* Contenido principal de la tarjeta: nombre del hogar y consumo. */}
-      <View style={styles.roomBody}>
-        <Text numberOfLines={1} style={[styles.roomName, { color: textColor }]}> {name} </Text>
+      <View style={styles.homeBody}>
+        <Text numberOfLines={1} style={[styles.homeName, { color: textColor }]}>
+          {" "}
+          {name}{" "}
+        </Text>
 
         {/* Chip que muestra el consumo actual con icono y fondo destacado. */}
-        <View style={[styles.wattsPill, { backgroundColor: rowAltColor }]}> 
+        <View style={[styles.wattsPill, { backgroundColor: rowAltColor }]}>
           <Ionicons name="flash" size={19} color={BLUE} />
-          <Text style={[styles.wattsText, { color: textColor }]}>{consumption}</Text>
+          <Text style={[styles.wattsText, { color: textColor }]}>
+            {consumption}
+          </Text>
         </View>
       </View>
     </Pressable>
@@ -95,7 +100,7 @@ const styles = StyleSheet.create({
    * Estilo base de la tarjeta.
    * Incluye borde redondeado, ancho completo y límite de anchura.
    */
-  roomCard: {
+  homeCard: {
     borderRadius: 16,
     maxWidth: 332,
     overflow: "hidden",
@@ -111,7 +116,7 @@ const styles = StyleSheet.create({
   /**
    * Barra superior del card que crea contraste con la sección de contenido.
    */
-  roomStrip: {
+  homeStrip: {
     backgroundColor: BLUE,
     height: 82,
     justifyContent: "flex-start",
@@ -120,7 +125,7 @@ const styles = StyleSheet.create({
    * Insignia que muestra el texto "Hogar" dentro de la barra superior.
    * Se usa un fondo claro y bordes redondeados para resaltarlo.
    */
-  roomBadge: {
+  homeBadge: {
     alignItems: "center",
     alignSelf: "flex-start",
     backgroundColor: "#EEF4FF",
@@ -134,7 +139,7 @@ const styles = StyleSheet.create({
    * Texto dentro de la insignia "Hogar".
    * Usa el color azul del tema para armonizar con el diseño.
    */
-  roomBadgeText: {
+  homeBadgeText: {
     color: BLUE,
     fontFamily: appFont,
     fontSize: 12,
@@ -144,7 +149,7 @@ const styles = StyleSheet.create({
    * Contenedor del cuerpo principal de la tarjeta.
    * Centra su contenido y aplica relleno interno.
    */
-  roomBody: {
+  homeBody: {
     alignItems: "center",
     minHeight: 120,
     padding: 18,
@@ -153,7 +158,7 @@ const styles = StyleSheet.create({
    * Estilo del nombre del hogar.
    * Se limita a una sola línea para evitar desbordes largos.
    */
-  roomName: {
+  homeName: {
     fontFamily: appFont,
     fontSize: 18,
     fontWeight: "900",

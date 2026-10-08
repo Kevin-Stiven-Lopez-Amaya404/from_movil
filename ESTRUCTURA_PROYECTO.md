@@ -5,9 +5,9 @@
 Aplicación móvil desarrollada con **Expo Router** y **React Native** para gestionar hogares inteligentes, dispositivos asociados, reportes energéticos, perfil y configuración.
 
 **Versión:** 1.0.0  
-**Framework:** React Native 0.81.5  
-**Expo:** ~54.0.36  
-**TypeScript:** ~5.9.2
+**Framework:** React Native 0.86.3  
+**Expo:** ~57.0.21  
+**TypeScript:** ~6.0.3
 
 ---
 
@@ -180,28 +180,31 @@ from_movil/
 
 ### Dependencias Principales
 
-| Librería | Versión | Propósito |
-|----------|---------|----------|
-| **React** | 19.1.0 | Framework UI |
-| **React Native** | 0.81.5 | Framework móvil |
-| **Expo** | ~54.0.36 | Plataforma para React Native |
-| **Expo Router** | ~6.0.24 | Routing y navegación |
-| **TypeScript** | ~5.9.2 | Tipado estático |
-| **React Navigation** | ^7.1.8 | Navegación |
-| **React Native Reanimated** | ~4.1.1 | Animaciones |
-| **React Native Gesture Handler** | ~2.28.0 | Manejo de gestos |
+| Librería                         | Versión  | Propósito                     |
+| -------------------------------- | -------- | ----------------------------- |
+| **React**                        | 19.2.3   | Framework UI                  |
+| **React Native**                 | 0.86.3   | Framework móvil               |
+| **Expo**                         | ~57.0.21 | Plataforma para React Native  |
+| **Expo Router**                  | ~57.0.20 | Routing y navegación          |
+| **TypeScript**                   | ~6.0.3   | Tipado estático               |
+| **React Navigation**             | ^7.1.8   | Navegación                    |
+| **React Native Reanimated**      | 4.5.1    | Animaciones                   |
+| **React Native Gesture Handler** | ~2.32.0  | Manejo de gestos              |
+| **expo-secure-store**            | ~57.0.4  | Persistencia segura de sesión |
+| **socket.io-client**             | ^4.8.4   | Tiempo real autenticado       |
 
 ### DevDependencies
 
 - ESLint (~9.25.0) - Linting
-- Babel (~54.0.10) - Transpilación
-- TypeScript (~5.9.2) - Tipado
+- Babel preset Expo (~57.0.0) - Transpilación
+- TypeScript (~6.0.3) - Tipado
 
 ---
 
 ## 📱 Pantallas Principales
 
 ### Flujo de Autenticación
+
 1. **Welcome** - Pantalla de bienvenida
 2. **Login** - Inicio de sesión
 3. **Register** - Registro de nuevo usuario
@@ -210,6 +213,7 @@ from_movil/
 6. **New Password** - Establecer nueva contraseña
 
 ### Pantallas Principales (Con Pestañas)
+
 1. **Homes** - Gestión de hogares y dispositivos
 2. **Reports** - Reportes energéticos
 3. **Profile** - Perfil del usuario
@@ -258,21 +262,25 @@ npx tsc --noEmit
 ### Patrones de Componentes
 
 #### Componentes de Autenticación
+
 - Reutilizables en múltiples pantallas de auth
 - Incluyen validación integrada
 - Manejo de errores consistente
 
 #### Componentes del Dashboard
+
 - Tarjetas y widgets reutilizables
 - Soporte para estado vacío
 - Responsivos a diferentes tamaños
 
 #### Componentes de Perfil
+
 - Sistema modular
 - Tema personalizado
 - Estructurado en secciones
 
 #### Componentes UI
+
 - Controles reutilizables
 - Filtros y chips
 - Controles segmentados
@@ -314,6 +322,7 @@ La documentación completa se encuentra en la carpeta `docs/`:
 ## 🚀 Primeros Pasos
 
 1. **Instalar dependencias:**
+
    ```bash
    npm install
    ```
@@ -323,6 +332,7 @@ La documentación completa se encuentra en la carpeta `docs/`:
    - Actualizar con tus valores
 
 3. **Ejecutar en desarrollo:**
+
    ```bash
    npm run start
    ```
@@ -346,7 +356,6 @@ La documentación completa se encuentra en la carpeta `docs/`:
 ---
 
 **Última actualización:** 2024
-
 
 Archivos a modificar:
 components/dashboard/DashboardHeader.tsx (reescribir con tema)
@@ -372,4 +381,3 @@ components/dashboard/ActiveDevicesCard.tsx
 components/dashboard/ConsumptionChartCard.tsx
 
 components/dashboard/HomeSummaryCard.tsx
-

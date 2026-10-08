@@ -7,7 +7,7 @@ import {
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { BackButton } from "@/components/common/BackButton";
 import { getApiErrorMessage } from "@/lib/api/api-error";
-import { authenticateUser } from "@/lib/auth/auth-store";
+import { useAuthSession } from "@/lib/auth/auth-session-context";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { getAuthPalette } from "@/lib/theme/appearance";
@@ -20,6 +20,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login } = useAuthSession();
   const layout = useResponsiveLayout();
 
   const { accountActive, colorMode, setAccountActive, setSessionName, setSessionEmail, setSessionRole } =
@@ -130,13 +131,13 @@ export default function LoginScreen() {
     setSubmitting(true);
 
     try {
-      const user = await authenticateUser(cleanEmail, password);
+      const loggedUser = await login(cleanEmail, password);
 
       // ======================================
       // CREDENCIALES INCORRECTAS
       // ======================================
 
-      if (!user) {
+      if (!loggedUser) {
         Alert.alert(
           "No pudimos iniciar sesión",
           "Correo o contraseña incorrectos.",
@@ -149,9 +150,9 @@ export default function LoginScreen() {
       // LOGIN EXITOSO
       // ======================================
 
-      setSessionName(user.name.split(" ")[0] || user.name);
-      setSessionEmail(user.email);
-      setSessionRole(user.role ?? "miembro");
+      setSessionName(loggedUser.name.split(" ")[0] || loggedUser.name);
+      setSessionEmail(loggedUser.email);
+      setSessionRole(loggedUser.role ?? "miembro");
 
       // ======================================
       // IR AL DASHBOARD
@@ -698,3 +699,7 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
 });
+
+
+
+

@@ -1,0 +1,12 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Lint Smart Home",
+      "type": "shell",
+      "command": "npm run lint",
+      "isBackground": false,
+      "problemMatcher": ["$eslint"]
+    }
+  ]
+}

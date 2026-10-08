@@ -152,26 +152,6 @@ export default function DashboardScreen() {
                 </Text>
                 <View style={styles.brandLine} />
               </View>
-
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Abrir configuración"
-                onPress={() => router.push("/(tabs)/settings")}
-                style={({ pressed }) => [
-                  styles.settingsButton,
-                  {
-                    backgroundColor: theme.blue1,
-                    borderColor: theme.borderLight,
-                  },
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Ionicons
-                  name="settings-outline"
-                  size={23}
-                  color={theme.blue}
-                />
-              </Pressable>
             </View>
 
             <View style={styles.heroTitleBlock}>
@@ -350,14 +330,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginTop: 5,
-  },
-  settingsButton: {
-    alignItems: "center",
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 54,
-    justifyContent: "center",
-    width: 54,
   },
   identityRow: {
     alignItems: "center",
