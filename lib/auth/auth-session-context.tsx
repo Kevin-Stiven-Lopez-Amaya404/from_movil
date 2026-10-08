@@ -51,6 +51,48 @@ function toStoredSession(session: AuthSession): StoredSession {
   };
 }
 
+async function restoreStoredSession(
+  session: StoredSession | null,
+): Promise<StoredSession | null> {
+  if (!session || session.mode === "demo") {
+    return session;
+  }
+
+  const currentUser = await authService.getCurrentUser();
+
+  const currentId = currentUser.id ?? currentUser.userId;
+  const currentEmail = currentUser.email
+    ? normalizeEmail(currentUser.email)
+    : undefined;
+
+  const storedId = session.user.id;
+  const storedEmail = normalizeEmail(session.user.email);
+
+  if (
+    (currentId && storedId && currentId !== storedId) ||
+    (currentEmail && currentEmail !== storedEmail)
+  ) {
+    throw new Error("La sesión no corresponde al usuario almacenado.");
+  }
+
+  const validatedUser: AuthUser = {
+    ...session.user,
+    ...(currentId ? { id: currentId } : {}),
+    ...(currentEmail ? { email: currentEmail } : {}),
+    ...(currentUser.name ? { name: currentUser.name } : {}),
+    ...(currentUser.role ? { backendRole: currentUser.role } : {}),
+  };
+
+  const validatedSession: StoredSession = {
+    ...session,
+    user: validatedUser,
+  };
+
+  await saveSession(validatedSession);
+
+  return validatedSession;
+}
+
 export function AuthSessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -69,10 +111,12 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     const unsubscribe = subscribeToSessionChanges(applySession);
 
     void loadSession()
+      .then(restoreStoredSession)
       .then((session) => {
         applySession(session);
       })
-      .catch(() => {
+      .catch(async () => {
+        await clearSession();
         applySession(null);
       })
       .finally(() => {
