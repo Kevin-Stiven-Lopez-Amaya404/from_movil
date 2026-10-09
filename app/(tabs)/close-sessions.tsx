@@ -2,20 +2,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { profileFont } from "@/components/profile/profileTheme";
-import { authenticateUser } from "@/lib/auth/auth-store";
-import { useSmartHome } from "@/lib/context/smart-home-context";
+import { authService } from "@/lib/services/auth-service";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
@@ -23,52 +21,43 @@ export default function CloseSessionsScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  const { activeDevices, closeActiveDevices, sessionEmail } = useSmartHome();
-  const devices = activeDevices.slice(1);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState(false);
-  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
-
-  const allSelected =
-    devices.length > 0 && selectedIds.length === devices.length;
-
-  function toggleDevice(id: string) {
-    setSelectedIds((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : [...current, id],
-    );
-  }
-
-  function toggleAll() {
-    setSelectedIds(allSelected ? [] : devices.map((device) => device.id));
-  }
+  const [submitting, setSubmitting] = useState(false);
 
   function requestCloseSessions() {
-    if (selectedIds.length === 0) return;
-
-    setPassword("");
-    setPasswordError(false);
-    setPasswordModalVisible(true);
-  }
-
-  async function confirmCloseSessions() {
-    const authenticated = await authenticateUser(sessionEmail, password);
-
-    if (!authenticated) {
-      setPasswordError(true);
-      return;
-    }
-
-    setPasswordModalVisible(false);
-    closeActiveDevices(selectedIds);
+    if (submitting) return;
 
     Alert.alert(
-      "Sesiones cerradas",
-      `Se cerró la sesión en ${selectedIds.length} dispositivo${selectedIds.length === 1 ? "" : "s"}.`,
-      [{ text: "Aceptar", onPress: () => router.back() }],
+      "Cerrar todas las sesiones",
+      "Se solicitará al servidor cerrar todas las sesiones de tu cuenta. ¿Deseas continuar?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Confirmar",
+          style: "destructive",
+          onPress: () => void closeAllSessions(),
+        },
+      ],
     );
+  }
+
+  async function closeAllSessions() {
+    setSubmitting(true);
+
+    try {
+      await authService.logout(true);
+      Alert.alert(
+        "Solicitud confirmada",
+        "La solicitud de cierre global de sesiones fue procesada.",
+        [{ text: "Aceptar", onPress: () => router.replace("/login") }],
+      );
+    } catch {
+      Alert.alert(
+        "Cierre no confirmado",
+        "No se pudo confirmar el cierre global de sesiones. Intenta nuevamente.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -96,81 +85,32 @@ export default function CloseSessionsScreen() {
             </Pressable>
 
             <Text style={[styles.title, { color: theme.text }]}>
-              Cerrar sesión en dispositivos
+              Cerrar todas las sesiones
             </Text>
             <Text style={[styles.description, { color: theme.text }]}>
-              Se cerrará la sesión de tu cuenta en todos los dispositivos
-              seleccionados. Te ayudaremos a proteger tu cuenta si ves un inicio
-              de sesión que no reconoces.{" "}
-              <Text style={{ color: theme.blue, fontWeight: "800" }}>
-                Proteger cuenta
-              </Text>
-              .
+              Esta acción enviará al servidor una solicitud para cerrar todas
+              las sesiones activas de tu cuenta. No se seleccionan dispositivos
+              ni se verifica una contraseña localmente.
             </Text>
-
-            <View style={styles.selectionHeader}>
-              <Text style={[styles.selectionCount, { color: theme.text }]}>
-                {selectedIds.length} seleccionados
-              </Text>
-              <Pressable
-                onPress={toggleAll}
-                style={({ pressed }) => [pressed && styles.pressed]}
-              >
-                <Text style={[styles.selectAll, { color: theme.blue }]}>
-                  {allSelected ? "Deseleccionar todos" : "Seleccionar todos"}
-                </Text>
-              </Pressable>
-            </View>
 
             <View
               style={[
-                styles.card,
-                { backgroundColor: theme.card, borderColor: theme.borderLight },
+                styles.infoCard,
+                {
+                  backgroundColor: theme.rowAlt,
+                  borderColor: theme.borderLight,
+                },
               ]}
             >
-              {devices.map((device, index) => {
-                const selected = selectedIds.includes(device.id);
-                return (
-                  <Pressable
-                    key={device.id}
-                    onPress={() => toggleDevice(device.id)}
-                    style={({ pressed }) => [
-                      styles.deviceRow,
-                      index > 0 && styles.divider,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Ionicons
-                      name="phone-portrait-outline"
-                      size={31}
-                      color={theme.text}
-                    />
-                    <View style={styles.deviceCopy}>
-                      <Text style={[styles.deviceName, { color: theme.text }]}>
-                        {device.name}
-                      </Text>
-                      <Text style={[styles.deviceMeta, { color: theme.muted }]}>
-                        Neiva, Colombia · {device.lastAccess}
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.checkbox,
-                        {
-                          borderColor: selected ? theme.blue : theme.muted,
-                          backgroundColor: selected
-                            ? theme.blue
-                            : "transparent",
-                        },
-                      ]}
-                    >
-                      {selected ? (
-                        <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                      ) : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={25}
+                color={theme.blue}
+              />
+              <Text style={[styles.infoText, { color: theme.muted }]}>
+                El resultado depende de la confirmación del servicio de
+                autenticación.
+              </Text>
             </View>
           </View>
         </ScrollView>
@@ -185,86 +125,22 @@ export default function CloseSessionsScreen() {
           ]}
         >
           <Pressable
-            disabled={selectedIds.length === 0}
+            disabled={submitting}
             onPress={requestCloseSessions}
             style={({ pressed }) => [
               styles.submitButton,
-              {
-                backgroundColor:
-                  selectedIds.length > 0 ? theme.blue : theme.rowAlt,
-              },
+              { backgroundColor: theme.blue, opacity: submitting ? 0.7 : 1 },
               pressed && styles.pressed,
             ]}
           >
-            <Text
-              style={[
-                styles.submitText,
-                { color: selectedIds.length > 0 ? "#FFFFFF" : theme.muted },
-              ]}
-            >
-              Cerrar sesión
-            </Text>
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitText}>Cerrar todas las sesiones</Text>
+            )}
           </Pressable>
         </View>
       </View>
-
-      <Modal
-        animationType="slide"
-        transparent
-        visible={passwordModalVisible}
-        onRequestClose={() => setPasswordModalVisible(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
-              Confirma tu contraseña
-            </Text>
-            <Text style={[styles.modalDescription, { color: theme.muted }]}>
-              Escribe la contraseña del aplicativo para cerrar estas sesiones.
-            </Text>
-            <TextInput
-              autoCapitalize="none"
-              autoCorrect={false}
-              onChangeText={(value) => {
-                setPassword(value);
-                setPasswordError(false);
-              }}
-              placeholder="Contraseña"
-              placeholderTextColor={theme.muted}
-              secureTextEntry
-              style={[
-                styles.passwordInput,
-                {
-                  color: theme.text,
-                  borderColor: passwordError ? theme.danger : theme.borderLight,
-                },
-              ]}
-              value={password}
-            />
-            {passwordError ? (
-              <Text style={[styles.errorText, { color: theme.danger }]}>
-                La contraseña no es correcta.
-              </Text>
-            ) : null}
-            <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => setPasswordModalVisible(false)}
-                style={styles.modalButton}
-              >
-                <Text style={[styles.cancelText, { color: theme.muted }]}>
-                  Cancelar
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={confirmCloseSessions}
-                style={[styles.modalButton, { backgroundColor: theme.blue }]}
-              >
-                <Text style={styles.confirmText}>Confirmar</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -290,39 +166,20 @@ const styles = StyleSheet.create({
     lineHeight: 25,
     marginTop: 14,
   },
-  selectionHeader: {
+  infoCard: {
     alignItems: "center",
+    borderRadius: 18,
+    borderWidth: 1,
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 18,
-    marginTop: 42,
+    gap: 12,
+    marginTop: 28,
+    padding: 18,
   },
-  selectionCount: { fontFamily: profileFont, fontSize: 21, fontWeight: "800" },
-  selectAll: { fontFamily: profileFont, fontSize: 16, fontWeight: "800" },
-  card: { borderRadius: 22, borderWidth: 1, overflow: "hidden" },
-  deviceRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    minHeight: 116,
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-  },
-  divider: { borderTopColor: "rgba(148,163,184,0.25)", borderTopWidth: 1 },
-  deviceCopy: { flex: 1, marginHorizontal: 18 },
-  deviceName: { fontFamily: profileFont, fontSize: 17, fontWeight: "800" },
-  deviceMeta: {
+  infoText: {
+    flex: 1,
     fontFamily: profileFont,
     fontSize: 15,
     lineHeight: 22,
-    marginTop: 5,
-  },
-  checkbox: {
-    alignItems: "center",
-    borderRadius: 4,
-    borderWidth: 2,
-    height: 28,
-    justifyContent: "center",
-    width: 28,
   },
   footer: {
     borderTopWidth: 1,
@@ -339,48 +196,10 @@ const styles = StyleSheet.create({
     minHeight: 56,
     justifyContent: "center",
   },
-  submitText: { fontFamily: profileFont, fontSize: 17, fontWeight: "800" },
-  modalBackdrop: {
-    backgroundColor: "rgba(0,0,0,0.45)",
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  modalCard: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 22,
-  },
-  modalTitle: { fontFamily: profileFont, fontSize: 21, fontWeight: "900" },
-  modalDescription: {
-    fontFamily: profileFont,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 8,
-  },
-  passwordInput: {
-    borderRadius: 12,
-    borderWidth: 1,
-    fontFamily: profileFont,
-    fontSize: 16,
-    marginTop: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-  },
-  errorText: { fontFamily: profileFont, fontSize: 12, marginTop: 6 },
-  modalActions: { flexDirection: "row", gap: 10, marginTop: 18 },
-  modalButton: {
-    alignItems: "center",
-    borderRadius: 12,
-    flex: 1,
-    justifyContent: "center",
-    minHeight: 46,
-    paddingHorizontal: 12,
-  },
-  cancelText: { fontFamily: profileFont, fontSize: 14, fontWeight: "800" },
-  confirmText: {
+  submitText: {
     color: "#FFFFFF",
     fontFamily: profileFont,
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: "800",
   },
   pressed: { opacity: 0.7 },

@@ -23,8 +23,12 @@ export default function LoginScreen() {
   const { login } = useAuthSession();
   const layout = useResponsiveLayout();
 
-  const { accountActive, colorMode, setAccountActive, setSessionName, setSessionEmail, setSessionRole } =
-    useSmartHome();
+  const {
+    colorMode,
+    setSessionName,
+    setSessionEmail,
+    setSessionRole,
+  } = useSmartHome();
 
   const palette = getAuthPalette(colorMode);
 
@@ -88,29 +92,6 @@ export default function LoginScreen() {
     setSubmitted(true);
 
     if (submitting) {
-      return;
-    }
-
-    // ========================================
-    // CUENTA DESACTIVADA
-    // ========================================
-
-    if (!accountActive) {
-      Alert.alert(
-        "Cuenta desactivada",
-        "Esta cuenta fue desactivada. Puedes reactivarla para continuar en esta versión de prueba.",
-        [
-          {
-            text: "Cancelar",
-            style: "cancel",
-          },
-          {
-            text: "Reactivar",
-            onPress: () => setAccountActive(true),
-          },
-        ],
-      );
-
       return;
     }
 
@@ -320,6 +301,22 @@ export default function LoginScreen() {
           }}
           text="Iniciar sesión"
         />
+
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/request-reactivation",
+              params: { email: cleanEmail },
+            })
+          }
+          style={styles.reactivationLink}
+          accessibilityRole="link"
+          accessibilityLabel="Solicitar reactivación de cuenta"
+        >
+          <Text style={[styles.reactivationLinkText, { color: palette.link }]}>
+            ¿Tu cuenta está desactivada? Solicita reactivación
+          </Text>
+        </Pressable>
 
         {/* ==================================== */}
         {/* SEPARADOR                             */}
@@ -577,6 +574,18 @@ const styles = StyleSheet.create({
   forgotText: {
     fontSize: 14,
     fontWeight: "700",
+    textDecorationLine: "underline",
+  },
+
+  reactivationLink: {
+    alignSelf: "center",
+    paddingVertical: 4,
+  },
+
+  reactivationLinkText: {
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
     textDecorationLine: "underline",
   },
 

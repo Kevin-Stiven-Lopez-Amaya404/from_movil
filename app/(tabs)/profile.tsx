@@ -165,8 +165,19 @@ export default function ProfileScreen() {
         text: t("action.deactivate"),
         style: "destructive",
         onPress: () => {
-          deactivateAccount();
-          router.replace("/welcome");
+          void (async () => {
+            try {
+              await deactivateAccount();
+              router.replace("/welcome");
+            } catch (error) {
+              Alert.alert(
+                t("profile.deactivateAccount"),
+                error instanceof Error
+                  ? error.message
+                  : "No se pudo desactivar la cuenta. Inténtalo de nuevo.",
+              );
+            }
+          })();
         },
       },
     ]);

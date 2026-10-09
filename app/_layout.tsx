@@ -25,10 +25,11 @@ const PUBLIC_AUTH_SEGMENTS = new Set([
   "login",
   "register",
   "forgot-password",
-  "otp-verification",
+  "request-reactivation",
   "new-password",
   "reset-password",
   "activate-account",
+  "reactivate-account",
 ]);
 
 function RootNavigator({
@@ -44,6 +45,7 @@ function RootNavigator({
   const firstSegment = segments[0];
   const isTabsRoute = firstSegment === "(tabs)";
   const isRootRoute = !firstSegment || firstSegment === "index";
+  const isReactivationRoute = firstSegment === "reactivate-account";
   const isPublicAuthRoute =
     typeof firstSegment === "string" &&
     PUBLIC_AUTH_SEGMENTS.has(firstSegment);
@@ -61,13 +63,18 @@ function RootNavigator({
       return;
     }
 
-    if (isAuthenticated && isPublicAuthRoute) {
+    if (
+      isAuthenticated &&
+      isPublicAuthRoute &&
+      !isReactivationRoute
+    ) {
       router.replace("/(tabs)");
     }
   }, [
     isAuthenticated,
     isLoading,
     isPublicAuthRoute,
+    isReactivationRoute,
     isRootRoute,
     isTabsRoute,
     router,
@@ -87,13 +94,17 @@ function RootNavigator({
             options={{ headerShown: false }}
           />
           <Stack.Screen
-            name="otp-verification"
+            name="request-reactivation"
             options={{ headerShown: false }}
           />
           <Stack.Screen name="new-password" options={{ headerShown: false }} />
           <Stack.Screen name="reset-password" options={{ headerShown: false }} />
           <Stack.Screen
             name="activate-account"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="reactivate-account"
             options={{ headerShown: false }}
           />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

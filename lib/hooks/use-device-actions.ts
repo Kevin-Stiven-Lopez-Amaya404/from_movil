@@ -99,31 +99,6 @@ export function useDeviceActions({
     [devices, setHomeDeviceState],
   );
 
-  const setAllHomeDevicesState = useCallback(
-    async (homeId: string, state: DeviceState) => {
-      const home = homes.find((item) => item.id === homeId);
-
-      if (!canControlHome(home?.homeRole)) {
-        throw new Error(
-          home?.homeRole === "GUEST"
-            ? "Tu rol de invitado permite consultar, pero no controlar dispositivos."
-            : "No se pudo verificar tu rol en este hogar. Actualiza los hogares e inténtalo de nuevo.",
-        );
-      }
-
-      setDevices((items) =>
-        items.map((item) =>
-          item.homeId === homeId
-            ? { ...item, state, lastStateChange: getTimeStamp() }
-            : item,
-        ),
-      );
-
-      await smartHomeService.setAllHomeDevicesState(homeId, state);
-    },
-    [getTimeStamp, homes, setDevices],
-  );
-
   const removeDevice = useCallback(
     async (deviceId: string) => {
       const device = devices.find((item) => item.id === deviceId);
@@ -165,14 +140,12 @@ export function useDeviceActions({
       removeDevice,
       updateDevice,
       setHomeDeviceState,
-      setAllHomeDevicesState,
       toggleDevice,
     }),
     [
       removeDevice,
       updateDevice,
       setHomeDeviceState,
-      setAllHomeDevicesState,
       toggleDevice,
     ],
   );
