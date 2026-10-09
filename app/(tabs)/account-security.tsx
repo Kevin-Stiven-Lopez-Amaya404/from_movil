@@ -12,7 +12,7 @@ export default function AccountSecurityScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  const { activeDevices, devices, resolvedSmartAlerts } = useSmartHome();
+  const { devices, resolvedSmartAlerts } = useSmartHome();
 
   const pendingAlerts = devices.filter(
     (device) =>
@@ -83,7 +83,7 @@ export default function AccountSecurityScreen() {
           >
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push("/(tabs)/login-locations")}
+              onPress={() => router.push("/(tabs)/close-sessions")}
               style={({ pressed }) => [
                 styles.controlRow,
                 pressed && styles.pressed,
@@ -94,14 +94,12 @@ export default function AccountSecurityScreen() {
               </View>
               <View style={styles.rowContent}>
                 <Text style={[styles.controlTitle, { color: theme.text }]}>
-                  Dónde iniciaste sesión
+                  Sesiones de la cuenta
                 </Text>
                 <Text
                   style={[styles.controlDescription, { color: theme.muted }]}
                 >
-                  {activeDevices.length} dispositivo
-                  {activeDevices.length === 1 ? "" : "s"} con sesiones
-                  registradas
+                  Cerrar todas las sesiones de la cuenta
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={21} color={theme.muted} />

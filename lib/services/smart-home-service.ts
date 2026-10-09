@@ -10,10 +10,6 @@ import type {
   HomeRole,
   SmartHomePlace,
 } from "@/lib/domain/home";
-import type {
-  ReportPoint,
-  ReportRange,
-} from "@/lib/domain/report";
 
 export type CreateHomeRequest = {
   name: string;
@@ -143,12 +139,6 @@ export interface SmartHomeService {
     deviceId: string,
     token?: string,
   ): Promise<SmartDevice>;
-  setAllHomeDevicesState(
-    homeId: string,
-    state: "on" | "off",
-    token?: string,
-  ): Promise<SmartDevice[]>;
-  getReports(range: ReportRange, token?: string): Promise<ReportPoint[]>;
 }
 
 function createMockId(value: string) {
@@ -277,38 +267,6 @@ const mockDevices: SmartDevice[] = [
     yesterday: 50,
   },
 ];
-
-const mockReportData: Record<ReportRange, ReportPoint[]> = {
-  Diario: [
-    { label: "06", value: 2 },
-    { label: "09", value: 4 },
-    { label: "12", value: 6 },
-    { label: "15", value: 5 },
-    { label: "18", value: 8 },
-    { label: "21", value: 3 },
-  ],
-  Semana: [
-    { label: "Lun", value: 8 },
-    { label: "Mar", value: 10 },
-    { label: "Mie", value: 18 },
-    { label: "Jue", value: 13 },
-    { label: "Vie", value: 2 },
-    { label: "Sab", value: 9 },
-    { label: "Dom", value: 6 },
-  ],
-  Mes: [
-    { label: "S1", value: 34 },
-    { label: "S2", value: 41 },
-    { label: "S3", value: 29 },
-    { label: "S4", value: 37 },
-  ],
-  Rango: [
-    { label: "T1", value: 126 },
-    { label: "T2", value: 114 },
-    { label: "T3", value: 98 },
-    { label: "T4", value: 121 },
-  ],
-};
 
 const mockSmartHomeService: SmartHomeService = {
   async listHomes() {
@@ -480,27 +438,6 @@ const mockSmartHomeService: SmartHomeService = {
     return device;
   },
 
-  async setAllHomeDevicesState(homeId, state) {
-    const timestamp = getLocalTimestamp();
-    const updated: SmartDevice[] = [];
-
-    for (let i = 0; i < mockDevices.length; i++) {
-      if (mockDevices[i].homeId === homeId) {
-        mockDevices[i] = {
-          ...mockDevices[i],
-          state,
-          lastStateChange: timestamp,
-        };
-        updated.push(mockDevices[i]);
-      }
-    }
-
-    return updated;
-  },
-
-  async getReports(range) {
-    return mockReportData[range];
-  },
 };
 
 const backendSmartHomeService: SmartHomeService = {
@@ -654,24 +591,6 @@ const backendSmartHomeService: SmartHomeService = {
     return apiClient.delete<void>(
       `/api/v1/homes/${homeId}/devices/${deviceId}`,
       { token },
-    );
-  },
-
-  setAllHomeDevicesState(homeId, state, token) {
-    return Promise.reject(
-      new ApiError(
-        "El backend sólo permite controlar dispositivos individualmente.",
-        "UNKNOWN_ERROR",
-      ),
-    );
-  },
-
-  getReports() {
-    return Promise.reject(
-      new ApiError(
-        "El backend actual no expone un endpoint /reports; usa /consumption para los datos reales.",
-        "UNKNOWN_ERROR",
-      ),
     );
   },
 

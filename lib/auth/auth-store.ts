@@ -3,7 +3,9 @@ import {
   normalizeEmail,
   type AuthSession,
   type ChangePasswordRequest,
+  type ReactivateAccountResponse,
   type RegisterUserRequest,
+  type RequestAccountReactivationResponse,
 } from "@/lib/services/auth-service";
 
 export { normalizeEmail };
@@ -24,6 +26,18 @@ export async function authenticateUser(
 
 export async function activateUserAccount(token: string): Promise<void> {
   await authService.activateAccount(token);
+}
+
+export async function requestAccountReactivation(
+  email: string,
+): Promise<RequestAccountReactivationResponse> {
+  return authService.requestAccountReactivation(normalizeEmail(email));
+}
+
+export async function reactivateUserAccount(
+  token: string,
+): Promise<ReactivateAccountResponse> {
+  return authService.reactivateAccount(token);
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {

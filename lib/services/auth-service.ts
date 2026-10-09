@@ -72,6 +72,20 @@ export type ChangePasswordRequest = {
   newPasswordConfirmation: string;
 };
 
+export type DeactivateAccountResponse = {
+  message: string;
+  status: "DEACTIVATED";
+  deactivatedAt: string;
+};
+
+export type RequestAccountReactivationResponse = {
+  sent: boolean;
+};
+
+export type ReactivateAccountResponse = {
+  reactivated: boolean;
+};
+
 type InternalMockUser = AuthUser & {
   password: string;
 };
@@ -89,6 +103,11 @@ export interface AuthService {
   requestPasswordReset(email: string): Promise<void>;
   resetPassword(request: PasswordResetRequest): Promise<void>;
   changePassword(request: ChangePasswordRequest): Promise<void>;
+  deactivateAccount(): Promise<DeactivateAccountResponse>;
+  requestAccountReactivation(
+    email: string,
+  ): Promise<RequestAccountReactivationResponse>;
+  reactivateAccount(token: string): Promise<ReactivateAccountResponse>;
   logout(allSessions?: boolean): Promise<void>;
 }
 
@@ -192,6 +211,18 @@ const mockAuthService: AuthService = {
     throw backendUnavailable();
   },
 
+  async deactivateAccount() {
+    throw backendUnavailable();
+  },
+
+  async requestAccountReactivation(_email) {
+    throw backendUnavailable();
+  },
+
+  async reactivateAccount(_token) {
+    throw backendUnavailable();
+  },
+
   async logout() {
     await clearSession();
   },
@@ -291,6 +322,38 @@ const backendAuthService: AuthService = {
     await apiClient.patch<Record<string, unknown>, ChangePasswordRequest>(
       "/api/v1/auth/change-password",
       request,
+    );
+  },
+
+  async deactivateAccount() {
+    return apiClient.patch<
+      DeactivateAccountResponse,
+      { confirm: true }
+    >(
+      "/api/v1/users/me/deactivate",
+      { confirm: true },
+    );
+  },
+
+  async requestAccountReactivation(email) {
+    return apiClient.post<
+      RequestAccountReactivationResponse,
+      { email: string }
+    >(
+      "/api/v1/auth/request-reactivation",
+      { email: normalizeEmail(email) },
+      { skipAuthRefresh: true, skipAuthHeader: true },
+    );
+  },
+
+  async reactivateAccount(token) {
+    return apiClient.post<
+      ReactivateAccountResponse,
+      { token: string }
+    >(
+      "/api/v1/auth/reactivate",
+      { token },
+      { skipAuthRefresh: true, skipAuthHeader: true },
     );
   },
 

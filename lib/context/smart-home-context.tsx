@@ -18,7 +18,6 @@ import type {
   ReportRange,
 } from "@/lib/domain/report";
 import type {
-  ActiveDevice,
   UserRole,
 } from "@/lib/domain/session";
 import type {
@@ -27,8 +26,10 @@ import type {
   HomeRole,
   SmartHomePlace,
 } from "@/lib/domain/home";
+import { authService } from "@/lib/services/auth-service";
 import type { SmartNotification } from "@/lib/services/notifications-service";
 import { smartHomeService } from "@/lib/services/smart-home-service";
+import { clearSession } from "@/lib/session/session-store";
 import { useSessionLifecycle } from "@/lib/hooks/use-session-lifecycle";
 import { useHomeDataLoader } from "@/lib/hooks/use-home-data-loader";
 import { useDeviceActions } from "@/lib/hooks/use-device-actions";
@@ -37,7 +38,6 @@ import { useNotificationSync } from "@/lib/hooks/use-notification-sync";
 import { useRealtimeSync } from "@/lib/hooks/use-realtime-sync";
 
 export type {
-  ActiveDevice,
   AppLanguage,
   ColorMode,
   HomeInvitation,
@@ -58,7 +58,6 @@ export type {
  */
 type SmartHomeState = {
   activeHomeId: string;
-  activeDevices: ActiveDevice[];
   accountActive: boolean;
   colorMode: ColorMode;
   devices: SmartDevice[];
@@ -73,13 +72,11 @@ type SmartHomeState = {
   accessibleHomes: SmartHomePlace[];
   language: AppLanguage;
   reportData: Record<ReportRange, ReportPoint[]>;
-  resolvedAlerts: string[];
   resolvedSmartAlerts: string[];
   sessionName: string;
   offlineMode: boolean;
   lastSync: string;
-  deactivateAccount: () => void;
-  closeActiveDevices: (deviceIds: string[]) => void;
+  deactivateAccount: () => Promise<void>;
   removeDevice: (deviceId: string) => Promise<void>;
   updateDevice: (deviceId: string, updates: { name?: string }) => Promise<void>;
   addHome: (name: string) => Promise<void>;
@@ -93,10 +90,6 @@ type SmartHomeState = {
   setSessionRole: (role: UserRole) => void;
   setOfflineMode: (enabled: boolean) => void;
   setHomeDeviceState: (id: string, state: "on" | "off") => Promise<void>;
-  setAllHomeDevicesState: (
-    homeId: string,
-    state: "on" | "off",
-  ) => Promise<void>;
   inviteHomeMember: (
     homeId: string,
     email: string,
@@ -114,7 +107,6 @@ type SmartHomeState = {
   toggleDevice: (id: string) => Promise<void>;
   toggleHomeFavorite: (homeId: string) => void;
   setDeviceOnline: (id: string, online: boolean) => void;
-  resolveDeviceAlert: (id: string) => void;
   resolveSmartDeviceAlert: (id: string) => void;
   refreshSync: () => void;
   markNotificationAsRead: (notificationId: string) => Promise<void>;
@@ -267,27 +259,6 @@ const reportData: Record<ReportRange, ReportPoint[]> = {
   ],
 };
 
-const defaultActiveDevices: ActiveDevice[] = [
-  {
-    id: "phone",
-    name: "Movil (este dispositivo)",
-    lastAccess: "ahora",
-    verified: true,
-  },
-  {
-    id: "tablet-ana",
-    name: "Tablet de Ana",
-    lastAccess: "ayer, 18:27",
-    verified: true,
-  },
-  {
-    id: "tablet-guest",
-    name: "Tablet invitados",
-    lastAccess: "hace 3 dias",
-    verified: false,
-  },
-];
-
 const SmartHomeContext = createContext<SmartHomeState | null>(null);
 
 /**
@@ -345,7 +316,6 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     casa: 5000,
     oficina: 3000,
   });
-  const [activeDevices, setActiveDevices] = useState(defaultActiveDevices);
   const [accountActive, setAccountActive] = useState(true);
   const [colorMode, setColorMode] = useState<ColorMode>("light");
   const [language, setLanguage] = useState<AppLanguage>("es");
@@ -386,8 +356,6 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
   });
 
   // Alertas Smart Home ya resueltas por el usuario.
-  // Se mantiene separado de activeDevices porque ese estado pertenece
-  // a la seguridad/sesiones de la cuenta.
   const [resolvedSmartAlerts, setResolvedSmartAlerts] = useState<string[]>([]);
 
   const accessibleHomes = homes;
@@ -396,7 +364,6 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     removeDevice,
     updateDevice,
     setHomeDeviceState,
-    setAllHomeDevicesState,
     toggleDevice,
   } = useDeviceActions({
     devices,
@@ -436,7 +403,6 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
   const value = useMemo<SmartHomeState>(
     () => ({
       activeHomeId,
-      activeDevices,
       accountActive,
       colorMode,
       devices,
@@ -453,19 +419,13 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       lastSync,
       offlineMode,
       reportData,
-      resolvedAlerts: activeDevices
-        .filter((item) => item.verified)
-        .map((item) => item.id),
       resolvedSmartAlerts,
       sessionName,
-      deactivateAccount: () => {
+      deactivateAccount: async () => {
+        await authService.deactivateAccount();
         setAccountActive(false);
         setOfflineMode(false);
-      },
-      closeActiveDevices: (deviceIds) => {
-        setActiveDevices((items) =>
-          items.filter((item) => !deviceIds.includes(item.id)),
-        );
+        await clearSession();
       },
       removeDevice,
       updateDevice,
@@ -549,7 +509,6 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         );
       },
       setHomeDeviceState,
-      setAllHomeDevicesState,
       inviteHomeMember: async (homeId, email, role) => {
         const member = await smartHomeService.inviteHomeMember(
           homeId,
@@ -614,15 +573,6 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           [homeId]: [],
         }));
       },
-      // Marca una alerta/dispositivo activo como verificado.
-      resolveDeviceAlert: (id) => {
-        setActiveDevices((items) =>
-          items.map((item) =>
-            item.id === id ? { ...item, verified: true } : item,
-          ),
-        );
-      },
-
       // Resuelve una alerta de un dispositivo Smart Home.
       // La alerta queda registrada por su id para que la pantalla
       // de alertas pueda ocultarla sin modificar el dispositivo.
@@ -640,7 +590,6 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     }),
     [
       accountActive,
-      activeDevices,
       activeHomeId,
       colorMode,
       devices,
@@ -655,7 +604,9 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       removeDevice,
       sessionEmail,
       sessionRole,
-      setAllHomeDevicesState,
+      setSessionEmail,
+      setSessionName,
+      setSessionRole,
       setHomeDeviceState,
       accessibleHomes,
       language,
