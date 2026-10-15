@@ -1,8 +1,8 @@
 /**
- * Configuracion central para conectar backend.
+ * Configuracion central para conectar el backend real.
  *
- * En desarrollo local, una URL vacia permite usar servicios mock.
- * Una build de produccion nunca debe iniciar en modo demo por falta de API.
+ * La aplicacion no utiliza servicios mock ni modo demo.
+ * En produccion se exige una URL HTTPS publica y valida.
  */
 const configuredBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim() ?? "";
 const normalizedBaseUrl = configuredBaseUrl.replace(/\/+$/, "");
@@ -42,16 +42,3 @@ export const apiConfig = {
   baseUrl: normalizedBaseUrl,
   timeoutMs: 12000,
 };
-
-let demoModeEnabled = false;
-
-export let useMockApi = apiConfig.baseUrl.length === 0;
-
-export function isDemoModeEnabled(): boolean {
-  return demoModeEnabled;
-}
-
-export function setDemoModeEnabled(enabled: boolean): void {
-  demoModeEnabled = enabled;
-  useMockApi = apiConfig.baseUrl.length === 0 || demoModeEnabled;
-}

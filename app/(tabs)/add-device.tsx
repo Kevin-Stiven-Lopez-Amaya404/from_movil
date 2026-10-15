@@ -1,8 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useRouter } from "expo-router";
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,52 +9,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { isDemoModeEnabled } from "@/lib/config/api-config";
-import { unavailableBleAdapter } from "@/lib/pairing/ble-adapter";
-import { PairingError } from "@/lib/pairing/pairing-types";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
-import { pairingService } from "@/lib/services/pairing-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
 export default function AddDeviceScreen() {
   const router = useRouter();
   const theme = useAppTheme();
   const layout = useResponsiveLayout();
-  const demoMode = isDemoModeEnabled();
-  const { homeId } = useLocalSearchParams<{ homeId?: string }>();
-  const [loading, setLoading] = useState(false);
-
-  async function startPairing() {
-    if (demoMode) {
-      Alert.alert(
-        "Pairing no disponible en demo",
-        "La demo usa datos locales y no se conecta a dispositivos reales.",
-      );
-      return;
-    }
-
-    if (!homeId) {
-      Alert.alert(
-        "Hogar requerido",
-        "Selecciona un hogar antes de agregar un dispositivo.",
-      );
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await pairingService.createSession(homeId);
-      await unavailableBleAdapter.discover();
-    } catch (error) {
-      const message =
-        error instanceof PairingError
-          ? error.message
-          : "No se pudo iniciar el pairing. Intenta nuevamente.";
-      Alert.alert("Pairing no disponible", message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   return (
     <SafeAreaView
@@ -71,7 +30,13 @@ export default function AddDeviceScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(tabs)/devices");
+              }
+            }}
             style={({ pressed }) => [
               styles.backButton,
               { backgroundColor: theme.card, borderColor: theme.borderLight },
@@ -109,26 +74,23 @@ export default function AddDeviceScreen() {
               Buscar dispositivo cercano
             </Text>
             <Text style={[styles.cardText, { color: theme.muted }]}>
-              El móvil detectará el Shelly por BLE y enviará la configuración
-              localmente. Las credenciales Wi-Fi no se guardan en Smart Home.
+              La vinculación de dispositivos Shelly mediante Bluetooth
+              todavía no está disponible en esta versión.
             </Text>
             <Pressable
-              disabled={loading || demoMode}
-              onPress={() => void startPairing()}
-              style={({ pressed }) => [
+              disabled
+              accessibilityRole="button"
+              accessibilityState={{ disabled: true }}
+              accessibilityLabel="Vinculación Bluetooth no disponible"
+              style={[
                 styles.primaryButton,
                 { backgroundColor: theme.blue },
-                (loading || demoMode) && styles.disabled,
-                pressed && styles.pressed,
+                styles.disabled,
               ]}
             >
               <Ionicons name="bluetooth-outline" size={20} color="#FFFFFF" />
               <Text style={styles.primaryButtonText}>
-                {loading
-                  ? "Preparando..."
-                  : demoMode
-                    ? "Pairing no disponible en demo"
-                    : "Buscar Shelly cercano"}
+                Vinculación BLE no disponible
               </Text>
             </Pressable>
           </View>
@@ -140,8 +102,9 @@ export default function AddDeviceScreen() {
               color={theme.blue}
             />
             <Text style={[styles.infoText, { color: theme.muted }]}>
-              El pairing requiere un backend que exponga sesiones de vinculación
-              y una development build de Android con BLE nativo.
+              Esta función requiere completar la integración de vinculación con
+              el backend y el soporte BLE nativo en Android. Los dispositivos
+              ya registrados se gestionan desde el hogar.
             </Text>
           </View>
         </View>

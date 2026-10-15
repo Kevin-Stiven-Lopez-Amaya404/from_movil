@@ -76,9 +76,22 @@ export default function AlertsScreen() {
     });
 
   const homeConsumptionAlerts = accessibleHomes.flatMap((home) => {
-    const targetWh = homeConsumptionGoals[home.id] ?? 5000;
+    const targetWh = homeConsumptionGoals[home.id];
+
+    // No generar alertas si el hogar no tiene una meta configurada.
+    if (
+      targetWh === undefined ||
+      !Number.isFinite(targetWh) ||
+      targetWh <= 0
+    ) {
+      return [];
+    }
+
     const consumedWh = getHouseConsumption(devices, home.id);
-    const { percentage, status } = getConsumptionGoalProgress(consumedWh, targetWh);
+    const { percentage, status } = getConsumptionGoalProgress(
+      consumedWh,
+      targetWh,
+    );
 
     if (status === "within") return [];
 
@@ -103,7 +116,7 @@ export default function AlertsScreen() {
     setActiveHomeId(homeId);
 
     router.push({
-      pathname: "/(tabs)/homes",
+      pathname: "/(tabs)/home-detail",
       params: {
         homeId,
         deviceId,
@@ -113,7 +126,7 @@ export default function AlertsScreen() {
 
   function goToHomeConsumption(homeId: string) {
     setActiveHomeId(homeId);
-    router.push({ pathname: "/(tabs)/homes", params: { homeId } });
+    router.push({ pathname: "/(tabs)/home-detail", params: { homeId } });
   }
 
   return (
@@ -148,7 +161,13 @@ export default function AlertsScreen() {
 
           <View style={styles.header}>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/(tabs)");
+                }
+              }}
               style={({ pressed }) => [
                 styles.backButton,
                 {

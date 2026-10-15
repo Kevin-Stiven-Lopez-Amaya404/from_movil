@@ -75,7 +75,13 @@ export default function CloseSessionsScreen() {
         >
           <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/(tabs)/account-security");
+                }
+              }}
               style={({ pressed }) => [
                 styles.closeButton,
                 pressed && styles.pressed,

@@ -68,7 +68,7 @@ export default function DevicesScreen() {
     setActiveHomeId(homeId);
 
     router.push({
-      pathname: "/(tabs)/homes",
+      pathname: "/(tabs)/home-detail",
       params: { homeId },
     });
   }
@@ -124,7 +124,13 @@ export default function DevicesScreen() {
               accessibilityRole="button"
               accessibilityLabel="Volver"
               hitSlop={8}
-              onPress={() => router.back()}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/(tabs)");
+                }
+              }}
               style={({ pressed }) => [
                 styles.backButton,
                 {

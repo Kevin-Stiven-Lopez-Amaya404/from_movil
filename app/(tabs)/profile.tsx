@@ -158,6 +158,12 @@ export default function ProfileScreen() {
     ]);
   }
 
+  function showPending(title: string) {
+    Alert.alert(title, t("common.readyBackend"), [
+      { text: t("action.cancel") },
+    ]);
+  }
+
   function confirmDeactivation() {
     Alert.alert(t("profile.deactivateAccount"), t("profile.deactivatePrompt"), [
       { text: t("action.cancel"), style: "cancel" },
@@ -322,13 +328,6 @@ export default function ProfileScreen() {
               onPress={() => router.push("/(tabs)/language")}
               theme={theme}
             />
-            <Row
-              icon="notifications-outline"
-              title="Notificaciones"
-              description="Configura tus alertas"
-              onPress={() => router.push("/(tabs)/notifications")}
-              theme={theme}
-            />
           </Section>
 
           <Section icon="help-circle-outline" title="Ayuda" theme={theme}>
@@ -336,6 +335,12 @@ export default function ProfileScreen() {
               icon="help-circle-outline"
               title="Centro de ayuda"
               onPress={() => router.push("/(tabs)/help")}
+              theme={theme}
+            />
+            <Row
+              icon="alert-circle-outline"
+              title={t("profile.reportProblem")}
+              onPress={() => showPending(t("profile.reportProblem"))}
               theme={theme}
             />
             <Row

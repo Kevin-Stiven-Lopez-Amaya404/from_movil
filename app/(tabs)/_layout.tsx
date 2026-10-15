@@ -25,17 +25,18 @@ export default function TabLayout() {
       <Tabs.Screen name="index" options={{ title: "Inicio" }} />
       <Tabs.Screen name="homes" options={{ title: "Hogares" }} />
       <Tabs.Screen name="reports" options={{ title: "Energía" }} />
-      <Tabs.Screen name="alerts" options={{ title: "Alertas" }} />
+      <Tabs.Screen name="notifications" options={{ title: "Notificaciones" }} />
+      <Tabs.Screen name="alerts" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
       <Tabs.Screen name="personal-info" options={{ href: null }} />
       <Tabs.Screen name="account-security" options={{ href: null }} />
       <Tabs.Screen name="close-sessions" options={{ href: null }} />
+      <Tabs.Screen name="home-detail" options={{ href: null }} />
       <Tabs.Screen name="language" options={{ href: null }} />
       <Tabs.Screen name="change-password" options={{ href: null }} />
       <Tabs.Screen name="about-smart-home" options={{ href: null }} />
       <Tabs.Screen name="devices" options={{ href: null }} />
       <Tabs.Screen name="favorites" options={{ href: null }} />
-      <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="access" options={{ href: null }} />
       <Tabs.Screen name="help" options={{ href: null }} />
       <Tabs.Screen name="add-device" options={{ href: null }} />

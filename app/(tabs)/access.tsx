@@ -95,7 +95,13 @@ export default function AccessScreen() {
             menos uno de tus hogares.
           </Text>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(tabs)/homes");
+              }
+            }}
             style={[styles.primary, { backgroundColor: theme.blue }]}
           >
             <Text style={styles.primaryText}>Volver</Text>
@@ -118,7 +124,16 @@ export default function AccessScreen() {
         }}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <Pressable onPress={() => router.back()} style={styles.back}>
+          <Pressable
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(tabs)/homes");
+              }
+            }}
+            style={styles.back}
+          >
             <Ionicons name="chevron-back" size={22} color={theme.blue} />
             <Text style={[styles.backText, { color: theme.blue }]}>
               Hogares

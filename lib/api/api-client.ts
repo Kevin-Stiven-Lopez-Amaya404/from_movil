@@ -92,8 +92,6 @@ export class ApiClient {
       throw new ApiError("No hay URL de backend configurada.", "NETWORK_ERROR");
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), apiConfig.timeoutMs);
     const storedSession = options?.token ? null : await loadSession();
     const accessToken =
       options?.token ?? storedSession?.accessToken ?? getAccessToken();
@@ -103,6 +101,12 @@ export class ApiClient {
       path.startsWith(`${apiRootPrefix}/`)
         ? path.slice(apiRootPrefix.length)
         : path;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      apiConfig.timeoutMs,
+    );
 
     try {
       const response = await fetch(`${this.baseUrl}${requestPath}`, {
@@ -132,17 +136,35 @@ export class ApiClient {
         if (
           response.status === 401 &&
           !options?.skipAuthRefresh &&
-          path !== "/api/v1/auth/refresh"
+          !options?.skipAuthHeader &&
+          path !== "/api/v1/auth/refresh" &&
+          accessToken &&
+          getAccessToken() === accessToken
         ) {
           let nextSession;
+
           try {
-            nextSession = await refreshSession();
+            // Renovar exclusivamente la sesión que originó la petición.
+            nextSession = await refreshSession(accessToken);
           } catch (refreshError) {
-            await clearSession();
+            // Cerrar solo cuando el backend rechaza la renovación
+            // y el token original todavía corresponde a la sesión vigente.
+            if (
+              refreshError instanceof ApiError &&
+              refreshError.code === "UNAUTHORIZED" &&
+              getAccessToken() === accessToken
+            ) {
+              await clearSession();
+            }
+
+            // Los errores temporales de red o servidor no cierran la sesión.
             throw refreshError;
           }
 
-          if (nextSession) {
+          if (
+            nextSession &&
+            getAccessToken() === nextSession.accessToken
+          ) {
             return this.request<Response, Body>(method, path, {
               ...options,
               token: nextSession.accessToken,
@@ -150,7 +172,10 @@ export class ApiClient {
             });
           }
 
-          await clearSession();
+          // Una renovación descartada no demuestra que la sesión sea inválida.
+          // Si no fue posible renovar, se propagará el HTTP 401 original.
+          // El rechazo explícito de la renovación con HTTP 401 ya se
+          // gestiona en el bloque catch anterior.
         }
 
         const message =

@@ -36,10 +36,12 @@ class RealtimeService {
   private socket: Socket | null = null;
 
   connect(): void {
+    // Cerrar cualquier conexión anterior antes de evaluar la nueva sesión.
+    this.disconnect();
+
     const token = getAccessToken();
     if (!apiConfig.baseUrl || !token) return;
 
-    this.disconnect();
     const socketOrigin = apiConfig.baseUrl.replace(/\/api\/v1\/?$/, "");
     this.socket = io(`${socketOrigin}/realtime`, {
       auth: { token },
@@ -59,10 +61,13 @@ class RealtimeService {
     eventName: EventName,
     handler: EventHandler<EventName>,
   ): () => void {
+    const socket = this.socket;
     const socketHandler = handler as (...args: any[]) => void;
-    this.socket?.on(eventName as string, socketHandler);
+
+    socket?.on(eventName as string, socketHandler);
+
     return () => {
-      this.socket?.off(eventName as string, socketHandler);
+      socket?.off(eventName as string, socketHandler);
     };
   }
 }

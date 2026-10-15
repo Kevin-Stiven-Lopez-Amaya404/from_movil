@@ -32,6 +32,13 @@ const PUBLIC_AUTH_SEGMENTS = new Set([
   "reactivate-account",
 ]);
 
+const TOKEN_AUTH_SEGMENTS = new Set([
+  "new-password",
+  "reset-password",
+  "activate-account",
+  "reactivate-account",
+]);
+
 function RootNavigator({
   splashDone,
   onSplashFinish,
@@ -45,10 +52,12 @@ function RootNavigator({
   const firstSegment = segments[0];
   const isTabsRoute = firstSegment === "(tabs)";
   const isRootRoute = !firstSegment || firstSegment === "index";
-  const isReactivationRoute = firstSegment === "reactivate-account";
   const isPublicAuthRoute =
     typeof firstSegment === "string" &&
     PUBLIC_AUTH_SEGMENTS.has(firstSegment);
+  const isTokenAuthRoute =
+    typeof firstSegment === "string" &&
+    TOKEN_AUTH_SEGMENTS.has(firstSegment);
 
   useEffect(() => {
     if (!splashDone || isLoading) return;
@@ -66,7 +75,7 @@ function RootNavigator({
     if (
       isAuthenticated &&
       isPublicAuthRoute &&
-      !isReactivationRoute
+      !isTokenAuthRoute
     ) {
       router.replace("/(tabs)");
     }
@@ -74,7 +83,7 @@ function RootNavigator({
     isAuthenticated,
     isLoading,
     isPublicAuthRoute,
-    isReactivationRoute,
+    isTokenAuthRoute,
     isRootRoute,
     isTabsRoute,
     router,

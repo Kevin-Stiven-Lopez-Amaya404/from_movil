@@ -57,7 +57,13 @@ export default function HelpScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Volver"
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(tabs)/profile");
+              }
+            }}
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
           >
             <Ionicons name="chevron-back" size={22} color={theme.blue} />

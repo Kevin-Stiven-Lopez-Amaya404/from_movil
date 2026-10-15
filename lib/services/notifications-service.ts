@@ -1,5 +1,4 @@
 import { apiClient } from "@/lib/api/api-client";
-import { useMockApi } from "@/lib/config/api-config";
 
 export type NotificationStatus = "UNREAD" | "READ" | "DISMISSED";
 
@@ -33,38 +32,6 @@ export interface NotificationsService {
   ): Promise<SmartNotification>;
   markAllAsRead(token?: string): Promise<void>;
 }
-
-const mockNotifications: SmartNotification[] = [];
-
-const mockNotificationsService: NotificationsService = {
-  async list() {
-    return [...mockNotifications];
-  },
-  async unreadCount() {
-    return mockNotifications.filter((item) => item.status === "UNREAD").length;
-  },
-  async markAsRead(notificationId) {
-    const notification = mockNotifications.find(
-      (item) => item.id === notificationId,
-    );
-    if (!notification) throw new Error("Notificación no encontrada.");
-    notification.status = "READ";
-    return notification;
-  },
-  async dismiss(notificationId) {
-    const notification = mockNotifications.find(
-      (item) => item.id === notificationId,
-    );
-    if (!notification) throw new Error("Notificación no encontrada.");
-    notification.status = "DISMISSED";
-    return notification;
-  },
-  async markAllAsRead() {
-    mockNotifications.forEach((item) => {
-      item.status = "READ";
-    });
-  },
-};
 
 const backendNotificationsService: NotificationsService = {
   list({ status, limit, token } = {}) {
@@ -109,15 +76,4 @@ const backendNotificationsService: NotificationsService = {
   },
 };
 
-export const notificationsService: NotificationsService = new Proxy(
-  mockNotificationsService,
-  {
-    get(_target, property) {
-      const service = useMockApi
-        ? mockNotificationsService
-        : backendNotificationsService;
-      const value: unknown = Reflect.get(service, property, service);
-      return typeof value === "function" ? value.bind(service) : value;
-    },
-  },
-);
+export const notificationsService: NotificationsService = backendNotificationsService;

@@ -21,7 +21,7 @@ export default function FavoritesScreen() {
     setActiveHomeId(homeId);
 
     router.push({
-      pathname: "/(tabs)/homes",
+      pathname: "/(tabs)/home-detail",
       params: { homeId },
     });
   }
@@ -49,7 +49,13 @@ export default function FavoritesScreen() {
           {/* HEADER */}
           <View style={styles.header}>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/(tabs)");
+                }
+              }}
               accessibilityRole="button"
               accessibilityLabel="Volver"
               hitSlop={8}

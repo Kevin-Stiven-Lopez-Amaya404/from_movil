@@ -1,6 +1,5 @@
 import { apiClient } from "@/lib/api/api-client";
 import { ApiError } from "@/lib/api/api-error";
-import { useMockApi } from "@/lib/config/api-config";
 import type { UserRole } from "@/lib/domain/session";
 import {
     clearSession,
@@ -86,10 +85,6 @@ export type ReactivateAccountResponse = {
   reactivated: boolean;
 };
 
-type InternalMockUser = AuthUser & {
-  password: string;
-};
-
 export type RegisterResult =
   | { ok: true; reason: null; user: RegisteredUser }
   | { ok: false; reason: "email-exists" };
@@ -115,38 +110,6 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-const mockUsers: InternalMockUser[] = [
-  {
-    email: "admin@smarthome.com",
-    password: "1234",
-    name: "Admin",
-    role: "admin",
-  },
-  {
-    email: "pepe@smarthome.com",
-    password: "Smart123!",
-    name: "Pepe",
-    role: "miembro",
-  },
-  {
-    email: "miembro@smarthome.com",
-    password: "1234",
-    name: "Miembro Demo",
-    role: "miembro",
-  },
-  {
-    email: "invitado@smarthome.com",
-    password: "1234",
-    name: "Invitado Demo",
-    role: "invitado",
-  },
-];
-
-function withoutPassword(user: InternalMockUser): AuthUser {
-  const { password: _password, ...safeUser } = user;
-  return safeUser;
-}
-
 function normalizeBackendUser(user: AuthUser): AuthUser {
   return {
     id: user.id,
@@ -154,85 +117,6 @@ function normalizeBackendUser(user: AuthUser): AuthUser {
     name: user.name,
     backendRole: user.role,
   };
-}
-
-function backendUnavailable(): ApiError {
-  return new ApiError(
-    "Esta operación requiere conexión con el backend.",
-    "NETWORK_ERROR",
-  );
-}
-
-const mockAuthService: AuthService = {
-  async login({ email, password }) {
-    const cleanEmail = normalizeEmail(email);
-
-    const user = mockUsers.find((item) => item.email === cleanEmail);
-
-    if (!user || user.password !== password) {
-      return null;
-    }
-
-    return {
-      accessToken: "mock-session-token",
-      mode: "demo",
-      user: withoutPassword(user),
-    };
-  },
-
-  async register() {
-    throw new ApiError(
-      "No se puede crear una cuenta real sin conectar con el backend.",
-      "NETWORK_ERROR",
-    );
-  },
-
-  async getCurrentUser() {
-    throw backendUnavailable();
-  },
-
-  async activateAccount() {
-    throw backendUnavailable();
-  },
-
-  async resendActivation() {
-    throw backendUnavailable();
-  },
-
-  async requestPasswordReset() {
-    throw backendUnavailable();
-  },
-
-  async resetPassword() {
-    throw backendUnavailable();
-  },
-
-  async changePassword() {
-    throw backendUnavailable();
-  },
-
-  async deactivateAccount() {
-    throw backendUnavailable();
-  },
-
-  async requestAccountReactivation(_email) {
-    throw backendUnavailable();
-  },
-
-  async reactivateAccount(_token) {
-    throw backendUnavailable();
-  },
-
-  async logout() {
-    await clearSession();
-  },
-};
-
-export function loginDemoAccount(): Promise<AuthSession | null> {
-  return mockAuthService.login({
-    email: "pepe@smarthome.com",
-    password: "Smart123!",
-  });
 }
 
 const backendAuthService: AuthService = {
@@ -370,23 +254,12 @@ const backendAuthService: AuthService = {
   },
 };
 
-const mockAuthServiceWithLogout: AuthService = {
-  ...mockAuthService,
-  async logout() {
-    await clearSession();
-  },
-};
-
-export const authService: AuthService = new Proxy(mockAuthServiceWithLogout, {
-  get(_target, property) {
-    const service = useMockApi ? mockAuthServiceWithLogout : backendAuthService;
-    const value: unknown = Reflect.get(service, property, service);
-    return typeof value === "function" ? value.bind(service) : value;
-  },
-});
+export const authService: AuthService = backendAuthService;
 
 setSessionRefreshHandler(async (): Promise<StoredSession | null> => {
-  if (useMockApi) return null;
+  // Identificar la sesión antes de solicitar la renovación.
+  const originalSession = await loadSession();
+  if (!originalSession) return null;
 
   const response = await apiClient.post<{ accessToken?: string }>(
     "/api/v1/auth/refresh",
@@ -397,11 +270,15 @@ setSessionRefreshHandler(async (): Promise<StoredSession | null> => {
     },
   );
 
-  const currentSession = await loadSession();
-  if (!response.accessToken || !currentSession) return null;
+  // Comprobar que el usuario no haya cerrado o cambiado de sesión.
+  const activeSession = await loadSession();
+
+  if (!response.accessToken || activeSession !== originalSession) {
+    return null;
+  }
 
   return {
-    ...currentSession,
+    ...originalSession,
     accessToken: response.accessToken,
   };
 });

@@ -56,7 +56,13 @@ export default function LanguageScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(tabs)/profile");
+              }
+            }}
             style={({ pressed }) => [
               styles.backButton,
               { backgroundColor: theme.card, borderColor: theme.borderLight },
@@ -118,7 +124,11 @@ export default function LanguageScreen() {
                   accessibilityRole="button"
                   onPress={() => {
                     setLanguage(item.code);
-                    router.back();
+                    if (router.canGoBack()) {
+                      router.back();
+                    } else {
+                      router.replace("/(tabs)/profile");
+                    }
                   }}
                   style={({ pressed }) => [
                     styles.optionRow,
