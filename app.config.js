@@ -147,6 +147,7 @@ module.exports = () => {
     ...baseConfig,
     plugins: [
       ...(baseConfig.plugins ?? []),
+      ["@sfourdrinier/react-native-ble-plx", { neverForLocation: false }],
       "expo-sharing",
     ],
     platforms: ["ios", "android"],
