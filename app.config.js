@@ -145,6 +145,10 @@ module.exports = () => {
 
   return {
     ...baseConfig,
+    plugins: [
+      ...(baseConfig.plugins ?? []),
+      "expo-sharing",
+    ],
     platforms: ["ios", "android"],
     android,
     ios,

@@ -37,7 +37,13 @@ export default function AccountSecurityScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(tabs)/profile");
+              }
+            }}
             style={({ pressed }) => [
               styles.backButton,
               { backgroundColor: theme.card, borderColor: theme.borderLight },

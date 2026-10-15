@@ -17,66 +17,127 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useMockApi } from "@/lib/config/api-config";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
-import { consumptionService } from "@/lib/services/consumption-service";
+import {
+  consumptionService,
+  type HomeDailyConsumptionRecord,
+} from "@/lib/services/consumption-service";
+import {
+  loadDeviceConsumptionRanking,
+  type DeviceConsumptionRankingResult,
+} from "@/lib/services/device-consumption-ranking";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
+import { buildHomeConsumptionCsv } from "@/lib/utils/consumption-csv";
+import { buildHomeConsumptionPdfHtml } from "@/lib/utils/consumption-pdf";
+import { shareConsumptionCsv } from "@/lib/utils/share-consumption-csv";
+import { shareConsumptionPdf } from "@/lib/utils/share-consumption-pdf";
 
 type HistoryPeriod =
-  | "Últimas 24 horas"
-  | "Día"
   | "Últimos 7 días"
-  | "Semana"
   | "Últimos 30 días"
-  | "Mes";
+  | "Todo el historial";
 
 const HISTORY_PERIODS: HistoryPeriod[] = [
-  "Últimas 24 horas",
-  "Día",
   "Últimos 7 días",
-  "Semana",
   "Últimos 30 días",
-  "Mes",
+  "Todo el historial",
 ];
 
-const TIMESTAMPS_24H = [
-  "19:00",
-  "21:00",
-  "23:00",
-  "01:00",
-  "03:00",
-  "05:00",
-  "07:00",
-  "09:00",
-  "11:00",
-  "13:00",
-  "15:00",
-  "17:00",
-];
+function getConsumptionRange(period: HistoryPeriod) {
+  if (period === "Todo el historial") {
+    return undefined;
+  }
+
+  const now = new Date();
+  const days = period === "Últimos 7 días" ? 7 : 30;
+
+  const from = new Date(
+    now.getTime() - days * 24 * 60 * 60 * 1000,
+  );
+
+  return {
+    from: from.toISOString(),
+    to: now.toISOString(),
+  };
+}
 
 export default function ReportsScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
 
-  const { accessibleHomes, activeHomeId } = useSmartHome();
-  const activeHomeName =
-    accessibleHomes.find((home) => home.id === activeHomeId)?.name ?? "Hogar";
+  const {
+    accessibleHomes,
+    activeHomeId,
+    setActiveHomeId,
+  } = useSmartHome();
+  const selectedHome = accessibleHomes.find(
+    (home) => home.id === activeHomeId,
+  );
+
+  const activeHomeName = selectedHome?.name ?? "Hogar";
   const [realConsumptionKwh, setRealConsumptionKwh] =
   useState<number | null>(null);
+  const [realReadingsCount, setRealReadingsCount] = useState<number | null>(
+    null,
+  );
+  const [historyPeriod, setHistoryPeriod] =
+    useState<HistoryPeriod>("Últimos 7 días");
   const [dailySeries, setDailySeries] = useState<
     { label: string; value: number }[]
   >([]);
+  const [dailyRecords, setDailyRecords] = useState<
+    HomeDailyConsumptionRecord[]
+  >([]);
+  const [exportingCsv, setExportingCsv] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [homeSelectorOpen, setHomeSelectorOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loadedHomeId, setLoadedHomeId] = useState<string | null>(null);
+  const [loadedQueryKey, setLoadedQueryKey] = useState<symbol | null>(null);
+  const [rankingQueryState, setRankingQueryState] = useState<{
+    queryKey: symbol;
+    data: DeviceConsumptionRankingResult | null;
+    error: string | null;
+  } | null>(null);
 
-  const hasRealConsumptionSource = !useMockApi && Boolean(activeHomeId);
+  const hasRealConsumptionSource = Boolean(activeHomeId);
+  const consumptionQueryKey = useMemo(
+    () =>
+      activeHomeId
+        ? Symbol(`consumption-query:${activeHomeId}:${historyPeriod}`)
+        : null,
+    [activeHomeId, historyPeriod],
+  );
+  const consumptionRange = useMemo(
+    () =>
+      activeHomeId
+        ? getConsumptionRange(historyPeriod)
+        : undefined,
+    [activeHomeId, historyPeriod],
+  );
+
+  const visibleRankingState =
+    rankingQueryState?.queryKey === consumptionQueryKey
+      ? rankingQueryState
+      : null;
+
+  const isRankingLoading =
+    Boolean(activeHomeId) && !visibleRankingState;
+
+  const rankingItems = visibleRankingState?.data?.topDevices ?? [];
+
+  const rankingMaxKwh =
+    rankingItems[0]?.totalEnergyDeltaKwh ?? 0;
+
   const hasCurrentHomeData =
-    hasRealConsumptionSource && loadedHomeId === activeHomeId;
+    consumptionQueryKey !== null && loadedQueryKey === consumptionQueryKey;
 
   const visibleRealConsumptionKwh = hasCurrentHomeData
     ? realConsumptionKwh
+    : null;
+  const visibleReadingsCount = hasCurrentHomeData
+    ? realReadingsCount
     : null;
 
   const visibleDailySeries = useMemo(
@@ -84,103 +145,229 @@ export default function ReportsScreen() {
     [hasCurrentHomeData, dailySeries],);
   const visibleError = hasCurrentHomeData ? error : null;
   const isLoading = hasRealConsumptionSource && !hasCurrentHomeData;
+  const canExportCsv =
+    Boolean(selectedHome) &&
+    hasCurrentHomeData &&
+    !visibleError &&
+    dailyRecords.length > 0 &&
+    !exportingPdf &&
+    !exportingCsv;
+  const canExportPdf =
+    Boolean(selectedHome) &&
+    hasCurrentHomeData &&
+    !visibleError &&
+    realConsumptionKwh !== null &&
+    realReadingsCount !== null &&
+    Boolean(visibleRankingState?.data) &&
+    !exportingPdf &&
+    !exportingCsv;
 
   useEffect(() => {
-  const homeId = activeHomeId;
+    const homeId = activeHomeId;
 
-  if (useMockApi || !homeId) {
-    return;
-  }
+    if (!homeId || consumptionQueryKey === null) {
+      return;
+    }
 
-  let active = true;
+    let active = true;
 
-  Promise.all([
-    consumptionService.getHomeSummary(homeId),
-    consumptionService.getHomeDaily(homeId),
-  ])
-    .then(([summary, daily]) => {
-      if (!active) return;
+    const query = consumptionRange;
+    const requestKey = consumptionQueryKey;
 
-      setRealConsumptionKwh(summary.totalEnergyDeltaKwh);
+    Promise.all([
+      consumptionService.getHomeSummary(homeId, query),
+      consumptionService.getHomeDaily(homeId, query),
+    ])
+      .then(([summary, daily]) => {
+        if (!active) return;
 
-      const mappedSeries = [...daily]
-        .sort((a, b) => a.periodStart.localeCompare(b.periodStart))
-        .map((record) => {
-          const [year, month, day] = record.periodStart
-            .slice(0, 10)
-            .split("-")
-            .map(Number);
+        setRealConsumptionKwh(summary.totalEnergyDeltaKwh);
+        setRealReadingsCount(summary.readingsCount);
 
-          const date = new Date(year, month - 1, day);
+        const mappedSeries = [...daily]
+          .sort((a, b) =>
+            a.periodStart.localeCompare(b.periodStart),
+          )
+          .map((record) => {
+            const [year, month, day] = record.periodStart
+              .slice(0, 10)
+              .split("-")
+              .map(Number);
 
-          if (Number.isNaN(date.getTime())) {
-            return null;
-          }
+            const date = new Date(year, month - 1, day);
 
-          return {
-            label: date.toLocaleDateString("es-CO", {
-              day: "2-digit",
-              month: "short",
-            }),
-            value: record.totalEnergyDeltaKwh,
-          };
-        })
-        .filter(
-          (point): point is { label: string; value: number } => !!point,
-        );
+            if (Number.isNaN(date.getTime())) {
+              return null;
+            }
 
-      setDailySeries(mappedSeries.slice(-12));
-      setError(null);
-      setLoadedHomeId(homeId);
-    })
-    .catch(() => {
-      if (!active) return;
+            return {
+              label: date.toLocaleDateString("es-CO", {
+                day: "2-digit",
+                month: "short",
+              }),
+              value: record.totalEnergyDeltaKwh,
+            };
+          })
+          .filter(
+            (point): point is { label: string; value: number } =>
+              point !== null,
+          );
 
-      setRealConsumptionKwh(null);
-      setDailySeries([]);
-      setError("No se pudo cargar el consumo real del hogar.");
-      setLoadedHomeId(homeId);
-    });
+        setDailyRecords([...daily]);
+        setDailySeries(mappedSeries);
+        setError(null);
+        setLoadedQueryKey(requestKey);
+      })
+      .catch(() => {
+        if (!active) return;
 
-  return () => {
-    active = false;
-  };
-}, [activeHomeId]);
+        setRealConsumptionKwh(null);
+        setRealReadingsCount(null);
+        setDailySeries([]);
+        setDailyRecords([]);
+        setError("No se pudo cargar el consumo real del hogar.");
+        setLoadedQueryKey(requestKey);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    activeHomeId,
+    historyPeriod,
+    consumptionRange,
+    consumptionQueryKey,
+  ]);
+
+  useEffect(() => {
+    const homeId = activeHomeId;
+
+    if (!homeId || consumptionQueryKey === null) {
+      return;
+    }
+
+    let active = true;
+    const requestKey = consumptionQueryKey;
+    const query = consumptionRange;
+
+    loadDeviceConsumptionRanking(homeId, query)
+      .then((data) => {
+        if (!active) return;
+
+        setRankingQueryState({
+          queryKey: requestKey,
+          data,
+          error: null,
+        });
+      })
+      .catch(() => {
+        if (!active) return;
+
+        setRankingQueryState({
+          queryKey: requestKey,
+          data: null,
+          error:
+            "No se pudo consultar el consumo de los dispositivos.",
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    activeHomeId,
+    historyPeriod,
+    consumptionRange,
+    consumptionQueryKey,
+  ]);
 
 
   const consumptionLabel =
-    visibleRealConsumptionKwh !== null
-      ? `${(visibleRealConsumptionKwh * 1000).toFixed(0)} Wh consumidos en este período`
-      : useMockApi
-        ? "Conecta el backend para consultar datos reales"
-        : "Datos no disponibles para este período";
+    visibleError
+      ? "No fue posible consultar el consumo"
+      : visibleReadingsCount === 0
+        ? "Sin mediciones registradas"
+        : visibleReadingsCount !== null &&
+            visibleReadingsCount > 0 &&
+            visibleRealConsumptionKwh !== null
+          ? `${(visibleRealConsumptionKwh * 1000).toFixed(2)} Wh registrados`
+          : "Datos de consumo no disponibles";
 
-  const chartPoints = useMemo(() => {
-    if (visibleDailySeries.length > 0) return visibleDailySeries;
-    return TIMESTAMPS_24H.map((label) => ({ label, value: 0 }));
-  }, [visibleDailySeries]);
+  const chartPoints = visibleDailySeries.filter(
+    (point) => Number.isFinite(point.value) && point.value >= 0,
+  );
+
+  const chartMaxKwh = chartPoints.reduce(
+    (max, point) => Math.max(max, point.value),
+    0,
+  );
 
   // Estados de la pestaña "Historia"
-  const [historyPeriod, setHistoryPeriod] =
-    useState<HistoryPeriod>("Últimas 24 horas");
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [dateRangeIndex, setDateRangeIndex] = useState(0);
 
-  const dateRanges = [
-    "Período actual",
-    "Últimos 7 días",
-    "Últimos 30 días",
-    "Período anterior",
-  ];
-  const currentDateRange =
-    dateRanges[Math.abs(dateRangeIndex) % dateRanges.length];
+  async function handleExportCsv(): Promise<void> {
+    if (!canExportCsv || !selectedHome) {
+      return;
+    }
 
-  function handleDownloadReport(title: string) {
-    Alert.alert(
-      "Exportación no disponible",
-      `La exportación de ${title} aún no está publicada en el backend actual. El frontend solo muestra datos del período disponible en la API actual.`,
-      [{ text: "Entendido" }],
-    );
+    setExportingCsv(true);
+
+    try {
+      const csvContent = buildHomeConsumptionCsv({
+        homeName: selectedHome.name,
+        periodLabel: historyPeriod,
+        records: dailyRecords,
+      });
+
+      await shareConsumptionCsv(csvContent);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "No se pudo generar el informe de consumo.";
+
+      Alert.alert("Error al exportar", message);
+    } finally {
+      setExportingCsv(false);
+    }
+  }
+
+  async function handleExportPdf(): Promise<void> {
+    const rankingData = visibleRankingState?.data;
+
+    if (
+      !canExportPdf ||
+      !selectedHome ||
+      realConsumptionKwh === null ||
+      realReadingsCount === null ||
+      !rankingData
+    ) {
+      return;
+    }
+
+    setExportingPdf(true);
+
+    try {
+      const html = buildHomeConsumptionPdfHtml({
+        homeName: selectedHome.name,
+        periodLabel: historyPeriod,
+        totalEnergyDeltaKwh: realConsumptionKwh,
+        readingsCount: realReadingsCount,
+        records: [...dailyRecords],
+        ranking: rankingData,
+      });
+
+      await shareConsumptionPdf(html);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "No se pudo generar el informe PDF.";
+
+      Alert.alert("Error al exportar PDF", message);
+    } finally {
+      setExportingPdf(false);
+    }
   }
 
   return (
@@ -207,20 +394,119 @@ export default function ReportsScreen() {
               Energía
             </Text>
             <Pressable
-              onPress={() =>
-                Alert.alert(
-                  "Hogar Activo",
-                  `Gestionando: ${accessibleHomes.find((h) => h.id === activeHomeId)?.name ?? "Casa"}`,
-                )
-              }
-              style={[
-                styles.headerIconBtnDark,
-                { backgroundColor: theme.rowAlt },
-              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Seleccionar hogar. Actual: ${selectedHome?.name ?? "ninguno"}`}
+              accessibilityState={{
+                disabled: accessibleHomes.length === 0,
+                expanded: homeSelectorOpen,
+              }}
+              disabled={accessibleHomes.length === 0}
+              onPress={() => setHomeSelectorOpen((open) => !open)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                maxWidth: "65%",
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderRadius: 12,
+                backgroundColor: theme.rowAlt,
+                opacity: accessibleHomes.length === 0 ? 0.5 : 1,
+              }}
             >
-              <Ionicons name="home" size={16} color={theme.text} />
+              <Ionicons
+                name="home-outline"
+                size={17}
+                color={theme.text}
+              />
+
+              <Text
+                numberOfLines={1}
+                style={{
+                  flexShrink: 1,
+                  color: theme.text,
+                  fontSize: 13,
+                  fontWeight: "600",
+                }}
+              >
+                {selectedHome?.name ?? "Sin hogar"}
+              </Text>
+
+              <Ionicons
+                name={homeSelectorOpen ? "chevron-up" : "chevron-down"}
+                size={15}
+                color={theme.muted}
+              />
             </Pressable>
           </View>
+
+          {homeSelectorOpen && (
+            <View
+              style={{
+                width: "100%",
+                padding: 4,
+                marginBottom: 16,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: theme.borderLight,
+                backgroundColor: theme.card,
+              }}
+            >
+              {accessibleHomes.map((home) => {
+                const isSelected = home.id === activeHomeId;
+
+                return (
+                  <Pressable
+                    key={home.id}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                    onPress={() => {
+                      if (!isSelected) {
+                        // Invalidar la información anterior antes
+                        // de cambiar el hogar seleccionado.
+                        setLoadedQueryKey(null);
+                        setRankingQueryState(null);
+                        setActiveHomeId(home.id);
+                      }
+
+                      setHomeSelectorOpen(false);
+                    }}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      paddingHorizontal: 12,
+                      paddingVertical: 12,
+                      borderRadius: 9,
+                      backgroundColor: isSelected
+                        ? theme.rowAlt
+                        : "transparent",
+                    }}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        flex: 1,
+                        color: theme.text,
+                        fontSize: 14,
+                        fontWeight: isSelected ? "600" : "400",
+                      }}
+                    >
+                      {home.name}
+                    </Text>
+
+                    {isSelected && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={19}
+                        color={theme.blue}
+                      />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
 
           {/* ============================================================ */}
           {/* PESTAÑA 1: HISTORIA (IMÁGENES 2 Y 3)                         */}
@@ -283,7 +569,17 @@ export default function ReportsScreen() {
                       <Pressable
                         key={period}
                         onPress={() => {
-                          setHistoryPeriod(period);
+                          if (period !== historyPeriod) {
+                            // Invalidar el resumen y el historial anteriores.
+                            setLoadedQueryKey(null);
+
+                            // Invalidar el ranking anterior.
+                            setRankingQueryState(null);
+
+                            // Activar el nuevo periodo.
+                            setHistoryPeriod(period);
+                          }
+
                           setDropdownOpen(false);
                         }}
                         style={[
@@ -305,43 +601,9 @@ export default function ReportsScreen() {
                 </View>
               )}
 
-              {/* Navegador de Rango de Fechas (< 09.09.2026 - 10.09.2026 >) - Imagen 3 */}
-              <View
-                style={[
-                  styles.dateNavigator,
-                  {
-                    backgroundColor: theme.dark ? "#0E1829" : theme.rowAlt,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <Pressable
-                  onPress={() => setDateRangeIndex((prev) => prev - 1)}
-                  hitSlop={8}
-                  style={styles.dateNavArrow}
-                >
-                  <Ionicons name="chevron-back" size={18} color={theme.text} />
-                </Pressable>
-
-                <Text style={[styles.dateNavText, { color: theme.text }]}>
-                  {currentDateRange}
-                </Text>
-
-                <Pressable
-                  onPress={() => setDateRangeIndex((prev) => prev + 1)}
-                  hitSlop={8}
-                  style={styles.dateNavArrow}
-                >
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={theme.text}
-                  />
-                </Pressable>
-              </View>
             </View>
 
-            {/* Tarjeta: "Energía Total - Últimas 24 horas" (Imagen 3) */}
+            {/* Gráfica de consumo diario registrado */}
             <View
               style={[
                 styles.cardContainer,
@@ -353,107 +615,271 @@ export default function ReportsScreen() {
             >
               <View style={styles.chartCardHeader}>
                 <Text style={[styles.chartCardTitle, { color: theme.text }]}>
-                  Energía Total - {historyPeriod}
+                  Consumo diario registrado
                 </Text>
                 <Pressable
-                  onPress={() =>
-                    handleDownloadReport(`Energía Total (${historyPeriod})`)
-                  }
-                  hitSlop={8}
-                  style={[styles.exportBtn, { backgroundColor: theme.rowAlt }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Exportar informe de consumo en CSV"
+                  accessibilityState={{ disabled: !canExportCsv }}
+                  disabled={!canExportCsv}
+                  onPress={() => void handleExportCsv()}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    paddingHorizontal: 10,
+                    paddingVertical: 8,
+                    borderRadius: 10,
+                    backgroundColor: theme.rowAlt,
+                    opacity: canExportCsv ? 1 : 0.45,
+                  }}
                 >
                   <Ionicons
                     name="download-outline"
-                    size={18}
+                    size={17}
                     color={theme.text}
                   />
+                  <Text style={{ color: theme.text, fontSize: 12 }}>
+                    {exportingCsv ? "Preparando..." : "Exportar CSV"}
+                  </Text>
                 </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Exportar informe de consumo en PDF"
+                  accessibilityState={{ disabled: !canExportPdf }}
+                  disabled={!canExportPdf}
+                  onPress={() => void handleExportPdf()}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    paddingHorizontal: 10,
+                    paddingVertical: 8,
+                    borderRadius: 10,
+                    backgroundColor: theme.rowAlt,
+                    opacity: canExportPdf ? 1 : 0.45,
+                  }}
+                >
+                  <Ionicons
+                    name="document-text-outline"
+                    size={17}
+                    color={theme.text}
+                  />
+                  <Text
+                    style={{
+                      color: theme.text,
+                      fontSize: 12,
+                    }}
+                  >
+                    {exportingPdf ? "Preparando..." : "Exportar PDF"}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View
+                style={[
+                  styles.cardContainer,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <Text style={[styles.cardTitle, { color: theme.text }]}>
+                  Mayor consumo por dispositivo
+                </Text>
+
+                <Text
+                  style={{
+                    color: theme.muted,
+                    fontSize: 12,
+                    marginTop: 4,
+                    marginBottom: 16,
+                  }}
+                >
+                  Hasta 5 dispositivos · {historyPeriod}
+                </Text>
+
+                {!activeHomeId ? (
+                  <Text style={{ color: theme.muted }}>
+                    Selecciona un hogar para consultar su consumo.
+                  </Text>
+                ) : isRankingLoading ? (
+                  <Text style={{ color: theme.muted }}>
+                    Consultando el consumo de los dispositivos...
+                  </Text>
+                ) : visibleRankingState?.error ? (
+                  <Text style={{ color: theme.danger }}>
+                    {visibleRankingState.error}
+                  </Text>
+                ) : rankingItems.length === 0 ? (
+                  <Text style={{ color: theme.muted }}>
+                    {visibleRankingState?.data?.deviceCount === 0
+                      ? "Este hogar no tiene dispositivos activos."
+                      : visibleRankingState?.data?.measuredDeviceCount === 0
+                        ? "No hay mediciones de dispositivos en este periodo."
+                        : "No hay consumo positivo registrado en este periodo."}
+                  </Text>
+                ) : (
+                  rankingItems.map((device, index) => {
+                    const percentage =
+                      rankingMaxKwh > 0
+                        ? (device.totalEnergyDeltaKwh / rankingMaxKwh) * 100
+                        : 0;
+
+                    return (
+                      <View
+                        key={device.deviceId}
+                        style={{
+                          marginBottom:
+                            index === rankingItems.length - 1 ? 0 : 16,
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            marginBottom: 8,
+                          }}
+                        >
+                          <Text
+                            numberOfLines={1}
+                            style={{
+                              flex: 1,
+                              color: theme.text,
+                              fontSize: 13,
+                              fontWeight: "500",
+                            }}
+                          >
+                            {index + 1}. {device.deviceName}
+                          </Text>
+
+                          <Text
+                            style={{
+                              color: theme.text,
+                              fontSize: 13,
+                              fontWeight: "600",
+                            }}
+                          >
+                            {device.totalEnergyDeltaKwh.toLocaleString(
+                              "es-CO",
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 3,
+                              },
+                            )}{" "}
+                            kWh
+                          </Text>
+                        </View>
+
+                        <View
+                          style={{
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: theme.rowAlt,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <View
+                            style={{
+                              height: "100%",
+                              width: `${percentage}%` as `${number}%`,
+                              borderRadius: 3,
+                              backgroundColor: theme.blue,
+                            }}
+                          />
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
               </View>
 
               {/* Área de la Gráfica */}
               <View style={styles.chartArea}>
-                {isLoading ? (
-                  <Text style={[styles.noDataOverlayText, { color: theme.muted }]}>
-                    Cargando consumo real…
+                {!activeHomeId ? (
+                  <Text style={[styles.chartEmptyText, { color: theme.muted }]}>
+                    Selecciona un hogar para consultar su consumo.
+                  </Text>
+                ) : isLoading ? (
+                  <Text style={[styles.chartEmptyText, { color: theme.muted }]}>
+                    Cargando consumo registrado...
                   </Text>
                 ) : visibleError ? (
-                  <Text style={[styles.noDataOverlayText, { color: theme.muted }]}>
+                  <Text style={[styles.chartEmptyText, { color: theme.danger }]}>
                     {visibleError}
                   </Text>
+                ) : chartPoints.length === 0 ? (
+                  <Text style={[styles.chartEmptyText, { color: theme.muted }]}>
+                    {visibleReadingsCount === 0
+                      ? "Aún no hay mediciones registradas."
+                      : "No hay registros diarios disponibles para graficar."}
+                  </Text>
                 ) : (
-                  <>
-                    {/* Ejes Y de referencia (1 Wh, 0.5 Wh, 0 Wh) */}
-                    <View style={styles.yAxisRow}>
-                      <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                        1 Wh
-                      </Text>
-                      <View
-                        style={[
-                          styles.gridLine,
-                          { backgroundColor: theme.borderLight },
-                        ]}
-                      />
-                    </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.energyBarsRow}
+                  >
+                    {chartPoints.map((point, index) => {
+                      const barHeight =
+                        chartMaxKwh > 0 && point.value > 0
+                          ? Math.max(
+                              3,
+                              Math.round((point.value / chartMaxKwh) * 120),
+                            )
+                          : 0;
 
-                    <View style={styles.yAxisRow}>
-                      <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                        0.5 Wh
-                      </Text>
-                      <View
-                        style={[
-                          styles.gridLine,
-                          { backgroundColor: theme.borderLight },
-                        ]}
-                      >
-                        {visibleRealConsumptionKwh === null ? (
+                      const energyLabel =
+                        point.value >= 1
+                          ? `${point.value.toFixed(2)} kWh`
+                          : `${(point.value * 1000).toFixed(2)} Wh`;
+
+                      return (
+                        <View
+                          key={`${point.label}-${index}`}
+                          style={styles.energyBarColumn}
+                        >
                           <Text
                             style={[
-                              styles.noDataOverlayText,
-                              { color: theme.muted },
+                              styles.energyValueLabel,
+                              { color: theme.text },
                             ]}
                           >
-                            {useMockApi
-                              ? "Conecta el backend para consultar datos"
-                              : "¡Datos no disponibles!"}
+                            {energyLabel}
                           </Text>
-                        ) : null}
-                      </View>
-                    </View>
 
-                    <View style={styles.yAxisRow}>
-                      <Text style={[styles.axisLabel, { color: theme.muted }]}>
-                        0 Wh
-                      </Text>
-                      <View
-                        style={[
-                          styles.gridLine,
-                          { backgroundColor: theme.borderLight },
-                        ]}
-                      />
-                    </View>
-
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.xAxisTimestamps}
-                    >
-                      {chartPoints.map((point) => (
-                        <View key={`${point.label}-${point.value}`} style={styles.timestampCol}>
                           <View
                             style={[
-                              styles.timestampTick,
-                              { backgroundColor: theme.borderLight },
+                              styles.energyBarTrack,
+                              { borderBottomColor: theme.borderLight },
                             ]}
-                          />
+                          >
+                            <View
+                              style={[
+                                styles.energyBar,
+                                {
+                                  height: barHeight,
+                                  backgroundColor: theme.blue,
+                                },
+                              ]}
+                            />
+                          </View>
+
                           <Text
-                            style={[styles.timestampText, { color: theme.muted }]}
+                            style={[
+                              styles.energyDayLabel,
+                              { color: theme.muted },
+                            ]}
                           >
                             {point.label}
                           </Text>
                         </View>
-                      ))}
-                    </ScrollView>
-                  </>
+                      );
+                    })}
+                  </ScrollView>
                 )}
               </View>
 
@@ -475,26 +901,13 @@ export default function ReportsScreen() {
             >
               <View style={styles.chartCardHeader}>
                 <Text style={[styles.chartCardTitle, { color: theme.text }]}>
-                  {activeHomeName} - {historyPeriod}
+                  Consumo registrado del hogar
                 </Text>
-                <Pressable
-                  onPress={() =>
-                    handleDownloadReport(`${activeHomeName} (${historyPeriod})`)
-                  }
-                  hitSlop={8}
-                  style={[styles.exportBtn, { backgroundColor: theme.rowAlt }]}
-                >
-                  <Ionicons
-                    name="download-outline"
-                    size={18}
-                    color={theme.text}
-                  />
-                </Pressable>
               </View>
 
               <Text style={[styles.deviceHistoryMeta, { color: theme.muted }]}>
-                Consumo incremental registrado en el hogar durante el período
-                seleccionado.
+                Consumo energético de los dispositivos monitoreados de{" "}
+                {activeHomeName} durante el período seleccionado.
               </Text>
               <View
                 style={[
@@ -633,6 +1046,47 @@ const styles = StyleSheet.create({
   },
   chartArea: {
     paddingVertical: 14,
+  },
+  chartEmptyText: {
+    fontSize: 13,
+    textAlign: "center",
+    paddingVertical: 48,
+    fontFamily: typography.fontFamily.regular,
+  },
+  energyBarsRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  energyBarColumn: {
+    minWidth: 94,
+    alignItems: "center",
+  },
+  energyValueLabel: {
+    fontSize: 10,
+    textAlign: "center",
+    marginBottom: 8,
+    fontFamily: typography.fontFamily.emphasis,
+  },
+  energyBarTrack: {
+    height: 128,
+    width: 64,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    borderBottomWidth: 1,
+  },
+  energyBar: {
+    width: 32,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+  },
+  energyDayLabel: {
+    marginTop: 10,
+    fontSize: 11,
+    textAlign: "center",
+    fontFamily: typography.fontFamily.regular,
   },
   yAxisRow: {
     flexDirection: "row",

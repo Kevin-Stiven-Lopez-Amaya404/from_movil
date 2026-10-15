@@ -1,26 +1,14 @@
 import { useEffect, useState } from "react";
 
-import { useMockApi } from "@/lib/config/api-config";
 import type { UserRole } from "@/lib/domain/session";
 import {
   loadSession,
   subscribeToSessionChanges,
 } from "@/lib/session/session-store";
 
-type UseSessionLifecycleOptions = {
-  onDemoSession: () => void;
-};
-
-export function useSessionLifecycle({
-  onDemoSession,
-}: UseSessionLifecycleOptions) {
-  const [sessionName, setSessionName] = useState(
-    useMockApi ? "Pepe" : "",
-  );
-
-  const [sessionEmail, setSessionEmail] = useState(
-    useMockApi ? "pepe@smarthome.com" : "",
-  );
+export function useSessionLifecycle() {
+  const [sessionName, setSessionName] = useState("");
+  const [sessionEmail, setSessionEmail] = useState("");
 
   const [sessionRole, setSessionRole] =
     useState<UserRole>("miembro");
@@ -38,16 +26,8 @@ export function useSessionLifecycle({
         return;
       }
 
-      if (session.mode === "demo") {
-        setSessionName(
-          session.user.name.split(" ")[0] || session.user.name,
-        );
-        setSessionEmail(session.user.email);
-        setSessionRole(session.user.role ?? "miembro");
-        onDemoSession();
-      }
     });
-  }, [onDemoSession]);
+  }, []);
 
   useEffect(() => {
     let active = true;

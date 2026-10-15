@@ -16,8 +16,11 @@ import {
 } from "@/lib/services/auth-service";
 import {
   clearSession,
+  clearSessionIfUnchanged,
+  getSessionMutationVersion,
   loadSession,
   saveSession,
+  saveSessionIfUnchanged,
   subscribeToSessionChanges,
   type StoredSession,
 } from "@/lib/session/session-store";
@@ -53,9 +56,14 @@ function toStoredSession(session: AuthSession): StoredSession {
 
 async function restoreStoredSession(
   session: StoredSession | null,
+  expectedVersion: number,
 ): Promise<StoredSession | null> {
-  if (!session || session.mode === "demo") {
-    return session;
+  if (!session) return null;
+
+  // Una sesion demo antigua nunca debe restaurarse.
+  if (session.mode === "demo") {
+    await clearSessionIfUnchanged(expectedVersion);
+    return null;
   }
 
   const currentUser = await authService.getCurrentUser();
@@ -88,9 +96,12 @@ async function restoreStoredSession(
     user: validatedUser,
   };
 
-  await saveSession(validatedSession);
+  const saved = await saveSessionIfUnchanged(
+    validatedSession,
+    expectedVersion,
+  );
 
-  return validatedSession;
+  return saved ? validatedSession : null;
 }
 
 export function AuthSessionProvider({ children }: { children: ReactNode }) {
@@ -110,14 +121,29 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 
     const unsubscribe = subscribeToSessionChanges(applySession);
 
+    const restorationVersion = getSessionMutationVersion();
+
     void loadSession()
-      .then(restoreStoredSession)
       .then((session) => {
-        applySession(session);
+        // No restaurar si comenzo otro cambio de sesion.
+        if (getSessionMutationVersion() !== restorationVersion) {
+          return null;
+        }
+
+        return restoreStoredSession(session, restorationVersion);
+      })
+      .then((session) => {
+        // Evitar que una respuesta antigua actualice la interfaz.
+        // Si la restauracion guardo la sesion, el listener
+        // ya recibio y aplico esa actualizacion.
+        if (getSessionMutationVersion() === restorationVersion) {
+          applySession(session);
+        }
       })
       .catch(async () => {
-        await clearSession();
-        applySession(null);
+        // No cerrar una sesion nueva por un error antiguo.
+        // El listener se encarga de actualizar la interfaz.
+        await clearSessionIfUnchanged(restorationVersion);
       })
       .finally(() => {
         if (mounted) setIsLoading(false);

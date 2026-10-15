@@ -13,6 +13,21 @@ export type ConsumptionRangeQuery = {
 
 export type HomeConsumptionSummaryResponse = {
   totalEnergyDeltaKwh: number;
+  readingsCount: number;
+};
+
+export type DeviceConsumptionSummaryResponse = {
+  homeId: string;
+  deviceId: string;
+  from: string | null;
+  to: string | null;
+  readingsCount: number;
+  totalEnergyDeltaKwh: number;
+  latestEnergyTotalKwh: number | null;
+  averagePowerW: number | null;
+  maxPowerW: number | null;
+  minPowerW: number | null;
+  latestReadAt: string | null;
 };
 
 export type HomeDailyConsumptionRecord = {
@@ -80,10 +95,10 @@ export const consumptionService = {
   getDeviceSummary(
     homeId: string,
     deviceId: string,
-    query?: ConsumptionQuery,
+    query?: ConsumptionRangeQuery,
     token?: string,
   ) {
-    return apiClient.get<ConsumptionRecord>(
+    return apiClient.get<DeviceConsumptionSummaryResponse>(
       `/api/v1/homes/${homeId}/devices/${deviceId}/consumption/summary${queryString(query)}`,
       { token },
     );

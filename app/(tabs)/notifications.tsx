@@ -5,11 +5,25 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { profileFont } from "@/components/profile/profileTheme";
-import { useMockApi } from "@/lib/config/api-config";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import type { NotificationStatus } from "@/lib/services/notifications-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import {
+  getConsumptionGoalProgress,
+  getHouseConsumption,
+} from "@/lib/utils/consumption";
+import { formatEnergy } from "@/lib/utils/formatters";
+
+type ActiveAlert = {
+  id: string;
+  homeId: string;
+  deviceId?: string;
+  title: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  tone: "critical" | "warning" | "info";
+};
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -19,75 +33,35 @@ export default function NotificationsScreen() {
   const {
     devices,
     resolvedSmartAlerts,
+    homes,
+    accessibleHomes,
+    homeConsumptionGoals,
+    setActiveHomeId,
     notifications: remoteNotifications,
     markNotificationAsRead,
     dismissNotification,
     markAllNotificationsAsRead,
   } = useSmartHome();
 
-  const demoNotifications = [
-    {
-      id: "welcome",
-      title: "Bienvenido a Smart Home",
-      description: "Tu hogar está listo para gestionar dispositivos y alertas.",
-      time: "Hace 1 min",
-      icon: "sparkles-outline" as const,
-      tone: "info" as const,
-      status: "UNREAD" as const,
-    },
-    ...devices
-      .filter(
-        (device) =>
-          (device.critical || !device.online) &&
-          !resolvedSmartAlerts.includes(device.id),
-      )
-      .map((device) => ({
-        id: `device-${device.id}`,
-        title: device.critical
-          ? `${device.name} requiere atención`
-          : `${device.name} está desconectado`,
-        description: device.critical
-          ? "El dispositivo está marcado como crítico y necesita revisión."
-          : "La conexión con el dispositivo se ha perdido.",
-        time: "Ahora",
-        icon: device.critical
-          ? "alert-circle-outline"
-          : "cloud-offline-outline",
-        tone: device.critical ? "warning" : "danger",
-        status: "UNREAD" as const,
-      })),
-    {
-      id: "summary",
-      title: "Resumen del día",
-      description: "Revisa el consumo y el estado general de tus hogares.",
-      time: "Hace 2 h",
-      icon: "stats-chart-outline" as const,
-      tone: "success" as const,
-      status: "READ" as const,
-    },
-  ];
-
-  const notifications = useMockApi
-    ? demoNotifications
-    : remoteNotifications.map((item) => ({
-        id: item.id,
-        title: item.title ?? item.type ?? "Notificación",
-        description: item.message ?? item.description ?? "",
-        time: item.createdAt
-          ? new Date(item.createdAt).toLocaleString()
-          : "Ahora",
-        icon:
-          item.type === "ALERT" || item.priority === "alta"
-            ? ("alert-circle-outline" as const)
-            : ("notifications-outline" as const),
-        tone:
-          item.priority === "alta" || item.type === "ALERT"
-            ? ("danger" as const)
-            : item.status === "UNREAD"
-              ? ("warning" as const)
-              : ("info" as const),
-        status: item.status,
-      }));
+  const notifications = remoteNotifications.map((item) => ({
+    id: item.id,
+    title: item.title ?? item.type ?? "Notificación",
+    description: item.message ?? item.description ?? "",
+    time: item.createdAt
+      ? new Date(item.createdAt).toLocaleString()
+      : "Ahora",
+    icon:
+      item.type === "ALERT" || item.priority === "alta"
+        ? ("alert-circle-outline" as const)
+        : ("notifications-outline" as const),
+    tone:
+      item.priority === "alta" || item.type === "ALERT"
+        ? ("danger" as const)
+        : item.status === "UNREAD"
+          ? ("warning" as const)
+          : ("info" as const),
+    status: item.status,
+  }));
 
   const visibleNotifications = useMemo(() => {
     if (filter === "ALL") return notifications;
@@ -102,9 +76,109 @@ export default function NotificationsScreen() {
   };
 
   const filterOptions: {
-  key: NotificationStatus | "ALL";
-  label: string;
-  }[] = [];
+    key: NotificationStatus | "ALL";
+    label: string;
+  }[] = [
+    { key: "ALL", label: "Todas" },
+    { key: "UNREAD", label: "No leídas" },
+    { key: "READ", label: "Leídas" },
+  ];
+
+  const accessibleHomeIds = new Set(accessibleHomes.map((home) => home.id));
+  const visibleDevices = devices.filter((device) =>
+    accessibleHomeIds.has(device.homeId),
+  );
+
+  const deviceAlerts: ActiveAlert[] = visibleDevices
+    .filter(
+      (device) =>
+        (device.critical || !device.online) &&
+        !resolvedSmartAlerts.includes(device.id),
+    )
+    .map((device) => {
+      const home = homes.find((item) => item.id === device.homeId);
+
+      if (device.critical) {
+        return {
+          id: `${device.id}-critical`,
+          deviceId: device.id,
+          homeId: device.homeId,
+          title: `${device.name} requiere atención`,
+          description: `El dispositivo está marcado como crítico en ${
+            home?.name ?? "tu hogar"
+          }.`,
+          icon: "warning-outline",
+          tone: "critical",
+        };
+      }
+
+      return {
+        id: `${device.id}-offline`,
+        deviceId: device.id,
+        homeId: device.homeId,
+        title: `${device.name} está desconectado`,
+        description: `No se ha detectado conexión con el dispositivo en ${
+          home?.name ?? "tu hogar"
+        }.`,
+        icon: "cloud-offline-outline",
+        tone: "info",
+      };
+    });
+
+  const homeConsumptionAlerts: ActiveAlert[] = accessibleHomes.flatMap(
+    (home) => {
+      const targetWh = homeConsumptionGoals[home.id];
+
+      // No generar alertas si el hogar no tiene una meta configurada.
+      if (
+        targetWh === undefined ||
+        !Number.isFinite(targetWh) ||
+        targetWh <= 0
+      ) {
+        return [];
+      }
+
+      const consumedWh = getHouseConsumption(devices, home.id);
+      const { percentage, status } = getConsumptionGoalProgress(
+        consumedWh,
+        targetWh,
+      );
+
+      if (status === "within") return [];
+
+      return [
+        {
+          id: `${home.id}-consumption-goal`,
+          homeId: home.id,
+          title:
+            status === "exceeded"
+              ? `Meta superada en ${home.name}`
+              : `Consumo cercano a la meta en ${home.name}`,
+          description: `${formatEnergy(consumedWh)} de ${formatEnergy(
+            targetWh,
+          )} · ${Math.round(percentage)}%`,
+          icon:
+            status === "exceeded"
+              ? "alert-circle-outline"
+              : "warning-outline",
+          tone: status === "exceeded" ? "critical" : "warning",
+        },
+      ];
+    },
+  );
+
+  const activeAlerts = [...deviceAlerts, ...homeConsumptionAlerts];
+
+  function openAlert(alert: ActiveAlert) {
+    setActiveHomeId(alert.homeId);
+    router.push({
+      pathname: "/(tabs)/home-detail",
+      params: {
+        homeId: alert.homeId,
+        ...(alert.deviceId ? { deviceId: alert.deviceId } : {}),
+      },
+    });
+  }
 
   return (
     <SafeAreaView
@@ -119,18 +193,6 @@ export default function NotificationsScreen() {
         }}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.backButton,
-              { backgroundColor: theme.card, borderColor: theme.borderLight },
-              pressed && styles.pressed,
-            ]}
-          >
-            <Ionicons name="chevron-back" size={17} color={theme.blue} />
-            <Text style={[styles.backText, { color: theme.blue }]}>Volver</Text>
-          </Pressable>
-
           <View style={styles.header}>
             <View
               style={[
@@ -155,7 +217,90 @@ export default function NotificationsScreen() {
                 Todo lo relevante de la app
               </Text>
             </View>
-            {!useMockApi && remoteNotifications.length > 0 ? (
+          </View>
+
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Alertas activas
+            </Text>
+            {activeAlerts.length === 0 ? (
+              <View
+                style={[
+                  styles.activeAlertEmpty,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <Text style={[styles.emptyState, { color: theme.muted }]}>
+                  No hay alertas activas
+                </Text>
+              </View>
+            ) : (
+              activeAlerts.map((alert) => {
+                const alertColor =
+                  alert.tone === "critical"
+                    ? theme.danger
+                    : alert.tone === "warning"
+                      ? "#D97706"
+                      : theme.blue;
+
+                return (
+                  <Pressable
+                    key={alert.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Revisar ${alert.title}`}
+                    onPress={() => openAlert(alert)}
+                    style={({ pressed }) => [
+                      styles.activeAlertCard,
+                      {
+                        backgroundColor: theme.card,
+                        borderColor: theme.borderLight,
+                      },
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.notificationIcon,
+                        { backgroundColor: `${alertColor}1A` },
+                      ]}
+                    >
+                      <Ionicons
+                        name={alert.icon}
+                        size={20}
+                        color={alertColor}
+                      />
+                    </View>
+                    <View style={styles.notificationCopy}>
+                      <Text
+                        style={[styles.notificationTitle, { color: theme.text }]}
+                      >
+                        {alert.title}
+                      </Text>
+                      <Text
+                        style={[styles.notificationText, { color: theme.muted }]}
+                      >
+                        {alert.description}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={19}
+                      color={theme.muted}
+                    />
+                  </Pressable>
+                );
+              })
+            )}
+          </View>
+
+          <View style={styles.historyHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Historial de notificaciones
+            </Text>
+            {remoteNotifications.length > 0 ? (
               <Pressable
                 onPress={() => void markAllNotificationsAsRead()}
                 style={({ pressed }) => [
@@ -171,35 +316,33 @@ export default function NotificationsScreen() {
             ) : null}
           </View>
 
-          {!useMockApi ? (
-            <View style={[styles.filtersRow, { gap: 8 }]}>
-              {filterOptions.map((option) => {
-                const selected = filter === option.key;
-                return (
-                  <Pressable
-                    key={option.key}
-                    onPress={() => setFilter(option.key)}
+          <View style={[styles.filtersRow, { gap: 8 }]}>
+            {filterOptions.map((option) => {
+              const selected = filter === option.key;
+              return (
+                <Pressable
+                  key={option.key}
+                  onPress={() => setFilter(option.key)}
+                  style={[
+                    styles.filterChip,
+                    {
+                      backgroundColor: selected ? theme.rowAlt : theme.card,
+                      borderColor: selected ? theme.blue : theme.borderLight,
+                    },
+                  ]}
+                >
+                  <Text
                     style={[
-                      styles.filterChip,
-                      {
-                        backgroundColor: selected ? theme.rowAlt : theme.card,
-                        borderColor: selected ? theme.blue : theme.borderLight,
-                      },
+                      styles.filterText,
+                      { color: selected ? theme.blue : theme.muted },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.filterText,
-                        { color: selected ? theme.blue : theme.muted },
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : null}
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
           <View
             style={[
@@ -215,11 +358,7 @@ export default function NotificationsScreen() {
               visibleNotifications.map((item) => (
                 <View key={item.id} style={styles.notificationRow}>
                   <Pressable
-                    onPress={
-                      useMockApi
-                        ? undefined
-                        : () => void markNotificationAsRead(item.id)
-                    }
+                    onPress={() => void markNotificationAsRead(item.id)}
                     style={({ pressed }) => [
                       styles.notificationContent,
                       pressed && styles.pressed,
@@ -254,19 +393,17 @@ export default function NotificationsScreen() {
                     </Text>
                   </Pressable>
 
-                  {!useMockApi ? (
-                    <Pressable
-                      onPress={() => void dismissNotification(item.id)}
-                      style={({ pressed }) => [
-                        styles.dismissButton,
-                        { borderColor: theme.borderLight },
-                        pressed && styles.pressed,
-                      ]}
-                      accessibilityLabel={`Descartar notificación ${item.title}`}
-                    >
-                      <Ionicons name="trash-outline" size={15} color={theme.muted} />
-                    </Pressable>
-                  ) : null}
+                  <Pressable
+                    onPress={() => void dismissNotification(item.id)}
+                    style={({ pressed }) => [
+                      styles.dismissButton,
+                      { borderColor: theme.borderLight },
+                      pressed && styles.pressed,
+                    ]}
+                    accessibilityLabel={`Descartar notificación ${item.title}`}
+                  >
+                    <Ionicons name="trash-outline" size={15} color={theme.muted} />
+                  </Pressable>
                 </View>
               ))
             )}
@@ -280,22 +417,6 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   content: { alignSelf: "center", width: "100%" },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    marginBottom: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  backText: {
-    fontFamily: profileFont,
-    fontSize: 13,
-    fontWeight: "800",
-    marginLeft: 6,
-  },
   header: {
     alignItems: "center",
     flexDirection: "row",
@@ -320,11 +441,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
+  section: { marginTop: 24 },
+  sectionTitle: {
+    fontFamily: profileFont,
+    fontSize: 18,
+    fontWeight: "900",
+    marginBottom: 12,
+  },
+  historyHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 24,
+  },
   card: {
     borderRadius: 18,
     borderWidth: 1,
     overflow: "hidden",
     paddingVertical: 6,
+  },
+  activeAlertCard: {
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    marginBottom: 10,
+    padding: 14,
+  },
+  activeAlertEmpty: {
+    borderRadius: 18,
+    borderWidth: 1,
   },
   notificationRow: {
     alignItems: "center",

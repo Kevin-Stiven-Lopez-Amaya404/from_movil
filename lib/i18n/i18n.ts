@@ -55,7 +55,7 @@ const dictionaries = {
 
     "profile.audit": "Auditoría",
     "profile.auditBody":
-      "Último acceso: hoy\nAlertas pendientes: {alerts}\nDispositivos activos: {devices}\nModo sin conexión: {offline}",
+      "Alertas pendientes: {alerts}\nDispositivos activos: {devices}",
     "profile.auditDescription":
       "Consulta actividad reciente y eventos de seguridad.",
 
@@ -83,14 +83,8 @@ const dictionaries = {
     "profile.manageHomes": "Administrar hogares",
     "profile.messageCenter": "Centro de mensajes",
 
-    "profile.offline": "Modo sin conexión",
-    "profile.offlineDescription":
-      "Conserva datos recientes y pausa sincronizaciones externas.",
-    "profile.offlineOffText": "La app sincronizará cuando haya conexión.",
-    "profile.offlineOnText": "La app usará datos guardados.",
-
     "profile.preferences": "Preferencias",
-    "profile.preferencesSubtitle": "Idioma y comportamiento de sincronización.",
+    "profile.preferencesSubtitle": "Idioma y preferencias de la aplicación.",
 
     "profile.restoreData": "Restauración de datos",
     "profile.restoreDataAction": "Restaurar datos",
@@ -129,7 +123,7 @@ const dictionaries = {
     "settings.pendingBody":
       "Apartado preparado para conectar con el backend cuando esté disponible.",
 
-    "settings.reportProblem": "Reportar un problema",
+    "profile.reportProblem": "Reportar un problema",
     "settings.reportProblemDescription":
       "Informa errores o problemas de la aplicación.",
 
@@ -193,7 +187,7 @@ const dictionaries = {
 
     "profile.audit": "Audit",
     "profile.auditBody":
-      "Last access: today\nPending alerts: {alerts}\nActive devices: {devices}\nOffline mode: {offline}",
+      "Pending alerts: {alerts}\nActive devices: {devices}",
     "profile.auditDescription": "Review recent activity and security events.",
 
     "profile.dataRestored": "Data restored",
@@ -221,13 +215,8 @@ const dictionaries = {
     "profile.manageHomes": "Manage homes",
     "profile.messageCenter": "Message center",
 
-    "profile.offline": "Offline mode",
-    "profile.offlineDescription": "Keep recent data and pause external sync.",
-    "profile.offlineOffText": "The app will sync when connected.",
-    "profile.offlineOnText": "The app will use saved data.",
-
     "profile.preferences": "Preferences",
-    "profile.preferencesSubtitle": "Language and sync behavior.",
+    "profile.preferencesSubtitle": "Language and app preferences.",
 
     "profile.restoreData": "Data restoration",
     "profile.restoreDataAction": "Restore data",
@@ -263,7 +252,7 @@ const dictionaries = {
     "settings.pendingBody":
       "Section ready to connect with the backend when available.",
 
-    "settings.reportProblem": "Report a problem",
+    "profile.reportProblem": "Report a problem",
     "settings.reportProblemDescription":
       "Report errors or application problems.",
 
@@ -327,7 +316,7 @@ const dictionaries = {
 
     "profile.audit": "Auditoria",
     "profile.auditBody":
-      "Último acesso: hoje\nAlertas pendentes: {alerts}\nDispositivos ativos: {devices}\nModo offline: {offline}",
+      "Alertas pendentes: {alerts}\nDispositivos ativos: {devices}",
     "profile.auditDescription":
       "Consulte atividade recente e eventos de segurança.",
 
@@ -356,14 +345,8 @@ const dictionaries = {
     "profile.manageHomes": "Gerenciar lares",
     "profile.messageCenter": "Central de mensagens",
 
-    "profile.offline": "Modo offline",
-    "profile.offlineDescription":
-      "Mantém dados recentes e pausa sincronizações externas.",
-    "profile.offlineOffText": "O app sincronizará quando houver conexão.",
-    "profile.offlineOnText": "O app usará dados salvos.",
-
     "profile.preferences": "Preferências",
-    "profile.preferencesSubtitle": "Idioma e comportamento de sincronização.",
+    "profile.preferencesSubtitle": "Idioma e preferências do aplicativo.",
 
     "profile.restoreData": "Restauração de dados",
     "profile.restoreDataAction": "Restaurar dados",
@@ -401,7 +384,7 @@ const dictionaries = {
     "settings.pendingBody":
       "Seção pronta para conectar com o backend quando disponível.",
 
-    "settings.reportProblem": "Relatar um problema",
+    "profile.reportProblem": "Relatar um problema",
     "settings.reportProblemDescription":
       "Informe erros ou problemas do aplicativo.",
 

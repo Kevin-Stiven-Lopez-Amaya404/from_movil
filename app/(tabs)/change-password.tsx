@@ -72,7 +72,18 @@ export default function ChangePasswordScreen() {
       Alert.alert(
         "Contraseña actualizada",
         "Tu contraseña se ha cambiado correctamente.",
-        [{ text: "Aceptar", onPress: () => router.back() }],
+        [
+          {
+            text: "Aceptar",
+            onPress: () => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(tabs)/profile");
+              }
+            },
+          },
+        ],
       );
     } catch (error: unknown) {
       Alert.alert(
@@ -98,7 +109,13 @@ export default function ChangePasswordScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(tabs)/profile");
+              }
+            }}
             style={({ pressed }) => [
               styles.backButton,
               { backgroundColor: theme.card, borderColor: theme.borderLight },

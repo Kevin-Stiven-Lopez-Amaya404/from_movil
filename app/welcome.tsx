@@ -140,7 +140,7 @@ export default function WelcomeScreen() {
   function handleGoogleLogin() {
     Alert.alert(
       "Inicio con Google",
-      "La conexión OAuth queda preparada para producción. En esta versión de prueba continúa desde iniciar sesión y usa el acceso demo.",
+      "El inicio de sesión con Google todavía no está disponible. Para continuar, inicia sesión con tu correo y contraseña.",
       [
         {
           text: "Ir a iniciar sesión",

@@ -13,7 +13,6 @@ import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { getAuthPalette } from "@/lib/theme/appearance";
 import { typography } from "@/lib/theme/typography";
 import { isValidEmail } from "@/lib/utils/validators";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
@@ -67,22 +66,6 @@ export default function LoginScreen() {
       : "";
 
   const canSubmit = isValidEmail(cleanEmail) && password.length >= 4;
-
-  // ==========================================
-  // ACCESO DEMO
-  // ==========================================
-
-  function fillDemoUser() {
-    setEmail("pepe@smarthome.com");
-    setPassword("Smart123!");
-
-    setTouched({
-      email: true,
-      password: true,
-    });
-
-    setSubmitted(false);
-  }
 
   // ==========================================
   // LOGIN
@@ -354,60 +337,6 @@ export default function LoginScreen() {
         </View>
 
         {/* ==================================== */}
-        {/* ACCESO DEMO                           */}
-        {/* ==================================== */}
-
-        <Pressable
-          style={[
-            styles.demoButton,
-            {
-              backgroundColor: palette.primarySoft,
-              borderColor: palette.fieldBorder,
-            },
-          ]}
-          onPress={fillDemoUser}
-          accessibilityRole="button"
-          accessibilityLabel="Usar acceso demo"
-        >
-          <View
-            style={[
-              styles.demoIconContainer,
-              {
-                backgroundColor: palette.button,
-              },
-            ]}
-          >
-            <Ionicons name="flash" size={17} color="#FFFFFF" />
-          </View>
-
-          <View style={styles.demoContent}>
-            <Text
-              style={[
-                styles.demoTitle,
-                {
-                  color: palette.text,
-                },
-              ]}
-            >
-              Usar acceso demo
-            </Text>
-
-            <Text
-              style={[
-                styles.demoSubtitle,
-                {
-                  color: palette.muted,
-                },
-              ]}
-            >
-              Prueba la aplicación sin crear una cuenta
-            </Text>
-          </View>
-
-          <Ionicons name="chevron-forward" size={20} color={palette.muted} />
-        </Pressable>
-
-        {/* ==================================== */}
         {/* REGISTRO                              */}
         {/* ==================================== */}
 
@@ -610,52 +539,6 @@ const styles = StyleSheet.create({
   dividerText: {
     fontSize: 13,
     fontWeight: "600",
-  },
-
-  // ==========================================
-  // ACCESO DEMO
-  // ==========================================
-
-  demoButton: {
-    width: "100%",
-
-    minHeight: 62,
-
-    borderRadius: 16,
-    borderWidth: 1,
-
-    flexDirection: "row",
-    alignItems: "center",
-
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-
-    gap: 12,
-  },
-
-  demoIconContainer: {
-    width: 36,
-    height: 36,
-
-    borderRadius: 11,
-
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  demoContent: {
-    flex: 1,
-  },
-
-  demoTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-    marginBottom: 2,
-  },
-
-  demoSubtitle: {
-    fontSize: 12,
-    fontWeight: "500",
   },
 
   // ==========================================

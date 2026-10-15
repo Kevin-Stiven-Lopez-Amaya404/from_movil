@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import type { SmartDevice } from "@/lib/domain/device";
@@ -28,7 +28,10 @@ export function useDeviceActions({
   getTimeStamp,
 }: UseDeviceActionsOptions) {
   const devicesRef = useRef(devices);
-  devicesRef.current = devices;
+
+  useEffect(() => {
+    devicesRef.current = devices;
+  }, [devices]);
 
   const setHomeDeviceState = useCallback(
     async (id: string, state: DeviceState) => {

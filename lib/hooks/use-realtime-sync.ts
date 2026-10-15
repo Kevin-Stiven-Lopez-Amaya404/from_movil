@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
-import { useMockApi } from "@/lib/config/api-config";
 import type { SmartDevice } from "@/lib/domain/device";
 import type { SmartNotification } from "@/lib/services/notifications-service";
 import {
@@ -15,7 +14,6 @@ type UseRealtimeSyncOptions = {
   setDevices: Dispatch<SetStateAction<SmartDevice[]>>;
   setNotifications: Dispatch<SetStateAction<SmartNotification[]>>;
   setUnreadNotificationCount: Dispatch<SetStateAction<number>>;
-  setOfflineMode: Dispatch<SetStateAction<boolean>>;
   setLastSync: Dispatch<SetStateAction<string>>;
   getTimeStamp: () => string;
 };
@@ -25,13 +23,10 @@ export function useRealtimeSync({
   setDevices,
   setNotifications,
   setUnreadNotificationCount,
-  setOfflineMode,
   setLastSync,
   getTimeStamp,
 }: UseRealtimeSyncOptions) {
   useEffect(() => {
-    if (useMockApi) return;
-
     let active = true;
     const unsubscribers: (() => void)[] = [];
 
@@ -130,17 +125,20 @@ export function useRealtimeSync({
             setLastSync(getTimeStamp());
           }),
           realtimeService.on("realtime.connected", () => {
-            setOfflineMode(false);
             setLastSync(getTimeStamp());
           }),
           realtimeService.on("realtime.error", () => {
-            setOfflineMode(true);
+            console.warn(
+              "[RealtimeSync] Error en la conexión en tiempo real.",
+            );
           }),
         );
       })
       .catch(() => {
         if (active) {
-          setOfflineMode(true);
+          console.warn(
+            "[RealtimeSync] No se pudo iniciar la sincronización en tiempo real.",
+          );
         }
       });
 
@@ -155,7 +153,6 @@ export function useRealtimeSync({
     setDevices,
     setLastSync,
     setNotifications,
-    setOfflineMode,
     setUnreadNotificationCount,
   ]);
 }

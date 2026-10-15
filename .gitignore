@@ -48,3 +48,6 @@ smart-home-app.tsx
 # generated native folders
 /ios
 /android
+
+pruebas_pdf_aisladas/
+pruebas_sesiones_aisladas/

@@ -20,6 +20,7 @@ const ITEMS = [
   { route: "index", label: "Inicio", icon: "home" as const },
   { route: "homes", label: "Hogares", icon: "home-outline" as const },
   { route: "reports", label: "Energía", icon: "flash-outline" as const },
+  { route: "notifications", label: "Avisos", icon: "notifications-outline" as const },
   { route: "profile", label: "Perfil", icon: "person-outline" as const },
 ];
 
@@ -137,7 +138,8 @@ export function LiquidNavigation({
 
           const options = descriptors[route.key]?.options;
           const selected = activeRoute === item.route;
-          const showBadge = item.route === "profile" && unreadNotificationCount > 0;
+          const showBadge =
+            item.route === "notifications" && unreadNotificationCount > 0;
 
           return (
             <Pressable

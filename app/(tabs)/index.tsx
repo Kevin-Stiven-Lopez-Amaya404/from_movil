@@ -264,7 +264,7 @@ export default function DashboardScreen() {
               icon="notifications-outline"
               title="Alertas"
               description={`${pendingAlerts} pendientes`}
-              onPress={() => router.push("/(tabs)/alerts")}
+              onPress={() => router.push("/(tabs)/notifications")}
               theme={theme}
             />
             <QuickCard
