@@ -36,7 +36,36 @@ npx expo run:android
 Remove-Item Env:ANDROID_PACKAGE
 ```
 
-`ANDROID_PACKAGE` solo satisface el identificador que exige Expo en una compilación local; se mantiene fuera de los archivos. Para publicar, el equipo debe definir su identificador definitivo en el entorno EAS.
+`ANDROID_PACKAGE` solo satisface el identificador temporal de POC `com.smarthome.poc`; se mantiene fuera de los archivos de producción.
+
+## Obtener el APK desde GitHub Actions
+
+La workflow [Android POC APK](../.github/workflows/android-poc-apk.yml) genera un APK de desarrollo en un runner GitHub con Android SDK. Se ejecuta al actualizar los archivos relevantes en `dev` o manualmente desde **Actions → Android POC APK → Run workflow**, eligiendo la rama `dev`. Al finalizar correctamente, abre la ejecución y descarga el artefacto `smarthome-poc-android-apk`; dentro del ZIP está `app-debug.apk`. El artefacto expira en siete días. Esta compilación no requiere EAS ni credenciales de la cuenta Expo.
+
+El APK es un development build: necesita cargar el JavaScript desde Metro. En Windows, instala Android Studio o Android SDK Platform Tools para disponer de `adb`, habilita **Opciones de desarrollador → Depuración USB** en el teléfono y conecta el cable. Acepta en Android el diálogo **Permitir depuración USB**. En PowerShell, desde la carpeta donde descomprimiste el artefacto:
+
+```powershell
+adb devices
+adb install -r .\app-debug.apk
+```
+
+En la raíz del clon de `from_movil` actualizado a `dev`, inicia el servidor del proyecto:
+
+```powershell
+npm ci
+adb reverse tcp:8081 tcp:8081
+npx expo start --dev-client --localhost
+```
+
+Abre Smart Home en el teléfono y conéctalo al servidor de desarrollo que muestra Metro. Si Windows pregunta si permite conexiones de Node.js, permite la red privada local. También se puede usar `npx expo start --dev-client --lan` con el teléfono y el computador en la misma Wi-Fi.
+
+## Ejecutar la lectura con el Shelly
+
+Primero confirma **Settings → Firmware** en la interfaz web local desde un equipo conectado a la misma Wi-Fi. No compartas usuario, contraseña ni tokens. Anota modelo, firmware/build y estado de provisión; no hagas reset, reinicio ni cambios de configuración.
+
+En la app, abre **Agregar dispositivo**, busca anuncios Shelly y pulsa **Leer info** sobre el candidato. La consulta solo lee `Shelly.GetDeviceInfo`, desconecta al terminar y presenta modelo, firmware y estado de provisión. Si Android muestra un diálogo de bonding, cancélalo por ahora. Comparte el resultado o el error sin dirección BLE, contraseñas, tokens ni claves MQTT. No pulses opciones de provisión: este build no envía credenciales ni crea la sesión de pairing.
+
+Si la ejecución falla en `Generate Android project` o `Build debug development APK`, comparte el nombre del paso y el texto del error, nunca secretos del entorno.
 
 ## Ejecutar y registrar resultados
 
