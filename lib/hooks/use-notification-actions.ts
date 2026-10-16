@@ -83,10 +83,11 @@ export function useNotificationActions({
     await notificationsService.markAllAsRead();
 
     setNotifications((items) =>
-      items.map((item) => ({
-        ...item,
-        status: "READ",
-      })),
+      items.map((item) =>
+        item.status === "UNREAD"
+          ? { ...item, status: "READ" }
+          : item,
+      ),
     );
 
     setUnreadNotificationCount(0);

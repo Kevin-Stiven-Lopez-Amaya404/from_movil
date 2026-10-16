@@ -44,7 +44,6 @@ export default function NotificationsScreen() {
   const {
     devices,
     accessibleHomes,
-    setActiveHomeId,
     notifications: remoteNotifications,
     incomingInvitations,
     unreadNotificationCount,
@@ -111,7 +110,9 @@ export default function NotificationsScreen() {
     }
   }
 
-  const notifications = remoteNotifications.map((item) => ({
+  const notifications = remoteNotifications
+    .filter((item) => item.status !== "DISMISSED")
+    .map((item) => ({
     id: item.id,
     title: item.title ?? item.type ?? "NotificaciÃ³n",
     description: item.message ?? item.description ?? "",
@@ -129,7 +130,7 @@ export default function NotificationsScreen() {
           ? ("warning" as const)
           : ("info" as const),
     status: item.status,
-  }));
+    }));
 
   const visibleNotifications = useMemo(() => {
     if (filter === "ALL") return notifications;
@@ -197,8 +198,6 @@ export default function NotificationsScreen() {
         : undefined;
 
       if (targetHome) {
-        setActiveHomeId(targetHome.id);
-
         router.push({
           pathname: "/(tabs)/home-detail",
           params: {
@@ -495,7 +494,7 @@ export default function NotificationsScreen() {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Historial de notificaciones
             </Text>
-            {remoteNotifications.length > 0 ? (
+            {notifications.length > 0 ? (
               <Pressable
                 onPress={() => void markAllNotificationsAsRead()}
                 style={({ pressed }) => [

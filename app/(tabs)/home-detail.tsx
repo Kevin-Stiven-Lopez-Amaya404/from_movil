@@ -73,10 +73,14 @@ export default function HomeDetailScreen() {
   useEffect(() => {
     if (homesLoadStatus === "loaded" && (!homeId || !activeHome)) {
       router.replace("/(tabs)/(main)/homes");
-    } else if (activeHome) {
+    } else if (
+      activeHome &&
+      from !== "notifications" &&
+      from !== "alerts"
+    ) {
       setActiveHomeId(activeHome.id);
     }
-  }, [activeHome, homeId, homesLoadStatus, router, setActiveHomeId]);
+  }, [activeHome, from, homeId, homesLoadStatus, router, setActiveHomeId]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [telemetryDevice, setTelemetryDevice] = useState<SmartDevice | null>(
