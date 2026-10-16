@@ -1,45 +1,18 @@
-/**
- * Layout de navegacion de tabs.
- *
- * Configura la barra inferior de pestañas y aplica el tema global, iconos y
- * comportamiento haptico. Las pantallas dentro de `(tabs)` se renderizan aqui.
- */
-import { LiquidNavigation } from "@/components/LiquidNavigation";
-import { Tabs } from "expo-router";
+import { Stack } from "expo-router";
 
-/**
- * Layout de navegacion inferior.
- *
- * Todas las pantallas dentro de `(tabs)` comparten esta barra. Aqui se configuran
- * iconos, titulos, tema, haptics y margen inferior seguro del dispositivo.
- */
-export default function TabLayout() {
+export const unstable_settings = {
+  initialRouteName: "(main)",
+};
+
+export default function TabsStackLayout() {
   return (
-    <Tabs
+    <Stack
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { display: "none" },
+        animation: "slide_from_right",
       }}
-      tabBar={(props) => <LiquidNavigation {...props} />}
     >
-      <Tabs.Screen name="index" options={{ title: "Inicio" }} />
-      <Tabs.Screen name="homes" options={{ title: "Hogares" }} />
-      <Tabs.Screen name="reports" options={{ title: "Energía" }} />
-      <Tabs.Screen name="notifications" options={{ title: "Notificaciones" }} />
-      <Tabs.Screen name="alerts" options={{ href: null }} />
-      <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
-      <Tabs.Screen name="personal-info" options={{ href: null }} />
-      <Tabs.Screen name="account-security" options={{ href: null }} />
-      <Tabs.Screen name="close-sessions" options={{ href: null }} />
-      <Tabs.Screen name="home-detail" options={{ href: null }} />
-      <Tabs.Screen name="language" options={{ href: null }} />
-      <Tabs.Screen name="change-password" options={{ href: null }} />
-      <Tabs.Screen name="about-smart-home" options={{ href: null }} />
-      <Tabs.Screen name="devices" options={{ href: null }} />
-      <Tabs.Screen name="favorites" options={{ href: null }} />
-      <Tabs.Screen name="access" options={{ href: null }} />
-      <Tabs.Screen name="help" options={{ href: null }} />
-      <Tabs.Screen name="add-device" options={{ href: null }} />
-    </Tabs>
+      <Stack.Screen name="(main)" options={{ headerShown: false }} />
+    </Stack>
   );
 }

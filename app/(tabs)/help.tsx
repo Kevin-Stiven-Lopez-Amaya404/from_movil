@@ -1,10 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import {
+  returnToParent,
+  useAndroidBackFallback,
+} from "@/lib/navigation/use-android-back-fallback";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
 const faqs = [
@@ -28,9 +32,11 @@ const faqs = [
 
 export default function HelpScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
 
   function contactSupport() {
     Alert.alert(
@@ -57,13 +63,14 @@ export default function HelpScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Volver"
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/(tabs)/profile");
-              }
-            }}
+            onPress={() =>
+              returnToParent(
+                router,
+                from,
+                "profile",
+                "/(tabs)/(main)/profile",
+              )
+            }
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
           >
             <Ionicons name="chevron-back" size={22} color={theme.blue} />

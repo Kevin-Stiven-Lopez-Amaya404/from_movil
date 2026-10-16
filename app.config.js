@@ -108,6 +108,15 @@ module.exports = () => {
 
   const android = {
     ...baseConfig.android,
+    permissions: [
+      ...new Set([
+        ...(baseConfig.android.permissions ?? []),
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.CHANGE_WIFI_MULTICAST_STATE",
+      ]),
+    ],
     ...(androidPackage ? { package: androidPackage } : {}),
     ...(appLink
       ? {

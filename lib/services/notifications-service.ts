@@ -4,13 +4,24 @@ export type NotificationStatus = "UNREAD" | "READ" | "DISMISSED";
 
 export type SmartNotification = {
   id: string;
+
+  homeId?: string | null;
+  homeName?: string | null;
+  deviceId?: string | null;
+  deviceName?: string | null;
+  alertId?: string | null;
+
   title?: string;
   message?: string;
   description?: string;
-  type?: "ALERT" | string;
+  type?: string;
+
   status: NotificationStatus;
-  priority?: "baja" | "media" | "alta" | string;
+  priority?: string;
+  channel?: string;
+
   createdAt?: string;
+  updatedAt?: string;
   readAt?: string | null;
   dismissedAt?: string | null;
 };

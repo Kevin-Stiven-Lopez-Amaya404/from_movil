@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
     Pressable,
@@ -14,6 +14,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { profileFont } from "@/components/profile/profileTheme";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { AppLanguage } from "@/lib/domain/preferences";
+import {
+  returnToParent,
+  useAndroidBackFallback,
+} from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
@@ -25,9 +29,11 @@ const languages: { code: AppLanguage; label: string; native: string }[] = [
 
 export default function LanguageScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const { language, setLanguage } = useSmartHome();
+  useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -56,13 +62,14 @@ export default function LanguageScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/(tabs)/profile");
-              }
-            }}
+            onPress={() =>
+              returnToParent(
+                router,
+                from,
+                "profile",
+                "/(tabs)/(main)/profile",
+              )
+            }
             style={({ pressed }) => [
               styles.backButton,
               { backgroundColor: theme.card, borderColor: theme.borderLight },
@@ -124,11 +131,12 @@ export default function LanguageScreen() {
                   accessibilityRole="button"
                   onPress={() => {
                     setLanguage(item.code);
-                    if (router.canGoBack()) {
-                      router.back();
-                    } else {
-                      router.replace("/(tabs)/profile");
-                    }
+                    returnToParent(
+                      router,
+                      from,
+                      "profile",
+                      "/(tabs)/(main)/profile",
+                    );
                   }}
                   style={({ pressed }) => [
                     styles.optionRow,

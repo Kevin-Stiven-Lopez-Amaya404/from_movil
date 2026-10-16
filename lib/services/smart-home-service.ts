@@ -2,7 +2,10 @@
 import { apiClient } from "@/lib/api/api-client";
 import { ApiError } from "@/lib/api/api-error";
 
-import type { SmartDevice } from "@/lib/domain/device";
+import type {
+  DeviceConnectivityStatus,
+  SmartDevice,
+} from "@/lib/domain/device";
 import type {
   HomeInvitation,
   HomeMember,
@@ -34,7 +37,7 @@ type BackendDevice = {
   homeId: string;
   name: string;
   status?: string;
-  connectivityStatus?: "ONLINE" | "OFFLINE";
+  connectivityStatus?: DeviceConnectivityStatus;
   isOn?: boolean;
   currentPowerW?: number | null;
   energyTotalKwh?: number | null;
@@ -72,6 +75,7 @@ function mapBackendDevice(device: BackendDevice): SmartDevice {
     voltage: device.voltageV ?? 0,
     current: device.currentA ?? 0,
     frequency: device.frequencyHz ?? 0,
+    connectivityStatus: device.connectivityStatus ?? "UNKNOWN",
     online: device.connectivityStatus === "ONLINE",
     temperature: device.temperatureC ?? undefined,
     state: device.isOn ? "on" : "off",
@@ -105,6 +109,15 @@ export interface SmartHomeService {
     request: CreateHomeRequest,
     token?: string,
   ): Promise<SmartHomePlace>;
+  updateHome(
+    homeId: string,
+    name: string,
+    token?: string,
+  ): Promise<SmartHomePlace>;
+  deleteHome(
+    homeId: string,
+    token?: string,
+  ): Promise<{ deleted: boolean }>;
   toggleHomeFavorite(
     homeId: string,
     favorite: boolean,
@@ -232,6 +245,36 @@ const backendSmartHomeService: SmartHomeService = {
         location: home.location ?? request.location ?? "Hogar",
         favorite: home.favorite ?? false,
       }));
+  },
+
+  updateHome(homeId, name, token) {
+    return apiClient.patch<
+      {
+        id: string;
+        name: string;
+        createdBy: string;
+        status: string;
+        createdAt: string;
+        updatedAt: string;
+      },
+      { name: string }
+    >(
+      `/api/v1/homes/${encodeURIComponent(homeId)}`,
+      { name: name.trim() },
+      { token },
+    ).then((home) => ({
+      id: home.id,
+      name: home.name,
+      location: "Hogar",
+      favorite: false,
+    }));
+  },
+
+  deleteHome(homeId, token) {
+    return apiClient.delete<{ deleted: boolean }>(
+      `/api/v1/homes/${encodeURIComponent(homeId)}`,
+      { token },
+    );
   },
 
   toggleHomeFavorite() {

@@ -1,358 +1,692 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useSmartHome } from "@/lib/context/smart-home-context";
-import type { HomeRole } from "@/lib/domain/home";
+import type { HomeMember, HomeRole } from "@/lib/domain/home";
+import { useAndroidBackFallback } from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { smartHomeService } from "@/lib/services/smart-home-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { typography } from "@/lib/theme/typography";
 import { isValidEmail } from "@/lib/utils/validators";
 
 type InvitationRole = Exclude<HomeRole, "OWNER">;
 
+function personLabel(member: HomeMember) {
+  if (member.role === "OWNER") return "Propietario";
+  return `Usuario · ${member.userId.slice(0, 8)}…`;
+}
+
+function roleLabel(role: string) {
+  if (role === "OWNER") return "Propietario";
+  if (role === "MEMBER") return "Miembro";
+  if (role === "GUEST") return "Invitado";
+  return role;
+}
+
+function statusLabel(status: string) {
+  if (status === "ACTIVE") return "Activo";
+  if (status === "PENDING") return "Pendiente";
+  if (status === "REVOKED") return "Revocado";
+  if (status === "LEFT") return "Finalizado";
+  return status;
+}
+
+function activityLabel(member: HomeMember) {
+  if (member.status === "PENDING") return "Invitación enviada";
+  if (member.status === "ACTIVE") return "Membresía activa";
+  if (member.status === "REVOKED") return "Acceso revocado";
+  return "Membresía finalizada";
+}
+
+function activityDate(member: HomeMember) {
+  if (member.status === "PENDING") return member.invitedAt;
+
+  if (member.status === "ACTIVE") {
+    return member.acceptedAt ?? member.invitedAt;
+  }
+
+  return member.endedAt ?? member.updatedAt ?? member.invitedAt;
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return "Sin fecha";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sin fecha";
+
+  return new Intl.DateTimeFormat("es-CO", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
 export default function AccessScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
   const theme = useAppTheme();
+  const layout = useResponsiveLayout();
+  const { homeId, returnTo } = useLocalSearchParams<{
+    homeId?: string;
+    returnTo?: string;
+  }>();
+
   const {
-    homes,
-    activeHomeId,
+    accessibleHomes,
+    homesLoadStatus,
     homeMembersByHome,
-    incomingInvitations,
     inviteHomeMember,
-    acceptInvitation,
-    rejectInvitation,
   } = useSmartHome();
-  const ownerHomes = useMemo(
-    () => homes.filter((home) => home.homeRole === "OWNER"),
-    [homes],
+
+  const home = accessibleHomes.find((item) => item.id === homeId);
+  const canManage = home?.homeRole === "OWNER";
+
+  useAndroidBackFallback(
+    returnTo !== "home-detail",
+    homeId
+      ? { pathname: "/(tabs)/home-detail", params: { homeId } }
+      : "/(tabs)/(main)/homes",
   );
-  const [selectedHomeId, setSelectedHomeId] = useState(activeHomeId);
+
+  useEffect(() => {
+    if (homesLoadStatus === "loaded" && (!homeId || !home)) {
+      router.replace("/(tabs)/(main)/homes");
+    }
+  }, [home, homeId, homesLoadStatus, router]);
+
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<InvitationRole>("MEMBER");
   const [submitting, setSubmitting] = useState(false);
-  const selectedHome =
-    ownerHomes.find((home) => home.id === selectedHomeId) ?? ownerHomes[0];
-  const currentHomeId = selectedHome?.id ?? "";
+  const [showAll, setShowAll] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshFailed, setRefreshFailed] = useState(false);
 
-  const selectedMembers = homeMembersByHome[currentHomeId] ?? [];
-  const memberCount = selectedMembers.filter(
+  const [freshMembers, setFreshMembers] = useState<{
+    homeId: string;
+    members: HomeMember[];
+  } | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!homeId || !canManage) return;
+
+      let active = true;
+      setRefreshing(true);
+      setRefreshFailed(false);
+
+      void smartHomeService
+        .listHomeMembers(homeId)
+        .then((members) => {
+          if (active) setFreshMembers({ homeId, members });
+        })
+        .catch(() => {
+          if (active) setRefreshFailed(true);
+        })
+        .finally(() => {
+          if (active) setRefreshing(false);
+        });
+
+      return () => {
+        active = false;
+      };
+    }, [homeId, canManage]),
+  );
+
+  const members =
+    freshMembers && freshMembers.homeId === homeId
+      ? freshMembers.members
+      : (homeMembersByHome[homeId ?? ""] ?? []);
+
+  const activeMembers = members.filter(
     (member) => member.status === "ACTIVE",
-  ).length;
-  const pendingCount = selectedMembers.filter(
+  );
+
+  const pendingMembers = members.filter(
     (member) => member.status === "PENDING",
-  ).length;
+  );
+
+  const currentMembers = [...activeMembers, ...pendingMembers];
+  const visibleMembers = showAll
+    ? currentMembers
+    : currentMembers.slice(0, 4);
+
+  const recentActivity = members
+    .filter((member) => member.role !== "OWNER")
+    .sort(
+      (a, b) =>
+        new Date(activityDate(b)).getTime() -
+        new Date(activityDate(a)).getTime(),
+    )
+    .slice(0, 3);
+
+  function closeScreen() {
+    if (returnTo === "home-detail" && router.canGoBack()) {
+      router.back();
+    } else if (homeId) {
+      router.replace({
+        pathname: "/(tabs)/home-detail",
+        params: { homeId },
+      });
+    } else {
+      router.replace("/(tabs)/(main)/homes");
+    }
+  }
 
   async function sendInvitation() {
     const cleanEmail = email.trim().toLowerCase();
-    if (!currentHomeId || !isValidEmail(cleanEmail)) {
-      Alert.alert("Correo no válido", "Ingresa un correo electrónico válido.");
+
+    if (!homeId || !canManage || submitting) return;
+
+    if (!isValidEmail(cleanEmail)) {
+      Alert.alert(
+        "Correo no válido",
+        "Introduce una dirección de correo válida.",
+      );
       return;
     }
 
     setSubmitting(true);
+
     try {
-      await inviteHomeMember(currentHomeId, cleanEmail, role);
+      await inviteHomeMember(homeId, cleanEmail, role);
+
       setEmail("");
+      setFreshMembers(null);
+
       Alert.alert(
         "Invitación enviada",
-        "La persona debe tener una cuenta activa para poder recibir la invitación.",
+        "La invitación fue registrada correctamente.",
       );
     } catch (error) {
       Alert.alert(
-        "No se pudo enviar la invitación",
-        error instanceof Error ? error.message : "Intenta nuevamente.",
+        "No se pudo invitar",
+        error instanceof Error
+          ? error.message
+          : "Intenta nuevamente.",
       );
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (ownerHomes.length === 0) {
-    return (
-      <SafeAreaView
-        style={[styles.safeArea, { backgroundColor: theme.background }]}
-      >
-        <View style={styles.denied}>
-          <Ionicons name="lock-closed-outline" size={48} color={theme.muted} />
-          <Text style={[styles.deniedTitle, { color: theme.text }]}>
-            Gestión exclusiva del propietario
-          </Text>
-          <Text style={[styles.deniedText, { color: theme.muted }]}>
-            Esta opción requiere el rol OWNER devuelto por el backend para al
-            menos uno de tus hogares.
-          </Text>
-          <Pressable
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/(tabs)/homes");
-              }
-            }}
-            style={[styles.primary, { backgroundColor: theme.blue }]}
-          >
-            <Text style={styles.primaryText}>Volver</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: theme.background }]}
+      style={[
+        styles.screen,
+        { backgroundColor: theme.background },
+      ]}
     >
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: layout.gutter,
           paddingTop: layout.screenTop,
-          paddingBottom: layout.screenBottom,
+          paddingBottom: layout.screenBottom + 20,
         }}
       >
-        <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <Pressable
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/(tabs)/homes");
-              }
-            }}
-            style={styles.back}
-          >
-            <Ionicons name="chevron-back" size={22} color={theme.blue} />
-            <Text style={[styles.backText, { color: theme.blue }]}>
-              Hogares
+        <View
+          style={[
+            styles.content,
+            { maxWidth: layout.contentWidth },
+          ]}
+        >
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: theme.text }]}>
+              Invitar personas
             </Text>
-          </Pressable>
 
-          <Text style={[styles.title, { color: theme.text }]}>
-            Accesos del hogar
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.muted }]}>
-            Invita miembros o invitados a un hogar donde tienes rol de
-            propietario.
-          </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar invitaciones"
+              onPress={closeScreen}
+              style={[
+                styles.closeButton,
+                { backgroundColor: theme.rowAlt },
+              ]}
+            >
+              <Ionicons
+                name="close"
+                size={22}
+                color={theme.text}
+              />
+            </Pressable>
+          </View>
 
-          <View style={styles.homeChips}>
-            {ownerHomes.map((home) => {
-              const selected = home.id === currentHomeId;
-              return (
-                <Pressable
-                  key={home.id}
-                  onPress={() => setSelectedHomeId(home.id)}
+          {homesLoadStatus === "loading" ? (
+            <ActivityIndicator
+              style={{ marginTop: 32 }}
+              color={theme.blue}
+            />
+          ) : !homeId || !canManage ? (
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.borderLight,
+                },
+              ]}
+            >
+              <Text style={{ color: theme.text }}>
+                No se encontró un hogar válido del que seas
+                propietario. Abre esta pantalla desde tu hogar.
+              </Text>
+            </View>
+          ) : (
+            <>
+              <View
+                style={[
+                  styles.homeContext,
+                  { backgroundColor: theme.rowAlt },
+                ]}
+              >
+                <Ionicons
+                  name="home-outline"
+                  size={19}
+                  color={theme.blue}
+                />
+
+                <Text
+                  numberOfLines={1}
                   style={[
-                    styles.homeChip,
+                    styles.homeName,
+                    { color: theme.text },
+                  ]}
+                >
+                  {home.name}
+                </Text>
+
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={15}
+                  color={theme.muted}
+                />
+              </View>
+
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.cardTitle,
+                    { color: theme.text },
+                  ]}
+                >
+                  Invitar por correo
+                </Text>
+
+                <TextInput
+                  accessibilityLabel="Correo de la persona invitada"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  textContentType="emailAddress"
+                  placeholder="correo@ejemplo.com"
+                  placeholderTextColor={theme.muted}
+                  maxLength={254}
+                  style={[
+                    styles.input,
                     {
-                      borderColor: selected ? theme.blue : theme.borderLight,
-                      backgroundColor: selected ? theme.rowAlt : theme.card,
+                      color: theme.text,
+                      borderColor: theme.borderLight,
+                      backgroundColor: theme.background,
+                    },
+                  ]}
+                />
+
+                <View style={styles.roles}>
+                  {([
+                    {
+                      value: "MEMBER",
+                      title: "Miembro",
+                      detail: "Controlar dispositivos",
+                    },
+                    {
+                      value: "GUEST",
+                      title: "Invitado",
+                      detail: "Acceso de consulta",
+                    },
+                  ] as const).map((option) => {
+                    const selected = role === option.value;
+
+                    return (
+                      <Pressable
+                        key={option.value}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: selected }}
+                        onPress={() => setRole(option.value)}
+                        style={[
+                          styles.roleOption,
+                          {
+                            borderColor: selected
+                              ? theme.blue
+                              : theme.borderLight,
+                            backgroundColor: selected
+                              ? theme.rowAlt
+                              : theme.card,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.roleTitle,
+                            {
+                              color: selected
+                                ? theme.blue
+                                : theme.text,
+                            },
+                          ]}
+                        >
+                          {option.title}
+                        </Text>
+
+                        <Text
+                          style={[
+                            styles.roleDescription,
+                            { color: theme.muted },
+                          ]}
+                        >
+                          {option.detail}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Enviar invitación"
+                  disabled={submitting || !email.trim()}
+                  onPress={() => void sendInvitation()}
+                  style={[
+                    styles.primaryButton,
+                    {
+                      backgroundColor: theme.blue,
+                      opacity:
+                        submitting || !email.trim() ? 0.55 : 1,
                     },
                   ]}
                 >
-                  <Ionicons
-                    name="home-outline"
-                    size={16}
-                    color={selected ? theme.blue : theme.muted}
-                  />
-                  <Text
-                    style={[
-                      styles.roleText,
-                      { color: selected ? theme.blue : theme.muted },
-                    ]}
-                  >
-                    {home.name}
+                  {submitting ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Ionicons
+                      name="send-outline"
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                  )}
+
+                  <Text style={styles.primaryText}>
+                    {submitting
+                      ? "Enviando..."
+                      : "Enviar invitación"}
                   </Text>
                 </Pressable>
-              );
-            })}
-          </View>
+              </View>
 
-          <View
-            style={[
-              styles.form,
-              { backgroundColor: theme.card, borderColor: theme.borderLight },
-            ]}
-          >
-            <Text style={[styles.label, { color: theme.text }]}>
-              Invitar por correo
-            </Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              placeholder="correo@ejemplo.com"
-              placeholderTextColor={theme.muted}
-              style={[
-                styles.input,
-                { color: theme.text, borderColor: theme.borderLight },
-              ]}
-            />
-            <View style={styles.roleRow}>
-              {(["MEMBER", "GUEST"] as InvitationRole[]).map((item) => {
-                const selected = role === item;
-                return (
-                  <Pressable
-                    key={item}
-                    onPress={() => setRole(item)}
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <View style={styles.sectionHeader}>
+                  <Text
                     style={[
-                      styles.roleChip,
-                      {
-                        borderColor: selected ? theme.blue : theme.borderLight,
-                        backgroundColor: selected ? theme.rowAlt : theme.card,
-                      },
+                      styles.cardTitle,
+                      { color: theme.text },
+                    ]}
+                  >
+                    Membresías
+                  </Text>
+
+                  {refreshing ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={theme.blue}
+                    />
+                  ) : null}
+                </View>
+
+                <View style={styles.statsRow}>
+                  <View
+                    style={[
+                      styles.stat,
+                      { backgroundColor: theme.rowAlt },
                     ]}
                   >
                     <Text
                       style={[
-                        styles.roleText,
-                        { color: selected ? theme.blue : theme.muted },
+                        styles.statNumber,
+                        { color: theme.text },
                       ]}
                     >
-                      {item === "MEMBER" ? "Miembro" : "Invitado"}
+                      {activeMembers.length}
                     </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              disabled={submitting}
-              onPress={() => void sendInvitation()}
-              style={[
-                styles.primary,
-                { backgroundColor: theme.blue, opacity: submitting ? 0.7 : 1 },
-              ]}
-            >
-              {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Ionicons name="person-add-outline" size={19} color="#FFFFFF" />
-              )}
-              <Text style={styles.primaryText}>Enviar invitación</Text>
-            </Pressable>
-          </View>
-
-          {incomingInvitations.length > 0 ? (
-            <View
-              style={[
-                styles.summary,
-                { backgroundColor: theme.card, borderColor: theme.borderLight },
-              ]}
-            >
-              <Text style={[styles.label, { color: theme.text }]}>
-                Invitaciones pendientes
-              </Text>
-              {incomingInvitations.map((invitation) => (
-                <View key={invitation.id} style={styles.invitationRow}>
-                  <View style={styles.invitationCopy}>
-                    <Text style={[styles.roleText, { color: theme.text }]}>
-                      {invitation.homeName ?? "Hogar"}
-                    </Text>
-                    <Text style={[styles.note, { color: theme.muted }]}>
-                      {invitation.role} · {invitation.status ?? "PENDING"}
+                    <Text
+                      style={[
+                        styles.statLabel,
+                        { color: theme.muted },
+                      ]}
+                    >
+                      Activas
                     </Text>
                   </View>
-                  <View style={styles.invitationActions}>
-                    <Pressable
-                      onPress={() => void acceptInvitation(invitation.id)}
-                      style={[styles.smallAction, { backgroundColor: theme.blue }]}
-                    >
-                      <Text style={styles.smallActionText}>Aceptar</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => void rejectInvitation(invitation.id)}
+
+                  <View
+                    style={[
+                      styles.stat,
+                      { backgroundColor: theme.rowAlt },
+                    ]}
+                  >
+                    <Text
                       style={[
-                        styles.smallAction,
-                        { backgroundColor: theme.rowAlt, borderColor: theme.borderLight },
+                        styles.statNumber,
+                        { color: theme.text },
                       ]}
                     >
-                      <Text style={[styles.smallActionText, { color: theme.text }]}>Rechazar</Text>
-                    </Pressable>
+                      {pendingMembers.length}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.statLabel,
+                        { color: theme.muted },
+                      ]}
+                    >
+                      Pendientes
+                    </Text>
                   </View>
                 </View>
-              ))}
-            </View>
-          ) : null}
 
-          <View
-            style={[
-              styles.summary,
-              { backgroundColor: theme.card, borderColor: theme.borderLight },
-            ]}
-          >
-            <Text style={[styles.label, { color: theme.text }]}>
-              Membresías de {selectedHome?.name}
-            </Text>
-            <Text style={[styles.subtitle, { color: theme.muted }]}>
-              {memberCount} activas · {pendingCount} pendientes
-            </Text>
+                {refreshFailed ? (
+                  <Text
+                    style={[
+                      styles.note,
+                      { color: theme.muted },
+                    ]}
+                  >
+                    No se pudo actualizar la lista.
+                    Se muestran los datos disponibles.
+                  </Text>
+                ) : null}
 
-            {selectedMembers.length > 0 ? (
-              <View style={styles.memberList}>
-                {selectedMembers.map((member) => (
-                  <View key={member.id} style={styles.memberRow}>
-                    <View style={styles.memberMeta}>
-                      <Text style={[styles.memberId, { color: theme.text }]}>
-                        {member.userId || member.id}
-                      </Text>
-                      <Text style={[styles.note, { color: theme.muted }]}>
-                        {member.role} · {member.status}
-                      </Text>
-                    </View>
+                {visibleMembers.length === 0 ? (
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      { color: theme.muted },
+                    ]}
+                  >
+                    No hay membresías disponibles para mostrar.
+                  </Text>
+                ) : (
+                  visibleMembers.map((member) => (
                     <View
+                      key={member.id}
                       style={[
-                        styles.statusPill,
-                        {
-                          backgroundColor:
-                            member.status === "ACTIVE"
-                              ? `${theme.success}22`
-                              : `${theme.muted}22`,
-                        },
+                        styles.memberRow,
+                        { borderTopColor: theme.borderLight },
                       ]}
                     >
+                      <View
+                        style={[
+                          styles.avatar,
+                          { backgroundColor: theme.rowAlt },
+                        ]}
+                      >
+                        <Ionicons
+                          name="person-outline"
+                          size={20}
+                          color={theme.blue}
+                        />
+                      </View>
+
+                      <View style={styles.memberCopy}>
+                        <Text
+                          numberOfLines={1}
+                          style={[
+                            styles.memberName,
+                            { color: theme.text },
+                          ]}
+                        >
+                          {personLabel(member)}
+                        </Text>
+
+                        <Text
+                          style={[
+                            styles.memberDetail,
+                            { color: theme.muted },
+                          ]}
+                        >
+                          {roleLabel(member.role)}
+                        </Text>
+                      </View>
+
                       <Text
                         style={[
-                          styles.statusText,
+                          styles.memberStatus,
                           {
                             color:
-                              member.status === "ACTIVE" ? theme.success : theme.muted,
+                              member.status === "ACTIVE"
+                                ? theme.success
+                                : theme.muted,
                           },
                         ]}
                       >
-                        {member.status === "ACTIVE" ? "Activo" : member.status}
+                        {statusLabel(member.status)}
                       </Text>
                     </View>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={[styles.note, { color: theme.muted }]}>
-                Todavía no hay miembros asociados a este hogar.
-              </Text>
-            )}
+                  ))
+                )}
 
-            <Text style={[styles.note, { color: theme.muted }]}>
-              El backend actual solo devuelve el identificador de usuario, rol y
-              estado de cada membresía; no expone nombres ni correos para
-              mostrar una lista identificable.
-            </Text>
-          </View>
+                {currentMembers.length > 4 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setShowAll((value) => !value)}
+                    style={styles.showAll}
+                  >
+                    <Text
+                      style={{
+                        color: theme.blue,
+                        fontWeight: "800",
+                      }}
+                    >
+                      {showAll ? "Ver menos" : "Ver todas"}
+                    </Text>
+                  </Pressable>
+                ) : null}
+
+                <View
+                  style={[
+                    styles.history,
+                    { borderTopColor: theme.borderLight },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.historyTitle,
+                      { color: theme.text },
+                    ]}
+                  >
+                    Movimientos recientes
+                  </Text>
+
+                  {recentActivity.length === 0 ? (
+                    <Text
+                      style={[
+                        styles.note,
+                        { color: theme.muted },
+                      ]}
+                    >
+                      Todavía no hay movimientos disponibles.
+                    </Text>
+                  ) : (
+                    recentActivity.map((member) => (
+                      <View
+                        key={member.id}
+                        style={styles.activityRow}
+                      >
+                        <Ionicons
+                          name="time-outline"
+                          size={19}
+                          color={theme.muted}
+                        />
+
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[
+                              styles.activityName,
+                              { color: theme.text },
+                            ]}
+                          >
+                            {activityLabel(member)}
+                          </Text>
+
+                          <Text
+                            style={[
+                              styles.memberDetail,
+                              { color: theme.muted },
+                            ]}
+                          >
+                            {personLabel(member)} ·{" "}
+                            {formatDate(activityDate(member))}
+                          </Text>
+                        </View>
+                      </View>
+                    ))
+                  )}
+                </View>
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -360,171 +694,125 @@ export default function AccessScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { alignSelf: "center", width: "100%" },
-  back: {
-    alignItems: "center",
+  screen: { flex: 1 },
+  content: { width: "100%", alignSelf: "center" },
+  header: {
     flexDirection: "row",
-    gap: 4,
-    marginBottom: 12,
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
   },
-  backText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 15,
-    fontWeight: "800",
+  title: { flex: 1, fontSize: 23, fontWeight: "900" },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  title: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 25,
-    fontWeight: "900",
+  homeContext: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 14,
+    minHeight: 46,
+    borderRadius: 13,
+    marginBottom: 16,
   },
-  subtitle: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 5,
-  },
-  form: {
+  homeName: { flex: 1, fontSize: 14, fontWeight: "800" },
+  card: {
     borderRadius: 18,
     borderWidth: 1,
-    gap: 10,
-    marginTop: 18,
-    padding: 15,
+    padding: 16,
+    marginBottom: 16,
+    gap: 12,
   },
-  label: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 15,
-    fontWeight: "800",
-  },
+  cardTitle: { fontSize: 16, fontWeight: "800" },
   input: {
-    borderRadius: 11,
     borderWidth: 1,
-    height: 46,
-    paddingHorizontal: 12,
-    fontFamily: typography.fontFamily.regular,
-  },
-  roleRow: { flexDirection: "row", gap: 8 },
-  roleChip: {
-    alignItems: "center",
     borderRadius: 12,
-    borderWidth: 1,
-    flex: 1,
-    justifyContent: "center",
-    minHeight: 42,
-  },
-  roleText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  homeChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 },
-  homeChip: {
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 6,
-    minHeight: 40,
-    paddingHorizontal: 12,
-  },
-  primary: {
-    alignItems: "center",
-    borderRadius: 12,
-    flexDirection: "row",
-    gap: 7,
-    justifyContent: "center",
-    minHeight: 46,
+    height: 48,
     paddingHorizontal: 14,
+    fontSize: 14,
+  },
+  roles: { flexDirection: "row", gap: 10 },
+  roleOption: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderRadius: 13,
+    minHeight: 75,
+  },
+  roleTitle: { fontSize: 13, fontWeight: "800" },
+  roleDescription: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 5,
+  },
+  primaryButton: {
+    minHeight: 48,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
   },
   primaryText: {
     color: "#FFFFFF",
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "800",
   },
-  summary: { borderRadius: 17, borderWidth: 1, marginTop: 18, padding: 15 },
-  invitationRow: {
-    alignItems: "center",
-    borderTopColor: "rgba(148, 163, 184, 0.25)",
-    borderTopWidth: 1,
+  sectionHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-    paddingTop: 12,
-  },
-  invitationCopy: { flex: 1, marginRight: 10 },
-  invitationActions: { flexDirection: "row", gap: 8 },
-  smallAction: {
     alignItems: "center",
-    borderRadius: 10,
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 32,
-    paddingHorizontal: 10,
+    justifyContent: "space-between",
   },
-  smallActionText: {
-    color: "#FFFFFF",
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 11,
-    fontWeight: "800",
+  statsRow: { flexDirection: "row", gap: 10 },
+  stat: {
+    flex: 1,
+    alignItems: "center",
+    borderRadius: 13,
+    paddingVertical: 14,
   },
-  memberList: {
-    gap: 8,
-    marginTop: 12,
-  },
+  statNumber: { fontSize: 22, fontWeight: "900" },
+  statLabel: { fontSize: 12, marginTop: 3 },
   memberRow: {
-    alignItems: "center",
-    borderColor: "rgba(148,163,184,0.2)",
-    borderRadius: 12,
-    borderWidth: 1,
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  memberMeta: {
-    flex: 1,
-    marginRight: 8,
-  },
-  memberId: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  statusPill: {
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  statusText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 10,
-    fontWeight: "800",
-  },
-  note: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 11,
-    lineHeight: 17,
-    marginTop: 10,
-  },
-  denied: {
     alignItems: "center",
-    flex: 1,
+    borderTopWidth: 1,
+    paddingTop: 12,
+    gap: 10,
+  },
+  avatar: {
+    height: 40,
+    width: 40,
+    borderRadius: 13,
+    alignItems: "center",
     justifyContent: "center",
-    padding: 28,
   },
-  deniedTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 20,
-    fontWeight: "900",
-    marginTop: 12,
-    textAlign: "center",
+  memberCopy: { flex: 1 },
+  memberName: { fontSize: 13, fontWeight: "800" },
+  memberDetail: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 3,
   },
-  deniedText: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 6,
-    textAlign: "center",
+  memberStatus: { fontSize: 11, fontWeight: "800" },
+  showAll: { alignSelf: "center", padding: 8 },
+  history: {
+    borderTopWidth: 1,
+    paddingTop: 15,
+    marginTop: 4,
+    gap: 12,
   },
+  historyTitle: { fontSize: 14, fontWeight: "800" },
+  activityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  activityName: { fontSize: 12, fontWeight: "700" },
+  emptyText: { fontSize: 12, lineHeight: 18 },
+  note: { fontSize: 12, lineHeight: 18 },
 });

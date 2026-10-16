@@ -16,6 +16,7 @@ type RequestOptions<Body> = {
   token?: string;
   skipAuthRefresh?: boolean;
   skipAuthHeader?: boolean;
+  timeoutMs?: number;
 };
 
 type ErrorPayload = {
@@ -105,7 +106,7 @@ export class ApiClient {
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
-      apiConfig.timeoutMs,
+      options?.timeoutMs ?? apiConfig.timeoutMs,
     );
 
     try {

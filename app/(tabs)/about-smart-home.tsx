@@ -1,16 +1,22 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { profileFont } from "@/components/profile/profileTheme";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import {
+  returnToParent,
+  useAndroidBackFallback,
+} from "@/lib/navigation/use-android-back-fallback";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
 export default function AboutSmartHomeScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
+  useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
 
   return (
     <SafeAreaView
@@ -26,13 +32,14 @@ export default function AboutSmartHomeScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/(tabs)/profile");
-              }
-            }}
+            onPress={() =>
+              returnToParent(
+                router,
+                from,
+                "profile",
+                "/(tabs)/(main)/profile",
+              )
+            }
             style={({ pressed }) => [
               styles.backButton,
               { backgroundColor: theme.card, borderColor: theme.borderLight },

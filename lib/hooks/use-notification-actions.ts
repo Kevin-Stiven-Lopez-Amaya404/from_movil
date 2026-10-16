@@ -17,6 +17,14 @@ export function useNotificationActions({
 }: UseNotificationActionsOptions) {
   const markNotificationAsRead = useCallback(
     async (notificationId: string) => {
+      const target = notifications.find(
+        (item) => item.id === notificationId,
+      );
+
+      if (!target || target.status !== "UNREAD") {
+        return;
+      }
+
       await notificationsService.markAsRead(notificationId);
 
       setNotifications((items) =>
@@ -27,11 +35,16 @@ export function useNotificationActions({
         ),
       );
 
-      setUnreadNotificationCount((count) =>
-        Math.max(0, count - 1),
-      );
+      try {
+        const count = await notificationsService.unreadCount();
+        setUnreadNotificationCount(count);
+      } catch {
+        console.warn(
+          "[Notifications] No se pudo actualizar el contador.",
+        );
+      }
     },
-    [setNotifications, setUnreadNotificationCount],
+    [notifications, setNotifications, setUnreadNotificationCount],
   );
 
   const dismissNotification = useCallback(
@@ -70,10 +83,11 @@ export function useNotificationActions({
     await notificationsService.markAllAsRead();
 
     setNotifications((items) =>
-      items.map((item) => ({
-        ...item,
-        status: "READ",
-      })),
+      items.map((item) =>
+        item.status === "UNREAD"
+          ? { ...item, status: "READ" }
+          : item,
+      ),
     );
 
     setUnreadNotificationCount(0);

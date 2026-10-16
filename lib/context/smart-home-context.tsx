@@ -86,6 +86,8 @@ type SmartHomeState = {
   removeDevice: (deviceId: string) => Promise<void>;
   updateDevice: (deviceId: string, updates: { name?: string }) => Promise<void>;
   addHome: (name: string) => Promise<void>;
+  updateHome: (homeId: string, name: string) => Promise<void>;
+  deleteHome: (homeId: string) => Promise<void>;
   setActiveHomeId: (homeId: string) => void;
   setAccountActive: (active: boolean) => void;
   setColorMode: (mode: ColorMode) => void;
@@ -324,6 +326,70 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         });
 
         setActiveHomeId(nextHome.id);
+      },
+      updateHome: async (homeId, name) => {
+        const cleanName = name.trim();
+
+        if (!cleanName || cleanName.length > 100) {
+          throw new Error("El nombre debe tener entre 1 y 100 caracteres.");
+        }
+
+        const target = homes.find((home) => home.id === homeId);
+
+        if (!target || target.homeRole !== "OWNER") {
+          throw new Error(
+            "Solo el propietario puede cambiar el nombre del hogar.",
+          );
+        }
+
+        const updatedHome = await smartHomeService.updateHome(
+          homeId,
+          cleanName,
+        );
+
+        setHomes((current) =>
+          current.map((home) =>
+            home.id === homeId
+              ? { ...home, name: updatedHome.name }
+              : home,
+          ),
+        );
+      },
+      deleteHome: async (homeId) => {
+        const target = homes.find((home) => home.id === homeId);
+
+        if (!target || target.homeRole !== "OWNER") {
+          throw new Error(
+            "Solo el propietario puede eliminar este hogar.",
+          );
+        }
+
+        const result = await smartHomeService.deleteHome(homeId);
+
+        if (!result.deleted) {
+          throw new Error(
+            "El servidor no confirmó la eliminación del hogar.",
+          );
+        }
+
+        const remainingHomes = homes.filter((home) => home.id !== homeId);
+        setHomes(remainingHomes);
+        setActiveHomeId((active) =>
+          active === homeId ? remainingHomes[0]?.id ?? "" : active,
+        );
+        setHomeMembersByHome((current) => {
+          const next = { ...current };
+          delete next[homeId];
+          return next;
+        });
+        setDevices((current) =>
+          current.filter((device) => device.homeId !== homeId),
+        );
+        setDeviceLoadStatusByHome((current) => {
+          const next = { ...current };
+          delete next[homeId];
+          return next;
+        });
       },
       setActiveHomeId,
       setAccountActive,

@@ -17,6 +17,7 @@ import { canControlHome } from "@/lib/domain/home";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { getDeviceControlErrorMessage } from "@/lib/utils/control-error-message";
+import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
 
 function formatLastSeenAt(lastSeenAt?: string | null) {
   if (!lastSeenAt) return "Sin último reporte";
@@ -58,18 +59,14 @@ export default function DevicesScreen() {
 
   const onlineCount = visibleDevices.filter((device) => device.online).length;
 
-  const alertCount = visibleDevices.filter(
-    (device) =>
-      (device.critical || !device.online) &&
-      !resolvedSmartAlerts.includes(device.id),
-  ).length;
+  const { count: alertCount } = useActiveDeviceAlerts();
 
   function openDeviceHome(homeId: string) {
     setActiveHomeId(homeId);
 
     router.push({
       pathname: "/(tabs)/home-detail",
-      params: { homeId },
+      params: { homeId, from: "devices" },
     });
   }
 
@@ -128,7 +125,7 @@ export default function DevicesScreen() {
                 if (router.canGoBack()) {
                   router.back();
                 } else {
-                  router.replace("/(tabs)");
+                  router.replace("/(tabs)/(main)/index");
                 }
               }}
               style={({ pressed }) => [

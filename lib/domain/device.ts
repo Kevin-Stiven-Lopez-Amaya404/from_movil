@@ -4,6 +4,11 @@ export type DeviceCategory =
   | "Climatizacion"
   | "Seguridad";
 
+export type DeviceConnectivityStatus =
+  | "ONLINE"
+  | "OFFLINE"
+  | "UNKNOWN";
+
 export type SmartDevice = {
   id: string;
   homeId: string;
@@ -16,6 +21,7 @@ export type SmartDevice = {
   current: number;
   frequency: number;
   online: boolean;
+  connectivityStatus?: DeviceConnectivityStatus;
   temperature?: number;
   state: "on" | "off";
   yesterday: number;
