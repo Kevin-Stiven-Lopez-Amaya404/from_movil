@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { bleAdapter } from "@/lib/pairing/ble-adapter";
 import type { NearbyShelly } from "@/lib/pairing/pairing-types";
+import type { ShellyDeviceInfo } from "@/lib/pairing/shelly-gatt-rpc";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
@@ -22,6 +23,8 @@ export default function AddDeviceScreen() {
   const layout = useResponsiveLayout();
   const [isScanning, setIsScanning] = useState(false);
   const [devices, setDevices] = useState<NearbyShelly[]>([]);
+  const [deviceInfo, setDeviceInfo] = useState<Record<string, ShellyDeviceInfo>>({});
+  const [inspectingDeviceId, setInspectingDeviceId] = useState<string | null>(null);
   const [scanMessage, setScanMessage] = useState<string | null>(null);
   const scanRun = useRef(0);
 
@@ -52,6 +55,7 @@ export default function AddDeviceScreen() {
       const discovered = await bleAdapter.discover(12_000);
       if (run !== scanRun.current) return;
       setDevices(discovered);
+      setDeviceInfo({});
       setScanMessage(
         discovered.length === 0
           ? "No se detectaron anuncios Shelly. Verifica que el dispositivo esté cerca y en su ventana de provisión."
@@ -72,6 +76,24 @@ export default function AddDeviceScreen() {
     await bleAdapter.cancelDiscovery();
     setIsScanning(false);
     setScanMessage("Búsqueda cancelada.");
+  }
+
+  async function inspectDevice(deviceId: string) {
+    setInspectingDeviceId(deviceId);
+    setScanMessage(null);
+    try {
+      const info = await bleAdapter.inspectDevice(deviceId);
+      setDeviceInfo((current) => ({ ...current, [deviceId]: info }));
+      setScanMessage(
+        "Lectura BLE terminada. Estos datos son reportados por el dispositivo; no prueban propiedad ni completan pairing.",
+      );
+    } catch (error) {
+      setScanMessage(
+        error instanceof Error ? error.message : "No se pudo leer la información Shelly.",
+      );
+    } finally {
+      setInspectingDeviceId(null);
+    }
   }
 
   return (
@@ -105,26 +127,26 @@ export default function AddDeviceScreen() {
             </View>
             <Text style={[styles.title, { color: theme.text }]}>Agregar dispositivo</Text>
             <Text style={[styles.subtitle, { color: theme.muted }]}>
-              POC Android de descubrimiento BLE para Shelly 1PM Gen4.
+              POC Android BLE de lectura para Shelly 1PM Gen4. No vincula equipos.
             </Text>
           </View>
 
           <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.borderLight }]}>
             <Text style={[styles.cardTitle, { color: theme.text }]}>Buscar anuncios cercanos</Text>
             <Text style={[styles.cardText, { color: theme.muted }]}>
-              Esta prueba solo escanea anuncios con nombre Shelly. No crea una sesión, no conecta ni cambia la configuración del dispositivo.
+              Busca anuncios Shelly y permite consultar identidad/firmware por GATT. No crea una sesión ni cambia Wi-Fi o MQTT; Android podría pedir autorización de bonding si el firmware exige un enlace seguro.
             </Text>
             <Pressable
-              disabled={isScanning}
+              disabled={isScanning || inspectingDeviceId !== null}
               onPress={() => void startDiscovery()}
               accessibilityRole="button"
-              accessibilityState={{ disabled: isScanning }}
+              accessibilityState={{ disabled: isScanning || inspectingDeviceId !== null }}
               accessibilityLabel="Buscar anuncios Shelly por Bluetooth"
               style={({ pressed }) => [
                 styles.primaryButton,
                 { backgroundColor: theme.blue },
-                pressed && !isScanning && styles.pressed,
-                isScanning && styles.disabled,
+                pressed && !isScanning && inspectingDeviceId === null && styles.pressed,
+                (isScanning || inspectingDeviceId !== null) && styles.disabled,
               ]}
             >
               {isScanning ? (
@@ -152,7 +174,29 @@ export default function AddDeviceScreen() {
                   <Text style={[styles.deviceMeta, { color: theme.muted }]}>
                     {device.rssi == null ? "Señal desconocida" : `Señal ${device.rssi} dBm`} · candidato sin autenticar
                   </Text>
+                  {deviceInfo[device.id] && (
+                    <Text style={[styles.deviceMeta, { color: theme.muted }]}>
+                      {deviceInfo[device.id].model ?? "Modelo desconocido"} · firmware {deviceInfo[device.id].ver ?? deviceInfo[device.id].fw_id ?? "desconocido"} · provisión {deviceInfo[device.id].provision ?? "no reportada"}
+                    </Text>
+                  )}
                 </View>
+                <Pressable
+                  disabled={inspectingDeviceId !== null}
+                  onPress={() => void inspectDevice(device.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Consultar solo lectura ${device.name ?? "Shelly"} por BLE`}
+                  style={({ pressed }) => [
+                    styles.inspectButton,
+                    { borderColor: theme.borderLight, opacity: pressed ? 0.7 : 1 },
+                    inspectingDeviceId !== null && styles.disabled,
+                  ]}
+                >
+                  {inspectingDeviceId === device.id ? (
+                    <ActivityIndicator size="small" color={theme.blue} />
+                  ) : (
+                    <Text style={[styles.inspectText, { color: theme.blue }]}>Leer info</Text>
+                  )}
+                </Pressable>
               </View>
             ))}
           </View>
@@ -160,7 +204,7 @@ export default function AddDeviceScreen() {
           <View style={[styles.infoCard, { backgroundColor: theme.rowAlt }]}>
             <Ionicons name="information-circle-outline" size={20} color={theme.blue} />
             <Text style={[styles.infoText, { color: theme.muted }]}>
-              BLE RPC, bonding, provisión Wi-Fi/MQTT y alta en backend siguen pendientes de validación. El nombre y la señal no demuestran identidad ni posesión.
+              La lectura BLE es experimental y debe probarse con hardware. No llama a BLE.StartPairing ni provisión Wi-Fi/MQTT; Android podría solicitar bonding en el sistema. Los datos reportados no prueban propiedad ni completan el pairing.
             </Text>
           </View>
         </View>
@@ -211,6 +255,16 @@ const styles = StyleSheet.create({
   scanMessage: { fontSize: 12, lineHeight: 18, marginTop: 14 },
   deviceRow: { alignItems: "center", borderTopWidth: 1, flexDirection: "row", marginTop: 14, paddingTop: 14 },
   deviceDetails: { flex: 1, marginLeft: 10 },
+  inspectButton: {
+    alignItems: "center",
+    borderRadius: 10,
+    borderWidth: 1,
+    justifyContent: "center",
+    marginLeft: 8,
+    minHeight: 38,
+    paddingHorizontal: 10,
+  },
+  inspectText: { fontSize: 12, fontWeight: "800" },
   deviceName: { fontSize: 14, fontWeight: "800" },
   deviceMeta: { fontSize: 11, marginTop: 4 },
   infoCard: { borderRadius: 14, flexDirection: "row", marginTop: 16, padding: 14 },

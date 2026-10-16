@@ -1,12 +1,12 @@
 # POC BLE Android — descubrimiento Shelly
 
-Estado: escaneo BLE implementado; protocolo GATT/RPC de Shelly identificado en documentación oficial. Falta implementar la conexión nativa, construir/instalar en Android y probar con el Shelly real. Esto no implementa pairing de producto.
+Estado: escaneo BLE y cliente experimental GATT/RPC de solo lectura implementados; falta compilar/instalar en Android y probar con el Shelly real. Esto no implementa pairing de producto.
 
 ## Qué hace esta POC
 
 La pantalla **Agregar dispositivo** busca anuncios BLE cuyo nombre empieza por `Shelly`, solicita los permisos Android requeridos, muestra nombre/RSSI y ordena candidatos por señal. La búsqueda termina a los 12 segundos y se puede cancelar.
 
-La POC todavía no conecta a GATT, no inicia bonding, no solicita ni envía credenciales Wi-Fi/MQTT y no llama al backend para crear sesiones. Un nombre Shelly o una señal fuerte no demuestra identidad ni posesión. El adaptador rechaza conexiones mientras no se complete la validación física.
+La POC no llama a `BLE.StartPairing`, no solicita/envía credenciales Wi-Fi/MQTT y no crea sesiones backend. Incluye una operación experimental de solo lectura que conecta a GATT y consulta `Shelly.GetDeviceInfo` desde cada candidato detectado. Si el firmware exige un enlace cifrado, Android podría mostrar un diálogo de bonding; no aceptarlo hasta coordinar la prueba. Un nombre Shelly, una señal fuerte o los datos reportados por el dispositivo no demuestran propiedad ni completan pairing.
 
 ## Perfil GATT documentado
 
@@ -54,4 +54,6 @@ Se fijó `@sfourdrinier/react-native-ble-plx` `3.9.3` porque declara soporte par
 
 Validación en el entorno de desarrollo: TypeScript, ESLint, cinco pruebas de `test:mobile-config` y `expo prebuild --platform android --no-install` pasaron. El prebuild se generó con el identificador POC anterior. Este entorno no tiene Android SDK ni `adb`, así que aún no se construyó/instaló el APK y no se comprobó BLE con hardware.
 
-Siguiente puerta: implementar el transporte GATT detrás de una POC aislada, compilar e inspeccionar el anuncio con Android físico, leer `Shelly.GetDeviceInfo` sin alterar la configuración y registrar el estado de provisión y firmware. La carga de credenciales y la integración backend se mantienen deshabilitadas hasta validar acceso GATT, límites de bonding, provisión segura y contrato EMQX soportado.
+El cliente de solo lectura está en `lib/pairing/shelly-gatt-rpc.ts`; valida longitud, fragmentación, respuesta JSON-RPC e ID correlacionado, y cierra la conexión en todos los resultados. La pantalla permite ejecutarlo desde un candidato. Su prueba simulada cubre una lectura satisfactoria y no prueba la interoperabilidad con firmware Shelly. Ejecutar `npm run test:shelly-ble-rpc`.
+
+Siguiente puerta: compilar e instalar en Android físico, leer `Shelly.GetDeviceInfo` sin alterar la configuración y registrar el estado de provisión y firmware. La carga de credenciales, bonding iniciado por la app y la integración backend se mantienen deshabilitadas hasta validar acceso GATT, límites de bonding, provisión segura y contrato EMQX soportado.

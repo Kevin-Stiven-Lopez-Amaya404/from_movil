@@ -11,7 +11,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "lint": "expo lint",
-    "test:mobile-config": "node scripts/app-config.test.js"
+    "test:mobile-config": "node scripts/app-config.test.js",
+    "test:shelly-ble-rpc": "node scripts/shelly-gatt-rpc.test.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

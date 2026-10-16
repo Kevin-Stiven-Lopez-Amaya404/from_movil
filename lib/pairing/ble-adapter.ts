@@ -5,12 +5,18 @@ import {
   type BlePermissionStatus,
   type NearbyShelly,
 } from "./pairing-types";
+import {
+  readShellyDeviceInfo,
+  type ShellyBleManager,
+  type ShellyDeviceInfo,
+} from "./shelly-gatt-rpc";
 
 export interface BleAdapter {
   getPermissionStatus(): Promise<BlePermissionStatus>;
   requestPermission(): Promise<BlePermissionStatus>;
   discover(timeoutMs?: number): Promise<NearbyShelly[]>;
   cancelDiscovery(): Promise<void>;
+  inspectDevice(deviceId: string): Promise<ShellyDeviceInfo>;
   connect(deviceId: string): Promise<void>;
   disconnect(deviceId: string): Promise<void>;
 }
@@ -22,7 +28,7 @@ type NativeBleDevice = {
   rssi: number | null;
 };
 
-type NativeBleManager = {
+type NativeBleManager = ShellyBleManager & {
   state(): Promise<string>;
   startDeviceScan(
     serviceUUIDs: string[] | null,
@@ -194,6 +200,25 @@ export const bleAdapter: BleAdapter = {
   },
   async cancelDiscovery() {
     await stopActiveScan();
+  },
+  async inspectDevice(deviceId) {
+    if (!(await hasRequiredPermissions())) {
+      throw new PairingError(
+        "Concede los permisos Bluetooth para consultar el Shelly.",
+        "BLE_PERMISSION_DENIED",
+      );
+    }
+    if (activeScan) {
+      throw new PairingError(
+        "Cancela la búsqueda BLE antes de conectar con el Shelly.",
+        "INVALID_STATE",
+      );
+    }
+    const ble = getNativeManager();
+    if ((await ble.state()) !== "PoweredOn") {
+      throw new PairingError("Activa Bluetooth y vuelve a intentar.", "BLE_UNAVAILABLE");
+    }
+    return readShellyDeviceInfo(ble, deviceId);
   },
   async connect() {
     throw new PairingError(
