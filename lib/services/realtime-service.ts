@@ -1,13 +1,14 @@
 import { io, type Socket } from "socket.io-client";
 
 import { apiConfig } from "@/lib/config/api-config";
+import type { DeviceConnectivityStatus } from "@/lib/domain/device";
 import { getAccessToken } from "@/lib/session/session-store";
 
 export type DeviceStatusUpdatedEvent = {
   deviceId?: string;
   id?: string;
   homeId?: string;
-  connectivityStatus?: "ONLINE" | "OFFLINE";
+  connectivityStatus?: DeviceConnectivityStatus;
   isOn?: boolean;
   currentPowerW?: number | null;
   energyTotalKwh?: number | null;

@@ -122,7 +122,7 @@ export default function LoginScreen() {
       // IR AL DASHBOARD
       // ======================================
 
-      router.replace("/(tabs)");
+      router.replace("/(tabs)/(main)/index");
     } catch (error) {
       Alert.alert("Error de conexión", getApiErrorMessage(error));
     } finally {

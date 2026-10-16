@@ -78,6 +78,8 @@ export function useRealtimeSync({
                           : {}),
                         ...(event.connectivityStatus !== undefined
                           ? {
+                              connectivityStatus:
+                                event.connectivityStatus,
                               online:
                                 event.connectivityStatus === "ONLINE",
                             }

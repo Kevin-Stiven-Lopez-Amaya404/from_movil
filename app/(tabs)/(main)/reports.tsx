@@ -6,7 +6,14 @@
  *    gráfica de telemetría horaria en Wh/kWh, zona horaria (America/Bogota) y tarjetas de descarga.
  */
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
     Alert,
     Pressable,
@@ -17,6 +24,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { DeviceConsumptionRankingCard } from "@/components/energy/DeviceConsumptionRankingCard";
+import { EnergyExportCard } from "@/components/energy/EnergyExportCard";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import {
@@ -75,8 +84,24 @@ export default function ReportsScreen() {
   const selectedHome = accessibleHomes.find(
     (home) => home.id === activeHomeId,
   );
+  const isGuest = selectedHome?.homeRole === "GUEST";
+  const canViewDetails =
+    selectedHome?.homeRole === "OWNER" ||
+    selectedHome?.homeRole === "MEMBER";
+  const [focusRefreshVersion, setFocusRefreshVersion] =
+    useState(0);
+  const hasFocusedBefore = useRef(false);
 
-  const activeHomeName = selectedHome?.name ?? "Hogar";
+  useFocusEffect(
+    useCallback(() => {
+      if (hasFocusedBefore.current) {
+        setFocusRefreshVersion((value) => value + 1);
+      } else {
+        hasFocusedBefore.current = true;
+      }
+    }, []),
+  );
+
   const [realConsumptionKwh, setRealConsumptionKwh] =
   useState<number | null>(null);
   const [realReadingsCount, setRealReadingsCount] = useState<number | null>(
@@ -105,9 +130,16 @@ export default function ReportsScreen() {
   const consumptionQueryKey = useMemo(
     () =>
       activeHomeId
-        ? Symbol(`consumption-query:${activeHomeId}:${historyPeriod}`)
+        ? Symbol(
+            `consumption-query:${activeHomeId}:${selectedHome?.homeRole ?? "UNKNOWN"}:${historyPeriod}:${focusRefreshVersion}`,
+          )
         : null,
-    [activeHomeId, historyPeriod],
+    [
+      activeHomeId,
+      selectedHome?.homeRole,
+      historyPeriod,
+      focusRefreshVersion,
+    ],
   );
   const consumptionRange = useMemo(
     () =>
@@ -123,12 +155,9 @@ export default function ReportsScreen() {
       : null;
 
   const isRankingLoading =
-    Boolean(activeHomeId) && !visibleRankingState;
-
-  const rankingItems = visibleRankingState?.data?.topDevices ?? [];
-
-  const rankingMaxKwh =
-    rankingItems[0]?.totalEnergyDeltaKwh ?? 0;
+    Boolean(activeHomeId) &&
+    canViewDetails &&
+    !visibleRankingState;
 
   const hasCurrentHomeData =
     consumptionQueryKey !== null && loadedQueryKey === consumptionQueryKey;
@@ -147,6 +176,7 @@ export default function ReportsScreen() {
   const isLoading = hasRealConsumptionSource && !hasCurrentHomeData;
   const canExportCsv =
     Boolean(selectedHome) &&
+    canViewDetails &&
     hasCurrentHomeData &&
     !visibleError &&
     dailyRecords.length > 0 &&
@@ -154,6 +184,7 @@ export default function ReportsScreen() {
     !exportingCsv;
   const canExportPdf =
     Boolean(selectedHome) &&
+    canViewDetails &&
     hasCurrentHomeData &&
     !visibleError &&
     realConsumptionKwh !== null &&
@@ -176,13 +207,15 @@ export default function ReportsScreen() {
 
     Promise.all([
       consumptionService.getHomeSummary(homeId, query),
-      consumptionService.getHomeDaily(homeId, query),
+      canViewDetails
+        ? consumptionService.getHomeDaily(homeId, query)
+        : Promise.resolve([] as HomeDailyConsumptionRecord[]),
     ])
       .then(([summary, daily]) => {
         if (!active) return;
 
         setRealConsumptionKwh(summary.totalEnergyDeltaKwh);
-        setRealReadingsCount(summary.readingsCount);
+        setRealReadingsCount(summary.readingsCount ?? null);
 
         const mappedSeries = [...daily]
           .sort((a, b) =>
@@ -237,12 +270,13 @@ export default function ReportsScreen() {
     historyPeriod,
     consumptionRange,
     consumptionQueryKey,
+    canViewDetails,
   ]);
 
   useEffect(() => {
     const homeId = activeHomeId;
 
-    if (!homeId || consumptionQueryKey === null) {
+    if (!homeId || consumptionQueryKey === null || !canViewDetails) {
       return;
     }
 
@@ -279,19 +313,9 @@ export default function ReportsScreen() {
     historyPeriod,
     consumptionRange,
     consumptionQueryKey,
+    canViewDetails,
   ]);
 
-
-  const consumptionLabel =
-    visibleError
-      ? "No fue posible consultar el consumo"
-      : visibleReadingsCount === 0
-        ? "Sin mediciones registradas"
-        : visibleReadingsCount !== null &&
-            visibleReadingsCount > 0 &&
-            visibleRealConsumptionKwh !== null
-          ? `${(visibleRealConsumptionKwh * 1000).toFixed(2)} Wh registrados`
-          : "Datos de consumo no disponibles";
 
   const chartPoints = visibleDailySeries.filter(
     (point) => Number.isFinite(point.value) && point.value >= 0,
@@ -303,8 +327,6 @@ export default function ReportsScreen() {
   );
 
   // Estados de la pestaña "Historia"
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
   async function handleExportCsv(): Promise<void> {
     if (!canExportCsv || !selectedHome) {
       return;
@@ -509,102 +531,146 @@ export default function ReportsScreen() {
           )}
 
           {/* ============================================================ */}
+          <View
+            style={[
+              styles.cardContainer,
+              {
+                backgroundColor: theme.card,
+                borderColor: theme.borderLight,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.summaryHeading,
+                { color: theme.muted },
+              ]}
+            >
+              Consumo del período
+            </Text>
+
+            <View style={styles.summaryValueRow}>
+              <Ionicons
+                name="flash-outline"
+                size={28}
+                color={theme.blue}
+              />
+
+              <Text
+                style={[
+                  styles.summaryValue,
+                  { color: theme.text },
+                ]}
+              >
+                {isLoading || !hasCurrentHomeData
+                  ? "—"
+                  : visibleRealConsumptionKwh === null
+                    ? "—"
+                    : visibleRealConsumptionKwh.toLocaleString(
+                        "es-CO",
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 3,
+                        },
+                      )}
+              </Text>
+
+              <Text
+                style={[
+                  styles.summaryUnit,
+                  { color: theme.muted },
+                ]}
+              >
+                kWh
+              </Text>
+            </View>
+
+            <View style={styles.summaryFooter}>
+              <Ionicons
+                name="calendar-outline"
+                size={16}
+                color={theme.muted}
+              />
+
+              <Text style={{ color: theme.muted, fontSize: 12 }}>
+                {historyPeriod}
+              </Text>
+            </View>
+
+            {isLoading ? (
+              <Text style={[styles.summaryNote, { color: theme.muted }]}>
+                Consultando consumo...
+              </Text>
+            ) : visibleError ? (
+              <Text style={[styles.summaryNote, { color: theme.danger }]}>
+                {visibleError}
+              </Text>
+            ) : hasCurrentHomeData &&
+              visibleRealConsumptionKwh !== null ? (
+              <Text style={[styles.summaryNote, { color: theme.muted }]}>
+                {isGuest
+                  ? "Resumen de consumo del hogar"
+                  : visibleReadingsCount === null
+                    ? "Datos de medición no disponibles"
+                    : visibleReadingsCount + " mediciones registradas"}
+              </Text>
+            ) : null}
+          </View>
+
           {/* PESTAÑA 1: HISTORIA (IMÁGENES 2 Y 3)                         */}
           {/* ============================================================ */}
           <View style={styles.historySection}>
-            {/* Tarjeta de Selección de Período y Dropdown */}
-            <View
-              style={[
-                styles.cardContainer,
-                {
-                  backgroundColor: theme.card,
-                  borderColor: theme.borderLight,
-                },
-              ]}
-            >
-              <Text style={[styles.cardTitle, { color: theme.text }]}>
-                Historia
-              </Text>
+            <View style={styles.periodRow}>
+              {HISTORY_PERIODS.map((period) => {
+                const selected = historyPeriod === period;
 
-              {/* Selector Desplegable (Dropdown) */}
-              <Pressable
-                onPress={() => setDropdownOpen(!dropdownOpen)}
-                style={[
-                  styles.dropdownHeader,
-                  {
-                    backgroundColor: theme.dark ? "#0E1829" : theme.rowAlt,
-                    borderColor: "#2563EB",
-                  },
-                ]}
-              >
-                <View style={styles.dropdownHeaderLeft}>
-                  <Ionicons name="time-outline" size={18} color={theme.text} />
-                  <Text
-                    style={[styles.dropdownHeaderText, { color: theme.text }]}
+                const label =
+                  period === "Últimos 7 días"
+                    ? "7 días"
+                    : period === "Últimos 30 días"
+                      ? "30 días"
+                      : "Todo";
+
+                return (
+                  <Pressable
+                    key={period}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => {
+                      if (selected) return;
+
+                      setLoadedQueryKey(null);
+                      setRankingQueryState(null);
+                      setHistoryPeriod(period);
+                    }}
+                    style={[
+                      styles.periodButton,
+                      {
+                        backgroundColor: selected
+                          ? theme.blue
+                          : theme.card,
+                        borderColor: selected
+                          ? theme.blue
+                          : theme.borderLight,
+                      },
+                    ]}
                   >
-                    {historyPeriod}
-                  </Text>
-                </View>
-                <Ionicons
-                  name={dropdownOpen ? "chevron-up" : "chevron-down"}
-                  size={18}
-                  color={theme.muted}
-                />
-              </Pressable>
-
-              {/* Lista Desplegable (Imagen 2) */}
-              {dropdownOpen && (
-                <View
-                  style={[
-                    styles.dropdownMenu,
-                    {
-                      backgroundColor: theme.dark ? "#0E1829" : theme.rowAlt,
-                      borderColor: "#2563EB",
-                    },
-                  ]}
-                >
-                  {HISTORY_PERIODS.map((period) => {
-                    const isSelected = historyPeriod === period;
-                    return (
-                      <Pressable
-                        key={period}
-                        onPress={() => {
-                          if (period !== historyPeriod) {
-                            // Invalidar el resumen y el historial anteriores.
-                            setLoadedQueryKey(null);
-
-                            // Invalidar el ranking anterior.
-                            setRankingQueryState(null);
-
-                            // Activar el nuevo periodo.
-                            setHistoryPeriod(period);
-                          }
-
-                          setDropdownOpen(false);
-                        }}
-                        style={[
-                          styles.dropdownItem,
-                          isSelected && styles.dropdownItemSelected,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.dropdownItemText,
-                            { color: isSelected ? "#3B82F6" : theme.text },
-                          ]}
-                        >
-                          {period}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              )}
-
+                    <Text
+                      style={{
+                        color: selected ? "#FFFFFF" : theme.text,
+                        fontSize: 13,
+                        fontWeight: "800",
+                      }}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
-
-            {/* Gráfica de consumo diario registrado */}
-            <View
+            {canViewDetails ? (
+              <>
+                <View
               style={[
                 styles.cardContainer,
                 {
@@ -614,187 +680,14 @@ export default function ReportsScreen() {
               ]}
             >
               <View style={styles.chartCardHeader}>
-                <Text style={[styles.chartCardTitle, { color: theme.text }]}>
-                  Consumo diario registrado
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Exportar informe de consumo en CSV"
-                  accessibilityState={{ disabled: !canExportCsv }}
-                  disabled={!canExportCsv}
-                  onPress={() => void handleExportCsv()}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    paddingHorizontal: 10,
-                    paddingVertical: 8,
-                    borderRadius: 10,
-                    backgroundColor: theme.rowAlt,
-                    opacity: canExportCsv ? 1 : 0.45,
-                  }}
-                >
-                  <Ionicons
-                    name="download-outline"
-                    size={17}
-                    color={theme.text}
-                  />
-                  <Text style={{ color: theme.text, fontSize: 12 }}>
-                    {exportingCsv ? "Preparando..." : "Exportar CSV"}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Exportar informe de consumo en PDF"
-                  accessibilityState={{ disabled: !canExportPdf }}
-                  disabled={!canExportPdf}
-                  onPress={() => void handleExportPdf()}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    paddingHorizontal: 10,
-                    paddingVertical: 8,
-                    borderRadius: 10,
-                    backgroundColor: theme.rowAlt,
-                    opacity: canExportPdf ? 1 : 0.45,
-                  }}
-                >
-                  <Ionicons
-                    name="document-text-outline"
-                    size={17}
-                    color={theme.text}
-                  />
-                  <Text
-                    style={{
-                      color: theme.text,
-                      fontSize: 12,
-                    }}
-                  >
-                    {exportingPdf ? "Preparando..." : "Exportar PDF"}
-                  </Text>
-                </Pressable>
-              </View>
-
-              <View
-                style={[
-                  styles.cardContainer,
-                  {
-                    backgroundColor: theme.card,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <Text style={[styles.cardTitle, { color: theme.text }]}>
-                  Mayor consumo por dispositivo
-                </Text>
-
                 <Text
-                  style={{
-                    color: theme.muted,
-                    fontSize: 12,
-                    marginTop: 4,
-                    marginBottom: 16,
-                  }}
+                  style={[
+                    styles.chartCardTitle,
+                    { color: theme.text },
+                  ]}
                 >
-                  Hasta 5 dispositivos · {historyPeriod}
+                  Consumo diario
                 </Text>
-
-                {!activeHomeId ? (
-                  <Text style={{ color: theme.muted }}>
-                    Selecciona un hogar para consultar su consumo.
-                  </Text>
-                ) : isRankingLoading ? (
-                  <Text style={{ color: theme.muted }}>
-                    Consultando el consumo de los dispositivos...
-                  </Text>
-                ) : visibleRankingState?.error ? (
-                  <Text style={{ color: theme.danger }}>
-                    {visibleRankingState.error}
-                  </Text>
-                ) : rankingItems.length === 0 ? (
-                  <Text style={{ color: theme.muted }}>
-                    {visibleRankingState?.data?.deviceCount === 0
-                      ? "Este hogar no tiene dispositivos activos."
-                      : visibleRankingState?.data?.measuredDeviceCount === 0
-                        ? "No hay mediciones de dispositivos en este periodo."
-                        : "No hay consumo positivo registrado en este periodo."}
-                  </Text>
-                ) : (
-                  rankingItems.map((device, index) => {
-                    const percentage =
-                      rankingMaxKwh > 0
-                        ? (device.totalEnergyDeltaKwh / rankingMaxKwh) * 100
-                        : 0;
-
-                    return (
-                      <View
-                        key={device.deviceId}
-                        style={{
-                          marginBottom:
-                            index === rankingItems.length - 1 ? 0 : 16,
-                        }}
-                      >
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 12,
-                            marginBottom: 8,
-                          }}
-                        >
-                          <Text
-                            numberOfLines={1}
-                            style={{
-                              flex: 1,
-                              color: theme.text,
-                              fontSize: 13,
-                              fontWeight: "500",
-                            }}
-                          >
-                            {index + 1}. {device.deviceName}
-                          </Text>
-
-                          <Text
-                            style={{
-                              color: theme.text,
-                              fontSize: 13,
-                              fontWeight: "600",
-                            }}
-                          >
-                            {device.totalEnergyDeltaKwh.toLocaleString(
-                              "es-CO",
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 3,
-                              },
-                            )}{" "}
-                            kWh
-                          </Text>
-                        </View>
-
-                        <View
-                          style={{
-                            height: 6,
-                            borderRadius: 3,
-                            backgroundColor: theme.rowAlt,
-                            overflow: "hidden",
-                          }}
-                        >
-                          <View
-                            style={{
-                              height: "100%",
-                              width: `${percentage}%` as `${number}%`,
-                              borderRadius: 3,
-                              backgroundColor: theme.blue,
-                            }}
-                          />
-                        </View>
-                      </View>
-                    );
-                  })
-                )}
               </View>
 
               {/* Área de la Gráfica */}
@@ -885,11 +778,28 @@ export default function ReportsScreen() {
 
               {/* Pie de zona horaria */}
               <Text style={[styles.timezoneFooter, { color: theme.muted }]}>
-                Zona horaria local de la cuenta de usuario: America/Bogota
+                Los consumos diarios se agrupan según el backend.
               </Text>
             </View>
 
-            {/* Resumen de consumo del hogar activo */}
+                <DeviceConsumptionRankingCard
+                  period={historyPeriod}
+                  loading={isRankingLoading}
+                  error={visibleRankingState?.error ?? null}
+                  data={visibleRankingState?.data ?? null}
+                />
+
+                <EnergyExportCard
+                  canExportCsv={canExportCsv}
+                  canExportPdf={canExportPdf}
+                  exportingCsv={exportingCsv}
+                  exportingPdf={exportingPdf}
+                  onExportCsv={() => void handleExportCsv()}
+                  onExportPdf={() => void handleExportPdf()}
+                />
+              </>
+
+          ) : isGuest ? (
             <View
               style={[
                 styles.cardContainer,
@@ -899,28 +809,13 @@ export default function ReportsScreen() {
                 },
               ]}
             >
-              <View style={styles.chartCardHeader}>
-                <Text style={[styles.chartCardTitle, { color: theme.text }]}>
-                  Consumo registrado del hogar
-                </Text>
-              </View>
-
-              <Text style={[styles.deviceHistoryMeta, { color: theme.muted }]}>
-                Consumo energético de los dispositivos monitoreados de{" "}
-                {activeHomeName} durante el período seleccionado.
+              <Text style={{ color: theme.muted, fontSize: 13 }}>
+                Puedes consultar el consumo total del hogar.
+                El detalle por día y dispositivo está reservado
+                para propietarios y miembros.
               </Text>
-              <View
-                style={[
-                  styles.deviceStatBadge,
-                  { backgroundColor: theme.rowAlt },
-                ]}
-              >
-                <Ionicons name="flash-outline" size={16} color={theme.blue} />
-                <Text style={[styles.deviceStatText, { color: theme.text }]}>
-                  {isLoading ? "Consultando consumo real…" : consumptionLabel}
-                </Text>
-              </View>
             </View>
+            ) : null}
           </View>
         </View>
       </ScrollView>
@@ -969,45 +864,48 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.emphasis,
     marginBottom: 12,
   },
-  dropdownHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    height: 48,
-    marginBottom: 10,
-  },
-  dropdownHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  dropdownHeaderText: {
-    fontSize: 15,
-    fontWeight: "700",
-    fontFamily: typography.fontFamily.emphasis,
-  },
-  dropdownMenu: {
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-    overflow: "hidden",
-  },
-  dropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.06)",
-  },
-  dropdownItemSelected: {
-    backgroundColor: "rgba(59, 130, 246, 0.15)",
-  },
-  dropdownItemText: {
+  summaryHeading: {
     fontSize: 14,
     fontWeight: "700",
-    fontFamily: typography.fontFamily.emphasis,
+    marginBottom: 14,
+  },
+  summaryValueRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
+  },
+  summaryValue: {
+    fontSize: 35,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+  },
+  summaryUnit: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  summaryFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    marginTop: 14,
+  },
+  summaryNote: {
+    fontSize: 12,
+    marginTop: 10,
+  },
+  periodRow: {
+    flexDirection: "row",
+    gap: 9,
+    marginBottom: 16,
+  },
+  periodButton: {
+    flex: 1,
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
   },
   dateNavigator: {
     flexDirection: "row",
@@ -1056,12 +954,12 @@ const styles = StyleSheet.create({
   energyBarsRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 12,
+    gap: 10,
     paddingVertical: 12,
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
   },
   energyBarColumn: {
-    minWidth: 94,
+    minWidth: 70,
     alignItems: "center",
   },
   energyValueLabel: {
@@ -1072,15 +970,15 @@ const styles = StyleSheet.create({
   },
   energyBarTrack: {
     height: 128,
-    width: 64,
+    width: 52,
     justifyContent: "flex-end",
     alignItems: "center",
     borderBottomWidth: 1,
   },
   energyBar: {
-    width: 32,
-    borderTopLeftRadius: 5,
-    borderTopRightRadius: 5,
+    width: 28,
+    borderTopLeftRadius: 7,
+    borderTopRightRadius: 7,
   },
   energyDayLabel: {
     marginTop: 10,

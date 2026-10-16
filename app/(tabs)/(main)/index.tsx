@@ -7,6 +7,7 @@ import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
+import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
 
 const appFont = typography.fontFamily.emphasis;
 
@@ -107,17 +108,13 @@ export default function DashboardScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  const { devices, homes, resolvedSmartAlerts, sessionName } = useSmartHome();
+  const { devices, homes, sessionName } = useSmartHome();
+  const { count: pendingAlerts } = useActiveDeviceAlerts();
 
   const activeDeviceCount = devices.filter(
     (device) => device.online && device.state === "on",
   ).length;
   const onlineDeviceCount = devices.filter((device) => device.online).length;
-  const pendingAlerts = devices.filter(
-    (device) =>
-      (device.critical || !device.online) &&
-      !resolvedSmartAlerts.includes(device.id),
-  ).length;
   const favoriteHomes = homes.filter((home) => home.favorite).length;
 
   return (
@@ -243,7 +240,7 @@ export default function DashboardScreen() {
               icon="home-outline"
               title="Mis hogares"
               description={`${homes.length} disponibles`}
-              onPress={() => router.push("/(tabs)/homes")}
+              onPress={() => router.navigate("/(tabs)/(main)/homes")}
               theme={theme}
             />
             <QuickCard
@@ -257,14 +254,19 @@ export default function DashboardScreen() {
               icon="bar-chart-outline"
               title="Consumo"
               description="Consulta tus reportes"
-              onPress={() => router.push("/(tabs)/reports")}
+              onPress={() => router.navigate("/(tabs)/(main)/reports")}
               theme={theme}
             />
             <QuickCard
               icon="notifications-outline"
               title="Alertas"
               description={`${pendingAlerts} pendientes`}
-              onPress={() => router.push("/(tabs)/notifications")}
+              onPress={() =>
+                router.navigate({
+                  pathname: "/(tabs)/(main)/notifications",
+                  params: { section: "alerts" },
+                })
+              }
               theme={theme}
             />
             <QuickCard

@@ -133,7 +133,7 @@ Si hay favoritos, los muestra. Si no hay, muestra el primer hogar.
 |---|---|
 | `showNotifications` | Busca un dispositivo crítico y muestra alerta. |
 | `router.push("/profile")` | Abre perfil. |
-| `router.push("/(tabs)/homes")` | Abre hogares. |
+| `router.push("/(tabs)/(main)/homes")` | Abre hogares. |
 | `router.push("/reports")` | Abre reportes. |
 
 ### Variables importantes

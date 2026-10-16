@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
     Alert,
@@ -19,11 +19,17 @@ import { changeUserPassword } from "@/lib/auth/auth-store";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { getPasswordRules } from "@/lib/utils/validators";
+import {
+  returnToParent,
+  useAndroidBackFallback,
+} from "@/lib/navigation/use-android-back-fallback";
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
+  useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -76,11 +82,12 @@ export default function ChangePasswordScreen() {
           {
             text: "Aceptar",
             onPress: () => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/(tabs)/profile");
-              }
+              returnToParent(
+                router,
+                from,
+                "profile",
+                "/(tabs)/(main)/profile",
+              );
             },
           },
         ],
@@ -110,11 +117,12 @@ export default function ChangePasswordScreen() {
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
             onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/(tabs)/profile");
-              }
+              returnToParent(
+                router,
+                from,
+                "profile",
+                "/(tabs)/(main)/profile",
+              );
             }}
             style={({ pressed }) => [
               styles.backButton,

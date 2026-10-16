@@ -12,8 +12,16 @@ export type ConsumptionRangeQuery = {
 };
 
 export type HomeConsumptionSummaryResponse = {
+  homeId?: string;
+  from?: string | null;
+  to?: string | null;
   totalEnergyDeltaKwh: number;
-  readingsCount: number;
+  readingsCount?: number;
+  devicesWithReadings?: number;
+  averagePowerW?: number | null;
+  maxPowerW?: number | null;
+  minPowerW?: number | null;
+  latestReadAt?: string | null;
 };
 
 export type DeviceConsumptionSummaryResponse = {

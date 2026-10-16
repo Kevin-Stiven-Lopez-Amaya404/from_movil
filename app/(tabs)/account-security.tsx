@@ -1,27 +1,43 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { profileFont } from "@/components/profile/profileTheme";
-import { useSmartHome } from "@/lib/context/smart-home-context";
+import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
+import {
+  returnToParent,
+  useAndroidBackFallback,
+} from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
 export default function AccountSecurityScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  const { devices, resolvedSmartAlerts } = useSmartHome();
+  const {
+    count: pendingAlerts,
+    isLoading,
+    hasError,
+  } = useActiveDeviceAlerts();
+  useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
 
-  const pendingAlerts = devices.filter(
-    (device) =>
-      (device.critical || !device.online) &&
-      !resolvedSmartAlerts.includes(device.id),
-  ).length;
+  const status = isLoading
+    ? "Verificando dispositivos..."
+    : hasError
+      ? "Información parcialmente disponible"
+      : pendingAlerts > 0
+        ? `${pendingAlerts} dispositivo(s) desconectado(s)`
+        : "Sin desconexiones confirmadas";
 
-  const status = pendingAlerts === 0 ? "Cuenta protegida" : "Requiere atención";
-  const statusColor = pendingAlerts === 0 ? theme.success : theme.danger;
+  const statusColor =
+    pendingAlerts > 0
+      ? theme.danger
+      : hasError || isLoading
+        ? theme.muted
+        : theme.success;
 
   return (
     <SafeAreaView
@@ -37,13 +53,14 @@ export default function AccountSecurityScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/(tabs)/profile");
-              }
-            }}
+            onPress={() =>
+              returnToParent(
+                router,
+                from,
+                "profile",
+                "/(tabs)/(main)/profile",
+              )
+            }
             style={({ pressed }) => [
               styles.backButton,
               { backgroundColor: theme.card, borderColor: theme.borderLight },
@@ -89,7 +106,12 @@ export default function AccountSecurityScreen() {
           >
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push("/(tabs)/close-sessions")}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/close-sessions",
+                  params: { from: "account-security" },
+                })
+              }
               style={({ pressed }) => [
                 styles.controlRow,
                 pressed && styles.pressed,
@@ -126,7 +148,7 @@ export default function AccountSecurityScreen() {
               </View>
               <View style={styles.statusCopy}>
                 <Text style={[styles.statusLabel, { color: theme.muted }]}>
-                  Estado de seguridad
+                  Estado de dispositivos
                 </Text>
                 <Text style={[styles.statusValue, { color: statusColor }]}>
                   {status}

@@ -48,6 +48,12 @@
     "platforms": [
       "ios",
       "android"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "06ab1ed4-08f0-4bd4-91ef-590f3de9c797"
+      }
+    }
   }
 }

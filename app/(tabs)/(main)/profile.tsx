@@ -17,6 +17,7 @@ import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
 
 const appFont = profileFont;
 type ThemeLike = ReturnType<typeof useAppTheme>;
@@ -109,20 +110,14 @@ export default function ProfileScreen() {
   const {
     colorMode,
     deactivateAccount,
-    devices,
     language,
-    resolvedSmartAlerts,
     sessionEmail,
     sessionName,
     sessionRole,
     setColorMode,
   } = useSmartHome();
 
-  const pendingAlerts = devices.filter(
-    (device) =>
-      (device.critical || !device.online) &&
-      !resolvedSmartAlerts.includes(device.id),
-  ).length;
+  const { count: pendingAlerts } = useActiveDeviceAlerts();
   const initial = sessionName.trim().charAt(0).toUpperCase() || "U";
   const languageLabel =
     language === "en"
@@ -205,7 +200,12 @@ export default function ProfileScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Ver información personal"
-            onPress={() => router.push("/(tabs)/personal-info")}
+            onPress={() =>
+              router.push({
+                pathname: "/(tabs)/personal-info",
+                params: { from: "profile" },
+              })
+            }
             style={({ pressed }) => [
               styles.identityCard,
               { backgroundColor: theme.card, borderColor: theme.borderLight },
@@ -255,7 +255,12 @@ export default function ProfileScreen() {
             <Row
               icon="person-outline"
               title="Información personal"
-              onPress={() => router.push("/(tabs)/personal-info")}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/personal-info",
+                  params: { from: "profile" },
+                })
+              }
               theme={theme}
             />
             <Row
@@ -272,14 +277,24 @@ export default function ProfileScreen() {
             <Row
               icon="lock-closed-outline"
               title="Cambiar contraseña"
-              onPress={() => router.push("/(tabs)/change-password")}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/change-password",
+                  params: { from: "profile" },
+                })
+              }
               theme={theme}
             />
             <Row
               icon="shield-checkmark-outline"
               title="Seguridad de la cuenta"
               description={`${pendingAlerts} alertas pendientes`}
-              onPress={() => router.push("/(tabs)/account-security")}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/account-security",
+                  params: { from: "profile" },
+                })
+              }
               theme={theme}
             />
           </Section>
@@ -325,7 +340,12 @@ export default function ProfileScreen() {
               icon="language-outline"
               title="Idioma"
               description={languageLabel}
-              onPress={() => router.push("/(tabs)/language")}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/language",
+                  params: { from: "profile" },
+                })
+              }
               theme={theme}
             />
           </Section>
@@ -334,7 +354,12 @@ export default function ProfileScreen() {
             <Row
               icon="help-circle-outline"
               title="Centro de ayuda"
-              onPress={() => router.push("/(tabs)/help")}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/help",
+                  params: { from: "profile" },
+                })
+              }
               theme={theme}
             />
             <Row
@@ -346,7 +371,12 @@ export default function ProfileScreen() {
             <Row
               icon="information-circle-outline"
               title="Acerca de Smart Home"
-              onPress={() => router.push("/(tabs)/about-smart-home")}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/about-smart-home",
+                  params: { from: "profile" },
+                })
+              }
               theme={theme}
             />
           </Section>

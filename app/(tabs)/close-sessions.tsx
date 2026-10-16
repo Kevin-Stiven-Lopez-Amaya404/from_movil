@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -14,14 +14,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { profileFont } from "@/components/profile/profileTheme";
 import { authService } from "@/lib/services/auth-service";
+import {
+  returnToParent,
+  useAndroidBackFallback,
+} from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
 export default function CloseSessionsScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const [submitting, setSubmitting] = useState(false);
+  useAndroidBackFallback(
+    from !== "account-security",
+    "/(tabs)/account-security",
+  );
 
   function requestCloseSessions() {
     if (submitting) return;
@@ -75,13 +84,14 @@ export default function CloseSessionsScreen() {
         >
           <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
             <Pressable
-              onPress={() => {
-                if (router.canGoBack()) {
-                  router.back();
-                } else {
-                  router.replace("/(tabs)/account-security");
-                }
-              }}
+              onPress={() =>
+                returnToParent(
+                  router,
+                  from,
+                  "account-security",
+                  "/(tabs)/account-security",
+                )
+              }
               style={({ pressed }) => [
                 styles.closeButton,
                 pressed && styles.pressed,

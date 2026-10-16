@@ -15,29 +15,11 @@ import SplashAnimation from "@/components/common/SplashAnimation";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AuthSessionProvider, useAuthSession } from "@/lib/auth/auth-session-context";
 import { SmartHomeProvider } from "@/lib/context/smart-home-context";
+import { resolveAuthRedirect } from "@/lib/navigation/auth-route-policy";
 
 export const unstable_settings = {
   initialRouteName: "welcome",
 };
-
-const PUBLIC_AUTH_SEGMENTS = new Set([
-  "welcome",
-  "login",
-  "register",
-  "forgot-password",
-  "request-reactivation",
-  "new-password",
-  "reset-password",
-  "activate-account",
-  "reactivate-account",
-]);
-
-const TOKEN_AUTH_SEGMENTS = new Set([
-  "new-password",
-  "reset-password",
-  "activate-account",
-  "reactivate-account",
-]);
 
 function RootNavigator({
   splashDone,
@@ -50,43 +32,30 @@ function RootNavigator({
   const segments = useSegments();
   const { isAuthenticated, isLoading } = useAuthSession();
   const firstSegment = segments[0];
-  const isTabsRoute = firstSegment === "(tabs)";
-  const isRootRoute = !firstSegment || firstSegment === "index";
-  const isPublicAuthRoute =
-    typeof firstSegment === "string" &&
-    PUBLIC_AUTH_SEGMENTS.has(firstSegment);
-  const isTokenAuthRoute =
-    typeof firstSegment === "string" &&
-    TOKEN_AUTH_SEGMENTS.has(firstSegment);
 
   useEffect(() => {
     if (!splashDone || isLoading) return;
 
-    if (isRootRoute) {
-      router.replace(isAuthenticated ? "/(tabs)" : "/welcome");
-      return;
-    }
+    console.log("[RootGuard]", {
+      segments,
+      isAuthenticated,
+      isLoading,
+    });
 
-    if (!isAuthenticated && isTabsRoute) {
-      router.replace("/welcome");
-      return;
-    }
+    const redirectHref = resolveAuthRedirect({
+      firstSegment,
+      isAuthenticated,
+      isLoading,
+      splashDone,
+    });
 
-    if (
-      isAuthenticated &&
-      isPublicAuthRoute &&
-      !isTokenAuthRoute
-    ) {
-      router.replace("/(tabs)");
-    }
+    if (redirectHref) router.replace(redirectHref);
   }, [
+    firstSegment,
     isAuthenticated,
     isLoading,
-    isPublicAuthRoute,
-    isTokenAuthRoute,
-    isRootRoute,
-    isTabsRoute,
     router,
+    segments,
     splashDone,
   ]);
 
@@ -94,7 +63,6 @@ function RootNavigator({
     <>
       {splashDone && (
         <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="welcome" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="register" options={{ headerShown: false }} />

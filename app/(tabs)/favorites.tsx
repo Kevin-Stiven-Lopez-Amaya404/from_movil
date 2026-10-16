@@ -22,7 +22,7 @@ export default function FavoritesScreen() {
 
     router.push({
       pathname: "/(tabs)/home-detail",
-      params: { homeId },
+      params: { homeId, from: "favorites" },
     });
   }
 
@@ -53,7 +53,7 @@ export default function FavoritesScreen() {
                 if (router.canGoBack()) {
                   router.back();
                 } else {
-                  router.replace("/(tabs)");
+                  router.replace("/(tabs)/(main)/index");
                 }
               }}
               accessibilityRole="button"

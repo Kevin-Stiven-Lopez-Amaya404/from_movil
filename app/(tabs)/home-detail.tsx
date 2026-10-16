@@ -1,6 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import {
+  useLocalSearchParams,
+  useRouter,
+  type Href,
+} from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     Alert,
     Modal,
@@ -18,13 +22,20 @@ import { ShellyDeviceCard } from "@/components/homes/ShellyDeviceCard";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { SmartDevice } from "@/lib/domain/device";
 import { canControlHome } from "@/lib/domain/home";
+import { useAndroidBackFallback } from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 import { getDeviceControlErrorMessage } from "@/lib/utils/control-error-message";
 
 export default function HomeDetailScreen() {
-  const { homeId } = useLocalSearchParams<{ homeId?: string }>();
+  const { homeId, deviceId, from: routeFrom, source } = useLocalSearchParams<{
+    homeId?: string;
+    deviceId?: string;
+    from?: string;
+    source?: string;
+  }>();
+  const from = routeFrom ?? source;
   const layout = useResponsiveLayout();
   const router = useRouter();
   const theme = useAppTheme();
@@ -32,6 +43,8 @@ export default function HomeDetailScreen() {
     devices,
     deviceLoadStatusByHome,
     accessibleHomes,
+    homesLoadStatus,
+    setActiveHomeId,
     removeDevice,
     updateDevice,
     setHomeDeviceState,
@@ -55,6 +68,16 @@ export default function HomeDetailScreen() {
     .filter((device) => device.online && device.state === "on")
     .reduce((total, device) => total + device.power, 0);
 
+  useAndroidBackFallback(!from, "/(tabs)/(main)/homes");
+
+  useEffect(() => {
+    if (homesLoadStatus === "loaded" && (!homeId || !activeHome)) {
+      router.replace("/(tabs)/(main)/homes");
+    } else if (activeHome) {
+      setActiveHomeId(activeHome.id);
+    }
+  }, [activeHome, homeId, homesLoadStatus, router, setActiveHomeId]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [telemetryDevice, setTelemetryDevice] = useState<SmartDevice | null>(
     null,
@@ -64,6 +87,41 @@ export default function HomeDetailScreen() {
   const [deviceDraftName, setDeviceDraftName] = useState("");
   const [operationLoading, setOperationLoading] = useState(false);
   const [pendingDeviceId, setPendingDeviceId] = useState<string | null>(null);
+  const lastOpenedDeviceRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!homeId || !deviceId) {
+      lastOpenedDeviceRef.current = null;
+      return;
+    }
+
+    if (!activeHome || !devicesLoaded) return;
+
+    const targetKey = `${homeId}:${deviceId}`;
+    if (lastOpenedDeviceRef.current === targetKey) return;
+
+    lastOpenedDeviceRef.current = targetKey;
+
+    const targetDevice = homeDevices.find(
+      (device) => device.id === deviceId,
+    );
+
+    if (!targetDevice) return;
+
+    let opened = false;
+    const frame = requestAnimationFrame(() => {
+      opened = true;
+      setSearchQuery("");
+      setTelemetryDevice(targetDevice);
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      if (!opened && lastOpenedDeviceRef.current === targetKey) {
+        lastOpenedDeviceRef.current = null;
+      }
+    };
+  }, [homeId, deviceId, activeHome, devicesLoaded, homeDevices]);
 
   const filteredDevices = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -84,8 +142,27 @@ export default function HomeDetailScreen() {
     }
     router.push({
       pathname: "/(tabs)/add-device",
-      params: { homeId: activeHome.id },
+      params: { homeId: activeHome.id, returnTo: "home-detail" },
     });
+  }
+
+  function goBack() {
+    if (from && router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    const originRoutes: Record<string, Href> = {
+      homes: "/(tabs)/(main)/homes",
+      devices: "/(tabs)/devices",
+      notifications: "/(tabs)/(main)/notifications",
+      alerts: "/(tabs)/alerts",
+      favorites: "/(tabs)/favorites",
+    };
+
+    router.replace(
+      (from && originRoutes[from]) || "/(tabs)/(main)/homes",
+    );
   }
 
   function handleDeleteDevice(device: SmartDevice) {
@@ -181,35 +258,24 @@ export default function HomeDetailScreen() {
         }}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <View style={styles.header}>
-            <View style={styles.headerCopy}>
-              <Text style={[styles.title, { color: theme.text }]}>Hogares</Text>
-              <Text style={[styles.subtitle, { color: theme.muted }]}>
-                Dispositivos vinculados a tus hogares
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Volver a mis hogares"
-              onPress={() => router.replace("/(tabs)/homes")}
-              style={[styles.headerAction, { backgroundColor: theme.card }]}
-            >
-              <Ionicons name="chevron-back" size={20} color={theme.blue} />
-            </Pressable>
-            {canManage ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Gestionar miembros"
-                onPress={() => router.push("/(tabs)/access")}
-                style={[styles.headerAction, { backgroundColor: theme.card }]}
-              >
-                <Ionicons name="people-outline" size={20} color={theme.blue} />
-              </Pressable>
-            ) : null}
-          </View>
-
           {activeHome ? (
             <>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Volver a la pantalla anterior"
+                onPress={goBack}
+                style={styles.backButton}
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={20}
+                  color={theme.blue}
+                />
+                <Text style={[styles.backButtonText, { color: theme.blue }]}>
+                  Volver
+                </Text>
+              </Pressable>
+
               <View
                 style={[
                   styles.homeHeader,
@@ -240,11 +306,30 @@ export default function HomeDetailScreen() {
                 {canManage ? (
                   <Pressable
                     accessibilityRole="button"
-                    onPress={openPairing}
-                    style={[styles.addButton, { backgroundColor: theme.blue }]}
+                    accessibilityLabel={`Invitar personas a ${activeHome.name}`}
+                    accessibilityHint="Abre la gestión de invitaciones y miembros"
+                    onPress={() => {
+                      if (!activeHome || !canManage) return;
+
+                      router.push({
+                        pathname: "/(tabs)/access",
+                        params: {
+                          homeId: activeHome.id,
+                          returnTo: "home-detail",
+                        },
+                      });
+                    }}
+                    style={[
+                      styles.addButton,
+                      { backgroundColor: theme.blue },
+                    ]}
                   >
-                    <Ionicons name="add" size={18} color="#FFFFFF" />
-                    <Text style={styles.addButtonText}>Agregar</Text>
+                    <Ionicons
+                      name="person-add-outline"
+                      size={19}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.addButtonText}>Invitar</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -623,29 +708,23 @@ export default function HomeDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   content: { alignSelf: "center", width: "100%" },
-  header: {
-    alignItems: "center",
+  backButton: {
+    alignSelf: "flex-start",
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
+    alignItems: "center",
+    gap: 4,
+    minHeight: 40,
+    marginBottom: 10,
+    paddingRight: 10,
   },
-  headerCopy: { flex: 1 },
-  title: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 24,
-    fontWeight: "800",
+  backButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
   },
   subtitle: {
     fontFamily: typography.fontFamily.regular,
     fontSize: 12,
     marginTop: 3,
-  },
-  headerAction: {
-    alignItems: "center",
-    borderRadius: 12,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
   },
   homeHeader: {
     alignItems: "center",
@@ -664,17 +743,20 @@ const styles = StyleSheet.create({
   },
   addButton: {
     alignItems: "center",
-    borderRadius: 10,
+    justifyContent: "center",
+    borderRadius: 12,
     flexDirection: "row",
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginLeft: 10,
   },
   addButtonText: {
     color: "#FFFFFF",
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
-    fontWeight: "800",
+    fontSize: 14,
+    fontWeight: "700",
   },
   sectionHeader: {
     alignItems: "center",
