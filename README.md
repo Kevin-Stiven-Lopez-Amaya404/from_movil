@@ -4,6 +4,8 @@ Aplicación móvil nativa para Android e iOS, desarrollada con Expo Router y Rea
 
 ## Documentación
 
+La [POC Android de descubrimiento BLE Shelly](docs/BLE_POC_ANDROID.md) describe alcance, preparación del APK y validación pendiente.
+
 La documentación completa del proyecto está organizada en la carpeta [docs](docs/).
 
 ## Comandos principales

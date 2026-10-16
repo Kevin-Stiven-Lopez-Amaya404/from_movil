@@ -12,6 +12,7 @@
     "ios": "expo start --ios",
     "lint": "expo lint",
     "test:mobile-config": "node scripts/app-config.test.js",
+    "test:shelly-ble-rpc": "node scripts/shelly-gatt-rpc.test.js",
     "test:navigation-auth": "node --test scripts/navigation-auth-policy.test.js"
   },
   "dependencies": {
@@ -19,6 +20,7 @@
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
+    "@sfourdrinier/react-native-ble-plx": "3.9.3",
     "expo": "~57.0.21",
     "expo-blur": "~57.0.2",
     "expo-constants": "~57.0.17",

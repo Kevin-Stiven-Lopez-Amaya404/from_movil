@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { ConnectionMethodCard } from "@/components/devices/ConnectionMethodCard";
+import { ShellyBleScanner } from "@/components/devices/ShellyBleScanner";
 import {
   useFocusEffect,
   useLocalSearchParams,
@@ -337,31 +338,12 @@ export default function AddDeviceScreen() {
 
           <ConnectionMethodCard
             title="Buscar por Bluetooth"
-            description="Detecci\u00f3n experimental"
+            description="Detecci\u00f3n experimental por BLE"
             icon="bluetooth-outline"
             expanded={connectionMethod === "ble"}
             onPress={() => setConnectionMethod("ble")}
           >
-            <Text style={[styles.cardText, { color: theme.muted }]}>
-              La vinculación de dispositivos Shelly mediante Bluetooth
-              todavía no está disponible en esta versión.
-            </Text>
-            <Pressable
-              disabled
-              accessibilityRole="button"
-              accessibilityState={{ disabled: true }}
-              accessibilityLabel="Vinculación Bluetooth no disponible"
-              style={[
-                styles.primaryButton,
-                { backgroundColor: theme.blue },
-                styles.disabled,
-              ]}
-            >
-              <Ionicons name="bluetooth-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.primaryButtonText}>
-                Vinculación BLE no disponible
-              </Text>
-            </Pressable>
+            <ShellyBleScanner canScan={Boolean(canAddDevice)} />
           </ConnectionMethodCard>
 
           <View style={[styles.infoCard, { backgroundColor: theme.rowAlt }]}>
