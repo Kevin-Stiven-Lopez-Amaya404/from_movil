@@ -8,6 +8,7 @@ import {
   type DeviceStatusUpdatedEvent,
 } from "@/lib/services/realtime-service";
 import { loadSession } from "@/lib/session/session-store";
+import { applyDeviceStatusEvent } from "@/lib/realtime/apply-device-status-event";
 
 type UseRealtimeSyncOptions = {
   sessionRevision: number;
@@ -40,63 +41,7 @@ export function useRealtimeSync({
           realtimeService.on(
             "device.status.updated",
             (event: DeviceStatusUpdatedEvent) => {
-              const deviceId = event.deviceId ?? event.id;
-
-              if (!deviceId) return;
-
-              setDevices((items) =>
-                items.map((device) =>
-                  device.id === deviceId
-                    ? {
-                        ...device,
-                        ...(event.homeId
-                          ? { homeId: event.homeId }
-                          : {}),
-                        ...(event.currentPowerW !== undefined
-                          ? { power: event.currentPowerW ?? 0 }
-                          : {}),
-                        ...(event.energyTotalKwh !== undefined
-                          ? {
-                              energy:
-                                (event.energyTotalKwh ?? 0) * 1000,
-                            }
-                          : {}),
-                        ...(event.voltageV !== undefined
-                          ? { voltage: event.voltageV ?? 0 }
-                          : {}),
-                        ...(event.currentA !== undefined
-                          ? { current: event.currentA ?? 0 }
-                          : {}),
-                        ...(event.frequencyHz !== undefined
-                          ? { frequency: event.frequencyHz ?? 0 }
-                          : {}),
-                        ...(event.temperatureC !== undefined
-                          ? {
-                              temperature:
-                                event.temperatureC ?? undefined,
-                            }
-                          : {}),
-                        ...(event.connectivityStatus !== undefined
-                          ? {
-                              connectivityStatus:
-                                event.connectivityStatus,
-                              online:
-                                event.connectivityStatus === "ONLINE",
-                            }
-                          : {}),
-                        ...(event.isOn !== undefined
-                          ? { state: event.isOn ? "on" : "off" }
-                          : {}),
-                        ...(event.updatedAt || event.readAt
-                          ? {
-                              lastStateChange:
-                                event.updatedAt ?? event.readAt,
-                            }
-                          : {}),
-                      }
-                    : device,
-                ),
-              );
+              setDevices((items) => applyDeviceStatusEvent(items, event));
             },
           ),
           realtimeService.on("notification.created", (event) => {
