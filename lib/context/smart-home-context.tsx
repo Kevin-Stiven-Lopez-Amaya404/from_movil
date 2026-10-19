@@ -441,12 +441,18 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           ...created,
           location: created.location ?? "Hogar",
           favorite: created.favorite ?? false,
+          homeRole: "OWNER" as const,
         };
 
         setHomes((items) => {
           const exists = items.some((item) => item.id === nextHome.id);
           return exists ? items : [...items, nextHome];
         });
+
+        setDeviceLoadStatusByHome((current) => ({
+          ...current,
+          [nextHome.id]: "loaded",
+        }));
 
         setActiveHomeId(nextHome.id);
       },
