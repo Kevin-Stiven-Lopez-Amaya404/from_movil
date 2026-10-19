@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { PropsWithChildren } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { styles } from "./SettingsSectionCard.styles";
 
-import { typography } from "@/lib/theme/typography";
+
 
 type SettingsSectionCardProps = PropsWithChildren<{
   backgroundColor: string;
@@ -16,7 +17,7 @@ type SettingsSectionCardProps = PropsWithChildren<{
 }>;
 
 const RED = "#FF3B20";
-const appFont = typography.fontFamily.emphasis;
+
 
 /**
  * Grupo de opciones de configuración.
@@ -89,51 +90,3 @@ export function SettingsSectionCard({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  section: {
-    marginTop: 24,
-    width: "100%",
-  },
-
-  sectionHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 9,
-    paddingHorizontal: 2,
-  },
-
-  sectionIcon: {
-    alignItems: "center",
-    borderRadius: 10,
-    height: 38,
-    justifyContent: "center",
-    width: 38,
-  },
-
-  sectionCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  sectionTitle: {
-    fontFamily: appFont,
-    fontSize: 16,
-    fontWeight: "900",
-  },
-
-  sectionDescription: {
-    fontFamily: appFont,
-    fontSize: 11,
-    fontWeight: "600",
-    lineHeight: 15,
-    marginTop: 2,
-  },
-
-  menu: {
-    borderRadius: 16,
-    gap: 7,
-    padding: 4,
-  },
-});

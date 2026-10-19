@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { useSmartHome } from "@/lib/context/smart-home-context";
-import type { ColorMode } from "@/lib/domain/preferences";
+import type { EffectiveColorMode } from "@/lib/domain/preferences";
 
 export type AppTheme = ReturnType<typeof getAppTheme>;
 
@@ -9,7 +9,7 @@ export type AppTheme = ReturnType<typeof getAppTheme>;
  * Devuelve la paleta visual de la aplicación
  * según el modo claro u oscuro.
  */
-export function getAppTheme(mode: ColorMode) {
+export function getAppTheme(mode: EffectiveColorMode) {
   const dark = mode === "dark";
 
   return {
@@ -108,7 +108,10 @@ export function getAppTheme(mode: ColorMode) {
  * Hook para consumir el tema actual desde cualquier componente.
  */
 export function useAppTheme() {
-  const { colorMode } = useSmartHome();
+  const { effectiveColorMode } = useSmartHome();
 
-  return useMemo(() => getAppTheme(colorMode), [colorMode]);
+  return useMemo(
+    () => getAppTheme(effectiveColorMode),
+    [effectiveColorMode],
+  );
 }

@@ -2,7 +2,6 @@ import { apiClient } from "@/lib/api/api-client";
 import { ApiError } from "@/lib/api/api-error";
 import type { UserRole } from "@/lib/domain/session";
 import {
-    clearSession,
     loadSession,
     setSessionRefreshHandler,
     type StoredSession,
@@ -103,7 +102,7 @@ export interface AuthService {
     email: string,
   ): Promise<RequestAccountReactivationResponse>;
   reactivateAccount(token: string): Promise<ReactivateAccountResponse>;
-  logout(allSessions?: boolean): Promise<void>;
+  logout(allSessions?: boolean, token?: string): Promise<void>;
 }
 
 export function normalizeEmail(email: string): string {
@@ -241,16 +240,12 @@ const backendAuthService: AuthService = {
     );
   },
 
-  async logout(allSessions = false) {
-    try {
-      await apiClient.post(
-        allSessions ? "/api/v1/auth/logout-all" : "/api/v1/auth/logout",
-        undefined,
-        { skipAuthRefresh: true },
-      );
-    } finally {
-      await clearSession();
-    }
+  async logout(allSessions = false, token?: string) {
+    await apiClient.post(
+      allSessions ? "/api/v1/auth/logout-all" : "/api/v1/auth/logout",
+      undefined,
+      { skipAuthRefresh: true, ...(token ? { token } : {}) },
+    );
   },
 };
 

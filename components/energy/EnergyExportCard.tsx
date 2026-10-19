@@ -1,13 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { styles } from "./EnergyExportCard.styles";
 
 type Props = {
   canExportCsv: boolean;
@@ -60,11 +55,11 @@ export function EnergyExportCard({
       ]}
     >
       <Text style={[styles.title, { color: theme.text }]}>
-        Descargar informes
+        Descargar informe
       </Text>
 
       <Text style={[styles.subtitle, { color: theme.muted }]}>
-        Exporta los datos del período seleccionado.
+        Elige el formato para el período seleccionado.
       </Text>
 
       <View style={styles.actions}>
@@ -89,32 +84,30 @@ export function EnergyExportCard({
             ]}
           >
             {item.loading ? (
-              <ActivityIndicator color={theme.blue} />
+              <ActivityIndicator color={theme.blue} size="small" />
             ) : (
               <Ionicons
                 name={item.icon}
-                size={23}
+                size={20}
                 color={theme.blue}
               />
             )}
 
-            <Text
-              style={[
-                styles.actionTitle,
-                { color: theme.text },
-              ]}
-            >
-              {item.title}
-            </Text>
+            <View style={styles.actionCopy}>
+              <Text
+                numberOfLines={1}
+                style={[styles.actionTitle, { color: theme.text }]}
+              >
+                {item.title}
+              </Text>
 
-            <Text
-              style={[
-                styles.actionDescription,
-                { color: theme.muted },
-              ]}
-            >
-              {item.description}
-            </Text>
+              <Text
+                numberOfLines={1}
+                style={[styles.actionDescription, { color: theme.muted }]}
+              >
+                {item.description}
+              </Text>
+            </View>
           </Pressable>
         ))}
       </View>
@@ -126,48 +119,3 @@ export function EnergyExportCard({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 14,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  subtitle: {
-    fontSize: 12,
-    marginTop: 6,
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 18,
-  },
-  action: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 13,
-    minHeight: 112,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 10,
-    gap: 7,
-  },
-  actionTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  actionDescription: {
-    fontSize: 11,
-    textAlign: "center",
-  },
-  note: {
-    fontSize: 11,
-    lineHeight: 17,
-    marginTop: 14,
-  },
-});

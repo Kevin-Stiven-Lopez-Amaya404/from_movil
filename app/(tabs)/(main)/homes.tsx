@@ -1,30 +1,36 @@
+
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { useSmartHome } from "@/lib/context/smart-home-context";
+import type { HomeRole, SmartHomePlace } from "@/lib/domain/home";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { typography } from "@/lib/theme/typography";
+import { styles } from "./homes.styles";
+
+
+type HomeFilter = "all" | "favorites" | "shared";
+
+const isSharedRole = (role?: HomeRole) =>
+  role === "MEMBER" || role === "GUEST";
+
+function homeCountText(count: number) {
+  return `${count} ${count === 1 ? "hogar" : "hogares"}`;
+}
 
 export default function HomesScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
   const theme = useAppTheme();
+  const layout = useResponsiveLayout();
+  const insets = useSafeAreaInsets();
+
   const {
     accessibleHomes,
     devices,
@@ -34,34 +40,106 @@ export default function HomesScreen() {
     addHome,
     updateHome,
     deleteHome,
+    toggleHomeFavorite,
   } = useSmartHome();
-  const [createHomeVisible, setCreateHomeVisible] = useState(false);
-  const [newHomeName, setNewHomeName] = useState("");
-  const [creatingHome, setCreatingHome] = useState(false);
+
+  const [filter, setFilter] = useState<HomeFilter>("all");
+  const [createVisible, setCreateVisible] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [creating, setCreating] = useState(false);
+
   const [editingHome, setEditingHome] = useState<{
     id: string;
     name: string;
   } | null>(null);
-  const [editHomeName, setEditHomeName] = useState("");
-  const [savingHome, setSavingHome] = useState(false);
-  const [deletingHomeId, setDeletingHomeId] = useState<string | null>(null);
 
-  async function handleCreateHome() {
-    const name = newHomeName.trim();
+  const [editName, setEditName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-    if (!name) {
-      Alert.alert("Nombre requerido", "Escribe un nombre para el hogar.");
+  const counts = useMemo(() => {
+    const result = new Map<string, number>();
+
+    for (const device of devices) {
+      result.set(
+        device.homeId,
+        (result.get(device.homeId) ?? 0) + 1,
+      );
+    }
+
+    return result;
+  }, [devices]);
+
+  const favoriteCount = accessibleHomes.filter(
+    (home) => home.favorite,
+  ).length;
+
+  const sharedCount = accessibleHomes.filter(
+    (home) => isSharedRole(home.homeRole),
+  ).length;
+
+  const unknownRoleCount = accessibleHomes.filter(
+    (home) => !home.homeRole,
+  ).length;
+
+  const visibleHomes = useMemo(() => {
+    if (filter === "favorites") {
+      return accessibleHomes.filter((home) => home.favorite);
+    }
+
+    if (filter === "shared") {
+      return accessibleHomes.filter(
+        (home) => isSharedRole(home.homeRole),
+      );
+    }
+
+    return accessibleHomes;
+  }, [accessibleHomes, filter]);
+
+  function openHome(homeId: string) {
+    setActiveHomeId(homeId);
+
+    router.push({
+      pathname: "/(tabs)/home-detail",
+      params: { homeId, from: "homes" },
+    });
+  }
+
+  async function toggleFavorite(home: SmartHomePlace) {
+    try {
+      await toggleHomeFavorite(home.id);
+    } catch (error) {
+      Alert.alert(
+        "No se pudo guardar el favorito",
+        error instanceof Error
+          ? error.message
+          : "Vuelve a intentarlo.",
+      );
+    }
+  }
+
+  async function createHome() {
+    const name = newName.trim();
+
+    if (creating) return;
+
+    if (name.length < 1 || name.length > 100) {
+      Alert.alert(
+        "Nombre inválido",
+        "Escribe entre 1 y 100 caracteres.",
+      );
       return;
     }
 
-    if (creatingHome) return;
-
-    setCreatingHome(true);
+    setCreating(true);
 
     try {
       await addHome(name);
-      setCreateHomeVisible(false);
-      setNewHomeName("");
+
+      setCreateVisible(false);
+      setNewName("");
+      setFilter("all");
+
       Alert.alert("Hogar creado", `Se creó “${name}”.`);
     } catch (error) {
       Alert.alert(
@@ -69,24 +147,28 @@ export default function HomesScreen() {
         getApiErrorMessage(error),
       );
     } finally {
-      setCreatingHome(false);
+      setCreating(false);
     }
   }
 
-  function openEditHome(homeId: string, currentName: string) {
-    setEditingHome({ id: homeId, name: currentName });
-    setEditHomeName(currentName);
+  function startEdit(home: SmartHomePlace) {
+    setEditingHome({
+      id: home.id,
+      name: home.name,
+    });
+
+    setEditName(home.name);
   }
 
-  async function handleUpdateHome() {
-    if (!editingHome || savingHome) return;
+  async function saveHome() {
+    if (!editingHome || saving) return;
 
-    const name = editHomeName.trim();
+    const name = editName.trim();
 
-    if (!name || name.length > 100) {
+    if (name.length < 1 || name.length > 100) {
       Alert.alert(
-        "Nombre no válido",
-        "Escribe un nombre de entre 1 y 100 caracteres.",
+        "Nombre inválido",
+        "Escribe entre 1 y 100 caracteres.",
       );
       return;
     }
@@ -96,25 +178,33 @@ export default function HomesScreen() {
       return;
     }
 
-    setSavingHome(true);
+    setSaving(true);
 
     try {
       await updateHome(editingHome.id, name);
+
       setEditingHome(null);
-      Alert.alert("Hogar actualizado", "El nombre se guardó correctamente.");
+
+      Alert.alert(
+        "Hogar actualizado",
+        "El nombre se guardó correctamente.",
+      );
     } catch (error) {
-      Alert.alert("No se pudo actualizar", getApiErrorMessage(error));
+      Alert.alert(
+        "No se pudo actualizar",
+        getApiErrorMessage(error),
+      );
     } finally {
-      setSavingHome(false);
+      setSaving(false);
     }
   }
 
-  function handleDeleteHome(homeId: string, homeName: string) {
-    if (deletingHomeId) return;
+  function confirmDelete(home: SmartHomePlace) {
+    if (deletingId) return;
 
     Alert.alert(
       "Eliminar hogar",
-      `¿Deseas eliminar "${homeName}"?\n\nEsta acción desactivará el hogar. No puede realizarse si tiene dispositivos vinculados.`,
+      `¿Deseas eliminar “${home.name}”?\n\nEsta acción desactivará el hogar y no puede realizarse si tiene dispositivos vinculados.`,
       [
         {
           text: "Cancelar",
@@ -124,10 +214,10 @@ export default function HomesScreen() {
           text: "Eliminar",
           style: "destructive",
           onPress: async () => {
-            setDeletingHomeId(homeId);
+            setDeletingId(home.id);
 
             try {
-              await deleteHome(homeId);
+              await deleteHome(home.id);
 
               Alert.alert(
                 "Hogar eliminado",
@@ -135,11 +225,11 @@ export default function HomesScreen() {
               );
             } catch (error) {
               Alert.alert(
-                "No se pudo eliminar el hogar",
+                "No se pudo eliminar",
                 getApiErrorMessage(error),
               );
             } finally {
-              setDeletingHomeId(null);
+              setDeletingId(null);
             }
           },
         },
@@ -147,73 +237,324 @@ export default function HomesScreen() {
     );
   }
 
-  const deviceCounts = useMemo(() => {
-    const counts = new Map<string, number>();
+  function openOptions(home: SmartHomePlace) {
+    if (home.homeRole !== "OWNER" || deletingId) return;
 
-    for (const device of devices) {
-      counts.set(device.homeId, (counts.get(device.homeId) ?? 0) + 1);
+    Alert.alert("Administrar hogar", home.name, [
+      {
+        text: "Editar nombre",
+        onPress: () => startEdit(home),
+      },
+      {
+        text: "Eliminar hogar",
+        style: "destructive",
+        onPress: () => confirmDelete(home),
+      },
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+    ]);
+  }
+
+  function deviceLabel(homeId: string) {
+    const status = deviceLoadStatusByHome[homeId];
+
+    if (status === "loading" || status === undefined) {
+      return "Cargando dispositivos...";
     }
 
-    return counts;
-  }, [devices]);
+    if (status === "error") {
+      return "Dispositivos no disponibles";
+    }
 
-  function openHome(homeId: string) {
-    setActiveHomeId(homeId);
-    router.push({
-      pathname: "/(tabs)/home-detail",
-      params: { homeId, from: "homes" },
-    });
+    const count = counts.get(homeId) ?? 0;
+
+    return `${count} ${
+      count === 1 ? "dispositivo" : "dispositivos"
+    }`;
   }
+
+  function emptyDescription() {
+    if (filter === "favorites") {
+      return "No tienes hogares marcados como favoritos.";
+    }
+
+    if (filter === "shared") {
+      return unknownRoleCount > 0
+        ? "No se pudo confirmar el rol de algunos hogares. Comprueba tu acceso y vuelve a cargar la pantalla."
+        : "Aún no tienes hogares compartidos contigo como miembro o invitado.";
+    }
+
+    return "Crea tu primer hogar para comenzar a administrar dispositivos.";
+  }
+
+  const isLoaded = homesLoadStatus === "loaded";
+
+  const filterItems: {
+    key: HomeFilter;
+    label: string;
+    count: number;
+  }[] = [
+    {
+      key: "all",
+      label: "Todos",
+      count: accessibleHomes.length,
+    },
+    {
+      key: "favorites",
+      label: "Favoritos",
+      count: favoriteCount,
+    },
+    {
+      key: "shared",
+      label: "Compartidos",
+      count: sharedCount,
+    },
+  ];
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: theme.background }]}
+      edges={["top", "left", "right"]}
+      style={[
+        styles.safeArea,
+        { backgroundColor: theme.background },
+      ]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: layout.gutter,
-          paddingTop: layout.screenTop,
-          paddingBottom: layout.screenBottom + 110,
+          paddingTop: layout.screenTop + 12,
+          paddingBottom: layout.screenBottom + 20,
         }}
       >
-        <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <Text style={[styles.title, { color: theme.text }]}>
-                Mis hogares
+        <View
+          style={[
+            styles.content,
+            { maxWidth: layout.contentWidth },
+          ]}
+        >
+          <Text
+            style={[
+              styles.title,
+              { color: theme.text },
+            ]}
+          >
+            Mis hogares
+          </Text>
+
+          <Text
+            style={[
+              styles.subtitle,
+              { color: theme.muted },
+            ]}
+          >
+            Gestiona tus hogares y dispositivos.
+          </Text>
+
+          {/* Resumen y creación */}
+          <View
+            style={[
+              styles.summaryBanner,
+              {
+                backgroundColor: theme.rowAlt,
+                borderColor: theme.borderLight,
+              },
+            ]}
+          >
+            <View style={styles.summaryCopy}>
+              <View style={styles.summaryStatus}>
+                <View style={[styles.statusDot, { backgroundColor: theme.success }]} />
+
+                <Text style={[styles.summaryCaption, { color: theme.muted }]}>
+                  HOGARES DISPONIBLES
+                </Text>
+              </View>
+
+              <Text style={[styles.summaryNumber, { color: theme.text }]}>
+                {isLoaded
+                  ? homeCountText(accessibleHomes.length)
+                  : "Consultando..."}
               </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Ir a notificaciones"
-                accessibilityHint="Abre la pantalla de notificaciones"
-                onPress={() =>
-                  router.navigate("/(tabs)/(main)/notifications")
-                }
+            </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Crear nuevo hogar"
+              disabled={!isLoaded || creating}
+              onPress={() => setCreateVisible(true)}
+              style={({ pressed }) => [
+                styles.newHomeButton,
+                { backgroundColor: theme.blue },
+                (!isLoaded || creating) && styles.disabled,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons
+                name="add"
+                size={20}
+                color={theme.onPrimary}
+              />
+
+              <Text
                 style={[
-                  styles.messagesButton,
-                  {
-                    backgroundColor: theme.card,
-                    borderColor: theme.borderLight,
-                  },
+                  styles.newHomeText,
+                  { color: theme.onPrimary },
                 ]}
               >
-                <Ionicons
-                  name="chatbubble-ellipses-outline"
-                  size={23}
-                  color={theme.blue}
-                />
-              </Pressable>
-            </View>
-            <Text style={[styles.subtitle, { color: theme.muted }]}>
-              Selecciona un hogar para ver sus dispositivos y consumo.
-            </Text>
+                Nuevo hogar
+              </Text>
+            </Pressable>
           </View>
 
-          {(homesLoadStatus !== "loaded" || accessibleHomes.length === 0) ? (
+          {/* Chips de filtro */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}
+            style={styles.filterScroll}
+          >
+            {filterItems.map((item) => {
+              const active = filter === item.key;
+
+              return (
+                <Pressable
+                  key={item.key}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`${item.label}: ${item.count} hogares`}
+                  onPress={() => setFilter(item.key)}
+                  style={({ pressed }) => [
+                    styles.filterChip,
+                    {
+                      backgroundColor: active
+                        ? theme.blue
+                        : theme.card,
+                      borderColor: active
+                        ? theme.blue
+                        : theme.borderLight,
+                    },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterText,
+                      {
+                        color: active
+                          ? "#FFFFFF"
+                          : theme.text,
+                      },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.filterCount,
+                      {
+                        color: active
+                          ? "#FFFFFF"
+                          : theme.muted,
+                      },
+                    ]}
+                  >
+                    {item.count}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          {/* Encabezado de resultados */}
+          <View style={styles.listHeader}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: theme.text },
+              ]}
+            >
+              TUS HOGARES
+            </Text>
+
+            {isLoaded ? (
+              <Text
+                style={[
+                  styles.visibleCount,
+                  { color: theme.muted },
+                ]}
+              >
+                {homeCountText(visibleHomes.length)}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Cargando */}
+          {homesLoadStatus === "loading" ? (
             <View
               style={[
-                styles.emptyCard,
+                styles.emptyPanel,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.borderLight,
+                },
+              ]}
+            >
+              <Ionicons
+                name="time-outline"
+                size={29}
+                color={theme.blue}
+              />
+
+              <Text
+                style={[
+                  styles.emptyTitle,
+                  { color: theme.text },
+                ]}
+              >
+                Cargando hogares...
+              </Text>
+            </View>
+          ) : homesLoadStatus === "error" ? (
+            <View
+              style={[
+                styles.emptyPanel,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.borderLight,
+                },
+              ]}
+            >
+              <Ionicons
+                name="alert-circle-outline"
+                size={29}
+                color={theme.danger}
+              />
+
+              <Text
+                style={[
+                  styles.emptyTitle,
+                  { color: theme.text },
+                ]}
+              >
+                No se pudieron cargar los hogares
+              </Text>
+
+              <Text
+                style={[
+                  styles.emptyCopy,
+                  { color: theme.muted },
+                ]}
+              >
+                Comprueba tu conexión e inténtalo nuevamente.
+              </Text>
+            </View>
+          ) : visibleHomes.length === 0 ? (
+            <View
+              style={[
+                styles.emptyPanel,
                 {
                   backgroundColor: theme.card,
                   borderColor: theme.borderLight,
@@ -222,43 +563,42 @@ export default function HomesScreen() {
             >
               <Ionicons
                 name={
-                  homesLoadStatus === "loading"
-                    ? "time-outline"
-                    : homesLoadStatus === "error"
-                      ? "alert-circle-outline"
-                      : "home-outline"
+                  filter === "favorites"
+                    ? "star-outline"
+                    : "home-outline"
                 }
-                size={34}
+                size={29}
                 color={theme.blue}
               />
-              <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                {homesLoadStatus === "loading"
-                  ? "Cargando hogares..."
-                  : homesLoadStatus === "error"
-                    ? "No se pudo completar la carga"
-                    : "No tienes hogares disponibles"}
+
+              <Text
+                style={[
+                  styles.emptyTitle,
+                  { color: theme.text },
+                ]}
+              >
+                {filter === "favorites"
+                  ? "Sin favoritos"
+                  : filter === "shared"
+                    ? "Sin hogares compartidos"
+                    : "Sin hogares"}
               </Text>
-              {homesLoadStatus === "error" ? (
-                <Text style={[styles.subtitle, { color: theme.muted }]}>
-                  No fue posible consultar toda la información.
-                  Intenta nuevamente más tarde.
-                </Text>
-              ) : null}
+
+              <Text
+                style={[
+                  styles.emptyCopy,
+                  { color: theme.muted },
+                ]}
+              >
+                {emptyDescription()}
+              </Text>
             </View>
           ) : (
-            <View style={styles.list}>
-              {accessibleHomes.map((home) => {
-                const deviceCount = deviceCounts.get(home.id) ?? 0;
-                const deviceStatus = deviceLoadStatusByHome[home.id];
-
-                const deviceCountLabel =
-                  deviceStatus === "error"
-                    ? "No se pudieron cargar los dispositivos"
-                    : deviceStatus === "loading"
-                      ? "Cargando dispositivos..."
-                      : deviceStatus === "loaded"
-                        ? `${deviceCount} ${deviceCount === 1 ? "dispositivo" : "dispositivos"}`
-                        : "Dispositivos pendientes de consultar";
+            /* Lista de hogares */
+            <View style={styles.homesList}>
+              {visibleHomes.map((home) => {
+                const shared = isSharedRole(home.homeRole);
+                const detail = deviceLabel(home.id);
 
                 return (
                   <View
@@ -271,101 +611,117 @@ export default function HomesScreen() {
                       },
                     ]}
                   >
-                    <View style={styles.cardTop}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Entrar al hogar ${home.name}`}
+                      onPress={() => openHome(home.id)}
+                      style={({ pressed }) => [
+                        styles.homeMain,
+                        pressed && styles.pressed,
+                      ]}
+                    >
                       <View
                         style={[
-                          styles.iconContainer,
-                          { backgroundColor: theme.rowAlt },
+                          styles.homeIcon,
+                          {
+                            backgroundColor: theme.rowAlt,
+                          },
                         ]}
                       >
                         <Ionicons
                           name="home-outline"
-                          size={22}
+                          size={25}
                           color={theme.blue}
                         />
                       </View>
 
-                      <View style={styles.homeInfo}>
-                        <Text
-                          numberOfLines={1}
-                          style={[styles.homeName, { color: theme.text }]}
-                        >
-                          {home.name}
-                        </Text>
-                        <Text style={[styles.deviceCount, { color: theme.muted }]}>
-                          {deviceCountLabel}
-                        </Text>
-                      </View>
-
-                      <Ionicons
-                        name="chevron-forward"
-                        size={21}
-                        color={theme.muted}
-                      />
-                    </View>
-
-                    <View
-                      style={[
-                        styles.cardFooter,
-                        { borderTopColor: theme.borderLight },
-                      ]}
-                    >
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Entrar al hogar ${home.name}`}
-                        onPress={() => openHome(home.id)}
-                        style={styles.homeAction}
-                      >
-                        <Ionicons
-                          name="arrow-forward-outline"
-                          size={20}
-                          color={theme.blue}
-                        />
-                        <Text style={[styles.enterText, { color: theme.blue }]}>
-                          Entrar
-                        </Text>
-                      </Pressable>
-
-                      {home.homeRole === "OWNER" ? (
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`Editar nombre de ${home.name}`}
-                          onPress={() => openEditHome(home.id, home.name)}
-                          style={styles.homeAction}
-                        >
-                          <Ionicons
-                            name="create-outline"
-                            size={20}
-                            color={theme.blue}
-                          />
-                          <Text style={[styles.enterText, { color: theme.blue }]}>
-                            Editar
+                      <View style={styles.homeText}>
+                        <View style={styles.nameLine}>
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              styles.homeName,
+                              { color: theme.text },
+                            ]}
+                          >
+                            {home.name}
                           </Text>
-                        </Pressable>
-                      ) : null}
 
-                      {home.homeRole === "OWNER" ? (
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`Eliminar hogar ${home.name}`}
-                          disabled={deletingHomeId !== null}
-                          onPress={() => handleDeleteHome(home.id, home.name)}
+                        </View>
+
+                        <Text
+                          numberOfLines={2}
                           style={[
-                            styles.homeAction,
-                            { opacity: deletingHomeId ? 0.5 : 1 },
+                            styles.homeMeta,
+                            { color: theme.muted },
                           ]}
                         >
-                          <Ionicons
-                            name="trash-outline"
-                            size={20}
-                            color={theme.danger}
-                          />
-                          <Text style={[styles.enterText, { color: theme.danger }]}>
-                            Eliminar
-                          </Text>
-                        </Pressable>
-                      ) : null}
-                    </View>
+                          {detail}
+                          {shared
+                            ? " · Compartido contigo"
+                            : ""}
+                        </Text>
+                      </View>
+                    </Pressable>
+
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        home.favorite
+                          ? `Quitar ${home.name} de favoritos`
+                          : `Agregar ${home.name} a favoritos`
+                      }
+                      accessibilityState={{ selected: home.favorite }}
+                      onPress={() => void toggleFavorite(home)}
+                      hitSlop={6}
+                      style={({ pressed }) => [
+                        styles.favoriteButton,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Ionicons
+                        name={home.favorite ? "star" : "star-outline"}
+                        size={20}
+                        color={home.favorite ? "#D99810" : theme.muted}
+                      />
+                    </Pressable>
+
+                    {home.homeRole === "OWNER" ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Opciones de ${home.name}`}
+                        disabled={deletingId !== null}
+                        onPress={() => openOptions(home)}
+                        hitSlop={8}
+                        style={({ pressed }) => [
+                          styles.menuButton,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <Ionicons
+                          name="ellipsis-vertical"
+                          size={20}
+                          color={theme.muted}
+                        />
+                      </Pressable>
+                    ) : null}
+
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Abrir ${home.name}`}
+                      onPress={() => openHome(home.id)}
+                      hitSlop={8}
+                      style={({ pressed }) => [
+                        styles.arrowButton,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Ionicons
+                        name="chevron-forward"
+                        size={22}
+                        color={theme.muted}
+                      />
+                    </Pressable>
                   </View>
                 );
               })}
@@ -373,33 +729,27 @@ export default function HomesScreen() {
           )}
         </View>
       </ScrollView>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Crear nuevo hogar"
-        accessibilityHint="Abre el formulario para crear un hogar"
-        onPress={() => setCreateHomeVisible(true)}
-        style={[
-          styles.floatingAddButton,
-          { backgroundColor: theme.blue },
-        ]}
-      >
-        <Ionicons
-          name="add"
-          size={32}
-          color="#FFFFFF"
-        />
-      </Pressable>
+
+      {/* Modal de creación */}
       <Modal
-        visible={createHomeVisible}
+        visible={createVisible}
         transparent
         animationType="fade"
         onRequestClose={() => {
-          if (!creatingHome) setCreateHomeVisible(false);
+          if (!creating) setCreateVisible(false);
         }}
       >
-        <View style={styles.modalOverlay}>
+        <View
+          style={[
+            styles.modalOverlay,
+            {
+              paddingBottom: Math.max(insets.bottom, 22),
+              paddingTop: Math.max(insets.top, 22),
+            },
+          ]}
+        >
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.modalWidth}
           >
             <View
@@ -411,29 +761,41 @@ export default function HomesScreen() {
                 },
               ]}
             >
-              <Text style={[styles.modalTitle, { color: theme.text }]}>
-                Crear hogar
+              <Text
+                style={[
+                  styles.modalTitle,
+                  { color: theme.text },
+                ]}
+              >
+                Nuevo hogar
               </Text>
-              <Text style={[styles.modalDescription, { color: theme.muted }]}>
-                Escribe un nombre para identificarlo.
+
+              <Text
+                style={[
+                  styles.modalCopy,
+                  { color: theme.muted },
+                ]}
+              >
+                Elige un nombre para identificarlo en SmartHome.
               </Text>
 
               <TextInput
-                value={newHomeName}
-                onChangeText={setNewHomeName}
+                accessibilityLabel="Nombre del nuevo hogar"
+                value={newName}
+                onChangeText={setNewName}
+                maxLength={100}
+                editable={!creating}
                 placeholder="Ej. Casa principal"
                 placeholderTextColor={theme.muted}
-                maxLength={100}
-                editable={!creatingHome}
+                autoCapitalize="sentences"
                 returnKeyType="done"
-                onSubmitEditing={() => void handleCreateHome()}
-                accessibilityLabel="Nombre del hogar"
+                onSubmitEditing={() => void createHome()}
                 style={[
-                  styles.nameInput,
+                  styles.input,
                   {
-                    color: theme.text,
                     backgroundColor: theme.background,
                     borderColor: theme.borderLight,
+                    color: theme.text,
                   },
                 ]}
               />
@@ -441,28 +803,36 @@ export default function HomesScreen() {
               <View style={styles.modalActions}>
                 <Pressable
                   accessibilityRole="button"
-                  disabled={creatingHome}
-                  onPress={() => setCreateHomeVisible(false)}
-                  style={[styles.modalButton, { borderColor: theme.borderLight }]}
+                  disabled={creating}
+                  onPress={() => setCreateVisible(false)}
+                  style={[
+                    styles.secondaryAction,
+                    { borderColor: theme.borderLight },
+                  ]}
                 >
-                  <Text style={[styles.cancelText, { color: theme.text }]}>
+                  <Text
+                    style={[
+                      styles.secondaryActionText,
+                      { color: theme.text },
+                    ]}
+                  >
                     Cancelar
                   </Text>
                 </Pressable>
 
                 <Pressable
                   accessibilityRole="button"
-                  disabled={creatingHome || !newHomeName.trim()}
-                  onPress={() => void handleCreateHome()}
+                  disabled={creating || !newName.trim()}
+                  onPress={() => void createHome()}
                   style={[
-                    styles.modalButton,
-                    styles.confirmButton,
+                    styles.primaryAction,
                     { backgroundColor: theme.blue },
-                    (creatingHome || !newHomeName.trim()) && styles.disabledButton,
+                    (creating || !newName.trim()) &&
+                      styles.disabled,
                   ]}
                 >
-                  <Text style={styles.confirmText}>
-                    {creatingHome ? "Creando..." : "Crear hogar"}
+                  <Text style={styles.primaryActionText}>
+                    {creating ? "Creando..." : "Crear hogar"}
                   </Text>
                 </Pressable>
               </View>
@@ -470,17 +840,27 @@ export default function HomesScreen() {
           </KeyboardAvoidingView>
         </View>
       </Modal>
+
+      {/* Modal de edición */}
       <Modal
         visible={editingHome !== null}
         transparent
         animationType="fade"
         onRequestClose={() => {
-          if (!savingHome) setEditingHome(null);
+          if (!saving) setEditingHome(null);
         }}
       >
-        <View style={styles.modalOverlay}>
+        <View
+          style={[
+            styles.modalOverlay,
+            {
+              paddingBottom: Math.max(insets.bottom, 22),
+              paddingTop: Math.max(insets.top, 22),
+            },
+          ]}
+        >
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.modalWidth}
           >
             <View
@@ -492,57 +872,79 @@ export default function HomesScreen() {
                 },
               ]}
             >
-              <Text style={[styles.modalTitle, { color: theme.text }]}>
-                Editar nombre del hogar
+              <Text
+                style={[
+                  styles.modalTitle,
+                  { color: theme.text },
+                ]}
+              >
+                Editar hogar
               </Text>
 
-              <Text style={[styles.modalDescription, { color: theme.muted }]}>
-                Modifica el nombre de tu hogar.
+              <Text
+                style={[
+                  styles.modalCopy,
+                  { color: theme.muted },
+                ]}
+              >
+                Modifica el nombre del hogar seleccionado.
               </Text>
 
               <TextInput
-                value={editHomeName}
-                onChangeText={setEditHomeName}
+                accessibilityLabel="Editar nombre del hogar"
+                value={editName}
+                onChangeText={setEditName}
                 maxLength={100}
-                autoFocus
+                editable={!saving}
                 placeholder="Nombre del hogar"
                 placeholderTextColor={theme.muted}
+                autoCapitalize="sentences"
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={() => void saveHome()}
                 style={[
-                  styles.nameInput,
+                  styles.input,
                   {
-                    color: theme.text,
+                    backgroundColor: theme.background,
                     borderColor: theme.borderLight,
+                    color: theme.text,
                   },
                 ]}
               />
 
               <View style={styles.modalActions}>
                 <Pressable
-                  disabled={savingHome}
+                  accessibilityRole="button"
+                  disabled={saving}
                   onPress={() => setEditingHome(null)}
                   style={[
-                    styles.modalButton,
+                    styles.secondaryAction,
                     { borderColor: theme.borderLight },
                   ]}
                 >
-                  <Text style={[styles.cancelText, { color: theme.text }]}>
+                  <Text
+                    style={[
+                      styles.secondaryActionText,
+                      { color: theme.text },
+                    ]}
+                  >
                     Cancelar
                   </Text>
                 </Pressable>
 
                 <Pressable
-                  disabled={savingHome || !editHomeName.trim()}
-                  onPress={() => void handleUpdateHome()}
+                  accessibilityRole="button"
+                  disabled={saving || !editName.trim()}
+                  onPress={() => void saveHome()}
                   style={[
-                    styles.modalButton,
-                    styles.confirmButton,
+                    styles.primaryAction,
                     { backgroundColor: theme.blue },
-                    (savingHome || !editHomeName.trim()) &&
-                      styles.disabledButton,
+                    (saving || !editName.trim()) &&
+                      styles.disabled,
                   ]}
                 >
-                  <Text style={styles.confirmText}>
-                    {savingHome ? "Guardando..." : "Guardar"}
+                  <Text style={styles.primaryActionText}>
+                    {saving ? "Guardando..." : "Guardar"}
                   </Text>
                 </Pressable>
               </View>
@@ -553,189 +955,3 @@ export default function HomesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-  header: {
-    marginBottom: 22,
-  },
-  headerTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  messagesButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  floatingAddButton: {
-    position: "absolute",
-    right: 22,
-    bottom: 90,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 8,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-    zIndex: 10,
-  },
-  title: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 25,
-    fontWeight: "800",
-  },
-  subtitle: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 5,
-  },
-  list: {
-    gap: 14,
-  },
-  homeCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  cardTop: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 12,
-    paddingBottom: 16,
-  },
-  iconContainer: {
-    alignItems: "center",
-    borderRadius: 14,
-    height: 48,
-    justifyContent: "center",
-    width: 48,
-  },
-  homeInfo: {
-    flex: 1,
-  },
-  homeName: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  deviceCount: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
-    marginTop: 4,
-  },
-  cardFooter: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    gap: 10,
-    paddingVertical: 12,
-  },
-  homeAction: {
-    flex: 1,
-    minHeight: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  enterText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  emptyCard: {
-    alignItems: "center",
-    borderRadius: 18,
-    borderWidth: 1,
-    gap: 12,
-    padding: 28,
-  },
-  emptyTitle: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  modalOverlay: {
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.48)",
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
-  },
-  modalWidth: {
-    maxWidth: 420,
-    width: "100%",
-  },
-  modalCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 20,
-  },
-  modalTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 21,
-    fontWeight: "800",
-  },
-  modalDescription: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 8,
-  },
-  nameInput: {
-    borderRadius: 12,
-    borderWidth: 1,
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 16,
-    marginTop: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  modalActions: {
-    flexDirection: "row",
-    gap: 10,
-    justifyContent: "flex-end",
-    marginTop: 20,
-  },
-  modalButton: {
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 44,
-    paddingHorizontal: 16,
-  },
-  confirmButton: {
-    borderWidth: 0,
-  },
-  cancelText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  confirmText: {
-    color: "#FFFFFF",
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  disabledButton: {
-    opacity: 0.55,
-  },
-});

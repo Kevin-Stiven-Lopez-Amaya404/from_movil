@@ -94,14 +94,19 @@ export default function InvitationsScreen() {
         <Pressable
           onPress={() => router.replace("/(tabs)/(main)/homes")}
           accessibilityRole="button"
-          style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+          accessibilityLabel="Cerrar invitaciones"
+          style={({ pressed }) => ({
+            alignItems: "center",
+            alignSelf: "flex-end",
+            backgroundColor: theme.rowAlt,
+            borderRadius: 20,
+            height: 40,
+            justifyContent: "center",
+            opacity: pressed ? 0.65 : 1,
+            width: 40,
+          })}
         >
-          <Ionicons
-            name="chevron-back"
-            size={22}
-            color={theme.blue}
-          />
-          <Text style={{ color: theme.blue }}>Mis hogares</Text>
+          <Ionicons name="close" size={21} color={theme.text} />
         </Pressable>
 
         <Text

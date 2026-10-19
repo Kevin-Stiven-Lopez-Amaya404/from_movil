@@ -1,20 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "expo-router/build/react-navigation/bottom-tabs";
 import { useEffect, useState } from "react";
-import {
-    Animated,
-    Easing,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
-    useWindowDimensions,
-} from "react-native";
+import { Animated, Easing, Pressable, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { typography } from "@/lib/theme/typography";
+import { styles, BAR_HORIZONTAL_PADDING } from "./LiquidNavigation.styles";
+
 
 const ITEMS = [
   { route: "index", label: "Inicio", icon: "home" as const },
@@ -24,9 +17,9 @@ const ITEMS = [
   { route: "profile", label: "Perfil", icon: "person-outline" as const },
 ];
 
-const BAR_HORIZONTAL_PADDING = 8;
+
 const BAR_BOTTOM_GAP = 12;
-const BAR_HEIGHT = 72;
+
 const ACTIVE_PILL_WIDTH_RATIO = 0.84;
 const ACTIVE_PILL_HEIGHT = 60;
 
@@ -186,71 +179,3 @@ export function LiquidNavigation({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    alignItems: "center",
-    width: "100%",
-  },
-  bar: {
-    alignItems: "stretch",
-    borderRadius: 30,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    height: BAR_HEIGHT,
-    maxWidth: 520,
-    paddingHorizontal: BAR_HORIZONTAL_PADDING,
-    position: "relative",
-    elevation: 10,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    width: "90%",
-  },
-  item: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 2,
-    paddingVertical: 4,
-    zIndex: 1,
-  },
-  pressed: {
-    opacity: 0.68,
-  },
-  iconWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 29,
-    position: "relative",
-  },
-  badge: {
-    alignItems: "center",
-    backgroundColor: "#FF4D4F",
-    borderRadius: 999,
-    justifyContent: "center",
-    minWidth: 18,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    position: "absolute",
-    right: -8,
-    top: -4,
-  },
-  badgeText: {
-    color: "#FFFFFF",
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 9,
-    fontWeight: "800",
-  },
-  activeIndicator: {
-    borderRadius: 24,
-    bottom: 7,
-    position: "absolute",
-    zIndex: 0,
-  },
-  label: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
-    marginTop: 2,
-  },
-});

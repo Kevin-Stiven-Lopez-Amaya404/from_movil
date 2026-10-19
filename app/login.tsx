@@ -11,11 +11,12 @@ import { useAuthSession } from "@/lib/auth/auth-session-context";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { getAuthPalette } from "@/lib/theme/appearance";
-import { typography } from "@/lib/theme/typography";
+
 import { isValidEmail } from "@/lib/utils/validators";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
+import { styles } from "./login.styles";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -23,13 +24,13 @@ export default function LoginScreen() {
   const layout = useResponsiveLayout();
 
   const {
-    colorMode,
+    effectiveColorMode,
     setSessionName,
     setSessionEmail,
     setSessionRole,
   } = useSmartHome();
 
-  const palette = getAuthPalette(colorMode);
+  const palette = getAuthPalette(effectiveColorMode);
 
   // ==========================================
   // ESTADO DEL FORMULARIO
@@ -118,11 +119,6 @@ export default function LoginScreen() {
       setSessionEmail(loggedUser.email);
       setSessionRole(loggedUser.role ?? "miembro");
 
-      // ======================================
-      // IR AL DASHBOARD
-      // ======================================
-
-      router.replace("/(tabs)/(main)/index");
     } catch (error) {
       Alert.alert("Error de conexión", getApiErrorMessage(error));
     } finally {
@@ -136,11 +132,9 @@ export default function LoginScreen() {
 
   return (
     <AuthScreenLayout
-      backgroundColor={colorMode === "dark" ? "#08111F" : "#ffffff"}
       compact={layout.compact}
-      title="Smart Home"
-      titleColor={palette.title}
-      titleStyle={layout.tiny ? styles.titleTiny : styles.brandTitle}
+      contentStyle={styles.screenContent}
+      contentTopPadding={layout.compact ? 14 : 22}
     >
       {/* ====================================== */}
       {/* BOTÓN VOLVER                           */}
@@ -148,6 +142,22 @@ export default function LoginScreen() {
 
       <View style={styles.header}>
         <BackButton color={palette.link} fallbackHref="/welcome" />
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <View style={styles.introSection}>
+        <Text
+          style={[
+            styles.title,
+            layout.tiny && styles.titleTiny,
+            { color: palette.title },
+          ]}
+        >
+          Bienvenido de nuevo
+        </Text>
+        <Text style={[styles.subtitle, { color: palette.muted }]}>
+          Inicia sesión para conectar con tu hogar.
+        </Text>
       </View>
 
       {/* ====================================== */}
@@ -173,6 +183,7 @@ export default function LoginScreen() {
 
           <AuthTextField
             error={emailError}
+            variant="outlined"
             inputStyle={[
               styles.input,
               {
@@ -215,6 +226,7 @@ export default function LoginScreen() {
 
           <AuthPasswordField
             error={passwordError}
+            variant="outlined"
             inputStyle={[
               styles.input,
               {
@@ -302,41 +314,6 @@ export default function LoginScreen() {
         </Pressable>
 
         {/* ==================================== */}
-        {/* SEPARADOR                             */}
-        {/* ==================================== */}
-
-        <View style={styles.dividerContainer}>
-          <View
-            style={[
-              styles.divider,
-              {
-                backgroundColor: palette.fieldBorder,
-              },
-            ]}
-          />
-
-          <Text
-            style={[
-              styles.dividerText,
-              {
-                color: palette.muted,
-              },
-            ]}
-          >
-            o continúa con
-          </Text>
-
-          <View
-            style={[
-              styles.divider,
-              {
-                backgroundColor: palette.fieldBorder,
-              },
-            ]}
-          />
-        </View>
-
-        {/* ==================================== */}
         {/* REGISTRO                              */}
         {/* ==================================== */}
 
@@ -378,220 +355,8 @@ export default function LoginScreen() {
 // TIPOGRAFÍA
 // ======================================================
 
-const authFont = typography.fontFamily.emphasis;
+
 
 // ======================================================
 // ESTILOS
 // ======================================================
-
-const styles = StyleSheet.create({
-  // ==========================================
-  // TÍTULO DE MARCA
-  // ==========================================
-
-  brandTitle: {
-    fontSize: 30,
-    lineHeight: 36,
-    marginBottom: 8,
-  },
-
-  titleTiny: {
-    fontSize: 30,
-    lineHeight: 36,
-    marginBottom: 10,
-  },
-
-  // ==========================================
-  // HEADER
-  // ==========================================
-
-  header: {
-    marginBottom: 12,
-  },
-
-  // ==========================================
-  // INTRODUCCIÓN
-  // ==========================================
-
-  introSection: {
-    marginBottom: 28,
-  },
-
-  welcomeTitle: {
-    fontSize: 26,
-    lineHeight: 32,
-    fontWeight: "800",
-    marginBottom: 6,
-    fontFamily: authFont,
-  },
-
-  welcomeSubtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: "500",
-  },
-
-  // ==========================================
-  // FORMULARIO
-  // ==========================================
-
-  formContainer: {
-    gap: 18,
-    width: "100%",
-  },
-
-  // ==========================================
-  // CAMPOS
-  // ==========================================
-
-  fieldGroup: {
-    width: "100%",
-    gap: 8,
-  },
-
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: "700",
-    marginLeft: 3,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderRadius: 17,
-
-    fontFamily: authFont,
-    fontSize: 15,
-    fontWeight: "500",
-
-    height: 56,
-
-    paddingHorizontal: 18,
-
-    shadowColor: "#000000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-
-    elevation: 3,
-  },
-
-  // ==========================================
-  // RECORDAR / OLVIDÉ
-  // ==========================================
-
-  optionsRow: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-
-    marginTop: -3,
-  },
-
-  rememberContainer: {
-    flex: 1,
-  },
-
-  forgotButton: {
-    paddingVertical: 5,
-    paddingLeft: 8,
-  },
-
-  forgotText: {
-    fontSize: 14,
-    fontWeight: "700",
-    textDecorationLine: "underline",
-  },
-
-  reactivationLink: {
-    alignSelf: "center",
-    paddingVertical: 4,
-  },
-
-  reactivationLinkText: {
-    fontSize: 14,
-    fontWeight: "700",
-    textAlign: "center",
-    textDecorationLine: "underline",
-  },
-
-  // ==========================================
-  // SEPARADOR
-  // ==========================================
-
-  dividerContainer: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-
-    marginVertical: 2,
-  },
-
-  divider: {
-    flex: 1,
-    height: 1,
-  },
-
-  dividerText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-
-  // ==========================================
-  // SEGURIDAD
-  // ==========================================
-
-  securityRow: {
-    flexDirection: "row",
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    gap: 6,
-
-    paddingHorizontal: 5,
-
-    marginTop: -3,
-  },
-
-  securityText: {
-    fontSize: 11.5,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-
-  // ==========================================
-  // REGISTRO
-  // ==========================================
-
-  registerRow: {
-    alignItems: "center",
-    justifyContent: "center",
-
-    flexDirection: "row",
-    flexWrap: "wrap",
-
-    gap: 5,
-
-    marginTop: 4,
-  },
-
-  registerText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  registerLink: {
-    fontSize: 14,
-    fontWeight: "800",
-    textDecorationLine: "underline",
-  },
-});
-
-
-
-

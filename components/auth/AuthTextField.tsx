@@ -1,18 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type KeyboardTypeOptions,
-  type StyleProp,
-  type TextStyle,
-  type ViewStyle,
-} from "react-native";
+import { useState } from "react";
+import { Pressable, Text, TextInput, View, type KeyboardTypeOptions, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
 
-import { theme } from "@/constants/theme";
-import { typography } from "@/lib/theme/typography";
+
+import { useAuthPalette } from "@/lib/theme/appearance";
+import { styles } from "./AuthTextField.styles";
+
 
 type AuthTextFieldProps = {
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
@@ -32,6 +25,7 @@ type AuthTextFieldProps = {
   placeholderTextColor?: string;
   returnKeyType?: "done" | "next" | "search" | "go" | "default";
   secureTextEntry?: boolean;
+  variant?: "default" | "outlined";
   value: string;
 };
 
@@ -50,14 +44,18 @@ export function AuthTextField({
   onChangeText,
   onSubmitEditing,
   placeholder,
-  placeholderTextColor = theme.colors.placeholder,
+  placeholderTextColor,
   returnKeyType = "done",
   secureTextEntry = false,
+  variant = "default",
   value,
 }: AuthTextFieldProps) {
+  const palette = useAuthPalette();
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={[styles.container, containerStyle]}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? <Text style={[styles.label, { color: palette.text }]}>{label}</Text> : null}
 
       <TextInput
         accessibilityLabel={label ?? placeholder}
@@ -70,24 +68,51 @@ export function AuthTextField({
         keyboardType={keyboardType}
         maxLength={maxLength}
         multiline={multiline}
-        onBlur={onBlur}
+        onBlur={() => {
+          if (variant === "outlined") {
+            setFocused(false);
+          }
+          onBlur?.();
+        }}
         onChangeText={onChangeText}
+        onFocus={() => {
+          if (variant === "outlined") {
+            setFocused(true);
+          }
+        }}
         onSubmitEditing={onSubmitEditing}
         placeholder={placeholder}
-        placeholderTextColor={placeholderTextColor}
+        placeholderTextColor={placeholderTextColor ?? palette.muted}
         returnKeyType={returnKeyType}
         secureTextEntry={secureTextEntry}
         style={[
           styles.input,
           inputStyle,
-          error ? styles.inputError : null,
+          {
+            backgroundColor: palette.field,
+            borderColor: palette.fieldBorder,
+            color: palette.text,
+          },
+          variant === "outlined"
+            ? {
+                borderColor: focused
+                  ? palette.button
+                  : palette.fieldBorder === "transparent"
+                    ? "#CBD5E1"
+                    : palette.fieldBorder,
+              }
+            : null,
+          error ? [styles.inputError, { borderColor: palette.danger }] : null,
           disabled ? styles.inputDisabled : null,
         ]}
         value={value}
       />
 
       {error ? (
-        <Text accessibilityRole="alert" style={styles.errorText}>
+        <Text
+          accessibilityRole="alert"
+          style={[styles.errorText, { color: palette.danger }]}
+        >
           {error}
         </Text>
       ) : null}
@@ -102,10 +127,14 @@ export function AuthPasswordField(
   },
 ) {
   const { showPassword, onToggleVisibility, ...rest } = props;
+  const palette = useAuthPalette();
+  const [focused, setFocused] = useState(false);
 
   return (
     <View style={[styles.container, rest.containerStyle]}>
-      {rest.label ? <Text style={styles.label}>{rest.label}</Text> : null}
+      {rest.label ? (
+        <Text style={[styles.label, { color: palette.text }]}>{rest.label}</Text>
+      ) : null}
 
       <View style={styles.passwordWrap}>
         <TextInput
@@ -119,12 +148,22 @@ export function AuthPasswordField(
           keyboardType={rest.keyboardType ?? "default"}
           maxLength={rest.maxLength}
           multiline={rest.multiline}
-          onBlur={rest.onBlur}
+          onBlur={() => {
+            if (rest.variant === "outlined") {
+              setFocused(false);
+            }
+            rest.onBlur?.();
+          }}
           onChangeText={rest.onChangeText}
+          onFocus={() => {
+            if (rest.variant === "outlined") {
+              setFocused(true);
+            }
+          }}
           onSubmitEditing={rest.onSubmitEditing}
           placeholder={rest.placeholder}
           placeholderTextColor={
-            rest.placeholderTextColor ?? theme.colors.placeholder
+            rest.placeholderTextColor ?? palette.muted
           }
           returnKeyType={rest.returnKeyType ?? "done"}
           secureTextEntry={!showPassword}
@@ -132,7 +171,23 @@ export function AuthPasswordField(
             styles.input,
             styles.passwordInput,
             rest.inputStyle,
-            rest.error ? styles.inputError : null,
+            {
+              backgroundColor: palette.field,
+              borderColor: palette.fieldBorder,
+              color: palette.text,
+            },
+            rest.variant === "outlined"
+              ? {
+                  borderColor: focused
+                    ? palette.button
+                    : palette.fieldBorder === "transparent"
+                      ? "#CBD5E1"
+                      : palette.fieldBorder,
+                }
+              : null,
+            rest.error
+              ? [styles.inputError, { borderColor: palette.danger }]
+              : null,
             rest.disabled ? styles.inputDisabled : null,
           ]}
           value={rest.value}
@@ -152,7 +207,7 @@ export function AuthPasswordField(
           style={styles.eyeButton}
         >
           <Ionicons
-            color={theme.colors.textMuted}
+            color={palette.muted}
             name={showPassword ? "eye-outline" : "eye-off-outline"}
             size={21}
           />
@@ -160,7 +215,10 @@ export function AuthPasswordField(
       </View>
 
       {rest.error ? (
-        <Text accessibilityRole="alert" style={styles.errorText}>
+        <Text
+          accessibilityRole="alert"
+          style={[styles.errorText, { color: palette.danger }]}
+        >
           {rest.error}
         </Text>
       ) : null}
@@ -171,78 +229,3 @@ export function AuthPasswordField(
 // ======================================================
 // ESTILOS
 // ======================================================
-
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-  },
-
-  input: {
-    backgroundColor: "#FBFBFD",
-    borderColor: "transparent",
-    borderRadius: 16,
-    borderWidth: 1,
-
-    color: "#3F3F3F",
-
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
-    fontWeight: "700",
-
-    minHeight: 52,
-
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-
-  inputDisabled: {
-    opacity: 0.7,
-  },
-
-  inputError: {
-    borderColor: theme.colors.error,
-  },
-
-  label: {
-    color: theme.colors.textDark,
-
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
-    fontWeight: "800",
-
-    marginBottom: 7,
-    marginLeft: 2,
-  },
-
-  passwordInput: {
-    paddingRight: 52,
-  },
-
-  passwordWrap: {
-    position: "relative",
-    width: "100%",
-  },
-
-  eyeButton: {
-    position: "absolute",
-    right: 10,
-    top: 0,
-
-    width: 40,
-    height: 52,
-
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  errorText: {
-    color: theme.colors.error,
-
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
-    fontWeight: "700",
-
-    marginLeft: 4,
-    marginTop: 5,
-  },
-});

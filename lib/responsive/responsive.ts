@@ -31,9 +31,9 @@ export function useResponsiveLayout() {
   const safeBottom = Math.max(insets.bottom, 12);
   const safeTop = Math.max(insets.top, 0);
 
-  // Espacios finales usados por pantallas con ScrollView y tabbar.
-  const screenTop = safeTop + (compact ? 10 : 16);
-  const screenBottom = safeBottom + 92;
+  // SafeAreaView ya aplica los insets; estos valores son solo espacios visuales.
+  const screenTop = compact ? 10 : 16;
+  const screenBottom = 16;
 
   return {
     compact,

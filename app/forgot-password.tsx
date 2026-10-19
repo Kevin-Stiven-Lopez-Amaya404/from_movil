@@ -5,15 +5,18 @@ import { BackButton } from "@/components/common/BackButton";
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { requestPasswordReset } from "@/lib/auth/auth-store";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
-import { typography } from "@/lib/theme/typography";
+import { useAuthPalette } from "@/lib/theme/appearance";
+
 import { isValidEmail } from "@/lib/utils/validators";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
+import { styles } from "./forgot-password.styles";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+  const palette = useAuthPalette();
 
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -76,14 +79,16 @@ export default function ForgotPasswordScreen() {
       {/* ====================================== */}
 
       <View style={styles.header}>
-        <BackButton fallbackHref="/login" />
+        <BackButton color={palette.link} fallbackHref="/login" />
       </View>
 
       {/* ====================================== */}
       {/* TÍTULO                                 */}
       {/* ====================================== */}
 
-      <Text style={styles.sectionTitle}>Recuperar contraseña</Text>
+      <Text style={[styles.sectionTitle, { color: palette.text }]}>
+        Recuperar contraseña
+      </Text>
 
       {/* ====================================== */}
       {/* FORMULARIO                             */}
@@ -111,68 +116,3 @@ export default function ForgotPasswordScreen() {
     </AuthScreenLayout>
   );
 }
-
-// ======================================================
-// TIPOGRAFÍA
-// ======================================================
-
-const authFont = typography.fontFamily.emphasis;
-
-// ======================================================
-// ESTILOS
-// ======================================================
-
-const styles = StyleSheet.create({
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-
-  header: {
-    marginBottom: 10,
-  },
-
-  sectionTitle: {
-    color: "#3F3F3F",
-    fontFamily: authFont,
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 20,
-  },
-
-  formContainer: {
-    gap: 16,
-    width: "100%",
-  },
-
-  input: {
-    backgroundColor: "#FBFBFD",
-    borderColor: "transparent",
-    borderWidth: 1,
-    borderRadius: 17,
-
-    color: "#3F3F3F",
-
-    fontFamily: authFont,
-    fontSize: 15,
-    fontWeight: "500",
-
-    height: 56,
-
-    paddingHorizontal: 18,
-
-    shadowColor: "#000000",
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-
-    elevation: 5,
-  },
-
-  button: {
-    marginTop: 8,
-  },
-});

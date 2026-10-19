@@ -5,15 +5,18 @@ import { BackButton } from "@/components/common/BackButton";
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { resetUserPassword } from "@/lib/auth/auth-store";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
-import { typography } from "@/lib/theme/typography";
+import { useAuthPalette } from "@/lib/theme/appearance";
+
 import { getPasswordRules } from "@/lib/utils/validators";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
+import { styles } from "./new-password.styles";
 
 export default function NewPasswordScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+  const palette = useAuthPalette();
 
   // ==========================================
   // PARÁMETROS
@@ -125,14 +128,16 @@ export default function NewPasswordScreen() {
       {/* ====================================== */}
 
       <View style={styles.header}>
-        <BackButton fallbackHref="/forgot-password" />
+        <BackButton color={palette.link} fallbackHref="/forgot-password" />
       </View>
 
       {/* ====================================== */}
       {/* TÍTULO                                 */}
       {/* ====================================== */}
 
-      <Text style={styles.sectionTitle}>Establecer contraseña</Text>
+      <Text style={[styles.sectionTitle, { color: palette.text }]}>
+        Establecer contraseña
+      </Text>
 
       {/* ====================================== */}
       {/* FORMULARIO                             */}
@@ -156,7 +161,7 @@ export default function NewPasswordScreen() {
 
           {password.length > 0 && (
             <View
-              style={styles.strengthContainer}
+              style={[styles.strengthContainer, { backgroundColor: palette.divider }]}
               accessibilityLabel={`Fortaleza de contraseña: ${strength} de ${passwordRules.length}`}
             >
               <View
@@ -173,7 +178,7 @@ export default function NewPasswordScreen() {
                         ? "#FF4D4D"
                         : strength < passwordRules.length
                           ? "#FFA500"
-                          : "#003380",
+                          : palette.button,
                   },
                 ]}
               />
@@ -214,79 +219,8 @@ export default function NewPasswordScreen() {
 // TIPOGRAFÍA
 // ======================================================
 
-const authFont = typography.fontFamily.emphasis;
+
 
 // ======================================================
 // ESTILOS
 // ======================================================
-
-const styles = StyleSheet.create({
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-
-  header: {
-    marginBottom: 10,
-  },
-
-  sectionTitle: {
-    color: "#3F3F3F",
-    fontFamily: authFont,
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 20,
-  },
-
-  formContainer: {
-    gap: 16,
-    width: "100%",
-  },
-
-  input: {
-    backgroundColor: "#FBFBFD",
-    borderColor: "transparent",
-    borderWidth: 1,
-    borderRadius: 17,
-
-    color: "#3F3F3F",
-
-    fontFamily: authFont,
-    fontSize: 15,
-    fontWeight: "500",
-
-    height: 56,
-
-    paddingHorizontal: 18,
-
-    shadowColor: "#000000",
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-
-    elevation: 5,
-  },
-
-  strengthContainer: {
-    height: 4,
-
-    backgroundColor: "#E0E0E0",
-
-    borderRadius: 2,
-
-    marginTop: 8,
-
-    overflow: "hidden",
-  },
-
-  strengthBar: {
-    height: "100%",
-  },
-
-  button: {
-    marginTop: 8,
-  },
-});

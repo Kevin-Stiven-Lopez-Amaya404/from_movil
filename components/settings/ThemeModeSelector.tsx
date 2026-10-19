@@ -15,12 +15,7 @@ type ThemeModeSelectorProps = {
 
 const appFont = typography.fontFamily.emphasis;
 
-/**
- * Selector claro/oscuro.
- *
- * Encapsula la logica visual de estado activo para que SettingsScreen solo
- * decida que modo aplicar.
- */
+/** Selector del modo de apariencia preferido por el usuario. */
 export function ThemeModeSelector({
   activeMode,
   blueColor,
@@ -31,12 +26,20 @@ export function ThemeModeSelector({
 }: ThemeModeSelectorProps) {
   return (
     <View style={styles.themeRow}>
-      {(["light", "dark"] as ColorMode[]).map((mode) => {
+      {(["system", "light", "dark"] as ColorMode[]).map((mode) => {
         const active = activeMode === mode;
+        const icon =
+          mode === "system"
+            ? "phone-portrait-outline"
+            : mode === "light"
+              ? "sunny-outline"
+              : "moon-outline";
 
         return (
           <Pressable
             key={mode}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: active }}
             style={[
               styles.themeButton,
               { backgroundColor: rowColor, borderColor },
@@ -44,11 +47,7 @@ export function ThemeModeSelector({
             ]}
             onPress={() => onChange(mode)}
           >
-            <Ionicons
-              name={mode === "light" ? "sunny-outline" : "moon-outline"}
-              size={19}
-              color={active ? "#FFFFFF" : blueColor}
-            />
+            <Ionicons name={icon} size={16} color={active ? "#FFFFFF" : blueColor} />
             <Text style={[styles.themeText, { color: active ? "#FFFFFF" : blueColor }]}>
               {labels[mode]}
             </Text>
@@ -62,7 +61,7 @@ export function ThemeModeSelector({
 const styles = StyleSheet.create({
   themeRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 6,
   },
   themeButton: {
     alignItems: "center",
@@ -70,13 +69,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flex: 1,
     flexDirection: "row",
-    gap: 8,
+    gap: 5,
     justifyContent: "center",
-    minHeight: 46,
+    minHeight: 44,
+    paddingHorizontal: 4,
   },
   themeText: {
     fontFamily: appFont,
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: "900",
   },
 });

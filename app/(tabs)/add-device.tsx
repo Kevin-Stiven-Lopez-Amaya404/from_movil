@@ -1,21 +1,12 @@
+
 import { Ionicons } from "@expo/vector-icons";
-import { ConnectionMethodCard } from "@/components/devices/ConnectionMethodCard";
-import { ShellyBleScanner } from "@/components/devices/ShellyBleScanner";
 import {
   useFocusEffect,
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useSmartHome } from "@/lib/context/smart-home-context";
@@ -25,78 +16,231 @@ import {
   discoverLocalShelly,
   type LocalShellyCandidate,
 } from "@/lib/pairing/local-shelly-discovery";
+import {
+  readShellyLocalIdentity,
+  type ShellyLocalIdentity,
+} from "@/lib/pairing/shelly-local-identity";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { styles } from "./add-device.styles";
+
+type IdentityCheck =
+  | { status: "checking" }
+  | { status: "verified"; identity: ShellyLocalIdentity }
+  | { status: "error"; message: string };
+
+const DEVICE_CHECK_TIMEOUT_MS = 6000;
+const VERIFY_BATCH_SIZE = 3;
 
 export default function AddDeviceScreen() {
   const router = useRouter();
+
   const { homeId, returnTo } = useLocalSearchParams<{
     homeId?: string;
     returnTo?: string;
   }>();
+
   const { accessibleHomes, homesLoadStatus } = useSmartHome();
   const theme = useAppTheme();
   const layout = useResponsiveLayout();
-  const selectedHome = accessibleHomes.find((home) => home.id === homeId);
+
+  const selectedHome = accessibleHomes.find(
+    (home) => home.id === homeId,
+  );
+
   const canAddDevice = selectedHome?.homeRole === "OWNER";
 
   useAndroidBackFallback(
     returnTo !== "home-detail",
     homeId
-      ? { pathname: "/(tabs)/home-detail", params: { homeId } }
+      ? {
+          pathname: "/(tabs)/home-detail",
+          params: { homeId },
+        }
       : "/(tabs)/devices",
   );
 
   useEffect(() => {
-    if (homeId && homesLoadStatus === "loaded" && !selectedHome) {
+    if (
+      homesLoadStatus === "loaded" &&
+      (!homeId || !selectedHome)
+    ) {
       router.replace("/(tabs)/(main)/homes");
     }
   }, [homeId, homesLoadStatus, router, selectedHome]);
 
   const [wifiSearching, setWifiSearching] = useState(false);
   const [wifiSearched, setWifiSearched] = useState(false);
+
   const [wifiCandidates, setWifiCandidates] =
     useState<LocalShellyCandidate[]>([]);
-  const [wifiError, setWifiError] = useState<string | null>(null);
-  const wifiScanRun = useRef(0);
-  const [connectionMethod, setConnectionMethod] =
-    useState<"wifi" | "ip" | "ble">("wifi");
-  const [manualIp, setManualIp] = useState("");
+
+  const [wifiError, setWifiError] =
+    useState<string | null>(null);
+
+  const [identityByIp, setIdentityByIp] = useState<
+    Record<string, IdentityCheck>
+  >({});
+
+  const scanRun = useRef(0);
+  const pendingRequests = useRef(new Set<AbortController>());
+
+  function cancelIdentityRequests() {
+    for (const controller of pendingRequests.current) {
+      controller.abort();
+    }
+
+    pendingRequests.current.clear();
+  }
+
+  async function verifyCandidate(
+    device: LocalShellyCandidate,
+    run: number,
+  ) {
+    if (run !== scanRun.current) return;
+
+    const controller = new AbortController();
+    pendingRequests.current.add(controller);
+
+    const timer = setTimeout(
+      () => controller.abort(),
+      DEVICE_CHECK_TIMEOUT_MS,
+    );
+
+    setIdentityByIp((previous) => ({
+      ...previous,
+      [device.ip]: { status: "checking" },
+    }));
+
+    try {
+      const identity = await readShellyLocalIdentity(
+        device.ip,
+        controller.signal,
+      );
+
+      if (run !== scanRun.current) return;
+
+      setIdentityByIp((previous) => ({
+        ...previous,
+        [device.ip]: {
+          status: "verified",
+          identity,
+        },
+      }));
+    } catch (error) {
+      if (run !== scanRun.current) return;
+
+      setIdentityByIp((previous) => ({
+        ...previous,
+        [device.ip]: {
+          status: "error",
+          message:
+            error instanceof Error &&
+            error.name === "AbortError"
+              ? "La verificación agotó el tiempo de espera."
+              : error instanceof Error
+                ? error.message
+                : "No se pudo comprobar el dispositivo.",
+        },
+      }));
+    } finally {
+      clearTimeout(timer);
+      pendingRequests.current.delete(controller);
+    }
+  }
+
+  async function verifyDiscoveredCandidates(
+    devices: LocalShellyCandidate[],
+    run: number,
+  ) {
+    for (
+      let index = 0;
+      index < devices.length;
+      index += VERIFY_BATCH_SIZE
+    ) {
+      if (run !== scanRun.current) return;
+
+      await Promise.all(
+        devices
+          .slice(index, index + VERIFY_BATCH_SIZE)
+          .map((device) => verifyCandidate(device, run)),
+      );
+    }
+  }
 
   async function searchLocalWifi() {
     if (!canAddDevice || wifiSearching) return;
 
-    const run = ++wifiScanRun.current;
+    const run = ++scanRun.current;
+
+    cancelIdentityRequests();
 
     setWifiSearching(true);
     setWifiSearched(false);
     setWifiCandidates([]);
+    setIdentityByIp({});
     setWifiError(null);
 
     try {
       const results = await discoverLocalShelly(12000);
 
-      if (run !== wifiScanRun.current) return;
+      if (run !== scanRun.current) return;
 
       setWifiCandidates(results);
       setWifiSearched(true);
+      setWifiSearching(false);
+
+      // Verificar automáticamente cada dispositivo encontrado.
+      void verifyDiscoveredCandidates(results, run);
     } catch (error) {
-      if (run !== wifiScanRun.current) return;
+      if (run !== scanRun.current) return;
 
       setWifiError(
         error instanceof Error
           ? error.message
           : "No se pudo realizar la búsqueda Wi-Fi.",
       );
+
+      setWifiSearched(true);
     } finally {
-      if (run === wifiScanRun.current) {
+      if (run === scanRun.current) {
         setWifiSearching(false);
       }
     }
   }
 
+  function selectDevice(device: LocalShellyCandidate) {
+    const result = identityByIp[device.ip];
+
+    if (
+      !canAddDevice ||
+      !homeId ||
+      result?.status !== "verified"
+    ) {
+      return;
+    }
+
+    router.push({
+      pathname: "/(tabs)/prepare-shelly",
+      params: {
+        homeId,
+        ip: device.ip,
+        manufacturerDeviceId:
+          result.identity.manufacturerDeviceId,
+        returnTo:
+          returnTo === "home-detail"
+            ? "home-detail"
+            : "devices",
+        from: "add-device",
+      },
+    });
+  }
+
   function closeScreen() {
-    if (returnTo === "home-detail" && router.canGoBack()) {
+    if (
+      returnTo === "home-detail" &&
+      router.canGoBack()
+    ) {
       router.back();
     } else if (homeId) {
       router.replace({
@@ -111,16 +255,44 @@ export default function AddDeviceScreen() {
   useFocusEffect(
     useCallback(() => {
       return () => {
-        wifiScanRun.current += 1;
+        scanRun.current += 1;
+
         cancelLocalShellyDiscovery();
+
+        for (const controller of pendingRequests.current) {
+          controller.abort();
+        }
+
+        pendingRequests.current.clear();
         setWifiSearching(false);
+
+        setIdentityByIp((previous) => {
+          const next = { ...previous };
+
+          for (const ip of Object.keys(next)) {
+            if (next[ip].status === "checking") {
+              next[ip] = {
+                status: "error",
+                message:
+                  "Verificación interrumpida. Reintenta.",
+              };
+            }
+          }
+
+          return next;
+        });
       };
     }, []),
   );
 
+  const hasResults = wifiCandidates.length > 0;
+
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: theme.background }]}
+      style={[
+        styles.safeArea,
+        { backgroundColor: theme.background },
+      ]}
     >
       <ScrollView
         contentContainerStyle={{
@@ -129,7 +301,13 @@ export default function AddDeviceScreen() {
           paddingBottom: layout.screenBottom,
         }}
       >
-        <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
+        <View
+          style={[
+            styles.content,
+            { maxWidth: layout.contentWidth },
+          ]}
+        >
+          {/* Encabezado */}
           <View style={styles.header}>
             <Text
               style={[
@@ -139,6 +317,7 @@ export default function AddDeviceScreen() {
             >
               Agregar dispositivo
             </Text>
+
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Cerrar agregar dispositivo"
@@ -149,280 +328,270 @@ export default function AddDeviceScreen() {
                 pressed && styles.pressed,
               ]}
             >
-              <Ionicons name="close" size={21} color={theme.text} />
+              <Ionicons
+                name="close"
+                size={21}
+                color={theme.text}
+              />
             </Pressable>
           </View>
 
-          {canAddDevice && homeId ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Configurar Shelly nuevo"
-              onPress={() =>
-                router.push({
-                  pathname: "/(tabs)/shelly-setup",
-                  params: { homeId, from: "add-device" },
-                })
-              }
+          {/* Hogar seleccionado */}
+          <Text
+            style={[
+              styles.homeLabel,
+              { color: theme.muted },
+            ]}
+          >
+            {selectedHome
+              ? `Hogar: ${selectedHome.name}`
+              : "Selecciona un hogar"}
+          </Text>
+
+          <Text
+            style={[
+              styles.description,
+              { color: theme.muted },
+            ]}
+          >
+            Busca dispositivos Shelly compatibles
+            que estén conectados a tu red.
+          </Text>
+
+          {/* Búsqueda principal */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Buscar dispositivos Shelly"
+            disabled={!canAddDevice || wifiSearching}
+            onPress={() => void searchLocalWifi()}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              { backgroundColor: theme.blue },
+              (!canAddDevice || wifiSearching) &&
+                styles.disabled,
+              pressed && styles.pressed,
+            ]}
+          >
+            {wifiSearching ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Ionicons
+                name="search"
+                size={20}
+                color="#FFFFFF"
+              />
+            )}
+
+            <Text style={styles.primaryButtonText}>
+              {wifiSearching
+                ? "Buscando en la red..."
+                : "Buscar dispositivos"}
+            </Text>
+          </Pressable>
+
+          {!canAddDevice &&
+          homesLoadStatus !== "loading" ? (
+            <Text
               style={[
-                styles.card,
-                {
-                  backgroundColor: theme.card,
-                  borderColor: theme.borderLight,
-                  marginBottom: 14,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  padding: 16,
-                  gap: 12,
-                },
+                styles.message,
+                { color: theme.muted },
               ]}
             >
-              <Ionicons
-                name="hardware-chip-outline"
-                size={27}
-                color={theme.blue}
-              />
-
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    color: theme.text,
-                    fontSize: 15,
-                    fontWeight: "800",
-                  }}
-                >
-                  Configurar Shelly nuevo
-                </Text>
-
-                <Text
-                  style={{
-                    color: theme.muted,
-                    fontSize: 12,
-                    marginTop: 5,
-                  }}
-                >
-                  {"Sin configuraci\u00f3n previa"}
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={theme.muted}
-              />
-            </Pressable>
+              Solo el propietario del hogar
+              puede agregar dispositivos.
+            </Text>
           ) : null}
 
-          <ConnectionMethodCard
-            title="Buscar en mi red Wi-Fi"
-            description="Descubrimiento autom\u00e1tico"
-            icon="wifi-outline"
-            expanded={connectionMethod === "wifi"}
-            onPress={() => setConnectionMethod("wifi")}
-          >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Buscar Shelly en la red local"
-              disabled={!canAddDevice || wifiSearching}
-              onPress={() => void searchLocalWifi()}
+          {wifiError ? (
+            <Text
               style={[
-                styles.primaryButton,
-                { backgroundColor: theme.blue },
-                (!canAddDevice || wifiSearching) && styles.disabled,
+                styles.message,
+                { color: theme.danger },
               ]}
             >
-              {wifiSearching ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Ionicons
-                  name="wifi-outline"
-                  size={20}
-                  color="#FFFFFF"
-                />
-              )}
+              {wifiError}
+            </Text>
+          ) : null}
 
-              <Text style={styles.primaryButtonText}>
-                {wifiSearching
-                  ? "Buscando en la red..."
-                  : "Buscar dispositivos"}
-              </Text>
-            </Pressable>
-
-            {!canAddDevice ? (
-              <Text style={[styles.scanMessage, { color: theme.muted }]}>
-                Solo el propietario del hogar puede iniciar la búsqueda de
-                dispositivos.
-              </Text>
-            ) : null}
-
-            {wifiError ? (
-              <Text style={[styles.scanMessage, { color: theme.danger }]}>
-                {wifiError}
-              </Text>
-            ) : null}
-
-            {wifiSearched && wifiCandidates.length === 0 ? (
-              <Text style={[styles.scanMessage, { color: theme.muted }]}>
-                No se detectaron dispositivos Shelly. Comprueba la conexión
-                Wi-Fi y que el router permita descubrir equipos locales.
-              </Text>
-            ) : null}
-
-            {wifiCandidates.map((device) => (
-              <View
-                key={device.ip}
+          {/* Resultados */}
+          {(wifiSearched || hasResults) && (
+            <View style={styles.resultsSection}>
+              <Text
                 style={[
-                  styles.deviceRow,
-                  { borderColor: theme.borderLight },
+                  styles.sectionTitle,
+                  { color: theme.text },
                 ]}
               >
-                <Ionicons
-                  name="hardware-chip-outline"
-                  size={23}
-                  color={theme.blue}
-                />
+                Dispositivos encontrados
+              </Text>
 
-                <View style={styles.deviceDetails}>
-                  <Text style={[styles.deviceName, { color: theme.text }]}>
-                    {device.name}
-                  </Text>
+              {wifiSearched && !hasResults ? (
+                <Text
+                  style={[
+                    styles.message,
+                    { color: theme.muted },
+                  ]}
+                >
+                  No encontramos dispositivos compatibles.
+                  Comprueba que el Shelly esté conectado
+                  a la misma red y vuelve a buscar.
+                </Text>
+              ) : null}
 
-                  <Text style={[styles.deviceMeta, { color: theme.muted }]}>
-                    IP local: {device.ip}
-                  </Text>
+              {wifiCandidates.map((device) => {
+                const result = identityByIp[device.ip];
 
-                  <Text style={[styles.deviceMeta, { color: theme.muted }]}>
-                    Detectado por mDNS · Sin verificar
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </ConnectionMethodCard>
+                const verified =
+                  result?.status === "verified";
 
-          <ConnectionMethodCard
-            title="Agregar mediante IP"
-            description="Conexi\u00f3n manual"
-            icon="git-network-outline"
-            expanded={connectionMethod === "ip"}
-            onPress={() => setConnectionMethod("ip")}
-          >
-            <Text style={[styles.cardText, { color: theme.muted }]}>
-              {"Introduce la direcci\u00f3n IPv4 local de tu dispositivo Shelly."}
-            </Text>
+                const checking =
+                  !result || result.status === "checking";
 
-            <TextInput
-              accessibilityLabel="Direcci\u00f3n IP del Shelly"
-              keyboardType="decimal-pad"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={manualIp}
-              onChangeText={setManualIp}
-              placeholder="Ej. 192.168.1.50"
-              placeholderTextColor={theme.muted}
-              style={{
-                marginTop: 14,
-                borderWidth: 1,
-                borderColor: theme.borderLight,
-                borderRadius: 12,
-                backgroundColor: theme.background,
-                color: theme.text,
-                paddingHorizontal: 14,
-                height: 48,
-                fontSize: 15,
-              }}
-            />
+                return (
+                  <View
+                    key={device.ip}
+                    style={[
+                      styles.deviceRow,
+                      {
+                        borderColor:
+                          theme.borderLight,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.deviceIcon,
+                        {
+                          backgroundColor:
+                            theme.rowAlt,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="hardware-chip-outline"
+                        size={25}
+                        color={theme.blue}
+                      />
+                    </View>
 
-            <Text style={[styles.cardText, { color: theme.muted }]}>
-              {"La conexi\u00f3n e identificaci\u00f3n local mediante IP se integrar\u00e1n en el siguiente paso. Introducir la IP todav\u00eda no vincula el dispositivo."}
-            </Text>
-          </ConnectionMethodCard>
+                    <View style={styles.deviceContent}>
+                      <Text
+                        style={[
+                          styles.deviceName,
+                          { color: theme.text },
+                        ]}
+                      >
+                        {verified
+                          ? "Shelly 1PM Gen4"
+                          : "Dispositivo Shelly"}
+                      </Text>
 
-          <ConnectionMethodCard
-            title="Buscar por Bluetooth"
-            description="Detecci\u00f3n experimental por BLE"
-            icon="bluetooth-outline"
-            expanded={connectionMethod === "ble"}
-            onPress={() => setConnectionMethod("ble")}
-          >
-            <ShellyBleScanner canScan={Boolean(canAddDevice)} />
-          </ConnectionMethodCard>
+                      {verified ? (
+                        <Text
+                          style={[
+                            styles.deviceCaption,
+                            { color: theme.muted },
+                          ]}
+                        >
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={14}
+                            color={theme.blue}
+                          />{" "}
+                          Modelo compatible
+                        </Text>
+                      ) : checking ? (
+                        <Text
+                          style={[
+                            styles.deviceCaption,
+                            { color: theme.muted },
+                          ]}
+                        >
+                          Comprobando compatibilidad...
+                        </Text>
+                      ) : (
+                        <Text
+                          style={[
+                            styles.deviceCaption,
+                            { color: theme.danger },
+                          ]}
+                        >
+                          No se pudo verificar
+                        </Text>
+                      )}
 
-          <View style={[styles.infoCard, { backgroundColor: theme.rowAlt }]}>
-            <Ionicons
-              name="information-circle-outline"
-              size={20}
-              color={theme.blue}
-            />
-            <Text style={[styles.infoText, { color: theme.muted }]}>
-              Esta función requiere completar la integración de vinculación con
-              el backend y el soporte BLE nativo en Android. Los dispositivos
-              ya registrados se gestionan desde el hogar.
-            </Text>
-          </View>
+                      {result?.status === "error" ? (
+                        <>
+                          <Text
+                            style={[
+                              styles.deviceCaption,
+                              { color: theme.muted },
+                            ]}
+                          >
+                            {result.message}
+                          </Text>
+
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel="Reintentar verificación de Shelly"
+                            onPress={() =>
+                              void verifyCandidate(
+                                device,
+                                scanRun.current,
+                              )
+                            }
+                            style={styles.retryButton}
+                          >
+                            <Text
+                              style={{
+                                color: theme.blue,
+                                fontWeight: "700",
+                              }}
+                            >
+                              Reintentar verificación
+                            </Text>
+                          </Pressable>
+                        </>
+                      ) : null}
+                    </View>
+
+                    {verified ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Seleccionar Shelly 1PM Gen4"
+                        onPress={() =>
+                          selectDevice(device)
+                        }
+                        style={[
+                          styles.selectButton,
+                          {
+                            borderColor:
+                              theme.borderLight,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={{
+                            color: theme.blue,
+                            fontWeight: "700",
+                          }}
+                        >
+                          Seleccionar
+                        </Text>
+                      </Pressable>
+                    ) : checking ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={theme.blue}
+                      />
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { alignSelf: "center", width: "100%" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 22,
-    minHeight: 44,
-  },
-  title: {
-    flex: 1,
-    fontSize: 23,
-    fontWeight: "900",
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 12,
-  },
-  card: { borderRadius: 18, borderWidth: 1, padding: 18 },
-  cardTitle: { fontSize: 16, fontWeight: "800" },
-  cardText: { fontSize: 13, lineHeight: 19, marginTop: 8 },
-  scanMessage: { fontSize: 12, lineHeight: 18, marginTop: 12 },
-  deviceRow: {
-    alignItems: "center",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 12,
-    paddingTop: 12,
-  },
-  deviceDetails: { flex: 1 },
-  deviceName: { fontSize: 13, fontWeight: "800" },
-  deviceMeta: { fontSize: 11, lineHeight: 16, marginTop: 3 },
-  primaryButton: {
-    alignItems: "center",
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 18,
-    paddingVertical: 13,
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "800",
-    marginLeft: 8,
-  },
-  infoCard: {
-    borderRadius: 14,
-    flexDirection: "row",
-    marginTop: 16,
-    padding: 14,
-  },
-  infoText: { flex: 1, fontSize: 12, lineHeight: 18, marginLeft: 8 },
-  disabled: { opacity: 0.6 },
-  pressed: { opacity: 0.75 },
-});
