@@ -62,7 +62,7 @@ export default function HelpScreen() {
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Volver"
+            accessibilityLabel="Cerrar ayuda"
             onPress={() =>
               returnToParent(
                 router,
@@ -71,10 +71,13 @@ export default function HelpScreen() {
                 "/(tabs)/(main)/profile",
               )
             }
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.closeButton,
+              { backgroundColor: theme.rowAlt },
+              pressed && styles.pressed,
+            ]}
           >
-            <Ionicons name="chevron-back" size={22} color={theme.blue} />
-            <Text style={[styles.backText, { color: theme.blue }]}>Ayuda</Text>
+            <Ionicons name="close" size={21} color={theme.text} />
           </Pressable>
 
           <View style={styles.header}>
@@ -127,8 +130,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { alignItems: "center" },
   content: { alignSelf: "center", width: "100%" },
-  backButton: { alignItems: "center", flexDirection: "row", gap: 4, marginBottom: 18, paddingVertical: 4 },
-  backText: { fontSize: 15, fontWeight: "800" },
+  closeButton: { alignItems: "center", alignSelf: "flex-end", borderRadius: 20, height: 40, justifyContent: "center", marginBottom: 18, width: 40 },
   header: { alignItems: "center", flexDirection: "row", gap: 13 },
   headerIcon: { alignItems: "center", borderRadius: 16, height: 54, justifyContent: "center", width: 54 },
   headerCopy: { flex: 1, minWidth: 0 },

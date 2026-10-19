@@ -1,5 +1,5 @@
-import { theme } from '@/constants/theme';
 import { useResponsiveLayout } from '@/lib/responsive/responsive';
+import { useAuthPalette } from '@/lib/theme/appearance';
 import { typography } from '@/lib/theme/typography';
 import { type ReactNode } from 'react';
 import {
@@ -20,6 +20,7 @@ type AuthScreenLayoutProps = {
   children: ReactNode;
   compact?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
+  contentTopPadding?: number;
   title?: string;
   titleColor?: string;
   titleStyle?: StyleProp<TextStyle>;
@@ -30,22 +31,25 @@ export function AuthScreenLayout({
   children,
   compact = false,
   contentStyle,
+  contentTopPadding,
   title,
   titleColor,
   titleStyle,
 }: AuthScreenLayoutProps) {
   const layout = useResponsiveLayout();
+  const palette = useAuthPalette();
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: backgroundColor ?? theme.colors.backgroundWhite }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: backgroundColor ?? palette.background }]}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={[
             styles.container,
             {
-              paddingBottom: layout.safeBottom + 40,
+              paddingBottom: 40,
               paddingHorizontal: layout.gutter,
-              paddingTop: layout.safeTop + (layout.compact ? 30 : 70),
+              paddingTop:
+                contentTopPadding ?? (layout.compact ? 30 : 70),
             },
           ]}
           keyboardShouldPersistTaps="handled"
@@ -58,7 +62,7 @@ export function AuthScreenLayout({
                   styles.title,
                   compact && styles.titleCompact,
                   titleStyle,
-                  titleColor ? { color: titleColor } : null,
+                  { color: titleColor ?? palette.title },
                 ]}
               >
                 {title}
@@ -88,7 +92,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   title: {
-    color: theme.colors.primary,
     fontFamily: typography.fontFamily.display,
     fontSize: 42,
     fontWeight: '700',

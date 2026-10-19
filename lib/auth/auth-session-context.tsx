@@ -172,14 +172,14 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async (allSessions = false) => {
-    try {
-      await authService.logout(allSessions);
-    } finally {
-      await clearSession();
-      setUser(null);
-      setToken(null);
-    }
-  }, []);
+    // Iniciar la revocación con el token vigente antes de borrar el almacén.
+    // Su respuesta no debe bloquear el cierre local ni limpiar un login posterior.
+    void authService.logout(allSessions, token ?? undefined).catch(() => undefined);
+
+    await clearSession();
+    setUser(null);
+    setToken(null);
+  }, [token]);
 
   const value = useMemo<AuthSessionContextValue>(
     () => ({

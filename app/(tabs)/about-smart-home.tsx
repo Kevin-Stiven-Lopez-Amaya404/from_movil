@@ -1,15 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { profileFont } from "@/components/profile/profileTheme";
+
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import {
   returnToParent,
   useAndroidBackFallback,
 } from "@/lib/navigation/use-android-back-fallback";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { styles } from "./about-smart-home.styles";
 
 export default function AboutSmartHomeScreen() {
   const router = useRouter();
@@ -41,13 +42,12 @@ export default function AboutSmartHomeScreen() {
               )
             }
             style={({ pressed }) => [
-              styles.backButton,
-              { backgroundColor: theme.card, borderColor: theme.borderLight },
+              styles.closeButton,
+              { backgroundColor: theme.rowAlt },
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name="chevron-back" size={17} color={theme.blue} />
-            <Text style={[styles.backText, { color: theme.blue }]}>Volver</Text>
+            <Ionicons name="close" size={21} color={theme.text} />
           </Pressable>
 
           <View style={styles.header}>
@@ -117,86 +117,3 @@ export default function AboutSmartHomeScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { alignSelf: "center", width: "100%" },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    marginBottom: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  backText: {
-    fontFamily: profileFont,
-    fontSize: 13,
-    fontWeight: "800",
-    marginLeft: 6,
-  },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 18,
-  },
-  iconWrap: {
-    alignItems: "center",
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 60,
-    justifyContent: "center",
-    width: 60,
-  },
-  headerCopy: { flex: 1, marginLeft: 12 },
-  title: {
-    fontFamily: profileFont,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  subtitle: {
-    fontFamily: profileFont,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  card: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 18,
-    paddingTop: 16,
-  },
-  sectionTitle: {
-    fontFamily: profileFont,
-    fontSize: 18,
-    fontWeight: "900",
-    marginBottom: 10,
-  },
-  description: {
-    fontFamily: profileFont,
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 18,
-  },
-  infoRow: {
-    borderTopColor: "rgba(148,163,184,0.25)",
-    borderTopWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingTop: 12,
-    marginTop: 12,
-  },
-  label: {
-    fontFamily: profileFont,
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  value: {
-    fontFamily: profileFont,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  pressed: { opacity: 0.72 },
-});

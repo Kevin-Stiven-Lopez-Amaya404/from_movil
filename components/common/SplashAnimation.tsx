@@ -1,155 +1,196 @@
-import { useEffect } from "react";
-import { Dimensions, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useRef } from "react";
+import { View } from "react-native";
 import Animated, {
-    Easing,
-    runOnJS,
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withTiming,
+  cancelAnimation,
+  Easing,
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
 } from "react-native-reanimated";
 
-// Se toma el ancho real de la pantalla para calcular una animacion proporcional.
-const { width } = Dimensions.get("window");
+import { styles } from "./SplashAnimation.styles";
 
-// Tamano de cada bloque blanco del splash. Cambia segun pantalla para no verse gigante ni pequeno.
-const BLOCK_SIZE = width * 0.24;
+const ANIMATION_DURATION_MS = 1680;
+const SMART_HOME_LOGO = require("@/assets/images/logo-smart-home-white.png");
 
 interface Props {
-  /** Callback que avisa al layout raiz que la animacion ya termino. */
+  /** Callback que avisa al layout raíz que terminó el splash. */
   onFinish: () => void;
 }
 
-/**
- * Animacion inicial de la aplicacion.
- *
- * Usa React Native Reanimated para animar dos bloques blancos sobre fondo azul.
- * Cuando termina el fade out, ejecuta `onFinish` en el hilo de JavaScript con `runOnJS`.
- */
 export default function SplashAnimation({ onFinish }: Props) {
-  // Valores animados del bloque izquierdo.
-  const leftOpacity = useSharedValue(0);
-  const leftScale = useSharedValue(0.4);
-  const leftX = useSharedValue(-30);
-
-  // Valores animados del bloque derecho.
-  const rightOpacity = useSharedValue(0);
-  const rightScale = useSharedValue(0.4);
-  const rightX = useSharedValue(30);
-
-  // Controla el desvanecido de toda la pantalla de splash.
-  const screenOpacity = useSharedValue(1);
+  const progress = useSharedValue(0);
+  const reduceMotion = useReducedMotion();
+  const hasFinished = useRef(false);
+  const onFinishRef = useRef(onFinish);
 
   useEffect(() => {
-    // Curvas de animacion: una para entrada suave y otra para salida suave.
-    const easeOut = Easing.out(Easing.cubic);
-    const easeIn = Easing.in(Easing.cubic);
+    onFinishRef.current = onFinish;
+  }, [onFinish]);
 
-    // Bloque izquierdo: aparece, escala y se mueve hacia su posicion final.
-    leftOpacity.value = withDelay(
-      200,
-      withTiming(1, { duration: 400, easing: easeOut }),
-    );
-    leftScale.value = withDelay(
-      200,
-      withTiming(1, { duration: 450, easing: easeOut }),
-    );
-    leftX.value = withDelay(
-      200,
-      withTiming(0, { duration: 450, easing: easeOut }),
-    );
+  const finishOnce = useCallback(() => {
+    if (hasFinished.current) return;
 
-    // Bloque derecho: entra despues del izquierdo para crear una secuencia visual.
-    rightOpacity.value = withDelay(
-      450,
-      withTiming(1, { duration: 400, easing: easeOut }),
-    );
-    rightScale.value = withDelay(
-      450,
-      withTiming(1, { duration: 450, easing: easeOut }),
-    );
-    rightX.value = withDelay(
-      450,
-      withTiming(0, { duration: 450, easing: easeOut }),
+    hasFinished.current = true;
+    onFinishRef.current();
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      finishOnce();
+      return;
+    }
+
+    progress.value = 0;
+    progress.value = withTiming(
+      1,
+      {
+        duration: ANIMATION_DURATION_MS,
+        easing: Easing.linear,
+      },
+      (finished) => {
+        if (finished) runOnJS(finishOnce)();
+      },
     );
 
-    // Fade out final: desaparece el splash y avisa al layout que puede mostrar la app.
-    screenOpacity.value = withDelay(
-      1600,
-      withTiming(0, { duration: 500, easing: easeIn }, (finished?: boolean) => {
-        if (finished) runOnJS(onFinish)();
-      }),
-    );
-  }, [
-    leftOpacity,
-    leftScale,
-    leftX,
-    rightOpacity,
-    rightScale,
-    rightX,
-    screenOpacity,
-    onFinish,
-  ]);
+    return () => cancelAnimation(progress);
+  }, [finishOnce, progress, reduceMotion]);
 
-  // Estilos animados calculados en el hilo de UI.
-  const leftStyle = useAnimatedStyle(() => ({
-    opacity: leftOpacity.value,
-    transform: [{ scale: leftScale.value }, { translateX: leftX.value }],
+  const leftShapeStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      progress.value,
+      [0, 0.1, 0.28, 0.48],
+      [0, 0.24, 0.2, 0],
+      Extrapolation.CLAMP,
+    ),
+    transform: [
+      {
+        translateX: interpolate(
+          progress.value,
+          [0, 0.28, 0.48],
+          [-32, 0, -10],
+          Extrapolation.CLAMP,
+        ),
+      },
+      {
+        translateY: interpolate(
+          progress.value,
+          [0, 0.28, 0.48],
+          [-18, 0, -12],
+          Extrapolation.CLAMP,
+        ),
+      },
+      {
+        scale: interpolate(
+          progress.value,
+          [0, 0.28, 0.48],
+          [0.78, 1, 1.04],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
   }));
 
-  const rightStyle = useAnimatedStyle(() => ({
-    // Lee los valores compartidos del bloque derecho en tiempo real.
-    opacity: rightOpacity.value,
-    transform: [{ scale: rightScale.value }, { translateX: rightX.value }],
+  const rightShapeStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      progress.value,
+      [0, 0.1, 0.28, 0.48],
+      [0, 0.24, 0.2, 0],
+      Extrapolation.CLAMP,
+    ),
+    transform: [
+      {
+        translateX: interpolate(
+          progress.value,
+          [0, 0.28, 0.48],
+          [32, 0, 10],
+          Extrapolation.CLAMP,
+        ),
+      },
+      {
+        translateY: interpolate(
+          progress.value,
+          [0, 0.28, 0.48],
+          [18, 0, 12],
+          Extrapolation.CLAMP,
+        ),
+      },
+      {
+        scale: interpolate(
+          progress.value,
+          [0, 0.28, 0.48],
+          [0.78, 1, 1.04],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+  }));
+
+  const haloStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      progress.value,
+      [0.16, 0.4, 0.78, 1],
+      [0, 0.14, 0.14, 0],
+      Extrapolation.CLAMP,
+    ),
+    transform: [
+      {
+        scale: interpolate(
+          progress.value,
+          [0.16, 0.4],
+          [0.92, 1],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+  }));
+
+  const logoStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      progress.value,
+      [0.16, 0.43, 0.79, 1],
+      [0, 1, 1, 0],
+      Extrapolation.CLAMP,
+    ),
+    transform: [
+      {
+        scale: interpolate(
+          progress.value,
+          [0.16, 0.43],
+          [0.975, 1],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
   }));
 
   const screenStyle = useAnimatedStyle(() => ({
-    // Aplica el desvanecido general de toda la pantalla de splash.
-    opacity: screenOpacity.value,
+    opacity: interpolate(
+      progress.value,
+      [0, 0.8, 1],
+      [1, 1, 0],
+      Extrapolation.CLAMP,
+    ),
   }));
 
   return (
     <Animated.View style={[styles.container, screenStyle]}>
-      <View style={styles.logoWrapper}>
-        <Animated.View style={[styles.blockLeft, leftStyle]} />
-        <Animated.View style={[styles.blockRight, rightStyle]} />
+      <Animated.View pointerEvents="none" style={[styles.halo, haloStyle]} />
+      <View style={styles.markStage}>
+        <Animated.View style={[styles.geometryLeft, leftShapeStyle]} />
+        <Animated.View style={[styles.geometryRight, rightShapeStyle]} />
+        <Animated.Image
+          accessible
+          accessibilityLabel="SmartHome"
+          resizeMode="contain"
+          source={SMART_HOME_LOGO}
+          style={[styles.logo, logoStyle]}
+        />
       </View>
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    // Cubre toda la pantalla por encima del contenido normal de la app.
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "#005CC1",
-    alignItems: "center",
-    justifyContent: "center",
-    // Asegura que el splash quede por encima de las pantallas mientras se anima.
-    zIndex: 999,
-  },
-  logoWrapper: {
-    // Caja relativa que sirve como referencia para posicionar los dos bloques.
-    width: BLOCK_SIZE * 2,
-    height: BLOCK_SIZE * 2,
-    position: "relative",
-  },
-  blockLeft: {
-    // Primer bloque del logo animado: aparece desde la parte superior izquierda.
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: BLOCK_SIZE,
-    height: BLOCK_SIZE,
-    backgroundColor: "white",
-  },
-  blockRight: {
-    // Segundo bloque del logo animado: aparece desde la parte inferior derecha.
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: BLOCK_SIZE,
-    height: BLOCK_SIZE,
-    backgroundColor: "white",
-  },
-});

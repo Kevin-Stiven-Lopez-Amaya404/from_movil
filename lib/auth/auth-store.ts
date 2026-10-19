@@ -7,6 +7,7 @@ import {
   type RegisterUserRequest,
   type RequestAccountReactivationResponse,
 } from "@/lib/services/auth-service";
+import { clearSession, loadSession } from "@/lib/session/session-store";
 
 export { normalizeEmail };
 
@@ -71,5 +72,8 @@ export async function changeUserPassword(
 }
 
 export async function logoutUser(allSessions = false): Promise<void> {
-  await authService.logout(allSessions);
+  const session = await loadSession();
+  const logoutRequest = authService.logout(allSessions, session?.accessToken);
+  await clearSession();
+  await logoutRequest;
 }

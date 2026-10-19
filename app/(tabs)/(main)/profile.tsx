@@ -1,16 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import {
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-} from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { profileFont } from "@/components/profile/profileTheme";
+
 import { useAuthSession } from "@/lib/auth/auth-session-context";
 import { ThemeModeSelector } from "@/components/settings/ThemeModeSelector";
 import { useSmartHome } from "@/lib/context/smart-home-context";
@@ -18,8 +11,9 @@ import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
+import { styles } from "./profile.styles";
 
-const appFont = profileFont;
+
 type ThemeLike = ReturnType<typeof useAppTheme>;
 
 type RowProps = {
@@ -131,6 +125,11 @@ export default function ProfileScreen() {
       : sessionRole === "miembro"
         ? "Miembro"
         : "Invitado";
+  const colorModeLabel = {
+    system: "Sistema",
+    light: "Claro",
+    dark: "Oscuro",
+  }[colorMode];
 
   function confirmLogout() {
     Alert.alert(t("action.logout"), t("profile.logoutPrompt"), [
@@ -186,13 +185,14 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView
+      edges={["top", "left", "right"]}
       style={[styles.safeArea, { backgroundColor: theme.background }]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: layout.gutter,
-          paddingTop: layout.screenTop,
+          paddingTop: layout.screenTop + 12,
           paddingBottom: layout.screenBottom,
         }}
       >
@@ -321,7 +321,7 @@ export default function ProfileScreen() {
                   <Text
                     style={[styles.preferenceSubtitle, { color: theme.muted }]}
                   >
-                    {colorMode === "dark" ? "Oscuro" : "Claro"}
+                    {colorModeLabel}
                   </Text>
                 </View>
               </View>
@@ -330,7 +330,7 @@ export default function ProfileScreen() {
                 activeMode={colorMode}
                 blueColor={theme.blue}
                 borderColor={theme.border}
-                labels={{ dark: "Oscuro", light: "Claro" }}
+                labels={{ system: "Sistema", dark: "Oscuro", light: "Claro" }}
                 onChange={setColorMode}
                 rowColor={theme.row}
               />
@@ -404,121 +404,3 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { alignSelf: "center", width: "100%" },
-  identityCard: {
-    alignItems: "center",
-    borderRadius: 17,
-    borderWidth: 1,
-    flexDirection: "row",
-    marginBottom: 17,
-    padding: 13,
-  },
-  avatar: {
-    alignItems: "center",
-    borderRadius: 34,
-    borderWidth: 1,
-    height: 68,
-    justifyContent: "center",
-    width: 68,
-  },
-  avatarText: { fontFamily: appFont, fontSize: 27, fontWeight: "900" },
-  identityCopy: { flex: 1, marginHorizontal: 12 },
-  identityName: { fontFamily: appFont, fontSize: 17, fontWeight: "900" },
-  identityEmail: { fontFamily: appFont, fontSize: 12, marginTop: 3 },
-  rolePill: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    borderRadius: 12,
-    flexDirection: "row",
-    marginTop: 7,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  roleText: {
-    fontFamily: appFont,
-    fontSize: 10,
-    fontWeight: "800",
-    marginLeft: 4,
-  },
-  section: { marginBottom: 15 },
-  sectionHeading: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 6,
-    paddingHorizontal: 2,
-  },
-  sectionTitle: { fontFamily: appFont, fontSize: 14, fontWeight: "900" },
-  rows: {
-    borderRadius: 15,
-    borderWidth: 1,
-    overflow: "hidden",
-    paddingHorizontal: 9,
-  },
-  row: {
-    alignItems: "center",
-    borderTopColor: "#E2E8F0",
-    borderTopWidth: 1,
-    flexDirection: "row",
-    minHeight: 56,
-    paddingVertical: 8,
-  },
-  rowIcon: {
-    alignItems: "center",
-    borderRadius: 10,
-    height: 34,
-    justifyContent: "center",
-    width: 34,
-  },
-  rowCopy: { flex: 1, marginHorizontal: 10 },
-  rowTitle: { fontFamily: appFont, fontSize: 13, fontWeight: "800" },
-  rowDescription: { fontFamily: appFont, fontSize: 10, marginTop: 2 },
-  preferenceCard: {
-    borderBottomColor: "rgba(148,163,184,0.25)",
-    borderBottomWidth: 1,
-    paddingBottom: 12,
-    paddingTop: 8,
-  },
-  preferenceHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 10,
-  },
-  preferenceIcon: {
-    alignItems: "center",
-    borderRadius: 12,
-    height: 34,
-    justifyContent: "center",
-    width: 34,
-  },
-  preferenceTextWrap: { flex: 1, marginLeft: 10 },
-  preferenceTitle: {
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "900",
-  },
-  preferenceSubtitle: {
-    fontFamily: appFont,
-    fontSize: 10,
-    marginTop: 2,
-  },
-  logout: {
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    minHeight: 48,
-    marginBottom: 8,
-  },
-  logoutText: {
-    fontFamily: appFont,
-    fontSize: 14,
-    fontWeight: "900",
-    marginLeft: 8,
-  },
-  pressed: { opacity: 0.72 },
-});

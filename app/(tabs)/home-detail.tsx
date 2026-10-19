@@ -5,16 +5,7 @@ import {
   type Href,
 } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-    Alert,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from "react-native";
+import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { EnergyRealtimeCard } from "@/components/homes/EnergyRealtimeCard";
@@ -25,8 +16,9 @@ import { canControlHome } from "@/lib/domain/home";
 import { useAndroidBackFallback } from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { typography } from "@/lib/theme/typography";
+
 import { getDeviceControlErrorMessage } from "@/lib/utils/control-error-message";
+import { styles } from "./home-detail.styles";
 
 export default function HomeDetailScreen() {
   const { homeId, deviceId, from: routeFrom, source } = useLocalSearchParams<{
@@ -266,18 +258,11 @@ export default function HomeDetailScreen() {
             <>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Volver a la pantalla anterior"
+                accessibilityLabel="Cerrar detalle del hogar"
                 onPress={goBack}
-                style={styles.backButton}
+                style={[styles.closeButton, { backgroundColor: theme.rowAlt }]}
               >
-                <Ionicons
-                  name="chevron-back"
-                  size={20}
-                  color={theme.blue}
-                />
-                <Text style={[styles.backButtonText, { color: theme.blue }]}>
-                  Volver
-                </Text>
+                <Ionicons name="close" size={21} color={theme.text} />
               </Pressable>
 
               <View
@@ -708,201 +693,3 @@ export default function HomeDetailScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { alignSelf: "center", width: "100%" },
-  backButton: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    minHeight: 40,
-    marginBottom: 10,
-    paddingRight: 10,
-  },
-  backButtonText: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  subtitle: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
-    marginTop: 3,
-  },
-  homeHeader: {
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 14,
-    padding: 15,
-  },
-  homeHeaderCopy: { flex: 1 },
-  homeTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 19,
-    fontWeight: "800",
-  },
-  addButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 12,
-    flexDirection: "row",
-    gap: 8,
-    minHeight: 44,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginLeft: 10,
-  },
-  addButtonText: {
-    color: "#FFFFFF",
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  sectionHeader: {
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  sectionTitle: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  searchBox: {
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 9,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
-    minHeight: 42,
-  },
-  emptyCard: {
-    alignItems: "center",
-    borderRadius: 18,
-    borderWidth: 1,
-    marginTop: 12,
-    padding: 24,
-  },
-  emptyTitle: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
-    fontWeight: "800",
-    marginTop: 12,
-    textAlign: "center",
-  },
-  emptyText: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: 6,
-    textAlign: "center",
-  },
-  primaryButton: {
-    alignItems: "center",
-    borderRadius: 11,
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "center",
-    marginTop: 16,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  modalOverlay: {
-    alignItems: "center",
-    backgroundColor: "rgba(15,23,42,0.48)",
-    flex: 1,
-    justifyContent: "center",
-    padding: 20,
-  },
-  modalCard: { borderRadius: 20, maxWidth: 500, padding: 20, width: "100%" },
-  modalHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  modalHeaderCopy: { flex: 1 },
-  modalTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  telemetryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
-  telemetryCell: { borderRadius: 12, minHeight: 64, padding: 11, width: "48%" },
-  telemetryLabel: { fontFamily: typography.fontFamily.regular, fontSize: 11 },
-  telemetryValue: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
-    fontWeight: "700",
-    marginTop: 5,
-  },
-  nameInput: {
-    borderRadius: 11,
-    borderWidth: 1,
-    fontSize: 14,
-    marginTop: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  menuItem: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 12,
-    paddingVertical: 14,
-  },
-  menuText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  modalActions: {
-    flexDirection: "row",
-    gap: 10,
-    justifyContent: "flex-end",
-    marginTop: 15,
-  },
-  secondaryButton: {
-    alignItems: "center",
-    borderRadius: 10,
-    borderWidth: 1,
-    justifyContent: "center",
-    minWidth: 90,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  secondaryButtonText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  primarySmallButton: {
-    alignItems: "center",
-    borderRadius: 10,
-    justifyContent: "center",
-    minWidth: 90,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-});

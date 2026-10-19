@@ -2,17 +2,24 @@ import {
   createContext,
   PropsWithChildren,
   useContext,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { Appearance, Platform, useColorScheme } from "react-native";
 
 import type { SmartDevice } from "@/lib/domain/device";
 import type {
   AppLanguage,
   ColorMode,
+  EffectiveColorMode,
 } from "@/lib/domain/preferences";
+import {
+  loadColorModePreference,
+  saveColorModePreference,
+} from "@/lib/preferences/appearance-preferences";
 import type {
   ReportPoint,
   ReportRange,
@@ -29,6 +36,10 @@ import type {
 import { authService } from "@/lib/services/auth-service";
 import type { SmartNotification } from "@/lib/services/notifications-service";
 import { smartHomeService } from "@/lib/services/smart-home-service";
+import {
+  loadHomeFavoriteOverrides,
+  saveHomeFavoriteOverrides,
+} from "@/lib/preferences/home-favorites";
 import {
   clearSession,
   loadSession,
@@ -66,6 +77,7 @@ type SmartHomeState = {
   activeHomeId: string;
   accountActive: boolean;
   colorMode: ColorMode;
+  effectiveColorMode: EffectiveColorMode;
   devices: SmartDevice[];
   notifications: SmartNotification[];
   unreadNotificationCount: number;
@@ -112,7 +124,7 @@ type SmartHomeState = {
   revokeHomeMember: (homeId: string, memberId: string) => Promise<void>;
   leaveHome: (homeId: string) => Promise<void>;
   toggleDevice: (id: string) => Promise<void>;
-  toggleHomeFavorite: (homeId: string) => void;
+  toggleHomeFavorite: (homeId: string) => Promise<void>;
   setDeviceOnline: (id: string, online: boolean) => void;
   resolveSmartDeviceAlert: (id: string) => void;
   refreshSync: () => void;
@@ -142,6 +154,13 @@ function getTimeStamp() {
 export function SmartHomeProvider({ children }: PropsWithChildren) {
   // Estados principales compartidos entre pantallas.
   const [homes, setHomes] = useState<SmartHomePlace[]>([]);
+  const [favoritePreferences, setFavoritePreferences] = useState<{
+    ownerKey: string | null;
+    overrides: Record<string, boolean>;
+    loaded: boolean;
+  }>({ ownerKey: null, overrides: {}, loaded: false });
+  const favoritePreferencesRef = useRef(favoritePreferences);
+  const [sessionOwnerKey, setSessionOwnerKey] = useState<string | null>(null);
   const [homeMembersByHome, setHomeMembersByHome] = useState<
     Record<string, HomeMember[]>
   >({});
@@ -154,13 +173,56 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     Record<string, number>
   >({});
   const [accountActive, setAccountActive] = useState(true);
-  const [colorMode, setColorMode] = useState<ColorMode>("light");
+  const [colorMode, setColorModeState] = useState<ColorMode>("system");
+  const systemColorScheme = useColorScheme();
+  const effectiveColorMode =
+    colorMode === "system"
+      ? systemColorScheme === "dark"
+        ? "dark"
+        : "light"
+      : colorMode;
+  const colorModeTouchedRef = useRef(false);
   const [language, setLanguage] = useState<AppLanguage>("es");
   const [homesLoadStatus, setHomesLoadStatus] =
     useState<DataLoadStatus>("loading");
 
   const [deviceLoadStatusByHome, setDeviceLoadStatusByHome] =
     useState<Record<string, DataLoadStatus>>({});
+
+  useEffect(() => {
+    let active = true;
+
+    void loadColorModePreference()
+      .then((storedMode) => {
+        if (active && !colorModeTouchedRef.current && storedMode) {
+          setColorModeState(storedMode);
+        }
+      })
+      .catch((error: unknown) => {
+        console.warn("[Appearance] No se pudo cargar la preferencia.", error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      Appearance.setColorScheme(
+        colorMode === "system" ? "unspecified" : colorMode,
+      );
+    }
+  }, [colorMode]);
+
+  const setColorMode = useCallback((mode: ColorMode) => {
+    colorModeTouchedRef.current = true;
+    setColorModeState(mode);
+
+    void saveColorModePreference(mode).catch((error: unknown) => {
+      console.warn("[Appearance] No se pudo guardar la preferencia.", error);
+    });
+  }, []);
 
   const [lastSync, setLastSync] = useState(getTimeStamp());
   const {
@@ -207,6 +269,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     // La limpieza ocurre al notificarse un cambio real de sesion.
     const unsubscribe = subscribeToSessionChanges((session) => {
       const nextOwner = getOwnerKey(session);
+      setSessionOwnerKey(nextOwner);
 
       // Una renovacion JWT del mismo usuario no borra sus datos.
       if (sessionOwnerRef.current === nextOwner) {
@@ -222,7 +285,9 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     void loadSession()
       .then((session) => {
         if (active && sessionOwnerRef.current === null) {
-          sessionOwnerRef.current = getOwnerKey(session);
+          const ownerKey = getOwnerKey(session);
+          sessionOwnerRef.current = ownerKey;
+          setSessionOwnerKey(ownerKey);
         }
       })
       .catch(() => {
@@ -235,7 +300,64 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
-  const accessibleHomes = homes;
+  useEffect(() => {
+    let active = true;
+    const emptyPreferences = {
+      ownerKey: sessionOwnerKey,
+      overrides: {} as Record<string, boolean>,
+      loaded: !sessionOwnerKey,
+    };
+
+    favoritePreferencesRef.current = emptyPreferences;
+    setFavoritePreferences(emptyPreferences);
+
+    if (!sessionOwnerKey) return () => {
+      active = false;
+    };
+
+    void loadHomeFavoriteOverrides(sessionOwnerKey)
+      .then((overrides) => {
+        if (!active) return;
+
+        const loadedPreferences = {
+          ownerKey: sessionOwnerKey,
+          overrides,
+          loaded: true,
+        };
+        favoritePreferencesRef.current = loadedPreferences;
+        setFavoritePreferences(loadedPreferences);
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          const fallbackPreferences = {
+            ownerKey: sessionOwnerKey,
+            overrides: {} as Record<string, boolean>,
+            loaded: true,
+          };
+          favoritePreferencesRef.current = fallbackPreferences;
+          setFavoritePreferences(fallbackPreferences);
+        }
+        console.warn("[Favorites] No se pudieron cargar los favoritos locales.", error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [sessionOwnerKey]);
+
+  const activeFavoriteOverrides =
+    favoritePreferences.ownerKey === sessionOwnerKey
+      ? favoritePreferences.overrides
+      : {};
+  const accessibleHomes = useMemo(
+    () =>
+      homes.map((home) =>
+        Object.prototype.hasOwnProperty.call(activeFavoriteOverrides, home.id)
+          ? { ...home, favorite: activeFavoriteOverrides[home.id] ?? false }
+          : home,
+      ),
+    [activeFavoriteOverrides, homes],
+  );
 
   const {
     removeDevice,
@@ -280,6 +402,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       activeHomeId,
       accountActive,
       colorMode,
+      effectiveColorMode,
       devices,
       homeConsumptionGoals,
       homes,
@@ -403,19 +526,53 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setSessionEmail,
       setSessionRole,
       toggleDevice,
-      // Marca o desmarca un hogar como favorito para el dashboard.
-      toggleHomeFavorite: (homeId) => {
-        setHomes((items) => {
-          const target = items.find((item) => item.id === homeId);
-          if (target) {
-            smartHomeService
-              .toggleHomeFavorite(homeId, !target.favorite)
-              .catch(() => null);
-          }
-          return items.map((item) =>
-            item.id === homeId ? { ...item, favorite: !item.favorite } : item,
+      // Guarda la preferencia localmente por cuenta mientras la API no la persiste.
+      toggleHomeFavorite: async (homeId) => {
+        if (!sessionOwnerKey) {
+          throw new Error("Inicia sesión para guardar favoritos.");
+        }
+
+        const target = accessibleHomes.find((home) => home.id === homeId);
+        if (!target) return;
+
+        const previousPreferences = favoritePreferencesRef.current;
+        if (
+          previousPreferences.ownerKey !== sessionOwnerKey ||
+          !previousPreferences.loaded
+        ) {
+          throw new Error("Espera a que se carguen tus hogares favoritos.");
+        }
+
+        const currentFavorite = Object.prototype.hasOwnProperty.call(
+          previousPreferences.overrides,
+          homeId,
+        )
+          ? previousPreferences.overrides[homeId] ?? false
+          : target.favorite;
+        const nextPreferences = {
+          ownerKey: sessionOwnerKey,
+          loaded: true,
+          overrides: {
+            ...previousPreferences.overrides,
+            [homeId]: !currentFavorite,
+          },
+        };
+
+        favoritePreferencesRef.current = nextPreferences;
+        setFavoritePreferences(nextPreferences);
+
+        try {
+          await saveHomeFavoriteOverrides(
+            sessionOwnerKey,
+            nextPreferences.overrides,
           );
-        });
+        } catch (error) {
+          if (favoritePreferencesRef.current === nextPreferences) {
+            favoritePreferencesRef.current = previousPreferences;
+            setFavoritePreferences(previousPreferences);
+          }
+          throw error;
+        }
       },
       // Fuerza un estado especifico para un dispositivo.
       setDeviceOnline: (id, online) => {
@@ -512,6 +669,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       accountActive,
       activeHomeId,
       colorMode,
+      effectiveColorMode,
       devices,
       homeConsumptionGoals,
       homes,
@@ -530,6 +688,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setSessionName,
       setSessionRole,
       setHomeDeviceState,
+      setColorMode,
       accessibleHomes,
       language,
       lastSync,
@@ -538,6 +697,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       toggleDevice,
       unreadNotificationCount,
       updateDevice,
+      sessionOwnerKey,
     ],
   );
 

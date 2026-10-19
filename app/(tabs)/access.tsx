@@ -5,16 +5,7 @@ import {
   useRouter,
 } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useSmartHome } from "@/lib/context/smart-home-context";
@@ -24,6 +15,7 @@ import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { smartHomeService } from "@/lib/services/smart-home-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { isValidEmail } from "@/lib/utils/validators";
+import { styles } from "./access.styles";
 
 type InvitationRole = Exclude<HomeRole, "OWNER">;
 
@@ -692,127 +684,3 @@ export default function AccessScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  content: { width: "100%", alignSelf: "center" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  title: { flex: 1, fontSize: 23, fontWeight: "900" },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  homeContext: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
-    minHeight: 46,
-    borderRadius: 13,
-    marginBottom: 16,
-  },
-  homeName: { flex: 1, fontSize: 14, fontWeight: "800" },
-  card: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 16,
-    gap: 12,
-  },
-  cardTitle: { fontSize: 16, fontWeight: "800" },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    height: 48,
-    paddingHorizontal: 14,
-    fontSize: 14,
-  },
-  roles: { flexDirection: "row", gap: 10 },
-  roleOption: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderRadius: 13,
-    minHeight: 75,
-  },
-  roleTitle: { fontSize: 13, fontWeight: "800" },
-  roleDescription: {
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 5,
-  },
-  primaryButton: {
-    minHeight: 48,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-  },
-  primaryText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  statsRow: { flexDirection: "row", gap: 10 },
-  stat: {
-    flex: 1,
-    alignItems: "center",
-    borderRadius: 13,
-    paddingVertical: 14,
-  },
-  statNumber: { fontSize: 22, fontWeight: "900" },
-  statLabel: { fontSize: 12, marginTop: 3 },
-  memberRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderTopWidth: 1,
-    paddingTop: 12,
-    gap: 10,
-  },
-  avatar: {
-    height: 40,
-    width: 40,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  memberCopy: { flex: 1 },
-  memberName: { fontSize: 13, fontWeight: "800" },
-  memberDetail: {
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 3,
-  },
-  memberStatus: { fontSize: 11, fontWeight: "800" },
-  showAll: { alignSelf: "center", padding: 8 },
-  history: {
-    borderTopWidth: 1,
-    paddingTop: 15,
-    marginTop: 4,
-    gap: 12,
-  },
-  historyTitle: { fontSize: 14, fontWeight: "800" },
-  activityRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  activityName: { fontSize: 12, fontWeight: "700" },
-  emptyText: { fontSize: 12, lineHeight: 18 },
-  note: { fontSize: 12, lineHeight: 18 },
-});

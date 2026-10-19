@@ -1,5 +1,6 @@
 import { AuthCheckboxRow } from "@/components/auth/AuthCheckboxRow";
 import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
+import { Ionicons } from "@expo/vector-icons";
 import {
     AuthPasswordField,
     AuthTextField,
@@ -9,15 +10,18 @@ import { BackButton } from "@/components/common/BackButton";
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { registerUser } from "@/lib/auth/auth-store";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
-import { typography } from "@/lib/theme/typography";
+import { useAuthPalette } from "@/lib/theme/appearance";
+
 import { getPasswordRules, isValidEmail } from "@/lib/utils/validators";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
+import { styles } from "./register.styles";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+  const palette = useAuthPalette();
 
   // ==========================================
   // ESTADO DEL FORMULARIO
@@ -48,6 +52,16 @@ export default function RegisterScreen() {
   const passwordRules = useMemo(() => getPasswordRules(password), [password]);
 
   const strength = passwordRules.filter((rule) => rule.passed).length;
+  const strengthLabel =
+    strength === passwordRules.length
+      ? "Fuerte"
+      : strength >= 3
+        ? "Buena"
+        : strength > 0
+          ? "En progreso"
+          : "Completa los requisitos";
+  const strengthColor =
+    strength < 2 ? "#DC4A4A" : strength < passwordRules.length ? "#D58A12" : "#16804A";
 
   const passwordIsStrong =
     passwordRules.length > 0 && strength === passwordRules.length;
@@ -144,13 +158,33 @@ export default function RegisterScreen() {
   // ==========================================
 
   return (
-    <AuthScreenLayout compact={layout.compact} title="Crear cuenta">
+    <AuthScreenLayout
+      compact={layout.compact}
+      contentStyle={styles.screenContent}
+      contentTopPadding={layout.compact ? 12 : 20}
+    >
       {/* ====================================== */}
       {/* BOTÓN VOLVER                           */}
       {/* ====================================== */}
 
       <View style={styles.header}>
-        <BackButton fallbackHref="/welcome" />
+        <BackButton color={palette.link} fallbackHref="/welcome" />
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <View style={styles.introSection}>
+        <Text
+          style={[
+            styles.title,
+            layout.tiny && styles.titleTiny,
+            { color: palette.title },
+          ]}
+        >
+          Crea tu cuenta
+        </Text>
+        <Text style={[styles.subtitle, { color: palette.muted }]}>
+          Empieza a disfrutar de un hogar conectado.
+        </Text>
       </View>
 
       {/* ====================================== */}
@@ -165,9 +199,11 @@ export default function RegisterScreen() {
         <AuthTextField
           error={visibleError("firstName")}
           inputStyle={styles.input}
+          label="Nombre completo"
           onChangeText={setFirstName}
-          placeholder="Nombre completo"
+          placeholder="Tu nombre y apellido"
           value={firstName}
+          variant="outlined"
           autoCapitalize="words"
           autoCorrect={false}
         />
@@ -180,9 +216,11 @@ export default function RegisterScreen() {
           error={visibleError("email")}
           inputStyle={styles.input}
           keyboardType="email-address"
+          label="Correo electrónico"
           onChangeText={setEmail}
-          placeholder="Correo electrónico"
+          placeholder="nombre@correo.com"
           value={email}
+          variant="outlined"
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -195,17 +233,38 @@ export default function RegisterScreen() {
           <AuthPasswordField
             error={visibleError("password")}
             inputStyle={styles.input}
+            label="Contraseña"
             onChangeText={setPassword}
             onToggleVisibility={() => setShowPassword((prev) => !prev)}
-            placeholder="Contraseña"
+            placeholder="Crea una contraseña"
             showPassword={showPassword}
             value={password}
+            variant="outlined"
           />
 
-          {password.length > 0 && (
+          <View
+            accessibilityLabel={`Fortaleza de contraseña: ${strength} de ${passwordRules.length}. ${strengthLabel}.`}
+            style={[
+              styles.passwordGuidance,
+              {
+                backgroundColor: palette.card,
+                borderColor:
+                  palette.fieldBorder === "transparent"
+                    ? "#E1E8F0"
+                    : palette.fieldBorder,
+              },
+            ]}
+          >
+            <View style={styles.strengthHeading}>
+              <Text style={[styles.strengthTitle, { color: palette.text }]}>
+                Seguridad de la contraseña
+              </Text>
+              <Text style={[styles.strengthLabel, { color: strengthColor }]}>
+                {strengthLabel}
+              </Text>
+            </View>
             <View
-              style={styles.strengthContainer}
-              accessibilityLabel={`Fortaleza de contraseña: ${strength} de ${passwordRules.length}`}
+              style={[styles.strengthTrack, { backgroundColor: palette.divider }]}
             >
               <View
                 style={[
@@ -216,17 +275,27 @@ export default function RegisterScreen() {
                         ? (strength / passwordRules.length) * 100
                         : 0
                     }%`,
-                    backgroundColor:
-                      strength < 2
-                        ? "#FF4D4D"
-                        : strength < passwordRules.length
-                          ? "#FFA500"
-                          : "#003380",
+                    backgroundColor: strengthColor,
                   },
                 ]}
               />
             </View>
-          )}
+
+            <View style={styles.ruleGrid}>
+              {passwordRules.map((rule) => (
+                <View key={rule.label} style={styles.ruleItem}>
+                  <Ionicons
+                    color={rule.passed ? "#16804A" : palette.muted}
+                    name={rule.passed ? "checkmark-circle" : "ellipse-outline"}
+                    size={14}
+                  />
+                  <Text style={[styles.ruleText, { color: palette.muted }]}>
+                    {rule.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
         </View>
 
         {/* ==================================== */}
@@ -236,11 +305,13 @@ export default function RegisterScreen() {
         <AuthPasswordField
           error={visibleError("confirmPassword")}
           inputStyle={styles.input}
+          label="Confirmar contraseña"
           onChangeText={setConfirmPassword}
           onToggleVisibility={() => setShowPassword((prev) => !prev)}
-          placeholder="Confirmar contraseña"
+          placeholder="Repite tu contraseña"
           showPassword={showPassword}
           value={confirmPassword}
+          variant="outlined"
         />
 
         {/* ==================================== */}
@@ -251,7 +322,7 @@ export default function RegisterScreen() {
           <AuthCheckboxRow
             checked={acceptTerms}
             label={
-              <Text style={styles.termsText}>
+              <Text style={[styles.termsText, { color: palette.text }]}>
                 Acepto términos y política de privacidad
               </Text>
             }
@@ -259,7 +330,10 @@ export default function RegisterScreen() {
           />
 
           {visibleError("terms") ? (
-            <Text style={styles.termsError} accessibilityRole="alert">
+            <Text
+              style={[styles.termsError, { color: palette.danger }]}
+              accessibilityRole="alert"
+            >
               {visibleError("terms")}
             </Text>
           ) : null}
@@ -286,9 +360,9 @@ export default function RegisterScreen() {
           accessibilityRole="link"
           accessibilityLabel="Iniciar sesión"
         >
-          <Text style={styles.loginText}>¿Ya tienes cuenta? </Text>
+          <Text style={[styles.loginText, { color: palette.text }]}>¿Ya tienes cuenta? </Text>
 
-          <Text style={[styles.loginText, styles.loginLink]}>
+          <Text style={[styles.loginText, styles.loginLink, { color: palette.link }]}>
             Inicia sesión
           </Text>
         </Pressable>
@@ -296,109 +370,3 @@ export default function RegisterScreen() {
     </AuthScreenLayout>
   );
 }
-
-// ======================================================
-// TIPOGRAFÍA
-// ======================================================
-
-const authFont = typography.fontFamily.emphasis;
-
-// ======================================================
-// ESTILOS
-// ======================================================
-
-const styles = StyleSheet.create({
-  header: {
-    marginBottom: 10,
-  },
-
-  formContainer: {
-    gap: 16,
-    width: "100%",
-  },
-
-  input: {
-    backgroundColor: "#FBFBFD",
-    borderColor: "transparent",
-    borderWidth: 1,
-    borderRadius: 17,
-
-    color: "#3F3F3F",
-
-    fontFamily: authFont,
-    fontSize: 15,
-    fontWeight: "500",
-
-    height: 56,
-
-    paddingHorizontal: 18,
-
-    shadowColor: "#000000",
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-
-    elevation: 5,
-  },
-
-  strengthContainer: {
-    height: 4,
-
-    backgroundColor: "#E0E0E0",
-
-    borderRadius: 2,
-
-    marginTop: 8,
-
-    overflow: "hidden",
-  },
-
-  strengthBar: {
-    height: "100%",
-  },
-
-  termsText: {
-    color: "#3F3F3F",
-    fontSize: 14,
-    fontFamily: authFont,
-    fontWeight: "600",
-  },
-
-  termsError: {
-    marginTop: 5,
-    marginLeft: 8,
-
-    color: "#C62828",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-
-  button: {
-    marginTop: 8,
-  },
-
-  loginRow: {
-    alignSelf: "center",
-
-    flexDirection: "row",
-    flexWrap: "wrap",
-
-    justifyContent: "center",
-
-    paddingVertical: 4,
-  },
-
-  loginText: {
-    color: "#3F3F3F",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-
-  loginLink: {
-    color: "#003380",
-    textDecorationLine: "underline",
-  },
-});

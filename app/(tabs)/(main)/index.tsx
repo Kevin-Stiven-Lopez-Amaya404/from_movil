@@ -1,281 +1,367 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { typography } from "@/lib/theme/typography";
-import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
+import { styles } from "./index.styles";
 
-const appFont = typography.fontFamily.emphasis;
 
-type ThemeLike = ReturnType<typeof useAppTheme>;
+type Theme = ReturnType<typeof useAppTheme>;
+type IconName = React.ComponentProps<typeof Ionicons>["name"];
 
-type QuickCardProps = {
-  description: string;
-  featured?: boolean;
-  icon: keyof typeof Ionicons.glyphMap;
+type SummaryTileProps = {
+  icon: IconName;
+  label: string;
+  value: string;
   onPress: () => void;
-  theme: ThemeLike;
-  title: string;
+  tint: "blue" | "green";
+  theme: Theme;
 };
 
-function QuickCard({
-  description,
-  featured = false,
+function SummaryTile({
   icon,
+  label,
+  value,
   onPress,
+  tint,
   theme,
-  title,
-}: QuickCardProps) {
+}: SummaryTileProps) {
+  const isGreen = tint === "green";
+  const accent = isGreen
+    ? theme.dark ? "#86EFAC" : "#168044"
+    : theme.dark ? "#93C5FD" : theme.blue;
+  const background = isGreen
+    ? theme.dark ? "#1A332B" : "#EFF9F1"
+    : theme.dark ? "#1C3048" : "#EAF3FF";
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={`${label}: ${value}. Abrir sección.`}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.quickCard,
-        featured && styles.quickCardFeatured,
-        { backgroundColor: theme.card, borderColor: theme.borderLight },
+        styles.summaryTile,
+        {
+          backgroundColor: background,
+          borderColor: theme.dark ? theme.border : background,
+        },
         pressed && styles.pressed,
       ]}
     >
-      {featured ? (
-        <>
-          <View style={styles.featuredCopy}>
-            <View style={styles.featuredTitleRow}>
-              <View
-                style={[styles.quickIcon, { backgroundColor: theme.blue1 }]}
-              >
-                <Ionicons name={icon} size={25} color={theme.blue} />
-              </View>
-              <Text style={[styles.featuredTitle, { color: theme.text }]}>
-                {title}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.featuredArrow}>
-            <Ionicons name="chevron-forward" size={18} color={theme.muted} />
-          </View>
-        </>
-      ) : (
-        <>
-          <View style={styles.quickTopRow}>
-            <View style={[styles.quickIcon, { backgroundColor: theme.blue1 }]}>
-              <Ionicons name={icon} size={24} color={theme.blue} />
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.muted} />
-          </View>
-          <Text style={[styles.quickTitle, { color: theme.text }]}>
-            {title}
-          </Text>
-          <Text style={[styles.quickDescription, { color: theme.muted }]}>
-            {description}
-          </Text>
-        </>
-      )}
+      <View style={styles.summaryTop}>
+        <View
+          style={[
+            styles.summaryIcon,
+            { backgroundColor: theme.card },
+          ]}
+        >
+          <Ionicons name={icon} size={24} color={accent} />
+        </View>
+        <Ionicons name="arrow-forward" size={17} color={accent} />
+      </View>
+      <Text style={[styles.summaryValue, { color: theme.text }]}>
+        {value}
+      </Text>
+      <Text style={[styles.summaryLabel, { color: theme.muted }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
-type StatCardProps = {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  theme: ThemeLike;
-  value: number;
+type NavigationRowProps = {
+  icon: IconName;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+  theme: Theme;
+  tint: "orange" | "blue" | "purple";
 };
 
-function StatCard({ icon, label, theme, value }: StatCardProps) {
+function NavigationRow({
+  icon,
+  title,
+  subtitle,
+  onPress,
+  theme,
+  tint,
+}: NavigationRowProps) {
+  const accent =
+    tint === "orange"
+      ? theme.dark ? "#FDBA74" : "#C15A10"
+      : tint === "purple"
+        ? theme.dark ? "#C4B5FD" : "#6D45BF"
+        : theme.dark ? "#93C5FD" : theme.blue;
+  const iconBackground =
+    tint === "orange"
+      ? theme.dark ? "#39291E" : "#FFF2E7"
+      : tint === "purple"
+        ? theme.dark ? "#302640" : "#F1ECFF"
+        : theme.dark ? "#1C3048" : "#EAF3FF";
+
   return (
-    <View
-      style={[
-        styles.statCard,
-        { backgroundColor: theme.card, borderColor: theme.borderLight },
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${subtitle}`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.navigationRow,
+        {
+          backgroundColor: theme.card,
+          borderColor: theme.borderLight,
+        },
+        pressed && styles.pressed,
       ]}
     >
-      <View style={[styles.statIcon, { backgroundColor: theme.blue1 }]}>
-        <Ionicons name={icon} size={18} color={theme.blue} />
+      <View
+        style={[
+          styles.navigationIcon,
+          { backgroundColor: iconBackground },
+        ]}
+      >
+        <Ionicons name={icon} size={24} color={accent} />
       </View>
-      <Text style={[styles.statValue, { color: theme.text }]}>{value}</Text>
-      <Text style={[styles.statLabel, { color: theme.muted }]}>{label}</Text>
-    </View>
+      <View style={styles.navigationCopy}>
+        <Text style={[styles.navigationTitle, { color: theme.text }]}>
+          {title}
+        </Text>
+        <Text style={[styles.navigationSubtitle, { color: theme.muted }]}>
+          {subtitle}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={theme.muted} />
+    </Pressable>
   );
 }
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  const { devices, homes, sessionName } = useSmartHome();
-  const { count: pendingAlerts } = useActiveDeviceAlerts();
+  const layout = useResponsiveLayout();
+  const {
+    accessibleHomes,
+    devices,
+    deviceLoadStatusByHome,
+    homesLoadStatus,
+    sessionName,
+  } = useSmartHome();
+  const {
+    count: pendingAlerts,
+    isLoading: alertsLoading,
+    hasError: alertsError,
+  } = useActiveDeviceAlerts();
 
-  const activeDeviceCount = devices.filter(
-    (device) => device.online && device.state === "on",
+  const homesReady = homesLoadStatus === "loaded";
+  const deviceDataReady =
+    homesReady &&
+    accessibleHomes.every(
+      (home) => deviceLoadStatusByHome[home.id] === "loaded",
+    );
+  const homeIds = new Set(accessibleHomes.map((home) => home.id));
+  const poweredOnCount = devices.filter(
+    (device) =>
+      homeIds.has(device.homeId) &&
+      device.online &&
+      device.state === "on",
   ).length;
-  const onlineDeviceCount = devices.filter((device) => device.online).length;
-  const favoriteHomes = homes.filter((home) => home.favorite).length;
+  const favoriteHomes = accessibleHomes.filter(
+    (home) => home.favorite,
+  ).length;
+
+  const homesDisplay = homesReady ? String(accessibleHomes.length) : "—";
+  const poweredOnDisplay = deviceDataReady ? String(poweredOnCount) : "—";
+
+  const alertsSubtitle = alertsError
+    ? "No se pudo consultar el estado"
+    : alertsLoading
+      ? "Consultando alertas..."
+      : pendingAlerts === 0
+        ? "Sin alertas pendientes"
+        : `${pendingAlerts} ${pendingAlerts === 1 ? "alerta pendiente" : "alertas pendientes"}`;
+
+  const favoritesSubtitle = !homesReady
+    ? "Consultando favoritos..."
+    : favoriteHomes === 0
+      ? "Aún no tienes hogares favoritos"
+      : `${favoriteHomes} ${favoriteHomes === 1 ? "hogar favorito" : "hogares favoritos"}`;
+
+  // Movimiento ambiental ligero, respetando la preferencia de accesibilidad.
+  const imageScale = useRef(new Animated.Value(1)).current;
+  const [reduceMotion, setReduceMotion] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => {
+        if (mounted) setReduceMotion(enabled);
+      })
+      .catch(() => {
+        if (mounted) setReduceMotion(true);
+      });
+
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setReduceMotion,
+    );
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      imageScale.stopAnimation();
+      imageScale.setValue(1);
+      return;
+    }
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(imageScale, {
+          toValue: 1.045,
+          duration: 9000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(imageScale, {
+          toValue: 1,
+          duration: 9000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [imageScale, reduceMotion]);
+
+  const firstName = sessionName?.trim().split(/\s+/)[0];
 
   return (
     <SafeAreaView
+      edges={["top", "left", "right"]}
       style={[styles.safeArea, { backgroundColor: theme.background }]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.container,
-          {
-            paddingHorizontal: layout.gutter,
-            paddingTop: layout.screenTop,
-            paddingBottom: layout.screenBottom,
-          },
-        ]}
+        contentContainerStyle={{
+          alignItems: "center",
+          paddingHorizontal: layout.gutter,
+          paddingTop: layout.compact ? 8 : 14,
+          paddingBottom: layout.screenBottom,
+        }}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
+          <View style={styles.header}>
+            <View style={styles.headerCopy}>
+              <Text style={[styles.brand, { color: theme.dark ? "#93C5FD" : theme.blue }]}>
+                SMART HOME
+              </Text>
+              <Text style={[styles.greeting, { color: theme.text }]}>
+                {firstName ? `Hola, ${firstName}` : "Hola"}
+              </Text>
+              <Text style={[styles.greetingSubtitle, { color: theme.muted }]}>
+                Tu hogar, más inteligente.
+              </Text>
+            </View>
+            <View
+              style={[styles.headerSymbol, { backgroundColor: theme.rowAlt }]}
+              accessible={false}
+            >
+              <Ionicons name="home-outline" size={24} color={theme.blue} />
+            </View>
+          </View>
+
           <View
             style={[
-              styles.hero,
+              styles.heroCard,
               {
                 backgroundColor: theme.card,
                 borderColor: theme.borderLight,
               },
             ]}
           >
-            <View style={styles.heroHeader}>
-              <View style={styles.brandBlock}>
-                <Text style={[styles.overline, { color: theme.blue }]}>
-                  SMART HOME
-                </Text>
-                <View style={styles.brandLine} />
-              </View>
-            </View>
-
-            <View style={styles.heroTitleBlock}>
-              <Text style={[styles.greeting, { color: "#0F172A" }]}>
-                Hola, {sessionName}
-              </Text>
-              <Text style={[styles.subtitle, { color: "#4B5A67" }]}>
-                Tu hogar, más inteligente.
-              </Text>
-            </View>
-
-            <View style={styles.summaryRow}>
-              <View
-                style={[styles.summaryCard, { backgroundColor: theme.blue1 }]}
-              >
-                <View
-                  style={[
-                    styles.summaryIconWrap,
-                    { backgroundColor: theme.card },
-                  ]}
-                >
-                  <Ionicons name="watch-outline" size={22} color={theme.blue} />
-                </View>
-                <Text style={[styles.summaryValue, { color: "#0F172A" }]}>
-                  {activeDeviceCount}
-                </Text>
-                <Text style={[styles.summaryLabel, { color: "#4B5A67" }]}>
-                  dispositivos activos
-                </Text>
-              </View>
-
-              <View
-                style={[styles.summaryCard, { backgroundColor: theme.blue1 }]}
-              >
-                <View
-                  style={[
-                    styles.summaryIconWrap,
-                    { backgroundColor: theme.card },
-                  ]}
-                >
-                  <Ionicons
-                    name="shield-checkmark-outline"
-                    size={22}
-                    color={theme.blue}
-                  />
-                </View>
-                <Text style={[styles.summaryValue, { color: "#0F172A" }]}>
-                  Hogar seguro
-                </Text>
-                <Text style={[styles.summaryLabel, { color: "#4B5A67" }]}>
-                  Sin alertas pendientes
-                </Text>
-              </View>
+            <View style={styles.heroMedia}>
+              <Animated.Image
+                source={require("../../../assets/images/dashboard-eco.jpg")}
+                resizeMode="cover"
+                accessibilityLabel="Casa inteligente con paneles solares, árboles y montañas"
+                style={[
+                  styles.heroImage,
+                  { transform: [{ scale: imageScale }] },
+                ]}
+              />
             </View>
           </View>
 
-          <View style={styles.statsRow}>
-            <StatCard
+          <View style={styles.summaryGrid}>
+            <SummaryTile
               icon="home-outline"
-              label="Administrar hogares"
+              label="Mis hogares"
+              value={homesDisplay}
+              tint="blue"
               theme={theme}
-              value={homes.length}
-            />
-            <StatCard
-              icon="hardware-chip-outline"
-              label={`${onlineDeviceCount} dispositivos activos`}
-              theme={theme}
-              value={activeDeviceCount}
-            />
-            <StatCard
-              icon="notifications-outline"
-              label={`${pendingAlerts} alertas pendientes`}
-              theme={theme}
-              value={pendingAlerts}
-            />
-          </View>
-
-          <View style={styles.quickHeader}>
-            <Text style={[styles.quickHeading, { color: theme.text }]}>
-              Tus accesos rápidos
-            </Text>
-            <Text style={[styles.quickSubtitle, { color: theme.muted }]}>
-              Funciones principales de Smart Home
-            </Text>
-          </View>
-
-          <View style={styles.quickGrid}>
-            <QuickCard
-              icon="home-outline"
-              title="Mis hogares"
-              description={`${homes.length} disponibles`}
               onPress={() => router.navigate("/(tabs)/(main)/homes")}
-              theme={theme}
             />
-            <QuickCard
-              icon="hardware-chip-outline"
-              title="Dispositivos"
-              description={`${onlineDeviceCount} conectados`}
+            <SummaryTile
+              icon="power-outline"
+              label="Dispositivos encendidos"
+              value={poweredOnDisplay}
+              tint="green"
+              theme={theme}
               onPress={() => router.push("/(tabs)/devices")}
-              theme={theme}
             />
-            <QuickCard
-              icon="bar-chart-outline"
-              title="Consumo"
-              description="Consulta tus reportes"
-              onPress={() => router.navigate("/(tabs)/(main)/reports")}
-              theme={theme}
-            />
-            <QuickCard
+          </View>
+
+          {homesLoadStatus === "error" ? (
+            <Text style={[styles.stateNote, { color: theme.danger }]}>
+              No se pudieron cargar los hogares.
+            </Text>
+          ) : homesReady && accessibleHomes.length === 0 ? (
+            <Text style={[styles.stateNote, { color: theme.muted }]}>
+              Aún no tienes hogares. Abre Hogares para crear el primero.
+            </Text>
+          ) : null}
+
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Tu hogar de un vistazo
+          </Text>
+
+          <View style={styles.navigationList}>
+            <NavigationRow
               icon="notifications-outline"
-              title="Alertas"
-              description={`${pendingAlerts} pendientes`}
+              title="Estado y alertas"
+              subtitle={alertsSubtitle}
+              tint="orange"
+              theme={theme}
               onPress={() =>
                 router.navigate({
                   pathname: "/(tabs)/(main)/notifications",
                   params: { section: "alerts" },
                 })
               }
-              theme={theme}
             />
-            <QuickCard
-              icon="star-outline"
-              title="Favoritos"
-              description={`${favoriteHomes} ${favoriteHomes === 1 ? "guardado" : "guardados"}`}
-              onPress={() => router.push("/(tabs)/favorites")}
+            <NavigationRow
+              icon="hardware-chip-outline"
+              title="Mis dispositivos"
+              subtitle="Ver y gestionar dispositivos"
+              tint="blue"
               theme={theme}
-              featured
+              onPress={() => router.push("/(tabs)/devices")}
+            />
+            <NavigationRow
+              icon="star-outline"
+              title="Mis favoritos"
+              subtitle={favoritesSubtitle}
+              tint="purple"
+              theme={theme}
+              onPress={() => router.push("/(tabs)/favorites")}
             />
           </View>
         </View>
@@ -283,239 +369,3 @@ export default function DashboardScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  container: { alignItems: "center" },
-  content: { alignSelf: "center", width: "100%" },
-  hero: {
-    borderRadius: 28,
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
-  },
-  heroHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  brandBlock: {
-    alignItems: "flex-start",
-    flex: 1,
-  },
-  overline: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 14,
-    fontWeight: "900",
-    letterSpacing: 1.4,
-  },
-  brandLine: {
-    backgroundColor: "#0047AB",
-    borderRadius: 999,
-    height: 3,
-    marginTop: 7,
-    width: 96,
-  },
-  heroTitleBlock: {
-    marginTop: 14,
-  },
-  greeting: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 32,
-    fontWeight: "900",
-    lineHeight: 36,
-  },
-  subtitle: {
-    fontFamily: appFont,
-    fontSize: 14,
-    fontWeight: "600",
-    marginTop: 5,
-  },
-  identityRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginTop: 18,
-    marginBottom: 10,
-  },
-  avatar: {
-    alignItems: "center",
-    borderRadius: 32,
-    borderWidth: 1,
-    height: 64,
-    justifyContent: "center",
-    width: 64,
-  },
-  avatarText: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 30,
-    fontWeight: "900",
-  },
-  identityCopy: { flex: 1, marginLeft: 12 },
-  identityName: { fontFamily: appFont, fontSize: 18, fontWeight: "900" },
-  identityRole: {
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  statusRow: { alignItems: "center", flexDirection: "row", marginTop: 7 },
-  statusDot: { borderRadius: 5, height: 9, marginRight: 6, width: 9 },
-  statusText: { fontFamily: appFont, fontSize: 11, fontWeight: "700" },
-  summaryRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 14,
-    marginBottom: 2,
-  },
-  summaryCard: {
-    borderRadius: 18,
-    flex: 1,
-    minHeight: 104,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  summaryIconWrap: {
-    alignItems: "center",
-    borderRadius: 12,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-  },
-  summaryValue: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 18,
-    fontWeight: "900",
-    marginTop: 10,
-  },
-  summaryLabel: {
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  editButton: {
-    alignItems: "center",
-    borderRadius: 18,
-    flexDirection: "row",
-    justifyContent: "center",
-    minHeight: 60,
-    paddingHorizontal: 18,
-  },
-  editText: {
-    color: "#FFFFFF",
-    flex: 1,
-    fontFamily: appFont,
-    fontSize: 19,
-    fontWeight: "900",
-    marginLeft: 10,
-    textAlign: "center",
-  },
-  statsRow: { flexDirection: "row", gap: 8, marginBottom: 13 },
-  statCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    flex: 1,
-    minHeight: 100,
-    padding: 9,
-  },
-  statIcon: {
-    alignItems: "center",
-    borderRadius: 9,
-    height: 30,
-    justifyContent: "center",
-    width: 30,
-  },
-  statValue: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 21,
-    fontWeight: "900",
-    marginTop: 7,
-  },
-  statLabel: {
-    fontFamily: appFont,
-    fontSize: 9,
-    fontWeight: "700",
-    marginTop: 2,
-  },
-  quickHeader: { marginBottom: 10 },
-  quickHeading: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  quickSubtitle: {
-    fontFamily: appFont,
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  quickCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    flexBasis: "48%",
-    flexGrow: 1,
-    minHeight: 112,
-    padding: 12,
-  },
-  quickCardFeatured: {
-    flexBasis: "100%",
-    flexDirection: "row",
-    minHeight: 76,
-    overflow: "hidden",
-    padding: 10,
-  },
-  featuredCopy: {
-    flex: 1,
-    justifyContent: "center",
-    minWidth: 0,
-    zIndex: 2,
-  },
-  featuredTitleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 9,
-  },
-  featuredTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  featuredArrow: {
-    alignItems: "center",
-    height: 28,
-    justifyContent: "center",
-    position: "absolute",
-    right: 10,
-    top: 10,
-    width: 22,
-    zIndex: 3,
-  },
-  quickTopRow: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  quickIcon: {
-    alignItems: "center",
-    borderRadius: 11,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-  },
-  quickTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 14,
-    fontWeight: "900",
-    marginTop: 11,
-  },
-  quickDescription: {
-    fontFamily: appFont,
-    fontSize: 10,
-    fontWeight: "600",
-    marginTop: 3,
-  },
-  pressed: { opacity: 0.72 },
-});

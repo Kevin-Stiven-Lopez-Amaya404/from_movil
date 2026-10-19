@@ -5,15 +5,18 @@ import { BackButton } from "@/components/common/BackButton";
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { requestAccountReactivation } from "@/lib/auth/auth-store";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
-import { typography } from "@/lib/theme/typography";
+import { useAuthPalette } from "@/lib/theme/appearance";
+
 import { isValidEmail } from "@/lib/utils/validators";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
+import { styles } from "./request-reactivation.styles";
 
 export default function RequestReactivationScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
+  const palette = useAuthPalette();
   const params = useLocalSearchParams<{ email?: string | string[] }>();
 
   const initialEmail =
@@ -59,11 +62,11 @@ export default function RequestReactivationScreen() {
   return (
     <AuthScreenLayout compact={layout.compact} contentStyle={styles.content}>
       <View style={styles.header}>
-        <BackButton fallbackHref="/login" />
+        <BackButton color={palette.link} fallbackHref="/login" />
       </View>
 
-      <Text style={styles.sectionTitle}>Reactivar cuenta</Text>
-      <Text style={styles.description}>
+      <Text style={[styles.sectionTitle, { color: palette.text }]}>Reactivar cuenta</Text>
+      <Text style={[styles.description, { color: palette.muted }]}>
         Ingresa el correo de la cuenta. Si está desactivada, recibirás un enlace
         para reactivarla.
       </Text>
@@ -90,53 +93,3 @@ export default function RequestReactivationScreen() {
     </AuthScreenLayout>
   );
 }
-
-const authFont = typography.fontFamily.emphasis;
-
-const styles = StyleSheet.create({
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-  header: {
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    color: "#3F3F3F",
-    fontFamily: authFont,
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  description: {
-    color: "#666666",
-    fontFamily: authFont,
-    fontSize: 14,
-    lineHeight: 21,
-    marginBottom: 20,
-  },
-  formContainer: {
-    gap: 16,
-    width: "100%",
-  },
-  input: {
-    backgroundColor: "#FBFBFD",
-    borderColor: "transparent",
-    borderWidth: 1,
-    borderRadius: 17,
-    color: "#3F3F3F",
-    fontFamily: authFont,
-    fontSize: 15,
-    fontWeight: "500",
-    height: 56,
-    paddingHorizontal: 18,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  button: {
-    marginTop: 8,
-  },
-});

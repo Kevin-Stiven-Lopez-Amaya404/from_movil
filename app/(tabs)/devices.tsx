@@ -1,15 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import {
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    View,
-} from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useSmartHome } from "@/lib/context/smart-home-context";
@@ -18,6 +10,7 @@ import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { getDeviceControlErrorMessage } from "@/lib/utils/control-error-message";
 import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
+import { styles } from "./devices.styles";
 
 function formatLastSeenAt(lastSeenAt?: string | null) {
   if (!lastSeenAt) return "Sin último reporte";
@@ -47,6 +40,8 @@ export default function DevicesScreen() {
     devices,
     homes,
     accessibleHomes,
+    deviceLoadStatusByHome,
+    homesLoadStatus,
     resolvedSmartAlerts,
     setActiveHomeId,
     toggleDevice,
@@ -57,7 +52,26 @@ export default function DevicesScreen() {
     accessibleHomeIds.has(device.homeId),
   );
 
-  const onlineCount = visibleDevices.filter((device) => device.online).length;
+  const onlineCount = visibleDevices.filter(
+    (device) =>
+      device.connectivityStatus === "ONLINE" && device.online,
+  ).length;
+  const isDeviceListLoading =
+    homesLoadStatus === "loading" ||
+    accessibleHomes.some(
+      (home) =>
+        (deviceLoadStatusByHome[home.id] ?? "loading") === "loading",
+    );
+  const hasDeviceLoadError =
+    homesLoadStatus === "error" ||
+    accessibleHomes.some(
+      (home) => deviceLoadStatusByHome[home.id] === "error",
+    );
+  const areDeviceListsLoaded =
+    homesLoadStatus === "loaded" &&
+    accessibleHomes.every(
+      (home) => deviceLoadStatusByHome[home.id] === "loaded",
+    );
 
   const { count: alertCount } = useActiveDeviceAlerts();
 
@@ -119,7 +133,7 @@ export default function DevicesScreen() {
           <View style={styles.header}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Volver"
+              accessibilityLabel="Cerrar dispositivos"
               hitSlop={8}
               onPress={() => {
                 if (router.canGoBack()) {
@@ -137,7 +151,7 @@ export default function DevicesScreen() {
                 pressed && styles.pressed,
               ]}
             >
-              <Ionicons name="arrow-back" size={22} color={theme.text} />
+              <Ionicons name="close" size={21} color={theme.text} />
             </Pressable>
 
             <View style={styles.headerCopy}>
@@ -176,7 +190,7 @@ export default function DevicesScreen() {
               />
 
               <Text style={[styles.summaryNumber, { color: theme.text }]}>
-                {visibleDevices.length}
+                {areDeviceListsLoaded ? visibleDevices.length : "—"}
               </Text>
 
               <Text style={[styles.summaryLabel, { color: theme.muted }]}>
@@ -195,7 +209,7 @@ export default function DevicesScreen() {
               <Ionicons name="wifi-outline" size={23} color={theme.success} />
 
               <Text style={[styles.summaryNumber, { color: theme.text }]}>
-                {onlineCount}
+                {areDeviceListsLoaded ? onlineCount : "—"}
               </Text>
 
               <Text style={[styles.summaryLabel, { color: theme.muted }]}>
@@ -214,7 +228,7 @@ export default function DevicesScreen() {
               <Ionicons name="warning-outline" size={23} color={theme.danger} />
 
               <Text style={[styles.summaryNumber, { color: theme.text }]}>
-                {alertCount}
+                {areDeviceListsLoaded ? alertCount : "—"}
               </Text>
 
               <Text style={[styles.summaryLabel, { color: theme.muted }]}>
@@ -229,25 +243,128 @@ export default function DevicesScreen() {
               Mis dispositivos
             </Text>
 
+            {isDeviceListLoading ? (
+              <View
+                style={[
+                  styles.statePanel,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <ActivityIndicator color={theme.blue} />
+                <Text style={[styles.statePanelCopy, { color: theme.muted }]}>
+                  Cargando dispositivos...
+                </Text>
+              </View>
+            ) : null}
+
+            {hasDeviceLoadError ? (
+              <View
+                style={[
+                  styles.statePanel,
+                  {
+                    backgroundColor: theme.dangerSoft,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <Ionicons name="warning-outline" size={21} color={theme.danger} />
+                <Text style={[styles.statePanelCopy, { color: theme.text }]}>
+                  No se pudieron cargar los dispositivos de todos tus hogares.
+                </Text>
+              </View>
+            ) : null}
+
+            {homesLoadStatus === "loaded" && accessibleHomes.length === 0 ? (
+              <View
+                style={[
+                  styles.statePanel,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <Ionicons name="home-outline" size={25} color={theme.blue} />
+                <Text style={[styles.statePanelTitle, { color: theme.text }]}>
+                  Aún no tienes hogares
+                </Text>
+                <Text style={[styles.statePanelCopy, { color: theme.muted }]}>
+                  Agrega o acepta un hogar para ver sus dispositivos.
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push("/(tabs)/(main)/homes")}
+                  style={({ pressed }) => [styles.stateAction, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.stateActionText, { color: theme.blue }]}>
+                    Ver mis hogares
+                  </Text>
+                  <Ionicons name="arrow-forward" size={16} color={theme.blue} />
+                </Pressable>
+              </View>
+            ) : null}
+
+            {areDeviceListsLoaded &&
+            !hasDeviceLoadError &&
+            accessibleHomes.length > 0 &&
+            visibleDevices.length === 0 ? (
+              <View
+                style={[
+                  styles.statePanel,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.borderLight,
+                  },
+                ]}
+              >
+                <Ionicons name="hardware-chip-outline" size={25} color={theme.blue} />
+                <Text style={[styles.statePanelTitle, { color: theme.text }]}>
+                  Aún no hay dispositivos
+                </Text>
+                <Text style={[styles.statePanelCopy, { color: theme.muted }]}>
+                  Añade un dispositivo a uno de tus hogares para empezar.
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push("/(tabs)/add-device")}
+                  style={({ pressed }) => [styles.stateAction, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.stateActionText, { color: theme.blue }]}>
+                    Agregar dispositivo
+                  </Text>
+                  <Ionicons name="arrow-forward" size={16} color={theme.blue} />
+                </Pressable>
+              </View>
+            ) : null}
+
             {visibleDevices.map((device) => {
               const home = homes.find((item) => item.id === device.homeId);
               const canControlDevice = canControlHome(home?.homeRole);
+              const confirmedOnline =
+                device.connectivityStatus === "ONLINE" && device.online;
+              const confirmedOffline =
+                device.connectivityStatus === "OFFLINE";
 
               const hasAlert =
-                (device.critical || !device.online) &&
+                (device.critical || confirmedOffline) &&
                 !resolvedSmartAlerts.includes(device.id);
 
               const statusText = hasAlert
                 ? device.critical
                   ? "Requiere atención"
                   : "Sin conexión"
-                : device.online
+                : confirmedOnline
                   ? "Conectado"
-                  : "Sin conexión";
+                  : confirmedOffline
+                    ? "Sin conexión"
+                    : "Estado sin confirmar";
 
               const statusColor = hasAlert
                 ? theme.danger
-                : device.online
+                : confirmedOnline
                   ? theme.success
                   : theme.muted;
 
@@ -284,7 +401,7 @@ export default function DevicesScreen() {
                       <MaterialCommunityIcons
                         name={device.icon as never}
                         size={28}
-                        color={device.online ? theme.blue : theme.muted}
+                        color={confirmedOnline ? theme.blue : theme.muted}
                       />
                     </View>
 
@@ -343,7 +460,7 @@ export default function DevicesScreen() {
                   <Switch
                     value={device.state === "on"}
                     disabled={
-                      !device.online ||
+                      !confirmedOnline ||
                       !canControlDevice ||
                       pendingDeviceId === device.id
                     }
@@ -352,10 +469,12 @@ export default function DevicesScreen() {
                     }}
                     accessibilityLabel={`Cambiar estado de ${device.name}`}
                     trackColor={{
-                      false: "#CDD2E4",
-                      true: "#BDE8CB",
+                      false: theme.border,
+                      true: theme.successSoft,
                     }}
-                    thumbColor={device.state === "on" ? "#2AAF5D" : "#FFFFFF"}
+                    thumbColor={
+                      device.state === "on" ? theme.success : theme.card
+                    }
                   />
                 </View>
               );
@@ -366,155 +485,3 @@ export default function DevicesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-
-  container: {
-    alignItems: "center",
-  },
-
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 12,
-  },
-
-  backButton: {
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-  },
-
-  headerCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  title: {
-    fontSize: 25,
-    fontWeight: "900",
-  },
-
-  subtitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginTop: 3,
-  },
-
-  summaryCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 22,
-    padding: 10,
-  },
-
-  summaryItem: {
-    alignItems: "center",
-    borderRadius: 14,
-    flex: 1,
-    minHeight: 88,
-    justifyContent: "center",
-  },
-
-  summaryNumber: {
-    fontSize: 20,
-    fontWeight: "900",
-    marginTop: 5,
-  },
-
-  summaryLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    marginTop: 1,
-  },
-
-  section: {
-    marginTop: 28,
-  },
-
-  sectionTitle: {
-    fontSize: 19,
-    fontWeight: "900",
-    marginBottom: 12,
-  },
-
-  deviceCard: {
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: "row",
-    marginBottom: 10,
-    padding: 13,
-  },
-
-  alertBorder: {
-    borderWidth: 1.5,
-  },
-
-  deviceContent: {
-    alignItems: "center",
-    flex: 1,
-    flexDirection: "row",
-    minWidth: 0,
-  },
-
-  deviceIcon: {
-    alignItems: "center",
-    borderRadius: 12,
-    height: 48,
-    justifyContent: "center",
-    width: 48,
-  },
-
-  deviceCopy: {
-    flex: 1,
-    marginLeft: 12,
-    minWidth: 0,
-  },
-
-  deviceTitleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-  },
-
-  deviceTitle: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "900",
-  },
-
-  deviceMeta: {
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 3,
-  },
-
-  deviceStatus: {
-    fontSize: 11,
-    fontWeight: "800",
-    marginTop: 4,
-  },
-  deviceLastSeen: {
-    fontSize: 10,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-
-  pressed: {
-    opacity: 0.7,
-  },
-});

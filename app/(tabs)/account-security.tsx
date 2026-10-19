@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { profileFont } from "@/components/profile/profileTheme";
+
 import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
 import {
   returnToParent,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { styles } from "./account-security.styles";
 
 export default function AccountSecurityScreen() {
   const router = useRouter();
@@ -62,13 +63,12 @@ export default function AccountSecurityScreen() {
               )
             }
             style={({ pressed }) => [
-              styles.backButton,
-              { backgroundColor: theme.card, borderColor: theme.borderLight },
+              styles.closeButton,
+              { backgroundColor: theme.rowAlt },
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name="chevron-back" size={17} color={theme.blue} />
-            <Text style={[styles.backText, { color: theme.blue }]}>Volver</Text>
+            <Ionicons name="close" size={21} color={theme.text} />
           </Pressable>
 
           <View style={styles.header}>
@@ -161,129 +161,3 @@ export default function AccountSecurityScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { alignSelf: "center", width: "100%" },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    marginBottom: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  backText: {
-    fontFamily: profileFont,
-    fontSize: 13,
-    fontWeight: "800",
-    marginLeft: 6,
-  },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 18,
-  },
-  iconWrap: {
-    alignItems: "center",
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 60,
-    justifyContent: "center",
-    width: 60,
-  },
-  headerCopy: { flex: 1, marginLeft: 12 },
-  title: {
-    fontFamily: profileFont,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  subtitle: {
-    fontFamily: profileFont,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  card: {
-    borderRadius: 18,
-    borderWidth: 1,
-    overflow: "hidden",
-    paddingVertical: 6,
-  },
-  row: {
-    alignItems: "center",
-    borderBottomColor: "rgba(148,163,184,0.25)",
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    paddingHorizontal: 14,
-    paddingVertical: 16,
-  },
-  rowIcon: {
-    alignItems: "center",
-    borderRadius: 10,
-    height: 36,
-    justifyContent: "center",
-    width: 36,
-  },
-  rowContent: { flex: 1, marginLeft: 12 },
-  controlRow: {
-    alignItems: "center",
-    borderBottomColor: "rgba(148,163,184,0.25)",
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    paddingHorizontal: 14,
-    paddingVertical: 18,
-  },
-  controlTitle: {
-    fontFamily: profileFont,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  controlDescription: {
-    fontFamily: profileFont,
-    fontSize: 11,
-    marginTop: 4,
-  },
-  label: {
-    fontFamily: profileFont,
-    fontSize: 11,
-    fontWeight: "700",
-    marginBottom: 2,
-    textTransform: "uppercase",
-  },
-  value: {
-    fontFamily: profileFont,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  statusBox: {
-    alignItems: "center",
-    flexDirection: "row",
-    borderRadius: 14,
-    margin: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  statusIcon: {
-    alignItems: "center",
-    borderRadius: 10,
-    height: 36,
-    justifyContent: "center",
-    width: 36,
-  },
-  statusCopy: { flex: 1, marginLeft: 10 },
-  statusLabel: {
-    fontFamily: profileFont,
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  statusValue: {
-    fontFamily: profileFont,
-    fontSize: 18,
-    fontWeight: "900",
-    marginTop: 4,
-  },
-  pressed: { opacity: 0.72 },
-});

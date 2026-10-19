@@ -1,19 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import {
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-} from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AuthPasswordField } from "@/components/auth/AuthTextField";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
-import { profileFont } from "@/components/profile/profileTheme";
+
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { changeUserPassword } from "@/lib/auth/auth-store";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
@@ -23,6 +16,7 @@ import {
   returnToParent,
   useAndroidBackFallback,
 } from "@/lib/navigation/use-android-back-fallback";
+import { styles } from "./change-password.styles";
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
@@ -125,13 +119,12 @@ export default function ChangePasswordScreen() {
               );
             }}
             style={({ pressed }) => [
-              styles.backButton,
-              { backgroundColor: theme.card, borderColor: theme.borderLight },
+              styles.closeButton,
+              { backgroundColor: theme.rowAlt },
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name="chevron-back" size={17} color={theme.blue} />
-            <Text style={[styles.backText, { color: theme.blue }]}>Volver</Text>
+            <Ionicons name="close" size={21} color={theme.text} />
           </Pressable>
 
           <View style={styles.header}>
@@ -227,88 +220,3 @@ export default function ChangePasswordScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { alignSelf: "center", width: "100%" },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    marginBottom: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  backText: {
-    fontFamily: profileFont,
-    fontSize: 13,
-    fontWeight: "800",
-    marginLeft: 6,
-  },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 18,
-  },
-  iconWrap: {
-    alignItems: "center",
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 60,
-    justifyContent: "center",
-    width: 60,
-  },
-  headerCopy: { flex: 1, marginLeft: 12 },
-  title: {
-    fontFamily: profileFont,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  subtitle: {
-    fontFamily: profileFont,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  card: {
-    borderRadius: 18,
-    borderWidth: 1,
-    overflow: "hidden",
-    padding: 16,
-    paddingTop: 18,
-  },
-  input: {
-    backgroundColor: "#FBFBFD",
-    borderColor: "transparent",
-    borderWidth: 1,
-    borderRadius: 17,
-    color: "#3F3F3F",
-    fontFamily: profileFont,
-    fontSize: 15,
-    fontWeight: "500",
-    height: 56,
-    paddingHorizontal: 18,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-    elevation: 5,
-    marginBottom: 12,
-  },
-  strengthContainer: {
-    backgroundColor: "#E2E8F0",
-    borderRadius: 999,
-    height: 8,
-    marginBottom: 12,
-    overflow: "hidden",
-  },
-  strengthBar: {
-    borderRadius: 999,
-    height: "100%",
-  },
-  button: {
-    marginTop: 8,
-  },
-  pressed: { opacity: 0.72 },
-});

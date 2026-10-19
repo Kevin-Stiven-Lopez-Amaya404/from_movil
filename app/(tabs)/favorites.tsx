@@ -1,11 +1,12 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { styles } from "./favorites.styles";
 
 export default function FavoritesScreen() {
   const router = useRouter();
@@ -26,8 +27,15 @@ export default function FavoritesScreen() {
     });
   }
 
-  function removeFavorite(homeId: string) {
-    toggleHomeFavorite(homeId);
+  async function removeFavorite(homeId: string) {
+    try {
+      await toggleHomeFavorite(homeId);
+    } catch (error) {
+      Alert.alert(
+        "No se pudo quitar el favorito",
+        error instanceof Error ? error.message : "Vuelve a intentarlo.",
+      );
+    }
   }
 
   return (
@@ -57,7 +65,7 @@ export default function FavoritesScreen() {
                 }
               }}
               accessibilityRole="button"
-              accessibilityLabel="Volver"
+              accessibilityLabel="Cerrar favoritos"
               hitSlop={8}
               style={({ pressed }) => [
                 styles.backButton,
@@ -68,7 +76,7 @@ export default function FavoritesScreen() {
                 pressed && styles.pressed,
               ]}
             >
-              <Ionicons name="arrow-back" size={22} color={theme.text} />
+              <Ionicons name="close" size={21} color={theme.text} />
             </Pressable>
 
             <View style={styles.headerCopy}>
@@ -84,9 +92,18 @@ export default function FavoritesScreen() {
 
           {/* FAVORITE HOMES */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Mis hogares favoritos
-            </Text>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                Mis hogares favoritos
+              </Text>
+              {favoriteHomes.length > 0 ? (
+                <View style={[styles.countBadge, { backgroundColor: theme.rowAlt }]}>
+                  <Text style={[styles.countText, { color: theme.muted }]}>
+                    {favoriteHomes.length}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
 
             {favoriteHomes.length === 0 ? (
               <View
@@ -114,6 +131,21 @@ export default function FavoritesScreen() {
                 <Text style={[styles.emptyDescription, { color: theme.muted }]}>
                   Marca un hogar con la estrella para tenerlo disponible aquí.
                 </Text>
+
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push("/(tabs)/(main)/homes")}
+                  style={({ pressed }) => [
+                    styles.emptyAction,
+                    { backgroundColor: theme.blue },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.emptyActionText, { color: theme.onPrimary }]}>
+                    Ver mis hogares
+                  </Text>
+                  <Ionicons name="arrow-forward" size={16} color={theme.onPrimary} />
+                </Pressable>
               </View>
             ) : (
               favoriteHomes.map((home) => (
@@ -175,6 +207,7 @@ export default function FavoritesScreen() {
                     hitSlop={6}
                     style={({ pressed }) => [
                       styles.starButton,
+                      { backgroundColor: theme.rowAlt },
                       pressed && styles.pressed,
                     ]}
                   >
@@ -207,149 +240,3 @@ export default function FavoritesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-
-  container: {
-    alignItems: "center",
-  },
-
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 12,
-  },
-
-  backButton: {
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-  },
-
-  headerCopy: {
-    flex: 1,
-  },
-
-  title: {
-    fontSize: 25,
-    fontWeight: "900",
-  },
-
-  subtitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginTop: 3,
-  },
-
-  section: {
-    marginTop: 28,
-  },
-
-  sectionTitle: {
-    fontSize: 19,
-    fontWeight: "900",
-    marginBottom: 12,
-  },
-
-  favoriteCard: {
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: "row",
-    marginBottom: 10,
-    minHeight: 74,
-    paddingLeft: 14,
-    paddingRight: 6,
-  },
-
-  homeContent: {
-    alignItems: "center",
-    flex: 1,
-    flexDirection: "row",
-    minWidth: 0,
-    paddingVertical: 8,
-  },
-
-  iconContainer: {
-    alignItems: "center",
-    borderRadius: 12,
-    height: 46,
-    justifyContent: "center",
-    width: 46,
-  },
-
-  cardCopy: {
-    flex: 1,
-    marginLeft: 12,
-    minWidth: 0,
-  },
-
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: "900",
-  },
-
-  cardSubtitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 3,
-  },
-
-  starButton: {
-    alignItems: "center",
-    height: 44,
-    justifyContent: "center",
-    width: 44,
-  },
-
-  chevronButton: {
-    alignItems: "center",
-    height: 44,
-    justifyContent: "center",
-    width: 32,
-  },
-
-  emptyCard: {
-    alignItems: "center",
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 28,
-  },
-
-  emptyIconContainer: {
-    alignItems: "center",
-    borderRadius: 22,
-    height: 64,
-    justifyContent: "center",
-    width: 64,
-  },
-
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: "900",
-    marginTop: 12,
-  },
-
-  emptyDescription: {
-    fontSize: 12,
-    fontWeight: "600",
-    lineHeight: 18,
-    marginTop: 5,
-    textAlign: "center",
-  },
-
-  pressed: {
-    opacity: 0.7,
-  },
-});

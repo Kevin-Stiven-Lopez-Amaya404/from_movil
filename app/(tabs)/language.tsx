@@ -1,17 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import {
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { profileFont } from "@/components/profile/profileTheme";
+
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { AppLanguage } from "@/lib/domain/preferences";
 import {
@@ -20,6 +13,7 @@ import {
 } from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { styles } from "./language.styles";
 
 const languages: { code: AppLanguage; label: string; native: string }[] = [
   { code: "es", label: "Español", native: "Español (Colombia)" },
@@ -71,13 +65,12 @@ export default function LanguageScreen() {
               )
             }
             style={({ pressed }) => [
-              styles.backButton,
-              { backgroundColor: theme.card, borderColor: theme.borderLight },
+              styles.closeButton,
+              { backgroundColor: theme.rowAlt },
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name="chevron-back" size={17} color={theme.blue} />
-            <Text style={[styles.backText, { color: theme.blue }]}>Volver</Text>
+            <Ionicons name="close" size={21} color={theme.text} />
           </Pressable>
 
           <View style={styles.header}>
@@ -175,98 +168,3 @@ export default function LanguageScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  content: { alignSelf: "center", width: "100%" },
-  backButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    marginBottom: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  backText: {
-    fontFamily: profileFont,
-    fontSize: 13,
-    fontWeight: "800",
-    marginLeft: 6,
-  },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginBottom: 18,
-  },
-  iconWrap: {
-    alignItems: "center",
-    borderRadius: 18,
-    borderWidth: 1,
-    height: 60,
-    justifyContent: "center",
-    width: 60,
-  },
-  headerCopy: { flex: 1, marginLeft: 12 },
-  title: {
-    fontFamily: profileFont,
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  subtitle: {
-    fontFamily: profileFont,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  searchBox: {
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontFamily: profileFont,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  card: {
-    borderRadius: 18,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  optionRow: {
-    alignItems: "center",
-    borderBottomColor: "rgba(148,163,184,0.25)",
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  optionTextWrap: { flex: 1 },
-  optionLabel: {
-    fontFamily: profileFont,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  optionNative: {
-    fontFamily: profileFont,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  checkDot: {
-    alignItems: "center",
-    borderRadius: 999,
-    borderWidth: 1,
-    height: 20,
-    justifyContent: "center",
-    width: 20,
-  },
-  pressed: { opacity: 0.72 },
-});

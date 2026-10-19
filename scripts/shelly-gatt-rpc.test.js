@@ -38,12 +38,24 @@ async function testReadOnlyDeviceInfo() {
   let requestBytes = [];
   let responseBytes = new Uint8Array();
   let responseOffset = 0;
-  let rxListener;
   let disconnected = false;
   const ble = {
     async connectToDevice(id) {
       assert.equal(id, "test-shelly");
-      return { id, async discoverAllServicesAndCharacteristics() { return this; } };
+      return {
+        id,
+        async discoverAllServicesAndCharacteristics() { return this; },
+        async characteristicsForService(service) {
+          assert.equal(service, "5f6d4f53-5f52-5043-5f53-56435f49445f");
+          return [{
+            uuid: "5f6d4f53-5f52-5043-5f74-785f63746c5f",
+            isReadable: false,
+            isWritableWithResponse: true,
+            isWritableWithoutResponse: false,
+            isNotifiable: false,
+          }];
+        },
+      };
     },
     async cancelDeviceConnection() {
       disconnected = true;
@@ -53,11 +65,7 @@ async function testReadOnlyDeviceInfo() {
       assert.equal(requested, 247);
       return { mtu: 23 };
     },
-    monitorCharacteristicForService(_service, _characteristic, listener) {
-      rxListener = listener;
-      return { remove() {} };
-    },
-    async writeCharacteristicWithResponseForService(_service, characteristic, value) {
+    async writeCharacteristicWithResponseForDevice(_id, _service, characteristic, value) {
       const bytes = fromBase64(value);
       if (characteristic.endsWith("785f63746c5f")) {
         expectedRequestLength = new DataView(bytes.buffer).getUint32(0, false);
@@ -76,17 +84,22 @@ async function testReadOnlyDeviceInfo() {
             },
           });
           responseBytes = Uint8Array.from(Buffer.from(response, "utf8"));
-          rxListener(null, { value: base64(new Uint8Array([
-            (responseBytes.length >>> 24) & 255,
-            (responseBytes.length >>> 16) & 255,
-            (responseBytes.length >>> 8) & 255,
-            responseBytes.length & 255,
-          ])) });
         }
       }
       return { value };
     },
-    async readCharacteristicForService() {
+    async readCharacteristicForDevice(_id, _service, characteristic) {
+      if (characteristic.includes("-5f72-")) {
+        return {
+          value: base64(new Uint8Array([
+            (responseBytes.length >>> 24) & 255,
+            (responseBytes.length >>> 16) & 255,
+            (responseBytes.length >>> 8) & 255,
+            responseBytes.length & 255,
+          ])),
+        };
+      }
+
       const chunk = responseBytes.subarray(responseOffset, responseOffset + 20);
       responseOffset += chunk.length;
       return { value: base64(chunk) };
