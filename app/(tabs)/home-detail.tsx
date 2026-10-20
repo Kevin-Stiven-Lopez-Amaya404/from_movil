@@ -18,7 +18,7 @@ import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
 import { getDeviceControlErrorMessage } from "@/lib/utils/control-error-message";
-import { styles } from "./home-detail.styles";
+import { styles } from "../../styles/(tabs)/home-detail.styles";
 
 export default function HomeDetailScreen() {
   const { homeId, deviceId, from: routeFrom, source } = useLocalSearchParams<{

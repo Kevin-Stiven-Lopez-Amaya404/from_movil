@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./favorites.styles";
+import { styles } from "../../styles/(tabs)/favorites.styles";
 
 export default function FavoritesScreen() {
   const router = useRouter();

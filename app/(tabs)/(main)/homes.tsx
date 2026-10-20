@@ -13,7 +13,7 @@ import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { HomeRole, SmartHomePlace } from "@/lib/domain/home";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./homes.styles";
+import { styles } from "../../../styles/(tabs)/(main)/homes.styles";
 
 
 type HomeFilter = "all" | "favorites" | "shared";

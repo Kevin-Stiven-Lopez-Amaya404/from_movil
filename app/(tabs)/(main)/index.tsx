@@ -8,7 +8,7 @@ import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./index.styles";
+import { styles } from "../../../styles/(tabs)/(main)/index.styles";
 
 
 type Theme = ReturnType<typeof useAppTheme>;

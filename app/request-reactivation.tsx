@@ -11,7 +11,7 @@ import { isValidEmail } from "@/lib/utils/validators";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Text, View } from "react-native";
-import { styles } from "./request-reactivation.styles";
+import { styles } from "../styles/request-reactivation.styles";
 
 export default function RequestReactivationScreen() {
   const router = useRouter();

@@ -10,7 +10,7 @@ import {
   useAndroidBackFallback,
 } from "@/lib/navigation/use-android-back-fallback";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./about-smart-home.styles";
+import { styles } from "../../styles/(tabs)/about-smart-home.styles";
 
 export default function AboutSmartHomeScreen() {
   const router = useRouter();

@@ -10,7 +10,7 @@ import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { getDeviceControlErrorMessage } from "@/lib/utils/control-error-message";
 import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
-import { styles } from "./devices.styles";
+import { styles } from "../../styles/(tabs)/devices.styles";
 
 function formatLastSeenAt(lastSeenAt?: string | null) {
   if (!lastSeenAt) return "Sin último reporte";

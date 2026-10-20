@@ -15,7 +15,7 @@ import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { smartHomeService } from "@/lib/services/smart-home-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { isValidEmail } from "@/lib/utils/validators";
-import { styles } from "./access.styles";
+import { styles } from "../../styles/(tabs)/access.styles";
 
 type InvitationRole = Exclude<HomeRole, "OWNER">;
 

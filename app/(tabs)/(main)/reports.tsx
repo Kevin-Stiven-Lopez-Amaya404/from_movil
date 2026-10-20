@@ -35,7 +35,7 @@ import { buildHomeConsumptionCsv } from "@/lib/utils/consumption-csv";
 import { buildHomeConsumptionPdfHtml } from "@/lib/utils/consumption-pdf";
 import { shareConsumptionCsv } from "@/lib/utils/share-consumption-csv";
 import { shareConsumptionPdf } from "@/lib/utils/share-consumption-pdf";
-import { styles } from "./reports.styles";
+import { styles } from "../../../styles/(tabs)/(main)/reports.styles";
 
 type HistoryPeriod =
   | "Últimos 7 días"

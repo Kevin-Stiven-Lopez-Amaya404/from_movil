@@ -11,7 +11,7 @@ import { isValidEmail } from "@/lib/utils/validators";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Text, View } from "react-native";
-import { styles } from "./forgot-password.styles";
+import { styles } from "../styles/forgot-password.styles";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
