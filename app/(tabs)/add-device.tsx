@@ -22,7 +22,7 @@ import {
 } from "@/lib/pairing/shelly-local-identity";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./add-device.styles";
+import { styles } from "../../styles/(tabs)/add-device.styles";
 
 type IdentityCheck =
   | { status: "checking" }

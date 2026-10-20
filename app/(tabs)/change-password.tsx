@@ -16,7 +16,7 @@ import {
   returnToParent,
   useAndroidBackFallback,
 } from "@/lib/navigation/use-android-back-fallback";
-import { styles } from "./change-password.styles";
+import { styles } from "../../styles/(tabs)/change-password.styles";
 
 export default function ChangePasswordScreen() {
   const router = useRouter();

@@ -16,7 +16,7 @@ import { isValidEmail } from "@/lib/utils/validators";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
-import { styles } from "./login.styles";
+import { styles } from "../styles/login.styles";
 
 export default function LoginScreen() {
   const router = useRouter();

@@ -11,7 +11,7 @@ import { getPasswordRules } from "@/lib/utils/validators";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Alert, Text, View } from "react-native";
-import { styles } from "./new-password.styles";
+import { styles } from "../styles/new-password.styles";
 
 export default function NewPasswordScreen() {
   const router = useRouter();

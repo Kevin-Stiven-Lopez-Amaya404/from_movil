@@ -11,7 +11,7 @@ import {
 } from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./personal-info.styles";
+import { styles } from "../../styles/(tabs)/personal-info.styles";
 
 export default function PersonalInfoScreen() {
   const router = useRouter();

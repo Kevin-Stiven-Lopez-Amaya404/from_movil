@@ -11,7 +11,7 @@ import {
 } from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./account-security.styles";
+import { styles } from "../../styles/(tabs)/account-security.styles";
 
 export default function AccountSecurityScreen() {
   const router = useRouter();

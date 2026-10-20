@@ -11,7 +11,7 @@ import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
-import { styles } from "./profile.styles";
+import { styles } from "../../../styles/(tabs)/(main)/profile.styles";
 
 
 type ThemeLike = ReturnType<typeof useAppTheme>;

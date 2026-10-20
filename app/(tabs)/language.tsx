@@ -13,7 +13,7 @@ import {
 } from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./language.styles";
+import { styles } from "../../styles/(tabs)/language.styles";
 
 const languages: { code: AppLanguage; label: string; native: string }[] = [
   { code: "es", label: "Español", native: "Español (Colombia)" },

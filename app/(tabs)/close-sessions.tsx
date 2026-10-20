@@ -13,7 +13,7 @@ import {
 } from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./close-sessions.styles";
+import { styles } from "../../styles/(tabs)/close-sessions.styles";
 
 export default function CloseSessionsScreen() {
   const router = useRouter();

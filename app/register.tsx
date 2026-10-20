@@ -16,7 +16,7 @@ import { getPasswordRules, isValidEmail } from "@/lib/utils/validators";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
-import { styles } from "./register.styles";
+import { styles } from "../styles/register.styles";
 
 export default function RegisterScreen() {
   const router = useRouter();

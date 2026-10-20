@@ -21,7 +21,7 @@ import type {
   SmartNotification,
 } from "@/lib/services/notifications-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./notifications.styles";
+import { styles } from "../../../styles/(tabs)/(main)/notifications.styles";
 
 export default function NotificationsScreen() {
   const router = useRouter();

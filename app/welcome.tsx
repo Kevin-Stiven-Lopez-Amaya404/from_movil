@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "./welcome.styles";
+import { styles } from "../styles/welcome.styles";
 
 export default function WelcomeScreen() {
   const router = useRouter();

@@ -9,7 +9,7 @@ import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useAndroidBackFallback } from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./shelly-setup.styles";
+import { styles } from "../../styles/(tabs)/shelly-setup.styles";
 
 export default function ShellySetupScreen() {
   const router = useRouter();

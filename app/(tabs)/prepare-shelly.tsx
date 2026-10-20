@@ -18,7 +18,7 @@ import { useAndroidBackFallback } from "@/lib/navigation/use-android-back-fallba
 import { readShellyLocalIdentity } from "@/lib/pairing/shelly-local-identity";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./prepare-shelly.styles";
+import { styles } from "../../styles/(tabs)/prepare-shelly.styles";
 
 type VerificationState =
   | "checking"
