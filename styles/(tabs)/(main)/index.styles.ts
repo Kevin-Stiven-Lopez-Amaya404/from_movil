@@ -88,6 +88,24 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 2,
   },
+  summaryStatus: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    marginTop: 7,
+  },
+  summaryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  summaryStatusText: {
+    flex: 1,
+    fontSize: 10,
+    lineHeight: 14,
+    fontWeight: "700",
+  },
   sectionTitle: {
     fontFamily: typography.fontFamily.display,
     fontSize: 19,

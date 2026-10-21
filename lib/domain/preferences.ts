@@ -1,4 +1,4 @@
-export type AppLanguage = "es" | "en" | "pt";
+export type AppLanguage = "es" | "en" | "pt" | "fr";
 
 export type ColorMode = "system" | "light" | "dark";
 

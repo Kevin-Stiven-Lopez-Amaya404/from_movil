@@ -19,8 +19,21 @@ type SummaryTileProps = {
   label: string;
   value: string;
   onPress: () => void;
-  tint: "blue" | "green";
+  tint: "blue" | "green" | "red";
+  statusMessage?: string;
+  statusColor?: string;
   theme: Theme;
+};
+
+type EnergySavingsDemo = {
+  savingsPercent: number;
+  targetPercent: number;
+};
+
+// Demo reemplazable por el resumen de ahorro que entregue el backend.
+const energySavingsDemo: EnergySavingsDemo = {
+  savingsPercent: 20,
+  targetPercent: 20,
 };
 
 function SummaryTile({
@@ -29,15 +42,20 @@ function SummaryTile({
   value,
   onPress,
   tint,
+  statusMessage,
+  statusColor,
   theme,
 }: SummaryTileProps) {
-  const isGreen = tint === "green";
-  const accent = isGreen
+  const accent = tint === "green"
     ? theme.dark ? "#86EFAC" : "#168044"
-    : theme.dark ? "#93C5FD" : theme.blue;
-  const background = isGreen
+    : tint === "red"
+      ? theme.dark ? "#FCA5A5" : theme.danger
+      : theme.dark ? "#93C5FD" : theme.blue;
+  const background = tint === "green"
     ? theme.dark ? "#1A332B" : "#EFF9F1"
-    : theme.dark ? "#1C3048" : "#EAF3FF";
+    : tint === "red"
+      ? theme.dangerSoft
+      : theme.dark ? "#1C3048" : "#EAF3FF";
 
   return (
     <Pressable
@@ -70,6 +88,14 @@ function SummaryTile({
       <Text style={[styles.summaryLabel, { color: theme.muted }]}>
         {label}
       </Text>
+      {statusMessage ? (
+        <View style={styles.summaryStatus}>
+          <View style={[styles.summaryDot, { backgroundColor: statusColor ?? accent }]} />
+          <Text style={[styles.summaryStatusText, { color: statusColor ?? accent }]}>
+            {statusMessage}
+          </Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -145,8 +171,6 @@ export default function DashboardScreen() {
   const layout = useResponsiveLayout();
   const {
     accessibleHomes,
-    devices,
-    deviceLoadStatusByHome,
     homesLoadStatus,
     sessionName,
   } = useSmartHome();
@@ -157,24 +181,17 @@ export default function DashboardScreen() {
   } = useActiveDeviceAlerts();
 
   const homesReady = homesLoadStatus === "loaded";
-  const deviceDataReady =
-    homesReady &&
-    accessibleHomes.every(
-      (home) => deviceLoadStatusByHome[home.id] === "loaded",
-    );
-  const homeIds = new Set(accessibleHomes.map((home) => home.id));
-  const poweredOnCount = devices.filter(
-    (device) =>
-      homeIds.has(device.homeId) &&
-      device.online &&
-      device.state === "on",
-  ).length;
   const favoriteHomes = accessibleHomes.filter(
     (home) => home.favorite,
   ).length;
 
   const homesDisplay = homesReady ? String(accessibleHomes.length) : "—";
-  const poweredOnDisplay = deviceDataReady ? String(poweredOnCount) : "—";
+  const meetsEnergySavingsGoal =
+    energySavingsDemo.savingsPercent >= energySavingsDemo.targetPercent;
+  const energySavingsMessage = meetsEnergySavingsGoal
+    ? "¡Felicitaciones! Cumpliste tu meta de ahorro."
+    : "Aún puedes alcanzarla: apaga equipos en espera y ajusta el aire acondicionado.";
+  const energySavingsColor = meetsEnergySavingsGoal ? theme.success : theme.danger;
 
   const alertsSubtitle = alertsError
     ? "No se pudo consultar el estado"
@@ -310,12 +327,14 @@ export default function DashboardScreen() {
               onPress={() => router.navigate("/(tabs)/(main)/homes")}
             />
             <SummaryTile
-              icon="power-outline"
-              label="Dispositivos encendidos"
-              value={poweredOnDisplay}
-              tint="green"
+              icon="flash-outline"
+              label="Ahorro de energía"
+              value={`${energySavingsDemo.savingsPercent}%`}
+              tint={meetsEnergySavingsGoal ? "green" : "red"}
+              statusMessage={energySavingsMessage}
+              statusColor={energySavingsColor}
               theme={theme}
-              onPress={() => router.push("/(tabs)/devices")}
+              onPress={() => router.push("/(tabs)/(main)/reports")}
             />
           </View>
 
