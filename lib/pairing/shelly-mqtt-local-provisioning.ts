@@ -45,7 +45,6 @@ const TOPIC = /^[A-Za-z0-9_.:-]+(?:\/[A-Za-z0-9_.:-]+)*$/;
 const HOSTNAME = /^(?:[A-Za-z0-9-]+\.)*[A-Za-z0-9-]+$/;
 const VPS_BROKER_HOST = 'mqtt-dev.179-236-82-122.sslip.io';
 const VPS_BROKER_PORT = 443;
-const CHUNK_BYTES = 512;
 const RPC_TIMEOUT_MS = 8000;
 const REBOOT_READ_ATTEMPTS = 15;
 const REBOOT_READ_INTERVAL_MS = 1000;
@@ -107,7 +106,7 @@ export const defaultShellyRpcTransport: ShellyRpcTransport = async (
   ip, method, params, signal,
 ) => {
   if (!isPrivateIpv4(ip) ||
-      !/^(Shelly\.PutUserCA|Shelly\.Reboot|MQTT\.SetConfig|MQTT\.GetConfig|MQTT\.GetStatus)$/.test(method)) {
+      !/^(Shelly\.Reboot|MQTT\.SetConfig|MQTT\.GetConfig|MQTT\.GetStatus)$/.test(method)) {
     throw new Error('SHELLY_LOCAL_RPC_NOT_ALLOWED');
   }
   const controller = new AbortController();
@@ -147,7 +146,7 @@ function assertMqttConfigMatches(
   if (!config || config.enable !== true ||
       config.server !== `${broker.hostname}:${broker.port}` ||
       config.client_id !== identity.clientId || config.user !== identity.username ||
-      config.ssl_ca !== 'user_ca.pem' || config.use_client_cert !== false ||
+      config.ssl_ca !== 'ca.pem' || config.use_client_cert !== false ||
       config.topic_prefix !== identity.topicPrefix) {
     throw new Error('SHELLY_PROVISIONING_CONFIG_READBACK_MISMATCH');
   }
@@ -257,24 +256,11 @@ export async function configureShellyMqttLocally(
   }
   if (signal?.aborted) throw new Error('SHELLY_PROVISIONING_ABORTED');
 
-  // Si existe una CA previa, el primer chunk la sustituye (append:false).
-  // Todos los chunks siguientes son append:true. No hay reintento automatico
-  // tras una respuesta incierta: hay que reconciliar en el dispositivo.
-  const pem = authorization.broker.caPem.replace(/\r\n/g, '\n');
-  for (let offset = 0; offset < pem.length; offset += CHUNK_BYTES) {
-    if (signal?.aborted) throw new Error('SHELLY_PROVISIONING_ABORTED');
-    if (Date.parse(authorization.expiresAt) <= Date.now()) {
-      throw new Error('SHELLY_PROVISIONING_AUTHORIZATION_EXPIRED');
-    }
-    const chunk = pem.slice(offset, offset + CHUNK_BYTES);
-    const reply = record(await rpc(ip, 'Shelly.PutUserCA', {
-      data: chunk, append: offset !== 0,
-    }, signal));
-    if (!reply || reply.len !== offset + chunk.length) {
-      throw new Error('SHELLY_PROVISIONING_CA_RESULT_UNCERTAIN');
-    }
-  }
-
+  // El endpoint público mqtt-dev termina TLS en Traefik con Let's Encrypt.
+  // El paquete broker.caPem corresponde a la CA INTERNA (Traefik -> Mosquitto)
+  // y NO debe instalarse en Shelly ni usarse como confianza del broker público.
+  // Usar el almacén público de Shelly (ca.pem), validado físicamente contra HTTPS.
+  // No sobrescribir user_ca.pem ni realizar escrituras adicionales de certificados.
   if (Date.parse(authorization.expiresAt) <= Date.now()) {
     throw new Error('SHELLY_PROVISIONING_AUTHORIZATION_EXPIRED');
   }
@@ -286,7 +272,7 @@ export async function configureShellyMqttLocally(
       client_id: mqtt.clientId,
       user: mqtt.username,
       pass: mqtt.password,
-      ssl_ca: 'user_ca.pem',
+      ssl_ca: 'ca.pem',
       use_client_cert: false,
       topic_prefix: mqtt.topicPrefix,
       enable_rpc: true,
