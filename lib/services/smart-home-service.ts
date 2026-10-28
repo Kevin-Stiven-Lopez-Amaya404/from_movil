@@ -56,11 +56,9 @@ type BackendDevice = {
 
 export type ControlDeviceResponse = {
   id: string;
-  homeId: string;
   command: "TURN_ON" | "TURN_OFF";
+  /** Publicación MQTT, no confirmación del relé físico. */
   status: "COMMAND_PUBLISHED";
-  previousIsOn: boolean;
-  connectivityStatus: "ONLINE" | "OFFLINE";
 };
 
 function mapBackendDevice(device: BackendDevice): SmartDevice {
