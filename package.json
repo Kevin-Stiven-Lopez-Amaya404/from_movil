@@ -13,7 +13,7 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test:mobile-config": "node scripts/app-config.test.js",
-    "test:shelly-mqtt-pairing": "node scripts/shelly-mqtt-local-provisioning.test.js && node scripts/shelly-mqtt-pairing-flow.test.js",
+    "test:shelly-mqtt-pairing": "node scripts/shelly-mqtt-bootstrap-validation.test.js && node scripts/shelly-mqtt-local-provisioning.test.js && node scripts/shelly-mqtt-pairing-flow.test.js",
     "test:shelly-ble-rpc": "node scripts/shelly-gatt-rpc.test.js",
     "test:navigation-auth": "node --test scripts/navigation-auth-policy.test.js",
     "test:alerts": "node --test scripts/active-device-alerts.test.js",
