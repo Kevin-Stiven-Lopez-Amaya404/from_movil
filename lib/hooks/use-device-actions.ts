@@ -7,6 +7,7 @@ import type { SmartHomePlace } from "@/lib/domain/home";
 import { smartHomeService } from "@/lib/services/smart-home-service";
 
 const DEVICE_STATUS_CONFIRMATION_TIMEOUT_MS = 2000;
+const DEVICE_STATUS_RECHECK_COUNT = 3;
 
 type DeviceState = SmartDevice["state"];
 
@@ -28,6 +29,7 @@ export function useDeviceActions({
   getTimeStamp,
 }: UseDeviceActionsOptions) {
   const devicesRef = useRef(devices);
+  const pendingControlsRef = useRef(new Set<string>());
 
   useEffect(() => {
     devicesRef.current = devices;
@@ -35,12 +37,15 @@ export function useDeviceActions({
 
   const setHomeDeviceState = useCallback(
     async (id: string, state: DeviceState) => {
-      const device = devicesRef.current.find((item) => item.id === id);
+      // Evita publicar comandos contradictorios durante una confirmación pendiente.
+      if (pendingControlsRef.current.has(id)) return;
 
-      if (!device || !device.online) return;
+      const device = devicesRef.current.find((item) => item.id === id);
+      if (!device || !device.online) {
+        throw new Error("El dispositivo está desconectado. No se envió el comando.");
+      }
 
       const home = homes.find((item) => item.id === device.homeId);
-
       if (!canControlHome(home?.homeRole)) {
         throw new Error(
           home?.homeRole === "GUEST"
@@ -49,40 +54,52 @@ export function useDeviceActions({
         );
       }
 
-      await smartHomeService.updateDeviceState(device.homeId, id, state);
-
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, DEVICE_STATUS_CONFIRMATION_TIMEOUT_MS);
-      });
-
-      const latestDevice = devicesRef.current.find((item) => item.id === id);
-
-      // El listener realtime ya confirmó el estado solicitado.
-      if (latestDevice?.state === state) return;
-
+      if (device.state === state) return;
+      pendingControlsRef.current.add(id);
       try {
-        const refreshedDevices = await smartHomeService.listDevices(
-          device.homeId,
+        const result = await smartHomeService.updateDeviceState(device.homeId, id, state);
+        if (result.status !== "COMMAND_PUBLISHED") {
+          throw new Error("El backend no confirmó la publicación del comando.");
+        }
+
+        // El ACK de publicación no es una respuesta del relé. Esperar
+        // telemetría o lectura de respaldo, sin actualizar el switch optimistamente.
+        for (let attempt = 0; attempt < DEVICE_STATUS_RECHECK_COUNT; attempt += 1) {
+          await new Promise<void>((resolve) =>
+            setTimeout(resolve, DEVICE_STATUS_CONFIRMATION_TIMEOUT_MS),
+          );
+
+          const live = devicesRef.current.find((item) => item.id === id);
+          if (live?.online && live.state === state) return;
+
+          try {
+            const refreshed = (await smartHomeService.listDevices(device.homeId))
+              .find((item) => item.id === id);
+            if (refreshed) {
+              setDevices((items) =>
+                items.map((item) => item.id === id
+                  ? { ...item, ...refreshed }
+                  : item),
+              );
+              if (refreshed.online && refreshed.state === state) return;
+              if (!refreshed.online) {
+                throw new Error("El dispositivo perdió la conexión.");
+              }
+            }
+          } catch (error) {
+            if (error instanceof Error &&
+                error.message === "El dispositivo perdió la conexión.") {
+              throw error;
+            }
+            // Fallo transitorio de consulta; el siguiente ciclo puede recuperarse.
+          }
+        }
+        throw new Error(
+          "El comando se publicó, pero el Shelly no confirmó el cambio de estado. " +
+          "El interruptor conserva el último estado conocido.",
         );
-        const refreshedDevice = refreshedDevices.find((item) => item.id === id);
-
-        if (!refreshedDevice) return;
-
-        setDevices((items) =>
-          items.map((item) => {
-            if (item.id !== id || item.state === state) return item;
-
-            return {
-              ...item,
-              state: refreshedDevice.state,
-              online: refreshedDevice.online,
-              lastStateChange:
-                refreshedDevice.lastStateChange ?? item.lastStateChange,
-            };
-          }),
-        );
-      } catch {
-        // Conserva el último estado conocido si falla la lectura de respaldo.
+      } finally {
+        pendingControlsRef.current.delete(id);
       }
     },
     [homes, setDevices],
@@ -90,16 +107,12 @@ export function useDeviceActions({
 
   const toggleDevice = useCallback(
     async (id: string) => {
-      const device = devices.find((item) => item.id === id);
-
-      if (!device || !device.online) return;
-
-      await setHomeDeviceState(
-        id,
-        device.state === "on" ? "off" : "on",
-      );
+      if (pendingControlsRef.current.has(id)) return;
+      const device = devicesRef.current.find((item) => item.id === id);
+      if (!device) return;
+      await setHomeDeviceState(id, device.state === "on" ? "off" : "on");
     },
-    [devices, setHomeDeviceState],
+    [setHomeDeviceState],
   );
 
   const removeDevice = useCallback(
