@@ -70,20 +70,15 @@ test('rechaza un broker distinto al DEV autorizado antes de llamar al Shelly',as
   assert.equal(calls.length,0);
 });
 
-test('envia CA fragmentada, configura TLS y verifica readback; no declara autenticado',async()=>{
+test('usa CA publica, configura TLS y verifica readback; no declara autenticado',async()=>{
   const calls=[];
-  let uploadedLength=0;
   const rpc=async (ip,method,params)=>{
     calls.push({ip,method,params});
-    if(method==='Shelly.PutUserCA') {
-      uploadedLength += params.data.length;
-      return {len: uploadedLength};
-    }
     if(method==='MQTT.SetConfig')return {restart_required:true};
     if(method==='Shelly.Reboot')return null;
     if(method==='MQTT.GetConfig')return {
       enable:true,server:'mqtt-dev.179-236-82-122.sslip.io:443',client_id:'shd-'+client,
-      user:'shd_'+client,ssl_ca:'user_ca.pem',use_client_cert:false,
+      user:'shd_'+client,ssl_ca:'ca.pem',use_client_cert:false,
       topic_prefix:'smarthome/devices/shelly1pmg4-aabbcc',
     };
     if(method==='MQTT.GetStatus')return {connected:false};
@@ -93,13 +88,12 @@ test('envia CA fragmentada, configura TLS y verifica readback; no declara autent
   assert.equal(result.mqttAuthenticated,false);
   assert.equal(result.mqttConnected,false);
   assert.equal(result.restartRequired,true);
-  assert.equal(calls.filter(x=>x.method==='Shelly.PutUserCA').length,2);
-  assert.equal(calls[0].params.append,false);
-  assert.equal(calls[1].params.append,true);
-  assert.equal(calls[2].params.config.ssl_ca,'user_ca.pem');
-  assert.equal(calls[2].params.config.server,'mqtt-dev.179-236-82-122.sslip.io:443');
-  assert.equal(calls[2].params.config.use_client_cert,false);
-  assert.equal(calls[2].params.config.pass,'P'.repeat(43));
+  assert.equal(calls.filter(x=>x.method==='Shelly.PutUserCA').length,0);
+  assert.equal(calls[0].method,'MQTT.SetConfig');
+  assert.equal(calls[0].params.config.ssl_ca,'ca.pem');
+  assert.equal(calls[0].params.config.server,'mqtt-dev.179-236-82-122.sslip.io:443');
+  assert.equal(calls[0].params.config.use_client_cert,false);
+  assert.equal(calls[0].params.config.pass,'P'.repeat(43));
   assert.equal(calls.filter(x=>x.method==='Shelly.Reboot').length,1);
   assert.deepEqual(calls.map(x=>x.method).slice(-4),[
     'MQTT.GetConfig','Shelly.Reboot','MQTT.GetConfig','MQTT.GetStatus',
@@ -119,17 +113,12 @@ test('estado conectado local no equivale a autenticacion del backend',async()=>{
 
 test('respuesta incierta de reinicio no reenvia escritura ni reinicio',async()=>{
   const calls=[];
-  let uploadedLength=0;
   const rpc=async(_ip,method,params)=>{
     calls.push(method);
-    if(method==='Shelly.PutUserCA') {
-      uploadedLength += params.data.length;
-      return {len:uploadedLength};
-    }
     if(method==='MQTT.SetConfig')return {restart_required:true};
     if(method==='MQTT.GetConfig')return {
       enable:true,server:'mqtt-dev.179-236-82-122.sslip.io:443',
-      client_id:'shd-'+client,user:'shd_'+client,ssl_ca:'user_ca.pem',
+      client_id:'shd-'+client,user:'shd_'+client,ssl_ca:'ca.pem',
       use_client_cert:false,topic_prefix:'smarthome/devices/shelly1pmg4-aabbcc',
     };
     if(method==='Shelly.Reboot')throw new Error('SHELLY_RPC_OUTCOME_UNCERTAIN');
@@ -140,12 +129,7 @@ test('respuesta incierta de reinicio no reenvia escritura ni reinicio',async()=>
 });
 
 test('resultado RPC incierto impide declarar configuracion exitosa',async()=>{
-  let uploadedLength=0;
   const rpc=async(_ip,method,params)=> {
-    if(method==='Shelly.PutUserCA') {
-      uploadedLength += params.data.length;
-      return {len:uploadedLength};
-    }
     if(method==='MQTT.SetConfig')return {restart_required:true};
     return {enable:false};
   };
