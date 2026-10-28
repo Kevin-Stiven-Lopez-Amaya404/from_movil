@@ -71,6 +71,7 @@ export default function AddDeviceScreen() {
   }, [homeId, homesLoadStatus, router, selectedHome]);
 
   const [wifiSearching, setWifiSearching] = useState(false);
+  const [bleScanRequestId, setBleScanRequestId] = useState(0);
   const [wifiSearched, setWifiSearched] = useState(false);
 
   const [wifiCandidates, setWifiCandidates] =
@@ -181,6 +182,7 @@ export default function AddDeviceScreen() {
     setWifiCandidates([]);
     setIdentityByIp({});
     setWifiError(null);
+    setBleScanRequestId((value) => value + 1);
 
     try {
       const results = await discoverLocalShelly(12000);
@@ -356,7 +358,7 @@ export default function AddDeviceScreen() {
             ]}
           >
             Busca dispositivos Shelly compatibles por red local (LAN)
-            o Bluetooth (BLE), sin ingresar direcciones IP.
+            y Bluetooth (BLE) con una sola búsqueda, sin ingresar direcciones IP.
           </Text>
 
           {/* Búsqueda principal */}
@@ -595,7 +597,7 @@ export default function AddDeviceScreen() {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Detección por Bluetooth (BLE)
             </Text>
-            <ShellyBleScanner canScan={Boolean(canAddDevice)} />
+            <ShellyBleScanner canScan={Boolean(canAddDevice)} scanRequestId={bleScanRequestId} />
           </View>
         </View>
       </ScrollView>
