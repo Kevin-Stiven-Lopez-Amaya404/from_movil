@@ -228,9 +228,8 @@ export default function HomeDetailScreen() {
     setPendingDeviceId(telemetryDevice.id);
     try {
       await setHomeDeviceState(telemetryDevice.id, nextState);
-      setTelemetryDevice((device) =>
-        device ? { ...device, state: nextState } : null,
-      );
+      // La publicación del comando no prueba que el relé haya cambiado.
+      // El estado se actualizará mediante telemetría o lectura del backend.
     } catch (error) {
       Alert.alert(
         "No se pudo cambiar el estado",
@@ -511,7 +510,7 @@ export default function HomeDetailScreen() {
                   {telemetryDevice?.name}
                 </Text>
                 <Text style={[styles.subtitle, { color: theme.muted }]}>
-                  Shelly Plus 1PM
+                  {telemetryDevice?.modelName ?? 'Modelo no identificado'}
                 </Text>
               </View>
               <Pressable onPress={() => setTelemetryDevice(null)} hitSlop={8}>
