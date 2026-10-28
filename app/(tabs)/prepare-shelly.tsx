@@ -38,6 +38,7 @@ import {
   confirmAndCompleteShellyMqtt,
   prepareAndEnableShellyMqtt,
   type ShellyMqttPairingDependencies,
+  type ShellyMqttProvisioningStage,
 } from "@/lib/pairing/shelly-mqtt-pairing-flow";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { pairingService } from "@/lib/services/pairing-service";
@@ -680,10 +681,12 @@ export default function PrepareShellyScreen() {
     setPairingLoading(true);
     setPairingError(null);
     setMqttSetupNotice(null);
+    let currentStage: ShellyMqttProvisioningStage = 'PREPARING_BROKER_IDENTITY';
     try {
       const progress = await prepareAndEnableShellyMqtt(
         createMqttPairingDependencies(active, confirmedName),
         {
+          onStage: (stage) => { currentStage = stage; },
           onPrepared: (operationId) => {
             mqttOperationId.current = operationId;
           },
@@ -708,9 +711,18 @@ export default function PrepareShellyScreen() {
         ["MQTT_BOOTSTRAP_REQUIRES_HTTPS_BACKEND_DEV",
           "MQTT_ENABLE_REQUIRES_HTTPS_BACKEND_DEV",
           "MQTT_CONFIRM_REQUIRES_HTTPS_BACKEND_DEV"].includes(error.message);
+      // Sólo códigos de error internos y etapas; nunca imprimir respuestas RPC,
+      // contraseñas, tokens de sesión ni payloads del backend.
+      const diagnostic = error instanceof Error
+        ? error instanceof ApiError
+          ? `API_${error.code}_${error.status ?? 'SIN_HTTP'}`
+          : /^([A-Z][A-Z0-9_]{2,90})$/.test(error.message)
+            ? error.message
+            : 'ERROR_NO_CLASIFICADO'
+        : 'ERROR_NO_CLASIFICADO';
       setPairingError(needsHttps
         ? "El backend de desarrollo debe responder por HTTPS para entregar la credencial MQTT."
-        : "El aprovisionamiento se detuvo o tuvo un resultado incierto. Consulta el estado antes de decidir si cancelar; no se repetirán escrituras automáticamente.");
+        : `El aprovisionamiento se detuvo en ${currentStage} (${diagnostic}). Consulta el estado antes de cancelar; no se repetirán escrituras automáticamente.`);
     } finally {
       pairingInProgress.current = false;
       setPairingLoading(false);
