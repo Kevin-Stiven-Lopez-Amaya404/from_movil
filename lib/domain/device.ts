@@ -13,6 +13,8 @@ export type SmartDevice = {
   id: string;
   homeId: string;
   name: string;
+  /** Modelo identificado por el backend; nunca se supone Plus 1PM. */
+  modelName?: string;
   category: DeviceCategory;
   icon: string;
   power: number;
