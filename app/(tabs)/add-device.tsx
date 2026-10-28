@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ShellyBleScanner } from "@/components/devices/ShellyBleScanner";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useAndroidBackFallback } from "@/lib/navigation/use-android-back-fallback";
 import {
@@ -354,8 +355,8 @@ export default function AddDeviceScreen() {
               { color: theme.muted },
             ]}
           >
-            Busca dispositivos Shelly compatibles
-            que estén conectados a tu red.
+            Busca dispositivos Shelly compatibles por red local (LAN)
+            o Bluetooth (BLE), sin ingresar direcciones IP.
           </Text>
 
           {/* Búsqueda principal */}
@@ -432,9 +433,8 @@ export default function AddDeviceScreen() {
                     { color: theme.muted },
                   ]}
                 >
-                  No encontramos dispositivos compatibles.
-                  Comprueba que el Shelly esté conectado
-                  a la misma red y vuelve a buscar.
+                  No encontramos Shelly mediante la búsqueda LAN.
+                  También puedes intentar detectarlos automáticamente por Bluetooth.
                 </Text>
               ) : null}
 
@@ -590,6 +590,13 @@ export default function AddDeviceScreen() {
               })}
             </View>
           )}
+
+          <View style={styles.resultsSection}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Detección por Bluetooth (BLE)
+            </Text>
+            <ShellyBleScanner canScan={Boolean(canAddDevice)} />
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
