@@ -86,3 +86,22 @@ test("la configuración de producción rechaza una URL de API sin HTTPS", () => 
   assert.ok(error);
   assert.match(error.message, /EXPO_PUBLIC_API_URL/);
 });
+
+test("el Development Build Android permite RPC local HTTP sin relajar builds de producción", () => {
+  const development = resolveConfig({
+    EAS_BUILD_PROFILE: "development",
+    APP_ENV: "development",
+  });
+  const production = resolveConfig(productionEnv);
+  const developmentBuild = development.config.plugins.find(
+    (plugin) => Array.isArray(plugin) && plugin[0] === "expo-build-properties",
+  );
+  const productionBuild = production.config.plugins.find(
+    (plugin) => Array.isArray(plugin) && plugin[0] === "expo-build-properties",
+  );
+
+  assert.equal(development.error, null);
+  assert.equal(developmentBuild?.[1]?.android?.usesCleartextTraffic, true);
+  assert.equal(production.error, null);
+  assert.equal(productionBuild, undefined);
+});

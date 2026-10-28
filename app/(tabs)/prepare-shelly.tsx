@@ -1,22 +1,46 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import {
+  useFocusEffect,
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ShellyLanTelemetry } from "@/components/shelly/shelly-lan-telemetry";
+import { ApiError } from "@/lib/api/api-error";
 import { useSmartHome } from "@/lib/context/smart-home-context";
-import { useAndroidBackFallback } from "@/lib/navigation/use-android-back-fallback";
+import type { PairingSession } from "@/lib/pairing/pairing-types";
 import { readShellyLocalIdentity } from "@/lib/pairing/shelly-local-identity";
+import {
+  configureShellyMqttLocally,
+  readShellyMqttStatus,
+} from "@/lib/pairing/shelly-mqtt-local-provisioning";
+import {
+  confirmAndCompleteShellyMqtt,
+  prepareAndEnableShellyMqtt,
+  type ShellyMqttPairingDependencies,
+} from "@/lib/pairing/shelly-mqtt-pairing-flow";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { pairingService } from "@/lib/services/pairing-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { styles } from "../../styles/(tabs)/prepare-shelly.styles";
 
@@ -57,7 +81,7 @@ export default function PrepareShellyScreen() {
 
   const canPrepare = home?.homeRole === "OWNER";
 
-  const searchRoute = homeId
+  const searchRoute = useMemo(() => homeId
     ? {
         pathname: "/(tabs)/add-device" as const,
         params: {
@@ -68,12 +92,7 @@ export default function PrepareShellyScreen() {
               : "devices",
         },
       }
-    : ("/(tabs)/devices" as const);
-
-  useAndroidBackFallback(
-    from !== "add-device",
-    searchRoute,
-  );
+    : ("/(tabs)/devices" as const), [homeId, returnTo]);
 
   useEffect(() => {
     if (
@@ -93,6 +112,32 @@ export default function PrepareShellyScreen() {
   const [deviceName, setDeviceName] = useState("");
   const [confirmedName, setConfirmedName] =
     useState<string | null>(null);
+
+  const [pairingLoading, setPairingLoading] = useState(false);
+  const [pairingError, setPairingError] = useState<string | null>(null);
+  const [mqttSetupNotice, setMqttSetupNotice] = useState<string | null>(null);
+  const [mqttSetupAttemptedForRender, setMqttSetupAttemptedForRender] = useState(false);
+  const [mqttOperationReady, setMqttOperationReady] = useState(false);
+  const [localMqttConnected, setLocalMqttConnected] = useState<boolean | null>(null);
+  const mqttSetupAttempted = useRef(false);
+  const mqttOperationId = useRef<string | null>(null);
+  const mqttConfirmAttempted = useRef(false);
+  const [pairingSession, setPairingSession] =
+    useState<PairingSession | null>(null);
+  const [pairingExpired, setPairingExpired] = useState(false);
+
+
+  const pairingInProgress = useRef(false);
+  const pairingAttempt = useRef<
+    ReturnType<typeof pairingService.createAttempt> | null
+  >(null);
+
+  const activePairing = useRef<{
+    homeId: string;
+    sessionId: string;
+    sessionToken: string;
+    expiresAt: string;
+  } | null>(null);
 
   const checkRun = useRef(0);
 
@@ -175,9 +220,13 @@ export default function PrepareShellyScreen() {
       return;
     }
 
-    void verifySelectedDevice();
+    // La comprobacion HTTP inicia despues de montar el componente.
+    const startTimer = setTimeout(() => {
+      void verifySelectedDevice();
+    }, 0);
 
     return () => {
+      clearTimeout(startTimer);
       checkRun.current += 1;
       requestController.current?.abort();
       requestController.current = null;
@@ -188,7 +237,7 @@ export default function PrepareShellyScreen() {
     verifySelectedDevice,
   ]);
 
-  function backToSearch() {
+  const navigateToSearch = useCallback(() => {
     if (
       from === "add-device" &&
       router.canGoBack()
@@ -197,7 +246,644 @@ export default function PrepareShellyScreen() {
     } else {
       router.replace(searchRoute);
     }
+  }, [from, router, searchRoute]);
+
+  const backToSearch = useCallback(async () => {
+    if (pairingInProgress.current) {
+      return;
+    }
+
+    let shouldNavigate = false;
+    const active = activePairing.current;
+
+    if (!active || pairingSession?.status === "COMPLETED") {
+      navigateToSearch();
+      return;
+    }
+
+    pairingInProgress.current = true;
+    setPairingLoading(true);
+    setPairingError(null);
+
+    try {
+      const result = await pairingService.cancelSession(
+        active.homeId,
+        active.sessionId,
+        active.sessionToken,
+      );
+
+      if (
+        result.status === "COMPLETED" ||
+        result.status === "CANCELLED" ||
+        result.status === "EXPIRED" ||
+        result.status === "FAILED"
+      ) {
+        activePairing.current = null;
+        mqttOperationId.current = null;
+        mqttConfirmAttempted.current = false;
+        mqttSetupAttempted.current = false;
+        setMqttSetupAttemptedForRender(false);
+        setMqttOperationReady(false);
+        setLocalMqttConnected(null);
+        setMqttSetupNotice(null);
+        setPairingSession(result.status === "COMPLETED" ? result : null);
+        shouldNavigate = true;
+      } else {
+        setPairingSession(result);
+        setPairingError(
+          "La sesión continúa activa. Intenta cancelarla nuevamente.",
+        );
+      }
+    } catch (error) {
+      setPairingError(
+        error instanceof Error
+          ? error.message
+          : "No fue posible cerrar la sesión de vinculación.",
+      );
+    } finally {
+      pairingInProgress.current = false;
+      setPairingLoading(false);
+      if (shouldNavigate) navigateToSearch();
+    }
+  }, [navigateToSearch, pairingSession?.status]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== "android") {
+        return;
+      }
+
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        () => {
+          void backToSearch();
+
+          // Consumir el evento para impedir
+          // que Android navegue sin cancelar.
+          return true;
+        },
+      );
+
+      return () => {
+        subscription.remove();
+      };
+    }, [backToSearch]),
+  );
+
+
+
+  async function startPairing() {
+    if (
+      pairingInProgress.current ||
+      !canPrepare ||
+      verification !== "verified" ||
+      !homeId ||
+      !ip ||
+      !manufacturerDeviceId ||
+      !confirmedName ||
+      confirmedName !== deviceName.trim() ||
+      activePairing.current
+    ) {
+      return;
+    }
+
+    pairingInProgress.current = true;
+    setPairingLoading(true);
+    setPairingError(null);
+
+    let createdSession:
+      | Awaited<ReturnType<typeof pairingService.createSession>>
+      | undefined;
+
+    try {
+      // Consultamos nuevamente el dispositivo real.
+      const identity = await readShellyLocalIdentity(ip);
+
+      if (
+        identity.manufacturerDeviceId !== manufacturerDeviceId
+      ) {
+        throw new Error(
+          "La identidad del Shelly cambió. Vuelve a buscar el dispositivo.",
+        );
+      }
+
+      // Creamos la sesión temporal en el backend.
+      // Reutilizar el mismo intento ante errores temporales.
+      const attempt =
+        pairingAttempt.current ?? pairingService.createAttempt();
+
+      pairingAttempt.current = attempt;
+
+      createdSession = await pairingService.createSession(
+        homeId,
+        attempt,
+      );
+
+      // El backend confirmó la creación de la sesión.
+      pairingAttempt.current = null;
+
+      const { session, sessionToken } = createdSession;
+
+      // Conservamos el token únicamente en memoria.
+      activePairing.current = {
+        homeId,
+        sessionId: session.sessionId,
+        sessionToken,
+        expiresAt: session.expiresAt,
+      };
+
+      setPairingSession(session);
+      setPairingExpired(false);
+      mqttSetupAttempted.current = false;
+      mqttConfirmAttempted.current = false;
+      mqttOperationId.current = null;
+      setMqttSetupAttemptedForRender(false);
+      setMqttOperationReady(false);
+      setLocalMqttConnected(null);
+      setMqttSetupNotice(null);
+
+      // Reportamos la identidad local al backend.
+      const identifiedSession =
+        await pairingService.identifyDevice(
+          homeId,
+          session.sessionId,
+          sessionToken,
+          identity,
+        );
+
+      setPairingSession(identifiedSession);
+    } catch (error) {
+      // Solo conservamos el intento cuando no sabemos
+      // si el backend recibió la solicitud.
+      if (error instanceof ApiError) {
+        const mayHaveReachedBackend =
+          error.code === "NETWORK_ERROR" ||
+          error.code === "SERVER_ERROR";
+
+        if (!mayHaveReachedBackend) {
+          pairingAttempt.current = null;
+        }
+      } else {
+        pairingAttempt.current = null;
+      }
+
+      setPairingError(
+        error instanceof Error
+          ? error.message
+          : "No fue posible iniciar la vinculación.",
+      );
+    } finally {
+      pairingInProgress.current = false;
+      setPairingLoading(false);
+    }
   }
+
+  async function retryPairingIdentification() {
+    const active = activePairing.current;
+
+    if (
+      !active ||
+      pairingInProgress.current ||
+      !ip ||
+      !manufacturerDeviceId ||
+      !canPrepare ||
+      pairingExpired ||
+      pairingSession?.status !== "PENDING"
+    ) {
+      return;
+    }
+
+    pairingInProgress.current = true;
+    setPairingLoading(true);
+    setPairingError(null);
+
+    try {
+      // Consultar primero la verdad del backend.
+      const currentSession = await pairingService.getSession(
+        active.homeId,
+        active.sessionId,
+        active.sessionToken,
+      );
+
+      setPairingSession(currentSession);
+
+      // La identificación ya fue confirmada por el backend.
+      if (currentSession.status === "DEVICE_IDENTIFIED") {
+        return;
+      }
+
+      // No repetir operaciones en estados incompatibles.
+      if (currentSession.status !== "PENDING") {
+        return;
+      }
+
+      // Confirmar nuevamente la identidad física por LAN.
+      const identity = await readShellyLocalIdentity(ip);
+
+      if (
+        identity.manufacturerDeviceId !== manufacturerDeviceId
+      ) {
+        throw new Error(
+          "La identidad del Shelly cambió. Vuelve a buscar el dispositivo.",
+        );
+      }
+
+      const identifiedSession =
+        await pairingService.identifyDevice(
+          active.homeId,
+          active.sessionId,
+          active.sessionToken,
+          identity,
+        );
+
+      setPairingSession(identifiedSession);
+    } catch (error) {
+      setPairingError(
+        error instanceof Error
+          ? error.message
+          : "No fue posible recuperar la sesión del Shelly.",
+      );
+    } finally {
+      pairingInProgress.current = false;
+      setPairingLoading(false);
+    }
+  }
+
+  async function cancelPairing() {
+    const active = activePairing.current;
+
+    if (!active || pairingInProgress.current) {
+      return;
+    }
+
+    pairingInProgress.current = true;
+    setPairingLoading(true);
+    setPairingError(null);
+
+    try {
+      const result = await pairingService.cancelSession(
+        active.homeId,
+        active.sessionId,
+        active.sessionToken,
+      );
+
+      if (
+        result.status === "CANCELLED" ||
+        result.status === "EXPIRED" ||
+        result.status === "FAILED"
+      ) {
+        activePairing.current = null;
+        mqttOperationId.current = null;
+        mqttConfirmAttempted.current = false;
+        mqttSetupAttempted.current = false;
+        setMqttSetupAttemptedForRender(false);
+        setMqttOperationReady(false);
+        setLocalMqttConnected(null);
+        setMqttSetupNotice(null);
+        setPairingSession(null);
+        setPairingError(null);
+      } else if (result.status === "COMPLETED") {
+        activePairing.current = null;
+        mqttOperationId.current = null;
+        mqttConfirmAttempted.current = false;
+        setMqttOperationReady(false);
+        setPairingSession(result);
+      } else {
+        setPairingSession(result);
+      }
+    } catch (error) {
+      setPairingError(
+        error instanceof Error
+          ? error.message
+          : "No fue posible cancelar la sesión.",
+      );
+    } finally {
+      pairingInProgress.current = false;
+      setPairingLoading(false);
+    }
+  }
+
+  /**
+   * Consulta el backend: la detección LAN nunca equivale a CONNECTED.
+   * No usamos reintentos automáticos que puedan duplicar la operación.
+   */
+
+  /**
+   * Flujo EXPLICITO para laboratorio aislado, sin reintentos automaticos.
+   * No se conserva la password en estado React ni almacenamiento persistente.
+   * El backend debe exigir HTTPS antes de entregar la identidad individual.
+   */
+  function createMqttPairingDependencies(
+    active: NonNullable<typeof activePairing.current>,
+    name: string,
+  ): ShellyMqttPairingDependencies {
+    if (!ip || !manufacturerDeviceId) {
+      throw new Error("SHELLY_PROVISIONING_TARGET_INVALID");
+    }
+    const assertActive = () => {
+      if (!canPrepare || activePairing.current?.sessionId !== active.sessionId) {
+        throw new Error("PAIRING_SESSION_CHANGED");
+      }
+      if (!Number.isFinite(Date.parse(active.expiresAt)) ||
+          Date.parse(active.expiresAt) <= Date.now()) {
+        throw new Error("PAIRING_SESSION_EXPIRED");
+      }
+    };
+    const sessionArgs = [active.homeId, active.sessionId, active.sessionToken] as const;
+
+    return {
+      prepareMqtt: () => {
+        assertActive();
+        return pairingService.prepareMqtt(...sessionArgs);
+      },
+      advanceToWaiting: async () => {
+        assertActive();
+        const waiting = await pairingService.completeSession(...sessionArgs, name);
+        setPairingSession(waiting);
+        return waiting;
+      },
+      authorizeBootstrap: (operationId) => {
+        assertActive();
+        return pairingService.authorizeMqttBootstrap(...sessionArgs, operationId);
+      },
+      configureLocally: (authorization) => {
+        assertActive();
+        return configureShellyMqttLocally({
+          ip,
+          expectedDeviceId: manufacturerDeviceId,
+          authorization,
+          explicitlyTrustedLocalNetwork: true,
+        });
+      },
+      enableMqtt: (operationId) => {
+        assertActive();
+        return pairingService.enablePreparedMqtt(...sessionArgs, operationId);
+      },
+      readLocalMqttStatus: () => {
+        assertActive();
+        return readShellyMqttStatus({ ip, expectedDeviceId: manufacturerDeviceId });
+      },
+      confirmMqtt: (operationId) => {
+        assertActive();
+        if (mqttConfirmAttempted.current) {
+          throw new Error("MQTT_CONFIRM_ALREADY_ATTEMPTED_REQUIRES_RECONCILIATION");
+        }
+        mqttConfirmAttempted.current = true;
+        return pairingService.confirmMqttAuthentication(...sessionArgs, operationId);
+      },
+      getSession: () => pairingService.getSession(...sessionArgs),
+      completeSession: () => {
+        assertActive();
+        return pairingService.completeSession(...sessionArgs, name);
+      },
+    };
+  }
+
+  async function finishMqttPairing(
+    active: NonNullable<typeof activePairing.current>,
+    operationId: string,
+    name: string,
+  ) {
+    const result = await confirmAndCompleteShellyMqtt(
+      { operationId },
+      createMqttPairingDependencies(active, name),
+    );
+    if (result.phase === "COMPLETED") {
+      setPairingSession(result.session);
+      setMqttSetupNotice("El backend confirmó la autenticación MQTT y completó la vinculación.");
+      setMqttOperationReady(false);
+      mqttOperationId.current = null;
+      mqttConfirmAttempted.current = false;
+      activePairing.current = null;
+      return;
+    }
+    setLocalMqttConnected(result.mqttConnected);
+    setMqttSetupNotice(
+      result.mqttConnected
+        ? "El Shelly está conectado. Consulta el estado del backend para conciliar la autenticación."
+        : "El Shelly aún no aparece conectado por MQTT. Puedes volver a verificar el estado; no se repetirá la configuración.",
+    );
+  }
+
+  /** Cada escritura se ejecuta una sola vez; las consultas posteriores son de solo lectura. */
+  async function configureMqttForTrustedLab() {
+    const active = activePairing.current;
+    if (!__DEV__ || !active || !ip || !manufacturerDeviceId || !canPrepare ||
+        !confirmedName || confirmedName !== deviceName.trim() ||
+        pairingInProgress.current || pairingExpired || !pairingSession ||
+        !["DEVICE_IDENTIFIED", "WAITING_FOR_MQTT"].includes(pairingSession.status) ||
+        mqttSetupAttempted.current) return;
+
+    mqttSetupAttempted.current = true;
+    setMqttSetupAttemptedForRender(true);
+    pairingInProgress.current = true;
+    setPairingLoading(true);
+    setPairingError(null);
+    setMqttSetupNotice(null);
+    try {
+      const progress = await prepareAndEnableShellyMqtt(
+        createMqttPairingDependencies(active, confirmedName),
+        {
+          onPrepared: (operationId) => {
+            mqttOperationId.current = operationId;
+          },
+          onLocalConfigurationVerified: (local) => {
+            setLocalMqttConnected(local.mqttConnected);
+            setMqttOperationReady(true);
+          },
+        },
+      );
+      setLocalMqttConnected(progress.mqttConnected);
+      if (progress.mqttConnected) {
+        await finishMqttPairing(active, progress.operationId, confirmedName);
+      } else {
+        setMqttSetupNotice(
+          progress.restartRequired
+            ? "El Shelly reinició y confirmó su configuración TLS. Esperando conexión MQTT para verificarla con el backend."
+            : "La configuración TLS quedó verificada. Esperando conexión MQTT para verificarla con el backend.",
+        );
+      }
+    } catch (error) {
+      const needsHttps = error instanceof Error &&
+        ["MQTT_BOOTSTRAP_REQUIRES_HTTPS_BACKEND_DEV",
+          "MQTT_ENABLE_REQUIRES_HTTPS_BACKEND_DEV",
+          "MQTT_CONFIRM_REQUIRES_HTTPS_BACKEND_DEV"].includes(error.message);
+      setPairingError(needsHttps
+        ? "El backend de desarrollo debe responder por HTTPS para entregar la credencial MQTT."
+        : "El aprovisionamiento se detuvo o tuvo un resultado incierto. Consulta el estado antes de decidir si cancelar; no se repetirán escrituras automáticamente.");
+    } finally {
+      pairingInProgress.current = false;
+      setPairingLoading(false);
+    }
+  }
+
+  async function verifyMqttAuthenticationAndComplete() {
+    const active = activePairing.current;
+    const operationId = mqttOperationId.current;
+    const name = confirmedName;
+    if (!active || !operationId || !name || !mqttOperationReady ||
+        pairingInProgress.current || pairingExpired || !canPrepare) return;
+
+    pairingInProgress.current = true;
+    setPairingLoading(true);
+    setPairingError(null);
+    try {
+      await finishMqttPairing(active, operationId, name);
+    } catch {
+      // El usuario puede consultar el estado persistido; confirm no se reenvía.
+      setPairingError(
+        mqttConfirmAttempted.current
+          ? "No hay confirmación final del backend. La petición no se repetirá; consulta el estado o cancela la sesión para reconciliarla."
+          : "Aún no se pudo verificar la autenticación MQTT. La sesión sigue pendiente; revisa la conexión local antes de continuar.",
+      );
+    } finally {
+      pairingInProgress.current = false;
+      setPairingLoading(false);
+    }
+  }
+  function confirmTrustedLabSetup() {
+    if (!__DEV__ || mqttSetupAttempted.current) return;
+    Alert.alert(
+      'Solo laboratorio privado',
+      'La API de SmartHome debe usar HTTPS. La RPC local del Shelly usa HTTP y ' +
+      'transmite su contraseña MQTT por la red Wi-Fi. Úsalo solo en una red aislada ' +
+      'que administras, sin invitados ni dispositivos no confiables. ' +
+      'El resultado NO registra ni autentica automáticamente el Shelly.',
+      [
+        {text: 'Cancelar', style: 'cancel'},
+        {text: 'Confirmo red aislada', onPress: () => void configureMqttForTrustedLab()},
+      ],
+    );
+  }
+
+  async function refreshMqttStatus() {
+    const active = activePairing.current;
+    if (!active || pairingInProgress.current || pairingExpired) return;
+    pairingInProgress.current = true;
+    setPairingLoading(true);
+    setPairingError(null);
+    try {
+      const current = await pairingService.getSession(
+        active.homeId,
+        active.sessionId,
+        active.sessionToken,
+      );
+      setPairingSession(current);
+      if (current.status === "EXPIRED") setPairingExpired(true);
+      if (current.status === "COMPLETED") {
+        activePairing.current = null;
+        mqttOperationId.current = null;
+        mqttConfirmAttempted.current = false;
+        setMqttOperationReady(false);
+      }
+    } catch (error) {
+      setPairingError(
+        error instanceof Error ? error.message : "No se pudo consultar la conexión MQTT.",
+      );
+    } finally {
+      pairingInProgress.current = false;
+      setPairingLoading(false);
+    }
+  }
+
+  /**
+   * No registra un dispositivo sin la confirmación CONNECTED del backend.
+   * El backend vuelve a validar sesión, propietario, token y estado.
+   */
+  async function completeVerifiedPairing() {
+    const active = activePairing.current;
+    if (
+      !active || pairingInProgress.current || pairingExpired ||
+      pairingSession?.status !== "CONNECTED" || !canPrepare ||
+      !confirmedName || confirmedName !== deviceName.trim()
+    ) return;
+
+    pairingInProgress.current = true;
+    setPairingLoading(true);
+    setPairingError(null);
+    try {
+      const current = await pairingService.getSession(
+        active.homeId,
+        active.sessionId,
+        active.sessionToken,
+      );
+      setPairingSession(current);
+      if (current.status === "COMPLETED") {
+        if (!current.completion?.deviceId) {
+          throw new Error("MQTT_COMPLETION_STATE_UNCERTAIN");
+        }
+        activePairing.current = null;
+        mqttOperationId.current = null;
+        mqttConfirmAttempted.current = false;
+        setMqttOperationReady(false);
+        return;
+      }
+      if (current.status !== "CONNECTED") {
+        throw new Error("MQTT_BACKEND_AUTH_STATE_UNCONFIRMED");
+      }
+      const completed = await pairingService.completeSession(
+        active.homeId,
+        active.sessionId,
+        active.sessionToken,
+        confirmedName,
+      );
+      setPairingSession(completed);
+      if (completed.status !== "COMPLETED" || !completed.completion?.deviceId) {
+        setPairingError(
+          "El backend todavía no confirmó el registro. Consulta el estado antes de reintentar.",
+        );
+      }
+    } catch (error) {
+      // Un error de red después del commit es ambiguo. Consultar antes de reintentar.
+      setPairingError(
+        error instanceof Error ? error.message : "No se pudo confirmar el registro. Consulta el estado.",
+      );
+    } finally {
+      pairingInProgress.current = false;
+      setPairingLoading(false);
+    }
+  }
+
+  function resetExpiredPairing() {
+    if (!pairingExpired || pairingInProgress.current) {
+      return;
+    }
+
+    const status = pairingSession?.status;
+
+    // No descartamos una vinculación completada.
+    if (status === "COMPLETED") {
+      return;
+    }
+
+    activePairing.current = null;
+    mqttOperationId.current = null;
+    mqttConfirmAttempted.current = false;
+    mqttSetupAttempted.current = false;
+    setMqttSetupAttemptedForRender(false);
+    setMqttOperationReady(false);
+    setLocalMqttConnected(null);
+    setMqttSetupNotice(null);
+
+    setPairingSession(null);
+    setPairingExpired(false);
+    setPairingError(null);
+  }
+
+  useEffect(() => {
+    if (!pairingSession?.expiresAt) return;
+
+    const expirationTime = new Date(pairingSession.expiresAt).getTime();
+    if (!Number.isFinite(expirationTime)) return;
+
+    // Incluso una sesion ya expirada se procesa desde el temporizador.
+    const remainingMs = Math.max(0, expirationTime - Date.now());
+    const timeout = setTimeout(() => {
+      setPairingExpired(true);
+    }, remainingMs);
+
+    return () => clearTimeout(timeout);
+  }, [pairingSession?.expiresAt]);
 
   const trimmedName = deviceName.trim();
 
@@ -241,10 +927,12 @@ export default function PrepareShellyScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Cerrar preparación del dispositivo"
-              onPress={backToSearch}
+              disabled={pairingLoading}
+              onPress={() => void backToSearch()}
               style={[
                 styles.backButton,
                 { backgroundColor: theme.rowAlt },
+                pairingLoading && styles.disabled,
               ]}
             >
               <Ionicons
@@ -361,6 +1049,9 @@ export default function PrepareShellyScreen() {
             ]}
           />
 
+          {verification === "verified" && ip && manufacturerDeviceId ? (
+            <ShellyLanTelemetry ip={ip} expectedId={manufacturerDeviceId} />
+          ) : null}
           {/* Hogar seleccionado */}
           <Text
             style={[
@@ -488,18 +1179,225 @@ export default function PrepareShellyScreen() {
             </View>
           ) : null}
 
-          {/* Integración pendiente */}
-          <Text
-            style={[
-              styles.pendingNote,
-              { color: theme.muted },
-            ]}
-          >
-            El registro definitivo estará disponible
-            después de integrar el backend y verificar
-            la conexión MQTT. Por ahora esta pantalla
-            no modifica el Shelly ni crea registros.
-          </Text>
+          {isConfirmed && !pairingSession ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Iniciar vinculación del Shelly"
+              disabled={pairingLoading}
+              onPress={() => void startPairing()}
+              style={[
+                styles.primaryButton,
+                { backgroundColor: theme.blue },
+                pairingLoading && styles.disabled,
+              ]}
+            >
+              {pairingLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryButtonText}>
+                  Iniciar vinculación
+                </Text>
+              )}
+            </Pressable>
+          ) : null}
+
+          {pairingSession ? (
+            <View style={styles.confirmation}>
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text style={{ color: theme.text, fontWeight: "800" }}>
+                  {pairingSession.status === "COMPLETED"
+                    ? "Shelly vinculado al hogar"
+                    : "Sesión de vinculación creada"}
+                </Text>
+
+                <Text style={{ color: theme.muted }}>
+                  Estado: {pairingSession.status}
+                </Text>
+
+                <Text style={styles.helperText}>
+                  {pairingSession.status === "COMPLETED"
+                    ? "El backend confirmó la identidad MQTT y registró el dispositivo."
+                    : pairingSession.status === "CONNECTED"
+                      ? "Conexión MQTT confirmada. Ya puedes finalizar el registro."
+                      : "La vinculación definitiva está pendiente de verificar la conexión MQTT."}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {pairingSession &&
+            ["DEVICE_IDENTIFIED", "WAITING_FOR_MQTT", "CONNECTED"].includes(pairingSession.status) &&
+            !pairingExpired ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Consultar estado MQTT con el backend"
+              disabled={pairingLoading}
+              onPress={() => void refreshMqttStatus()}
+              style={[styles.retryButton, pairingLoading && styles.disabled]}
+            >
+              <Text style={{ color: theme.blue, fontWeight: "700" }}>
+                {pairingLoading ? "Consultando..." : "Consultar conexión MQTT"}
+              </Text>
+            </Pressable>
+          ) : null}
+
+
+          {__DEV__ && pairingSession &&
+            ['DEVICE_IDENTIFIED', 'WAITING_FOR_MQTT'].includes(pairingSession.status) &&
+            !pairingExpired && !mqttSetupAttemptedForRender ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Configurar MQTT Shelly en laboratorio aislado"
+              disabled={pairingLoading}
+              onPress={confirmTrustedLabSetup}
+              style={[styles.primaryButton, {backgroundColor: theme.blue},
+                pairingLoading && styles.disabled]}
+            >
+              <Text style={styles.primaryButtonText}>Configurar MQTT (laboratorio)</Text>
+            </Pressable>
+          ) : null}
+
+          {mqttSetupNotice ? (
+            <Text style={[styles.helperText, {color: theme.muted}]}>
+              {mqttSetupNotice}
+            </Text>
+          ) : null}
+          {localMqttConnected !== null ? (
+            <Text style={[styles.helperText, {color: theme.muted}]}>
+              Estado local Shelly: {localMqttConnected ? "conectado" : "sin conexión"}.
+              El backend debe confirmar la autenticación.
+            </Text>
+          ) : null}
+
+          {__DEV__ && pairingSession?.status === "WAITING_FOR_MQTT" &&
+            mqttOperationReady && !pairingExpired ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Verificar autenticación MQTT con el backend y finalizar"
+              disabled={pairingLoading}
+              onPress={() => void verifyMqttAuthenticationAndComplete()}
+              style={[styles.primaryButton, { backgroundColor: theme.blue },
+                pairingLoading && styles.disabled]}
+            >
+              {pairingLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryButtonText}>
+                  Verificar MQTT y finalizar
+                </Text>
+              )}
+            </Pressable>
+          ) : null}
+
+          {pairingSession?.status === "CONNECTED" && !pairingExpired ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Finalizar vinculación del Shelly en el hogar"
+              disabled={pairingLoading}
+              onPress={() => void completeVerifiedPairing()}
+              style={[
+                styles.primaryButton,
+                { backgroundColor: theme.blue },
+                pairingLoading && styles.disabled,
+              ]}
+            >
+              {pairingLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryButtonText}>
+                  Finalizar vinculación
+                </Text>
+              )}
+            </Pressable>
+          ) : null}
+
+          {pairingSession?.status === "PENDING" && !pairingExpired ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Reintentar identificación del Shelly"
+              disabled={pairingLoading}
+              onPress={() => void retryPairingIdentification()}
+              style={[
+                styles.retryButton,
+                pairingLoading && styles.disabled,
+              ]}
+            >
+              <Text
+                style={{
+                  color: theme.blue,
+                  fontWeight: "700",
+                }}
+              >
+                Reintentar identificación
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {pairingSession && !["COMPLETED", "CANCELLED", "EXPIRED", "FAILED"].includes(pairingSession.status) && !pairingExpired ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cancelar vinculación del Shelly"
+              disabled={pairingLoading}
+              onPress={() => void cancelPairing()}
+              style={[
+                styles.retryButton,
+                pairingLoading && styles.disabled,
+              ]}
+            >
+              <Text
+                style={{
+                  color: theme.danger,
+                  fontWeight: "700",
+                }}
+              >
+                Cancelar vinculación
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {pairingExpired ? (
+            <View style={styles.errorSection}>
+              <Text
+                style={[
+                  styles.helperText,
+                  { color: theme.danger },
+                ]}
+              >
+                La sesión de vinculación ha expirado.
+                Debes iniciar una nueva sesión para continuar.
+              </Text>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Preparar nueva sesión de vinculación"
+                onPress={resetExpiredPairing}
+                style={styles.retryButton}
+              >
+                <Text
+                  style={{
+                    color: theme.blue,
+                    fontWeight: "700",
+                  }}
+                >
+                  Preparar nueva vinculación
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {pairingError ? (
+            <Text style={[styles.helperText, { color: theme.danger }]}>
+              {pairingError}
+            </Text>
+          ) : null}
+
+          {pairingSession?.status !== "COMPLETED" ? (
+            <Text style={[styles.pendingNote, { color: theme.muted }]}>
+              SmartHome registra el Shelly solo cuando el backend confirma
+              su conexión MQTT autenticada. La detección Wi-Fi o una identidad
+              MQTT preparada pero deshabilitada no completan la vinculación.
+            </Text>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
