@@ -356,6 +356,20 @@ export async function readShellyDeviceInfo(
       );
     }
 
+    // POC diagnóstica Shelly 2.0+: en Android el primer ATT_WRITE_REQ
+    // se observó antes del evento HCI Encryption Change. Esta espera
+    // permite evaluar si el rechazo 0x03 depende de ese orden.
+    // No constituye una comprobación de enlace cifrado ni solución final.
+    console.log("[ShellyBLE] 3B - Espera diagnóstica previa a TX (1500 ms)");
+    await new Promise<void>((resolve) => setTimeout(resolve, 1500));
+
+    if (!(await manager.isDeviceConnected(deviceId))) {
+      throw new PairingError(
+        "Shelly se desconectó durante la espera previa a TX.",
+        "DEVICE_DISCONNECTED",
+      );
+    }
+
     console.log("[ShellyBLE] 3C - Escribiendo longitud TX");
 
     await withTimeout(
