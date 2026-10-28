@@ -68,7 +68,25 @@ export function useRealtimeSync({
               }
             },
           ),
-          realtimeService.on("consumption.created", () => {
+          realtimeService.on("consumption.created", (event) => {
+            // Las lecturas confirmadas por el backend alimentan las tarjetas
+            // sin inferir conectividad ni estado del relé.
+            if (typeof event.deviceId === "string") {
+              const deviceId = event.deviceId;
+              const power = event.powerW;
+              const energy = event.energyTotalKwh;
+              setDevices((items) => items.map((device) =>
+                device.id !== deviceId
+                  ? device
+                  : {
+                      ...device,
+                      ...(typeof power === "number" && Number.isFinite(power)
+                        ? { power } : {}),
+                      ...(typeof energy === "number" && Number.isFinite(energy)
+                        ? { energy: energy * 1000 } : {}),
+                    },
+              ));
+            }
             setLastSync(getTimeStamp());
           }),
           realtimeService.on("realtime.connected", () => {
