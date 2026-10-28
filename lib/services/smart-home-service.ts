@@ -64,10 +64,19 @@ export type ControlDeviceResponse = {
 };
 
 function mapBackendDevice(device: BackendDevice): SmartDevice {
+  const manufacturerId = device.manufacturerDeviceId?.toLowerCase() ?? "";
+  const modelName = manufacturerId.startsWith("shelly1pmg4-")
+    ? "Shelly 1PM Gen4"
+    : manufacturerId.startsWith("shellyplus1pm-")
+      ? "Shelly Plus 1PM"
+      : manufacturerId.startsWith("shelly")
+        ? "Shelly (modelo no identificado)"
+        : "Dispositivo inteligente";
   return {
     id: device.id,
     homeId: device.homeId,
     name: device.name,
+    modelName,
     category: "Electrodomesticos",
     icon: "power-plug-outline",
     power: device.currentPowerW ?? 0,
