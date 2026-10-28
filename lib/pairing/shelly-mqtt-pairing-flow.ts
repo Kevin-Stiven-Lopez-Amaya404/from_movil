@@ -40,7 +40,17 @@ export type ShellyMqttPairingComplete = {
   readonly session: PairingSession;
 };
 
+export type ShellyMqttProvisioningStage =
+  | 'PREPARING_BROKER_IDENTITY'
+  | 'ADVANCING_PAIRING_SESSION'
+  | 'AUTHORIZING_BOOTSTRAP'
+  | 'CONFIGURING_LOCAL_DEVICE'
+  | 'ENABLING_BROKER_IDENTITY'
+  | 'READING_LOCAL_MQTT_STATUS';
+
 export interface ShellyMqttPairingProgressCallbacks {
+  /** Etapa sin datos sensibles: permite diagnosticar fallos sin imprimir credenciales. */
+  onStage?(stage: ShellyMqttProvisioningStage): void;
   onPrepared?(operationId: string): void;
   onLocalConfigurationVerified?(result: ShellyMqttLocalProvisioningResult): void;
 }
@@ -53,6 +63,7 @@ export async function prepareAndEnableShellyMqtt(
   dependencies: ShellyMqttPairingDependencies,
   progress?: ShellyMqttPairingProgressCallbacks,
 ): Promise<ShellyMqttPairingProgress> {
+  progress?.onStage?.('PREPARING_BROKER_IDENTITY');
   const prepared = await dependencies.prepareMqtt();
   if (prepared.phase !== 'PREPARED_DISABLED_ONLY' ||
       !prepared.operationId || prepared.credentialsDelivered !== false ||
@@ -63,12 +74,14 @@ export async function prepareAndEnableShellyMqtt(
 
   // Backend's /complete has a non-final transition to WAITING_FOR_MQTT.
   // This call cannot register the device; ready must remain false here.
+  progress?.onStage?.('ADVANCING_PAIRING_SESSION');
   const waiting = await dependencies.advanceToWaiting();
   if (waiting.status !== 'WAITING_FOR_MQTT' ||
       waiting.completion?.ready !== false) {
     throw new Error('MQTT_WAITING_STATE_UNCONFIRMED');
   }
 
+  progress?.onStage?.('AUTHORIZING_BOOTSTRAP');
   let authorization: ShellyMqttBootstrapAuthorization | null =
     await dependencies.authorizeBootstrap(prepared.operationId);
   if (authorization.mqttAuthenticated !== false) {
@@ -76,6 +89,7 @@ export async function prepareAndEnableShellyMqtt(
     throw new Error('MQTT_BOOTSTRAP_RESULT_UNCERTAIN');
   }
 
+  progress?.onStage?.('CONFIGURING_LOCAL_DEVICE');
   const local = await dependencies.configureLocally(authorization);
   authorization = null;
   if (local.phase !== 'CONFIGURED_LOCALLY_UNVERIFIED' ||
@@ -84,12 +98,14 @@ export async function prepareAndEnableShellyMqtt(
   }
   progress?.onLocalConfigurationVerified?.(local);
 
+  progress?.onStage?.('ENABLING_BROKER_IDENTITY');
   const enabled = await dependencies.enableMqtt(prepared.operationId);
   if (enabled.phase !== 'AWAITING_MQTT_AUTH' ||
       enabled.mqttAuthenticated !== false) {
     throw new Error('MQTT_ENABLE_OUTCOME_UNCERTAIN');
   }
 
+  progress?.onStage?.('READING_LOCAL_MQTT_STATUS');
   const status = await dependencies.readLocalMqttStatus();
   return {
     phase: status.connected
