@@ -442,15 +442,36 @@ export default function PrepareShellyScreen() {
   async function retryPairingIdentification() {
     const active = activePairing.current;
 
-    if (
-      !active ||
-      pairingInProgress.current ||
-      !ip ||
-      !manufacturerDeviceId ||
-      !canPrepare ||
-      pairingExpired ||
-      pairingSession?.status !== "PENDING"
-    ) {
+    // Nunca descartar silenciosamente el toque: un Fast Refresh puede dejar
+    // visible PENDING sin conservar el token temporal en memoria.
+    if (!active) {
+      setPairingError(
+        "No se conserva el token de esta sesión en el teléfono. No es seguro reintentar ni crear otra sesión todavía. Espera a que expire y prepara una nueva vinculación.",
+      );
+      return;
+    }
+    if (pairingInProgress.current) {
+      setPairingError(
+        "Ya hay una operación de vinculación en curso. Consulta su resultado antes de reintentar.",
+      );
+      return;
+    }
+    if (!ip || !manufacturerDeviceId) {
+      setPairingError(
+        "No están disponibles la IP o la identidad local del Shelly. No se realizó ninguna escritura.",
+      );
+      return;
+    }
+    if (!canPrepare) {
+      setPairingError(
+        "Solo el propietario (OWNER) del hogar puede identificar el Shelly.",
+      );
+      return;
+    }
+    if (pairingExpired || pairingSession?.status !== "PENDING") {
+      setPairingError(
+        "La sesión ya no está pendiente. Consulta el estado antes de continuar.",
+      );
       return;
     }
 
