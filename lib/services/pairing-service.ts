@@ -2,6 +2,7 @@
 import * as Crypto from "expo-crypto";
 import { apiConfig } from "@/lib/config/api-config";
 import type { ShellyMqttBootstrapAuthorization } from "@/lib/pairing/shelly-mqtt-local-provisioning";
+import { assertValidMqttBootstrapResponse } from "@/lib/pairing/shelly-mqtt-bootstrap-validation";
 
 import { apiClient } from "@/lib/api/api-client";
 import type { PairingSession } from "@/lib/pairing/pairing-types";
@@ -239,17 +240,9 @@ export const pairingService = {
         'Cache-Control': 'no-store',
       }},
     );
-    const expiresAt = Date.parse(result.expiresAt);
-    if (result.phase !== 'PROVISIONING_AUTHORIZED' ||
-        result.mqttAuthenticated !== false ||
-        !UUID_V4.test(operationId) ||
-        !result.identity || !result.broker ||
-        result.broker.hostname !== DEVICE_MQTT_BROKER_HOST ||
-        result.broker.port !== DEVICE_MQTT_BROKER_PORT ||
-        !Number.isFinite(expiresAt) || expiresAt <= Date.now() ||
-        expiresAt - Date.now() > 120_000) {
-      throw new Error('MQTT_BOOTSTRAP_RESULT_UNCERTAIN');
-    }
+    assertValidMqttBootstrapResponse(
+      result, operationId, DEVICE_MQTT_BROKER_HOST, DEVICE_MQTT_BROKER_PORT,
+    );
     return result;
   },
 
