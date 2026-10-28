@@ -113,7 +113,7 @@ export function ShellyDeviceCard({
               fill="#FFCDD2"
               textAnchor="middle"
             >
-              1PM GEN4
+              {device.modelName === 'Shelly 1PM Gen4' ? '1PM GEN4' : 'SHELLY'}
             </SvgText>
           </Svg>
         </View>
