@@ -123,6 +123,8 @@ export default function PrepareShellyScreen() {
   const mqttSetupAttempted = useRef(false);
   const mqttOperationId = useRef<string | null>(null);
   const mqttConfirmAttempted = useRef(false);
+  const mqttAutoFinalizeAttempted = useRef(false);
+  const mqttPollInProgress = useRef(false);
   const [pairingSession, setPairingSession] =
     useState<PairingSession | null>(null);
   const [pairingExpired, setPairingExpired] = useState(false);
@@ -397,6 +399,7 @@ export default function PrepareShellyScreen() {
       setPairingExpired(false);
       mqttSetupAttempted.current = false;
       mqttConfirmAttempted.current = false;
+      mqttAutoFinalizeAttempted.current = false;
       mqttOperationId.current = null;
       setMqttSetupAttemptedForRender(false);
       setMqttOperationReady(false);
@@ -713,12 +716,14 @@ export default function PrepareShellyScreen() {
           },
           onLocalConfigurationVerified: (local) => {
             setLocalMqttConnected(local.mqttConnected);
-            setMqttOperationReady(true);
           },
         },
       );
       setLocalMqttConnected(progress.mqttConnected);
+      // Sólo se puede confirmar después de /mqtt/enable exitoso.
+      setMqttOperationReady(true);
       if (progress.mqttConnected) {
+        mqttAutoFinalizeAttempted.current = true;
         await finishMqttPairing(active, progress.operationId, confirmedName);
       } else {
         setMqttSetupNotice(
@@ -774,6 +779,58 @@ export default function PrepareShellyScreen() {
       setPairingLoading(false);
     }
   }
+  // Shelly puede tardar varios minutos en reintentar MQTT después del
+  // reinicio. Vigilar sólo por LAN (consultas de lectura), sin repetir
+  // /prepare, /bootstrap, /enable ni la escritura de credenciales.
+  useEffect(() => {
+    if (!__DEV__ || !mqttOperationReady || pairingExpired ||
+        pairingSession?.status !== "WAITING_FOR_MQTT" ||
+        !canPrepare || !ip || !manufacturerDeviceId || !confirmedName) {
+      return;
+    }
+
+    let disposed = false;
+    const poll = async () => {
+      const active = activePairing.current;
+      if (disposed || mqttPollInProgress.current ||
+          pairingInProgress.current || mqttAutoFinalizeAttempted.current ||
+          mqttConfirmAttempted.current || !active ||
+          Date.parse(active.expiresAt) <= Date.now()) {
+        return;
+      }
+      mqttPollInProgress.current = true;
+      try {
+        const local = await readShellyMqttStatus({
+          ip, expectedDeviceId: manufacturerDeviceId,
+        });
+        if (disposed || activePairing.current?.sessionId !== active.sessionId) return;
+        setLocalMqttConnected(local.connected);
+        if (local.connected && !mqttAutoFinalizeAttempted.current) {
+          mqttAutoFinalizeAttempted.current = true;
+          setMqttSetupNotice(
+            "Shelly conectado por MQTT. Verificando la autenticación con el backend...",
+          );
+          await verifyMqttAuthenticationAndComplete();
+        }
+      } catch {
+        // Un fallo temporal de lectura no autoriza escrituras ni reintentos
+        // de confirmación. Continuará la observación local hasta el vencimiento.
+      } finally {
+        mqttPollInProgress.current = false;
+      }
+    };
+
+    void poll();
+    const timer = setInterval(() => { void poll(); }, 4_000);
+    return () => {
+      disposed = true;
+      clearInterval(timer);
+    };
+    // verifyMqttAuthenticationAndComplete usa los mismos estados de guarda.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mqttOperationReady, pairingExpired, pairingSession?.status,
+      canPrepare, ip, manufacturerDeviceId, confirmedName]);
+
   function confirmTrustedLabSetup() {
     if (!__DEV__ || mqttSetupAttempted.current) return;
     Alert.alert(
@@ -892,6 +949,7 @@ export default function PrepareShellyScreen() {
     activePairing.current = null;
     mqttOperationId.current = null;
     mqttConfirmAttempted.current = false;
+    mqttAutoFinalizeAttempted.current = false;
     mqttSetupAttempted.current = false;
     setMqttSetupAttemptedForRender(false);
     setMqttOperationReady(false);
