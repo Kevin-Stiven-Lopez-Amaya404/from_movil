@@ -105,6 +105,25 @@ test('prepara la sesión, configura localmente y habilita solo una vez', async (
   ]);
 });
 
+test('reporta etapa exacta al detenerse antes de configurar credenciales', async () => {
+  const stages = [];
+  const deps = dependencies({
+    async authorizeBootstrap() {
+      this.calls.push('bootstrap');
+      throw new Error('MQTT_BOOTSTRAP_SESSION_NOT_AUTHORIZED');
+    },
+  });
+  await assert.rejects(
+    prepareAndEnableShellyMqtt(deps, { onStage: stage => stages.push(stage) }),
+    /MQTT_BOOTSTRAP_SESSION_NOT_AUTHORIZED/,
+  );
+  assert.deepEqual(stages, [
+    'PREPARING_BROKER_IDENTITY', 'ADVANCING_PAIRING_SESSION', 'AUTHORIZING_BOOTSTRAP',
+  ]);
+  assert.equal(deps.calls.includes('configure:PROVISIONING_AUTHORIZED'), false);
+  assert.equal(deps.calls.some(call => call.startsWith('enable:')), false);
+});
+
 test('confirma el broker y solo entonces ejecuta el complete final', async () => {
   const deps = dependencies();
   const result = await confirmAndCompleteShellyMqtt({ operationId }, deps);
