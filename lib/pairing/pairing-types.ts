@@ -1,7 +1,7 @@
 export type PairingSessionStatus =
   | "PENDING"
   | "DEVICE_IDENTIFIED"
-  | "BROKER_CONFIGURED"
+  | "WAITING_FOR_MQTT"
   | "CONNECTED"
   | "COMPLETED"
   | "EXPIRED"
@@ -9,12 +9,27 @@ export type PairingSessionStatus =
   | "FAILED";
 
 export type PairingSession = {
-  id: string;
+  sessionId: string;
   homeId: string;
+  method: "LAN" | "AP";
   status: PairingSessionStatus;
-  deviceId?: string;
-  expiresAt?: string;
-  error?: string;
+  expiresAt: string;
+
+  identity: {
+    manufacturerDeviceId: string;
+    modelCode: string;
+    generation: number;
+    firmwareVersion: string | null;
+    reportedAt: string | null;
+    verification: string;
+  } | null;
+
+  completion: {
+    deviceId: string | null;
+    ready?: boolean;
+  } | null;
+
+  failureCode: string | null;
 };
 
 export type NearbyShelly = {

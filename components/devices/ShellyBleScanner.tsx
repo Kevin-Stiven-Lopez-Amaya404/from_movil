@@ -1,6 +1,6 @@
 
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { bleAdapter } from "@/lib/pairing/ble-adapter";
@@ -11,9 +11,10 @@ import { styles } from "./ShellyBleScanner.styles";
 
 type Props = {
   canScan: boolean;
+  scanRequestId?: number;
 };
 
-export function ShellyBleScanner({ canScan }: Props) {
+export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
   const theme = useAppTheme();
 
   const [isScanning, setIsScanning] = useState(false);
@@ -25,6 +26,7 @@ export function ShellyBleScanner({ canScan }: Props) {
   const [message, setMessage] = useState<string | null>(null);
 
   const scanRun = useRef(0);
+  const lastAutoScanRequest = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -33,7 +35,7 @@ export function ShellyBleScanner({ canScan }: Props) {
     };
   }, []);
 
-  async function startDiscovery() {
+  const startDiscovery = useCallback(async () => {
     if (!canScan || isScanning || inspectingId) return;
 
     const run = ++scanRun.current;
@@ -81,7 +83,13 @@ export function ShellyBleScanner({ canScan }: Props) {
         setIsScanning(false);
       }
     }
-  }
+  }, [canScan, isScanning, inspectingId]);
+
+  useEffect(() => {
+    if (!canScan || scanRequestId <= lastAutoScanRequest.current) return;
+    lastAutoScanRequest.current = scanRequestId;
+    void startDiscovery();
+  }, [canScan, scanRequestId, startDiscovery]);
 
   async function cancelDiscovery() {
     scanRun.current += 1;

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -191,7 +191,7 @@ export default function DashboardScreen() {
       : `${favoriteHomes} ${favoriteHomes === 1 ? "hogar favorito" : "hogares favoritos"}`;
 
   // Movimiento ambiental ligero, respetando la preferencia de accesibilidad.
-  const imageScale = useRef(new Animated.Value(1)).current;
+  const [imageScale] = useState(() => new Animated.Value(1));
   const [reduceMotion, setReduceMotion] = useState(true);
 
   useEffect(() => {

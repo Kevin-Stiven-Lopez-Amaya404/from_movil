@@ -158,6 +158,10 @@ module.exports = () => {
       ...(baseConfig.plugins ?? []),
       ["@sfourdrinier/react-native-ble-plx", { neverForLocation: false }],
       "expo-sharing",
+      ...(["development", "preview"].includes(process.env.EAS_BUILD_PROFILE) &&
+      process.env.APP_ENV !== "production"
+        ? [["expo-build-properties", { android: { usesCleartextTraffic: true } }]]
+        : []),
     ],
     platforms: ["ios", "android"],
     android,
