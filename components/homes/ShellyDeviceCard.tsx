@@ -75,10 +75,10 @@ export function ShellyDeviceCard({
         onPress={onPress}
         style={styles.body}
       >
-        {/* Gráfico miniatura auténtico del Shelly Plus 1PM (Rojo) */}
+        {/* Gráfico miniatura auténtico del Shelly 1PM Gen4 (Rojo) */}
         <View style={styles.shellyThumb}>
           <Svg width="52" height="42" viewBox="0 0 52 42">
-            {/* Cuerpo rojo del Shelly Plus 1PM */}
+            {/* Cuerpo rojo del Shelly 1PM Gen4 */}
             <Rect
               x="2"
               y="6"
@@ -113,7 +113,7 @@ export function ShellyDeviceCard({
               fill="#FFCDD2"
               textAnchor="middle"
             >
-              PLUS 1PM
+              1PM GEN4
             </SvgText>
           </Svg>
         </View>
@@ -131,7 +131,7 @@ export function ShellyDeviceCard({
             numberOfLines={1}
             style={[styles.deviceModel, { color: theme.muted }]}
           >
-            Shelly Plus 1PM
+            {device.modelName ?? 'Modelo no identificado'}
           </Text>
 
           <Text
