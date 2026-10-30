@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuthSession } from "@/lib/auth/auth-session-context";
 import { ThemeModeSelector } from "@/components/settings/ThemeModeSelector";
+import { ColorPaletteSelector } from "@/components/settings/ColorPaletteSelector";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
@@ -38,7 +39,11 @@ function Row({
       accessibilityRole="button"
       accessibilityLabel={title}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.row,
+        { borderTopColor: theme.profileDivider },
+        pressed && styles.pressed,
+      ]}
     >
       <View style={[styles.rowIcon, { backgroundColor: theme.rowAlt }]}>
         <Ionicons
@@ -103,12 +108,14 @@ export default function ProfileScreen() {
   const { logout } = useAuthSession();
   const {
     colorMode,
+    colorPalette,
     deactivateAccount,
     language,
     sessionEmail,
     sessionName,
     sessionRole,
     setColorMode,
+    setColorPalette,
   } = useSmartHome();
 
   const { count: pendingAlerts } = useActiveDeviceAlerts();
@@ -331,8 +338,23 @@ export default function ProfileScreen() {
                 blueColor={theme.blue}
                 borderColor={theme.border}
                 labels={{ system: "Sistema", dark: "Oscuro", light: "Claro" }}
+                onPrimaryColor={theme.onPrimary}
                 onChange={setColorMode}
                 rowColor={theme.row}
+              />
+              <ColorPaletteSelector
+                activePalette={colorPalette}
+                borderColor={theme.border}
+                labels={{
+                  classic: t("settings.paletteClassic"),
+                  emerald: t("settings.paletteEmerald"),
+                }}
+                onChange={setColorPalette}
+                onPrimaryColor={theme.onPrimary}
+                primaryColor={theme.blue}
+                rowColor={theme.row}
+                textColor={theme.text}
+                title={t("settings.colorPalette")}
               />
             </View>
 

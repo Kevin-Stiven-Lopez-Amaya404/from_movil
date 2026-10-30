@@ -309,7 +309,7 @@ export default function HomeDetailScreen() {
                     }}
                     style={[
                       styles.addButton,
-                      { backgroundColor: theme.blue },
+                      { backgroundColor: theme.solidActionBackground },
                     ]}
                   >
                     <Ionicons
@@ -424,7 +424,7 @@ export default function HomeDetailScreen() {
                       onPress={openPairing}
                       style={[
                         styles.primaryButton,
-                        { backgroundColor: theme.blue },
+                        { backgroundColor: theme.solidActionBackground },
                       ]}
                     >
                       <Ionicons
@@ -570,7 +570,7 @@ export default function HomeDetailScreen() {
                     backgroundColor:
                       telemetryDevice.state === "on"
                         ? theme.danger
-                        : theme.blue,
+                        : theme.solidActionBackground,
                   },
                 ]}
               >
@@ -677,7 +677,7 @@ export default function HomeDetailScreen() {
                   onPress={() => void saveDeviceName()}
                   style={[
                     styles.primarySmallButton,
-                    { backgroundColor: theme.blue },
+                    { backgroundColor: theme.solidActionBackground },
                   ]}
                 >
                   <Text style={styles.primaryButtonText}>

@@ -150,7 +150,7 @@ export default function LanguageScreen() {
 
                   {active ? (
                     <View
-                      style={[styles.checkDot, { backgroundColor: theme.blue }]}
+                      style={[styles.checkDot, { backgroundColor: theme.solidActionBackground }]}
                     >
                       <Ionicons name="checkmark" size={12} color="#FFFFFF" />
                     </View>

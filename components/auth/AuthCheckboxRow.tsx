@@ -1,4 +1,5 @@
 import { CheckIcon } from '@/components/icons/CheckIcon';
+import { useAuthPalette } from '@/lib/theme/appearance';
 import { typography } from '@/lib/theme/typography';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-native';
 
@@ -11,12 +12,22 @@ type AuthCheckboxRowProps = {
 };
 
 export function AuthCheckboxRow({ checked, disabled = false, label, labelStyle, onToggle }: AuthCheckboxRowProps) {
+  const palette = useAuthPalette();
+
   return (
     <Pressable disabled={disabled} onPress={onToggle} style={styles.row}>
-      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-        {checked ? <CheckIcon /> : null}
+      <View
+        style={[
+          styles.checkbox,
+          checked && styles.checkboxChecked,
+          { backgroundColor: checked ? palette.button : palette.checkboxIdle },
+        ]}
+      >
+        {checked ? <CheckIcon color={palette.onPrimary} /> : null}
       </View>
-      {typeof label === 'string' ? <Text style={[styles.label, labelStyle]}>{label}</Text> : label}
+      {typeof label === 'string' ? (
+        <Text style={[styles.label, labelStyle, { color: palette.text }]}>{label}</Text>
+      ) : label}
     </Pressable>
   );
 }

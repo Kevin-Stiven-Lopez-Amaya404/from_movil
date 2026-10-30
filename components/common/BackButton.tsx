@@ -18,7 +18,7 @@ type BackButtonProps = {
  * En web o cuando no hay historial confiable, usa `router.replace(fallbackHref)`
  * para enviar al usuario a una ruta segura.
  */
-export function BackButton({ color = "#0864C8", fallbackHref }: BackButtonProps) {
+export function BackButton({ color, fallbackHref }: BackButtonProps) {
   const router = useRouter();
   const palette = useAuthPalette();
 
@@ -46,7 +46,7 @@ export function BackButton({ color = "#0864C8", fallbackHref }: BackButtonProps)
         pressed && styles.buttonPressed,
       ]}
     >
-      <Ionicons name="close" size={21} color={color} />
+      <Ionicons name="close" size={21} color={color ?? palette.link} />
     </Pressable>
   );
 }

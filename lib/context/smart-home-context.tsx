@@ -13,11 +13,14 @@ import { Appearance, Platform, useColorScheme } from "react-native";
 import type { SmartDevice } from "@/lib/domain/device";
 import type {
   AppLanguage,
+  ColorPaletteName,
   ColorMode,
   EffectiveColorMode,
 } from "@/lib/domain/preferences";
 import {
+  loadColorPalettePreference,
   loadColorModePreference,
+  saveColorPalettePreference,
   saveColorModePreference,
 } from "@/lib/preferences/appearance-preferences";
 import type {
@@ -54,6 +57,7 @@ import { useRealtimeSync } from "@/lib/hooks/use-realtime-sync";
 
 export type {
   AppLanguage,
+  ColorPaletteName,
   ColorMode,
   HomeInvitation,
   HomeMember,
@@ -78,6 +82,7 @@ type SmartHomeState = {
   accountActive: boolean;
   colorMode: ColorMode;
   effectiveColorMode: EffectiveColorMode;
+  colorPalette: ColorPaletteName;
   devices: SmartDevice[];
   notifications: SmartNotification[];
   unreadNotificationCount: number;
@@ -103,6 +108,7 @@ type SmartHomeState = {
   setActiveHomeId: (homeId: string) => void;
   setAccountActive: (active: boolean) => void;
   setColorMode: (mode: ColorMode) => void;
+  setColorPalette: (palette: ColorPaletteName) => void;
   setHomeConsumptionGoal: (homeId: string, targetWh: number) => void;
   setLanguage: (language: AppLanguage) => void;
   setSessionName: (name: string) => void;
@@ -174,6 +180,8 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
   >({});
   const [accountActive, setAccountActive] = useState(true);
   const [colorMode, setColorModeState] = useState<ColorMode>("system");
+  const [colorPalette, setColorPaletteState] =
+    useState<ColorPaletteName>("classic");
   const systemColorScheme = useColorScheme();
   const effectiveColorMode =
     colorMode === "system"
@@ -182,6 +190,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         : "light"
       : colorMode;
   const colorModeTouchedRef = useRef(false);
+  const colorPaletteTouchedRef = useRef(false);
   const [language, setLanguage] = useState<AppLanguage>("es");
   const [homesLoadStatus, setHomesLoadStatus] =
     useState<DataLoadStatus>("loading");
@@ -208,6 +217,24 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
+    let active = true;
+
+    void loadColorPalettePreference()
+      .then((storedPalette) => {
+        if (active && !colorPaletteTouchedRef.current && storedPalette) {
+          setColorPaletteState(storedPalette);
+        }
+      })
+      .catch((error: unknown) => {
+        console.warn("[Appearance] No se pudo cargar la paleta.", error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (Platform.OS !== "web") {
       Appearance.setColorScheme(
         colorMode === "system" ? "unspecified" : colorMode,
@@ -221,6 +248,15 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
 
     void saveColorModePreference(mode).catch((error: unknown) => {
       console.warn("[Appearance] No se pudo guardar la preferencia.", error);
+    });
+  }, []);
+
+  const setColorPalette = useCallback((palette: ColorPaletteName) => {
+    colorPaletteTouchedRef.current = true;
+    setColorPaletteState(palette);
+
+    void saveColorPalettePreference(palette).catch((error: unknown) => {
+      console.warn("[Appearance] No se pudo guardar la paleta.", error);
     });
   }, []);
 
@@ -402,6 +438,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       activeHomeId,
       accountActive,
       colorMode,
+      colorPalette,
       effectiveColorMode,
       devices,
       homeConsumptionGoals,
@@ -517,6 +554,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setActiveHomeId,
       setAccountActive,
       setColorMode,
+      setColorPalette,
       setHomeConsumptionGoal: (homeId, targetWh) => {
         if (!Number.isFinite(targetWh) || targetWh <= 0) return;
         setHomeConsumptionGoals((items) => ({ ...items, [homeId]: targetWh }));
@@ -669,6 +707,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       accountActive,
       activeHomeId,
       colorMode,
+      colorPalette,
       effectiveColorMode,
       devices,
       homeConsumptionGoals,
@@ -689,6 +728,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setSessionRole,
       setHomeDeviceState,
       setColorMode,
+      setColorPalette,
       accessibleHomes,
       language,
       lastSync,

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 
+import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
 type AddNameRowProps = {
@@ -14,7 +15,6 @@ type AddNameRowProps = {
   value: string;
 };
 
-const BLUE = "#0864C8";
 const appFont = typography.fontFamily.emphasis;
 
 /**
@@ -33,6 +33,8 @@ export function AddNameRow({
   textColor,
   value,
 }: AddNameRowProps) {
+  const theme = useAppTheme();
+
   return (
     <View style={styles.addRow}>
       <TextInput
@@ -44,8 +46,11 @@ export function AddNameRow({
       />
 
       {/* Boton de envio a la derecha del input. Mantiene la fila compacta. */}
-      <Pressable style={styles.addButton} onPress={onSubmit}>
-        <Ionicons name="add" size={24} color="#FFFFFF" />
+      <Pressable
+        style={[styles.addButton, { backgroundColor: theme.brandStrong }]}
+        onPress={onSubmit}
+      >
+        <Ionicons name="add" size={24} color={theme.onPrimary} />
       </Pressable>
     </View>
   );
@@ -70,7 +75,6 @@ const styles = StyleSheet.create({
   },
   addButton: {
     alignItems: "center",
-    backgroundColor: BLUE,
     borderRadius: 12,
     height: 48,
     justifyContent: "center",

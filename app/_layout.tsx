@@ -95,13 +95,28 @@ function RootContent({
   splashDone: boolean;
   onSplashFinish: () => void;
 }) {
-  const { effectiveColorMode } = useSmartHome();
+  const { colorPalette, effectiveColorMode } = useSmartHome();
 
-  const theme = getAppTheme(effectiveColorMode);
+  const theme = getAppTheme(effectiveColorMode, colorPalette);
 
-  const navigationTheme = theme.dark
+  const baseNavigationTheme = theme.dark
     ? DarkTheme
     : DefaultTheme;
+  const navigationTheme =
+    colorPalette === "classic"
+      ? baseNavigationTheme
+      : {
+          ...baseNavigationTheme,
+          colors: {
+            ...baseNavigationTheme.colors,
+            primary: theme.primary,
+            background: theme.background,
+            card: theme.surface,
+            text: theme.text,
+            border: theme.border,
+            notification: theme.danger,
+          },
+        };
 
   return (
     <ThemeProvider value={navigationTheme}>

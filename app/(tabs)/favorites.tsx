@@ -137,7 +137,7 @@ export default function FavoritesScreen() {
                   onPress={() => router.push("/(tabs)/(main)/homes")}
                   style={({ pressed }) => [
                     styles.emptyAction,
-                    { backgroundColor: theme.blue },
+                    { backgroundColor: theme.solidActionBackground },
                     pressed && styles.pressed,
                   ]}
                 >

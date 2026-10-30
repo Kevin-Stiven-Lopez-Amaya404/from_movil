@@ -1228,7 +1228,7 @@ export default function PrepareShellyScreen() {
             }}
             style={({ pressed }) => [
               styles.primaryButton,
-              { backgroundColor: theme.blue },
+              { backgroundColor: theme.solidActionBackground },
               !canConfirm && styles.disabled,
               pressed && styles.pressed,
             ]}
@@ -1278,7 +1278,7 @@ export default function PrepareShellyScreen() {
               onPress={() => void startPairing()}
               style={[
                 styles.primaryButton,
-                { backgroundColor: theme.blue },
+                { backgroundColor: theme.solidActionBackground },
                 pairingLoading && styles.disabled,
               ]}
             >
@@ -1341,7 +1341,7 @@ export default function PrepareShellyScreen() {
               accessibilityLabel="Configurar MQTT Shelly en laboratorio aislado"
               disabled={pairingLoading}
               onPress={confirmTrustedLabSetup}
-              style={[styles.primaryButton, {backgroundColor: theme.blue},
+              style={[styles.primaryButton, {backgroundColor: theme.solidActionBackground},
                 pairingLoading && styles.disabled]}
             >
               <Text style={styles.primaryButtonText}>Configurar MQTT (laboratorio)</Text>
@@ -1367,7 +1367,7 @@ export default function PrepareShellyScreen() {
               accessibilityLabel="Verificar autenticación MQTT con el backend y finalizar"
               disabled={pairingLoading}
               onPress={() => void verifyMqttAuthenticationAndComplete()}
-              style={[styles.primaryButton, { backgroundColor: theme.blue },
+              style={[styles.primaryButton, { backgroundColor: theme.solidActionBackground },
                 pairingLoading && styles.disabled]}
             >
               {pairingLoading ? (
@@ -1388,7 +1388,7 @@ export default function PrepareShellyScreen() {
               onPress={() => void completeVerifiedPairing()}
               style={[
                 styles.primaryButton,
-                { backgroundColor: theme.blue },
+                { backgroundColor: theme.solidActionBackground },
                 pairingLoading && styles.disabled,
               ]}
             >

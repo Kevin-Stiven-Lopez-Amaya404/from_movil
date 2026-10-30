@@ -69,7 +69,7 @@ export function NotificationTabs({
                 style={[
                   styles.badge,
                   {
-                    backgroundColor: selected ? theme.blue : theme.rowAlt,
+                    backgroundColor: selected ? theme.solidActionBackground : theme.rowAlt,
                   },
                 ]}
               >

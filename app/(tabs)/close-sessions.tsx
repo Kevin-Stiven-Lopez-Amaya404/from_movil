@@ -140,7 +140,7 @@ export default function CloseSessionsScreen() {
             onPress={requestCloseSessions}
             style={({ pressed }) => [
               styles.submitButton,
-              { backgroundColor: theme.blue, opacity: submitting ? 0.7 : 1 },
+              { backgroundColor: theme.solidActionBackground, opacity: submitting ? 0.7 : 1 },
               pressed && styles.pressed,
             ]}
           >

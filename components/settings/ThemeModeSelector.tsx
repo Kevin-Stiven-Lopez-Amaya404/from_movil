@@ -7,6 +7,7 @@ import { typography } from "@/lib/theme/typography";
 type ThemeModeSelectorProps = {
   activeMode: ColorMode;
   borderColor: string;
+  onPrimaryColor: string;
   rowColor: string;
   blueColor: string;
   labels: Record<ColorMode, string>;
@@ -21,6 +22,7 @@ export function ThemeModeSelector({
   blueColor,
   borderColor,
   labels,
+  onPrimaryColor,
   onChange,
   rowColor,
 }: ThemeModeSelectorProps) {
@@ -47,8 +49,8 @@ export function ThemeModeSelector({
             ]}
             onPress={() => onChange(mode)}
           >
-            <Ionicons name={icon} size={16} color={active ? "#FFFFFF" : blueColor} />
-            <Text style={[styles.themeText, { color: active ? "#FFFFFF" : blueColor }]}>
+            <Ionicons name={icon} size={16} color={active ? onPrimaryColor : blueColor} />
+            <Text style={[styles.themeText, { color: active ? onPrimaryColor : blueColor }]}>
               {labels[mode]}
             </Text>
           </Pressable>

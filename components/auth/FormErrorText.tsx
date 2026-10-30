@@ -1,5 +1,6 @@
 import { StyleSheet, Text } from 'react-native';
 
+import { useAuthPalette } from '@/lib/theme/appearance';
 import { typography } from '@/lib/theme/typography';
 
 type FormErrorTextProps = {
@@ -7,7 +8,8 @@ type FormErrorTextProps = {
 };
 
 export function FormErrorText({ children }: FormErrorTextProps) {
-  return <Text style={styles.text}>{children}</Text>;
+  const palette = useAuthPalette();
+  return <Text style={[styles.text, { color: palette.formError }]}>{children}</Text>;
 }
 
 const styles = StyleSheet.create({

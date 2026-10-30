@@ -132,7 +132,7 @@ export default function InvitationsScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => void loadInvitations()}
-              style={{ padding: 14, backgroundColor: theme.blue, borderRadius: 12 }}
+              style={{ padding: 14, backgroundColor: theme.solidActionBackground, borderRadius: 12 }}
             >
               <Text style={{ color: "#FFFFFF", textAlign: "center" }}>
                 Reintentar
@@ -227,7 +227,7 @@ export default function InvitationsScreen() {
                     flex: 1,
                     padding: 14,
                     borderRadius: 12,
-                    backgroundColor: theme.blue,
+                    backgroundColor: theme.solidActionBackground,
                     opacity: processingId ? 0.6 : 1,
                   }}
                 >

@@ -131,8 +131,8 @@ export default function NotificationsScreen() {
   }, [filter, notifications]);
 
   const toneColor: Record<string, string> = {
-    info: theme.blue,
-    warning: theme.danger,
+    info: theme.info,
+    warning: theme.warning,
     danger: theme.danger,
     success: theme.success,
   };
@@ -327,7 +327,7 @@ export default function NotificationsScreen() {
                           }
                           style={[
                             styles.invitationButton,
-                            { backgroundColor: theme.blue },
+                            { backgroundColor: theme.solidActionBackground },
                             disabled && styles.disabledButton,
                           ]}
                         >
@@ -423,7 +423,7 @@ export default function NotificationsScreen() {
               ) : (
                 activeAlerts.map((alert) => {
                   const alertColor =
-                    alert.tone === "warning" ? "#D97706" : theme.blue;
+                    alert.tone === "warning" ? theme.warning : theme.info;
 
                   return (
                     <Pressable

@@ -386,7 +386,7 @@ export default function HomesScreen() {
               onPress={() => setCreateVisible(true)}
               style={({ pressed }) => [
                 styles.newHomeButton,
-                { backgroundColor: theme.blue },
+                { backgroundColor: theme.solidActionBackground },
                 (!isLoaded || creating) && styles.disabled,
                 pressed && styles.pressed,
               ]}
@@ -429,10 +429,10 @@ export default function HomesScreen() {
                     styles.filterChip,
                     {
                       backgroundColor: active
-                        ? theme.blue
+                        ? theme.solidActionBackground
                         : theme.card,
                       borderColor: active
-                        ? theme.blue
+                        ? theme.solidActionBackground
                         : theme.borderLight,
                     },
                     pressed && styles.pressed,
@@ -826,7 +826,7 @@ export default function HomesScreen() {
                   onPress={() => void createHome()}
                   style={[
                     styles.primaryAction,
-                    { backgroundColor: theme.blue },
+                    { backgroundColor: theme.solidActionBackground },
                     (creating || !newName.trim()) &&
                       styles.disabled,
                   ]}
@@ -938,7 +938,7 @@ export default function HomesScreen() {
                   onPress={() => void saveHome()}
                   style={[
                     styles.primaryAction,
-                    { backgroundColor: theme.blue },
+                    { backgroundColor: theme.solidActionBackground },
                     (saving || !editName.trim()) &&
                       styles.disabled,
                   ]}

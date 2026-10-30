@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
+import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
 type EnergySummaryCardProps = {
@@ -12,7 +13,6 @@ type EnergySummaryCardProps = {
   textColor: string;
 };
 
-const BLUE = "#0864C8";
 const appFont = typography.fontFamily.emphasis;
 
 /**
@@ -29,6 +29,8 @@ export function EnergySummaryCard({
   rowColor,
   textColor,
 }: EnergySummaryCardProps) {
+  const theme = useAppTheme();
+
   return (
     <View style={[styles.energyCard, { backgroundColor: cardColor }]}>
       {/* Seccion principal con etiqueta y valor de consumo. */}
@@ -40,7 +42,7 @@ export function EnergySummaryCard({
       {/* Indicador rapido de dispositivos activos. */}
       <View style={[styles.energyPill, { backgroundColor: rowColor }]}> 
         <Ionicons name="flash" size={18} color={textColor} />
-        <Text style={[styles.energyPillText, { color: textColor }]}>{activeDevices} activos</Text>
+        <Text style={[styles.energyPillText, { color: theme.brandStrong }]}>{activeDevices} activos</Text>
       </View>
     </View>
   );
@@ -74,7 +76,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   energyPillText: {
-    color: BLUE,
     fontFamily: appFont,
     fontSize: 13,
     fontWeight: "800",

@@ -115,7 +115,7 @@ export default function HelpScreen() {
             accessibilityRole="button"
             accessibilityLabel="Contactar soporte"
             onPress={contactSupport}
-            style={({ pressed }) => [styles.supportButton, { backgroundColor: theme.blue }, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.supportButton, { backgroundColor: theme.solidActionBackground }, pressed && styles.pressed]}
           >
             <Ionicons name="chatbubble-ellipses-outline" size={20} color="#FFFFFF" />
             <Text style={styles.supportText}>Contactar soporte</Text>

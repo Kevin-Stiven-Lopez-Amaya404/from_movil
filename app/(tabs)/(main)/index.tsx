@@ -34,10 +34,10 @@ function SummaryTile({
   const isGreen = tint === "green";
   const accent = isGreen
     ? theme.dark ? "#86EFAC" : "#168044"
-    : theme.dark ? "#93C5FD" : theme.blue;
+    : theme.blueForeground;
   const background = isGreen
     ? theme.dark ? "#1A332B" : "#EFF9F1"
-    : theme.dark ? "#1C3048" : "#EAF3FF";
+    : theme.blueSurface;
 
   return (
     <Pressable
@@ -96,13 +96,13 @@ function NavigationRow({
       ? theme.dark ? "#FDBA74" : "#C15A10"
       : tint === "purple"
         ? theme.dark ? "#C4B5FD" : "#6D45BF"
-        : theme.dark ? "#93C5FD" : theme.blue;
+        : theme.blueForeground;
   const iconBackground =
     tint === "orange"
       ? theme.dark ? "#39291E" : "#FFF2E7"
       : tint === "purple"
         ? theme.dark ? "#302640" : "#F1ECFF"
-        : theme.dark ? "#1C3048" : "#EAF3FF";
+        : theme.blueSurface;
 
   return (
     <Pressable
@@ -260,14 +260,14 @@ export default function DashboardScreen() {
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <View style={styles.header}>
             <View style={styles.headerCopy}>
-              <Text style={[styles.brand, { color: theme.dark ? "#93C5FD" : theme.blue }]}>
+              <Text style={[styles.brand, { color: theme.blueForeground }]}>
                 SMART HOME
               </Text>
               <Text style={[styles.greeting, { color: theme.text }]}>
                 {firstName ? `Hola, ${firstName}` : "Hola"}
               </Text>
               <Text style={[styles.greetingSubtitle, { color: theme.muted }]}>
-                Tu hogar, más inteligente.
+                Tu hogar, más inteligente. OTA Preview 01
               </Text>
             </View>
             <View
