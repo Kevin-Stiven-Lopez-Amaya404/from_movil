@@ -29,7 +29,7 @@ export function DashboardHeader({
             style={[
               styles.brandIcon,
               {
-                backgroundColor: theme.blue,
+                backgroundColor: theme.solidActionBackground,
               },
             ]}
           >

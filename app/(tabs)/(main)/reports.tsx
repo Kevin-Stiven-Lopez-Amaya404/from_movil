@@ -642,10 +642,10 @@ export default function ReportsScreen() {
                       styles.periodButton,
                       {
                         backgroundColor: selected
-                          ? theme.blue
+                          ? theme.solidActionBackground
                           : theme.card,
                         borderColor: selected
-                          ? theme.blue
+                          ? theme.solidActionBackground
                           : theme.borderLight,
                       },
                     ]}

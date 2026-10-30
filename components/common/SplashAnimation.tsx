@@ -12,6 +12,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { useSmartHome } from "@/lib/context/smart-home-context";
+import { useAppTheme } from "@/lib/theme/app-theme";
 import { styles } from "./SplashAnimation.styles";
 
 const ANIMATION_DURATION_MS = 1680;
@@ -23,6 +25,8 @@ interface Props {
 }
 
 export default function SplashAnimation({ onFinish }: Props) {
+  const theme = useAppTheme();
+  const { colorPalette } = useSmartHome();
   const progress = useSharedValue(0);
   const reduceMotion = useReducedMotion();
   const hasFinished = useRef(false);
@@ -177,9 +181,21 @@ export default function SplashAnimation({ onFinish }: Props) {
     ),
   }));
 
+  const backgroundColor =
+    colorPalette === "emerald"
+      ? theme.dark ? theme.background : theme.primary
+      : "#005CC1";
+
   return (
-    <Animated.View style={[styles.container, screenStyle]}>
-      <Animated.View pointerEvents="none" style={[styles.halo, haloStyle]} />
+    <Animated.View style={[styles.container, { backgroundColor }, screenStyle]}>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.halo,
+          colorPalette === "emerald" && { backgroundColor: theme.accent },
+          haloStyle,
+        ]}
+      />
       <View style={styles.markStage}>
         <Animated.View style={[styles.geometryLeft, leftShapeStyle]} />
         <Animated.View style={[styles.geometryRight, rightShapeStyle]} />

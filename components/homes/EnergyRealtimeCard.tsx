@@ -65,7 +65,7 @@ export function EnergyRealtimeCard({
             cy="110"
             r="84"
             fill="none"
-            stroke={theme.dark ? "#263750" : "#E5EDF7"}
+            stroke={theme.chartGrid}
             strokeWidth="12"
           />
           <Circle

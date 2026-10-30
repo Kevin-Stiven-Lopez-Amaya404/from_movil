@@ -417,7 +417,7 @@ export default function AccessScreen() {
                   style={[
                     styles.primaryButton,
                     {
-                      backgroundColor: theme.blue,
+                      backgroundColor: theme.solidActionBackground,
                       opacity:
                         submitting || !email.trim() ? 0.55 : 1,
                     },

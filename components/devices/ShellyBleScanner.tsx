@@ -148,7 +148,7 @@ export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
         onPress={() => void startDiscovery()}
         style={[
           styles.primaryButton,
-          { backgroundColor: theme.blue },
+          { backgroundColor: theme.solidActionBackground },
           (!canScan || isScanning || inspectingId !== null) &&
             styles.disabled,
         ]}

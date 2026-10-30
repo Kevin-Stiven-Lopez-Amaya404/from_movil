@@ -1,6 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
-import { styles, BLUE } from "./HomeWidgetCard.styles";
+import { useAppTheme } from "@/lib/theme/app-theme";
+import { styles } from "./HomeWidgetCard.styles";
 
 
 
@@ -57,6 +58,8 @@ export function HomeWidgetCard({
   rowColor,
   textColor,
 }: HomeWidgetCardProps) {
+  const theme = useAppTheme();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -69,11 +72,20 @@ export function HomeWidgetCard({
       onPress={onPress}
     >
       {/* Barra superior azul que sirve de cabecera visual para la tarjeta. */}
-      <View style={styles.homeStrip}>
-        <View style={styles.homeBadge}>
+      <View style={[styles.homeStrip, { backgroundColor: theme.brandStrong }]}>
+        <View
+          style={[
+            styles.homeBadge,
+            { backgroundColor: theme.brandSoftStrong },
+          ]}
+        >
           {/* Icono fijo de puerta abierta para indicar que es un hogar. */}
-          <MaterialCommunityIcons name="door-open" size={16} color={BLUE} />
-          <Text style={styles.homeBadgeText}>Hogar</Text>
+          <MaterialCommunityIcons
+            name="door-open"
+            size={16}
+            color={theme.brandStrong}
+          />
+          <Text style={[styles.homeBadgeText, { color: theme.brandStrong }]}>Hogar</Text>
         </View>
       </View>
 
@@ -86,7 +98,7 @@ export function HomeWidgetCard({
 
         {/* Chip que muestra el consumo actual con icono y fondo destacado. */}
         <View style={[styles.wattsPill, { backgroundColor: rowAltColor }]}>
-          <Ionicons name="flash" size={19} color={BLUE} />
+          <Ionicons name="flash" size={19} color={theme.brandStrong} />
           <Text style={[styles.wattsText, { color: textColor }]}>
             {consumption}
           </Text>

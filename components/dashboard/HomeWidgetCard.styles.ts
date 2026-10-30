@@ -1,7 +1,6 @@
 import { StyleSheet } from "react-native";
 import { typography } from "@/lib/theme/typography";
 
-export const BLUE = "#0864C8";
 export const appFont = typography.fontFamily.emphasis;
 
 export const styles = StyleSheet.create({
@@ -26,7 +25,6 @@ export const styles = StyleSheet.create({
    * Barra superior del card que crea contraste con la sección de contenido.
    */
   homeStrip: {
-    backgroundColor: BLUE,
     height: 82,
     justifyContent: "flex-start",
   },
@@ -37,7 +35,6 @@ export const styles = StyleSheet.create({
   homeBadge: {
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: "#EEF4FF",
     borderBottomRightRadius: 14,
     flexDirection: "row",
     gap: 5,
@@ -49,7 +46,6 @@ export const styles = StyleSheet.create({
    * Usa el color azul del tema para armonizar con el diseño.
    */
   homeBadgeText: {
-    color: BLUE,
     fontFamily: appFont,
     fontSize: 12,
     fontWeight: "800",

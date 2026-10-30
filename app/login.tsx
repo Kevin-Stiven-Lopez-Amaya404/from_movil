@@ -24,13 +24,14 @@ export default function LoginScreen() {
   const layout = useResponsiveLayout();
 
   const {
+    colorPalette,
     effectiveColorMode,
     setSessionName,
     setSessionEmail,
     setSessionRole,
   } = useSmartHome();
 
-  const palette = getAuthPalette(effectiveColorMode);
+  const palette = getAuthPalette(effectiveColorMode, colorPalette);
 
   // ==========================================
   // ESTADO DEL FORMULARIO

@@ -313,7 +313,7 @@ export default function ShellySetupScreen() {
                       onPress={() => void openShellyPanel()}
                       style={[
                         styles.primaryButton,
-                        { backgroundColor: theme.blue },
+                        { backgroundColor: theme.solidActionBackground },
                       ]}
                     >
                       <Ionicons
@@ -427,7 +427,7 @@ export default function ShellySetupScreen() {
                     }
                     style={[
                       styles.nextButton,
-                      { backgroundColor: theme.blue },
+                      { backgroundColor: theme.solidActionBackground },
                     ]}
                   >
                     <Text style={styles.primaryText}>
@@ -440,7 +440,7 @@ export default function ShellySetupScreen() {
                     onPress={closeSetup}
                     style={[
                       styles.nextButton,
-                      { backgroundColor: theme.blue },
+                      { backgroundColor: theme.solidActionBackground },
                     ]}
                   >
                     <Text style={styles.primaryText}>

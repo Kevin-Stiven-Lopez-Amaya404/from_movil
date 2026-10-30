@@ -16,8 +16,8 @@ export function EmptyDashboard({ onAddPress }: Props) {
       <Text style={[styles.emptyText, { color: theme.muted }]}>
         Agrega tu primer hogar para comenzar a monitorear tu consumo eléctrico.
       </Text>
-      <Pressable style={[styles.addButton, { backgroundColor: theme.blue }]} onPress={onAddPress}>
-        <Text style={styles.addButtonText}>Agregar hogar</Text>
+      <Pressable style={[styles.addButton, { backgroundColor: theme.solidActionBackground }]} onPress={onAddPress}>
+        <Text style={[styles.addButtonText, { color: "#FFFFFF" }]}>Agregar hogar</Text>
       </Pressable>
     </View>
   );

@@ -1,6 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
 type HomeListItemProps = {
@@ -16,8 +17,6 @@ type HomeListItemProps = {
   mutedColor: string;
 };
 
-const BLUE = "#0864C8";
-const MUTED = "#6B7280";
 const appFont = typography.fontFamily.emphasis;
 
 /**
@@ -37,11 +36,13 @@ export function HomeListItem({
   rowColor,
   textColor,
 }: HomeListItemProps) {
+  const theme = useAppTheme();
+
   return (
     <Pressable style={[styles.homeCard, { backgroundColor: rowColor }]} onPress={onPress}>
       {/* Icono identificador del hogar. */}
       <View style={[styles.itemIcon, { backgroundColor: rowAltColor }]}> 
-        <MaterialCommunityIcons name="home-city-outline" size={31} color={BLUE} />
+        <MaterialCommunityIcons name="home-city-outline" size={31} color={theme.brandStrong} />
       </View>
 
       {/* Texto principal y secundario del hogar. */}
@@ -56,7 +57,7 @@ export function HomeListItem({
         onPress={onFavoritePress}
         style={styles.favoriteButton}
       >
-        <Ionicons name={favorite ? "star" : "star-outline"} size={25} color={favorite ? "#F5B400" : MUTED} />
+        <Ionicons name={favorite ? "star" : "star-outline"} size={25} color={favorite ? "#F5B400" : theme.mutedStrong} />
       </Pressable>
     </Pressable>
   );

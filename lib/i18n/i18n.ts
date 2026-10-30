@@ -108,6 +108,9 @@ const dictionaries = {
     "settings.appearance": "Apariencia",
     "settings.appearanceDescription":
       "Selecciona el modo visual de la aplicación.",
+    "settings.colorPalette": "Paleta de colores",
+    "settings.paletteClassic": "Azul Clásico",
+    "settings.paletteEmerald": "Esmeralda Tecnológico",
 
     "settings.dark": "Oscuro",
 
@@ -237,6 +240,9 @@ const dictionaries = {
 
     "settings.appearance": "Appearance",
     "settings.appearanceDescription": "Select the visual mode of the app.",
+    "settings.colorPalette": "Color palette",
+    "settings.paletteClassic": "Classic Blue",
+    "settings.paletteEmerald": "Technological Emerald",
 
     "settings.dark": "Dark",
 
@@ -369,6 +375,9 @@ const dictionaries = {
 
     "settings.appearance": "Aparência",
     "settings.appearanceDescription": "Selecione o modo visual do aplicativo.",
+    "settings.colorPalette": "Paleta de cores",
+    "settings.paletteClassic": "Azul clássico",
+    "settings.paletteEmerald": "Esmeralda tecnológico",
 
     "settings.dark": "Escuro",
 

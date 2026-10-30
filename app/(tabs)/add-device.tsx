@@ -369,7 +369,7 @@ export default function AddDeviceScreen() {
             onPress={() => void searchLocalWifi()}
             style={({ pressed }) => [
               styles.primaryButton,
-              { backgroundColor: theme.blue },
+              { backgroundColor: theme.solidActionBackground },
               (!canAddDevice || wifiSearching) &&
                 styles.disabled,
               pressed && styles.pressed,

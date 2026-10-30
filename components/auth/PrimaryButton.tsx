@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { useAuthPalette } from '@/lib/theme/appearance';
 import { typography } from '@/lib/theme/typography';
 
 type PrimaryButtonProps = {
@@ -12,14 +13,33 @@ type PrimaryButtonProps = {
 };
 
 export function PrimaryButton({ disabled = false, loading = false, onPress, style, text }: PrimaryButtonProps) {
+  const palette = useAuthPalette();
+  const isInactive = disabled || loading;
+
   return (
     <Pressable
       accessibilityRole="button"
       disabled={disabled || loading}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, style, disabled || loading ? styles.buttonDisabled : null, pressed && !disabled && !loading ? styles.buttonPressed : null]}
+      style={({ pressed }) => [
+        styles.button,
+        { backgroundColor: palette.primaryButton },
+        style,
+        isInactive
+          ? [styles.buttonDisabled, { backgroundColor: palette.disabledBackground }]
+          : null,
+        pressed && !isInactive
+          ? [styles.buttonPressed, { backgroundColor: palette.primaryButtonPressed }]
+          : null,
+      ]}
     >
-      {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.text}>{text}</Text>}
+      {loading ? (
+        <ActivityIndicator color={isInactive ? palette.disabledForeground : palette.onPrimary} />
+      ) : (
+        <Text style={[styles.text, { color: isInactive ? palette.disabledForeground : palette.onPrimary }]}>
+          {text}
+        </Text>
+      )}
     </Pressable>
   );
 }

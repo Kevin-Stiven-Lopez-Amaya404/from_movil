@@ -179,7 +179,10 @@ export default function ChangePasswordScreen() {
 
             {newPassword.length > 0 && (
               <View
-                style={styles.strengthContainer}
+                style={[
+                  styles.strengthContainer,
+                  { backgroundColor: theme.passwordTrack },
+                ]}
                 accessibilityLabel={`Fortaleza de contraseña: ${strength} de ${passwordRules.length}`}
               >
                 <View
@@ -192,7 +195,7 @@ export default function ChangePasswordScreen() {
                           ? "#FF4D4D"
                           : strength < passwordRules.length
                             ? "#FFA500"
-                            : "#003380",
+                            : theme.passwordStrong,
                     },
                   ]}
                 />

@@ -67,6 +67,7 @@ export default function WelcomeScreen() {
                   styles.houseTile,
                   {
                     backgroundColor: palette.card,
+                    shadowColor: palette.welcomeShadow,
                     borderColor: palette.fieldBorder === "transparent"
                       ? "#E1EAF5"
                       : palette.fieldBorder,
@@ -80,7 +81,7 @@ export default function WelcomeScreen() {
                     { backgroundColor: palette.button },
                   ]}
                 >
-                  <Ionicons color="#FFFFFF" name="flash" size={20} />
+                  <Ionicons color={palette.onPrimary} name="flash" size={20} />
                 </View>
               </View>
               <View
@@ -106,7 +107,12 @@ export default function WelcomeScreen() {
             </View>
 
             <View style={styles.eyebrow}>
-              <View style={styles.eyebrowDot} />
+              <View
+                style={[
+                  styles.eyebrowDot,
+                  { backgroundColor: palette.welcomeButton },
+                ]}
+              />
               <Text style={[styles.eyebrowText, { color: palette.link }]}>
                 HOGAR CONECTADO
               </Text>
@@ -134,11 +140,15 @@ export default function WelcomeScreen() {
               onPress={() => router.push("/login")}
               style={({ pressed }) => [
                 styles.primaryButton,
-                pressed && styles.primaryButtonPressed,
+                { backgroundColor: palette.welcomeButton },
+                pressed && [
+                  styles.primaryButtonPressed,
+                  { backgroundColor: palette.welcomeButtonPressed },
+                ],
               ]}
             >
-              <Text style={styles.primaryButtonText}>Iniciar sesión</Text>
-              <Ionicons color="#FFFFFF" name="arrow-forward" size={19} />
+              <Text style={[styles.primaryButtonText, { color: palette.onPrimary }]}>Iniciar sesión</Text>
+              <Ionicons color={palette.onPrimary} name="arrow-forward" size={19} />
             </Pressable>
 
             <Pressable
@@ -152,6 +162,7 @@ export default function WelcomeScreen() {
                     : palette.fieldBorder,
                 },
                 pressed && styles.secondaryButtonPressed,
+                pressed && { backgroundColor: palette.welcomeSoftPressed },
               ]}
             >
               <Text style={[styles.secondaryButtonText, { color: palette.text }]}>

@@ -20,7 +20,7 @@ const statusCopy: Record<ConsumptionGoalStatus, string> = {
 export function HomeConsumptionGoalCard({ consumedWh, targetWh, onEdit }: Props) {
   const theme = useAppTheme();
   const { percentage, progress, status } = getConsumptionGoalProgress(consumedWh, targetWh);
-  const statusColor = status === "exceeded" ? theme.danger : status === "warning" ? "#D97706" : theme.success;
+  const statusColor = status === "exceeded" ? theme.danger : status === "warning" ? theme.warning : theme.success;
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.borderLight }]}>

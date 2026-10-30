@@ -16,8 +16,6 @@ type DeviceListItemProps = {
   onToggleState: () => void;
 };
 
-const GREEN = "#2AAF5D";
-
 export function DeviceListItem({
   device,
   hasAlert,
@@ -96,10 +94,10 @@ export function DeviceListItem({
         disabled={!canControl || !device.online}
         accessibilityLabel={`Encender o apagar ${device.name}`}
         trackColor={{
-          false: "#CDD2E4",
-          true: "#BDE8CB",
+          false: theme.deviceSwitchTrackInactive,
+          true: theme.deviceSwitchTrackActive,
         }}
-        thumbColor={device.online ? GREEN : "#FFFFFF"}
+        thumbColor={device.online ? theme.deviceSwitchThumbActive : "#FFFFFF"}
       />
     </View>
   );

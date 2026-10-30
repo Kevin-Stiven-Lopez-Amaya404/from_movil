@@ -32,7 +32,7 @@ export function ShellyDeviceCard({
       style={[
         styles.card,
         {
-          backgroundColor: theme.dark ? "#172033" : "#FFFFFF",
+          backgroundColor: theme.card,
           borderColor: theme.borderLight,
         },
       ]}
@@ -158,7 +158,10 @@ export function ShellyDeviceCard({
             value={isOn}
             onValueChange={onToggleState}
             disabled={!canControl || !isOnline}
-            trackColor={{ false: "#CBD5E1", true: "#0B5ED7" }}
+            trackColor={{
+              false: theme.switchTrackInactive,
+              true: theme.switchTrackActive,
+            }}
             thumbColor={isOnline && isOn ? "#FFFFFF" : "#F8FAFC"}
           />
           <Pressable
