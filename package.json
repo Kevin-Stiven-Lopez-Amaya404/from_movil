@@ -17,7 +17,8 @@
     "test:shelly-ble-rpc": "node scripts/shelly-gatt-rpc.test.js",
     "test:navigation-auth": "node --test scripts/navigation-auth-policy.test.js",
     "test:alerts": "node --test scripts/active-device-alerts.test.js",
-    "test:realtime-device-status": "node --test scripts/realtime-device-status.test.js"
+    "test:realtime-device-status": "node --test scripts/realtime-device-status.test.js",
+    "test:energy-sql034": "node --test scripts/energy-sql034.test.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
