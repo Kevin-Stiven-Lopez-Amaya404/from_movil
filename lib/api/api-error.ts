@@ -11,18 +11,22 @@ export type ApiErrorCode =
 export class ApiError extends Error {
   code: ApiErrorCode;
   status?: number;
+  serverCode?: string;
 
   constructor(
     message: string,
     code: ApiErrorCode = "UNKNOWN_ERROR",
     status?: number,
+    serverCode?: string,
   ) {
     super(message);
     this.name = "ApiError";
     this.code = code;
     this.status = status;
+    this.serverCode = serverCode;
   }
 }
+
 
 export function getApiErrorMessage(
   error: unknown,

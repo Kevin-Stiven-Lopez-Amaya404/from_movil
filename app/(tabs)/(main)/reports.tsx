@@ -18,6 +18,7 @@ import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DeviceConsumptionRankingCard } from "@/components/energy/DeviceConsumptionRankingCard";
+import { EnergyCostSummaryCard } from "@/components/energy/EnergyCostSummaryCard";
 import { EnergyExportCard } from "@/components/energy/EnergyExportCard";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
@@ -611,6 +612,15 @@ export default function ReportsScreen() {
               </Text>
             ) : null}
           </View>
+
+          {/* COSTO ESTIMADO, PRESUPUESTO Y META (SQL034)                  */}
+          {activeHomeId && selectedHome && !isGuest ? (
+            <EnergyCostSummaryCard
+              key={activeHomeId}
+              homeId={activeHomeId}
+              homeRole={selectedHome.homeRole}
+            />
+          ) : null}
 
           {/* PESTAÑA 1: HISTORIA (IMÁGENES 2 Y 3)                         */}
           {/* ============================================================ */}

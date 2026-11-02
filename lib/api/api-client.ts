@@ -21,7 +21,9 @@ type RequestOptions<Body> = {
 
 type ErrorPayload = {
   message?: string | string[];
+  code?: string;
 };
+
 
 function statusToErrorCode(status: number): ApiErrorCode {
   if (status === 401) return "UNAUTHORIZED";
@@ -189,10 +191,19 @@ export class ApiClient {
               : payload.message
             : "El servidor no pudo procesar la solicitud.";
 
+        const serverCode =
+          payload &&
+          typeof payload === "object" &&
+          "code" in payload &&
+          typeof payload.code === "string"
+            ? payload.code
+            : undefined;
+
         throw new ApiError(
           message,
           statusToErrorCode(response.status),
           response.status,
+          serverCode,
         );
       }
 
