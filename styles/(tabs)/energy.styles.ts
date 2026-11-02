@@ -61,7 +61,7 @@ export const styles = StyleSheet.create({
   monthLabel: {
     fontSize: 15,
     fontWeight: "700",
-    textTransform: "capitalize",
+  
   },
   label: {
     fontSize: 13,
