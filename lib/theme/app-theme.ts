@@ -5,6 +5,7 @@ import type {
   ColorPaletteName,
   EffectiveColorMode,
 } from "@/lib/domain/preferences";
+import { DEFAULT_COLOR_PALETTE } from "@/lib/domain/preferences";
 
 export type AppTheme = ReturnType<typeof getAppTheme>;
 
@@ -14,7 +15,7 @@ export type AppTheme = ReturnType<typeof getAppTheme>;
  */
 export function getAppTheme(
   mode: EffectiveColorMode,
-  colorPalette: ColorPaletteName = "classic",
+  colorPalette: ColorPaletteName = DEFAULT_COLOR_PALETTE,
 ) {
   const dark = mode === "dark";
   const emerald = colorPalette === "emerald";

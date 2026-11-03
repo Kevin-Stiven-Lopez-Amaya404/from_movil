@@ -5,6 +5,7 @@ import type {
   ColorPaletteName,
   EffectiveColorMode,
 } from "@/lib/domain/preferences";
+import { DEFAULT_COLOR_PALETTE } from "@/lib/domain/preferences";
 import { getAppTheme } from "@/lib/theme/app-theme";
 
 /**
@@ -15,7 +16,7 @@ import { getAppTheme } from "@/lib/theme/app-theme";
  */
 export function getAuthPalette(
   mode: EffectiveColorMode,
-  colorPalette: ColorPaletteName = "classic",
+  colorPalette: ColorPaletteName = DEFAULT_COLOR_PALETTE,
 ) {
   return getAppTheme(mode, colorPalette).auth;
 }
