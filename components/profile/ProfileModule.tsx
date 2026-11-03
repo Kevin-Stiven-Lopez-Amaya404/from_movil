@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { PropsWithChildren } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -39,12 +40,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: profileFont,
-    fontSize: 18,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "900",
   },
   subtitle: {
     fontFamily: profileFont,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "700",
     lineHeight: 16,
     marginTop: -6,

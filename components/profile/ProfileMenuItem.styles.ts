@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 import { profileFont } from "./profileTheme";
 
@@ -19,7 +20,7 @@ export const styles = StyleSheet.create({
   },
   description: {
     fontFamily: profileFont,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "700",
     marginTop: 4,
   },
@@ -35,7 +36,7 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontFamily: profileFont,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "800",
   },
 });

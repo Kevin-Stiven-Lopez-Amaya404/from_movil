@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -90,14 +91,14 @@ const styles = StyleSheet.create({
 
   title: {
     fontFamily: profileFont,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "900",
     marginTop: 12,
   },
 
   description: {
     fontFamily: profileFont,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "600",
     marginTop: 4,
   },
