@@ -426,16 +426,16 @@ export default function AccessScreen() {
                   ]}
                 >
                   {submitting ? (
-                    <ActivityIndicator color="#FFFFFF" />
+                    <ActivityIndicator color={theme.onSolidAction} />
                   ) : (
                     <Ionicons
                       name="send-outline"
                       size={18}
-                      color="#FFFFFF"
+                      color={theme.onSolidAction}
                     />
                   )}
 
-                  <Text style={styles.primaryText}>
+                  <Text style={[styles.primaryText, { color: theme.onSolidAction }]}>
                     {submitting
                       ? "Enviando..."
                       : "Enviar invitación"}

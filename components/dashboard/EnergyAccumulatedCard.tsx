@@ -39,6 +39,7 @@ export function EnergyAccumulatedCard({ energy, yesterdayEnergy = 0 }: Props) {
         {
           backgroundColor: theme.card,
           borderColor: theme.borderLight,
+          shadowColor: theme.shadowColor,
         },
       ]}
     >

@@ -50,7 +50,6 @@ export const styles = StyleSheet.create({
   },
   row: {
     alignItems: "center",
-    borderBottomColor: "rgba(148,163,184,0.25)",
     borderBottomWidth: 1,
     flexDirection: "row",
     paddingHorizontal: 14,

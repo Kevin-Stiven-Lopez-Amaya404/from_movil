@@ -332,9 +332,9 @@ export default function NotificationsScreen() {
                           ]}
                         >
                           {responding ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
+                            <ActivityIndicator size="small" color={theme.onSolidAction} />
                           ) : (
-                            <Text style={styles.invitationButtonText}>
+                            <Text style={[styles.invitationButtonText, { color: theme.onSolidAction }]}>
                               Aceptar
                             </Text>
                           )}
@@ -544,7 +544,7 @@ export default function NotificationsScreen() {
               </Text>
             ) : (
               visibleNotifications.map((item) => (
-                <View key={item.id} style={styles.notificationRow}>
+                <View key={item.id} style={[styles.notificationRow, { borderBottomColor: theme.divider }]}>
                   <Pressable
                     onPress={() => {
                       const originalNotification = remoteNotifications.find(

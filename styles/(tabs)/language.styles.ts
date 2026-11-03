@@ -60,7 +60,6 @@ export const styles = StyleSheet.create({
   },
   optionRow: {
     alignItems: "center",
-    borderBottomColor: "rgba(148,163,184,0.25)",
     borderBottomWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",

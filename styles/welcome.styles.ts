@@ -48,7 +48,6 @@ export const styles = StyleSheet.create({
     elevation: 4,
     height: 142,
     justifyContent: "center",
-    shadowColor: "#0047AB",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 18,
@@ -72,7 +71,6 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     left: 12,
     position: "absolute",
-    shadowColor: "#0A192F",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -88,7 +86,6 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     position: "absolute",
     right: 14,
-    shadowColor: "#0A192F",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -102,7 +99,6 @@ export const styles = StyleSheet.create({
     marginBottom: 9,
   },
   eyebrowDot: {
-    backgroundColor: "#0047AB",
     borderRadius: 4,
     height: 7,
     width: 7,
@@ -142,7 +138,6 @@ export const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#0047AB",
     borderRadius: 16,
     flexDirection: "row",
     justifyContent: "center",
@@ -150,10 +145,8 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   primaryButtonPressed: {
-    backgroundColor: "#003380",
   },
   primaryButtonText: {
-    color: "#FFFFFF",
     fontFamily: typography.fontFamily.emphasis,
     fontSize: 16,
     fontWeight: "800",
@@ -169,7 +162,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   secondaryButtonPressed: {
-    backgroundColor: "rgba(0, 71, 171, 0.08)",
   },
   secondaryButtonText: {
     fontFamily: typography.fontFamily.emphasis,

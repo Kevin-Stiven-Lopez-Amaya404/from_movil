@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { PropsWithChildren } from "react";
 import { Text, View } from "react-native";
+import { useAppTheme } from "@/lib/theme/app-theme";
 import { styles } from "./SettingsSectionCard.styles";
 
 
@@ -15,9 +16,6 @@ type SettingsSectionCardProps = PropsWithChildren<{
   title: string;
   titleColor: string;
 }>;
-
-const RED = "#FF3B20";
-
 
 /**
  * Grupo de opciones de configuración.
@@ -36,6 +34,8 @@ export function SettingsSectionCard({
   title,
   titleColor,
 }: SettingsSectionCardProps) {
+  const theme = useAppTheme();
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -43,7 +43,7 @@ export function SettingsSectionCard({
           style={[
             styles.sectionIcon,
             {
-              backgroundColor: danger ? "#FFF1EF" : `${iconColor}12`,
+              backgroundColor: danger ? theme.dangerSoft : theme.surfaceSecondary,
             },
           ]}
         >
@@ -55,7 +55,7 @@ export function SettingsSectionCard({
             style={[
               styles.sectionTitle,
               {
-                color: danger ? RED : titleColor,
+                color: danger ? theme.danger : titleColor,
               },
             ]}
           >
@@ -80,7 +80,7 @@ export function SettingsSectionCard({
           styles.menu,
           {
             backgroundColor,
-            borderColor: danger ? "#FFD1CB" : "transparent",
+            borderColor: danger ? theme.dangerSoft : "transparent",
             borderWidth: danger ? 1 : 0,
           },
         ]}

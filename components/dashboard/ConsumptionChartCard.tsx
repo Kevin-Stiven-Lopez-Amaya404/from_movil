@@ -5,7 +5,12 @@ import { typography } from "@/lib/theme/typography";
 export function ConsumptionChartCard() {
   const theme = useAppTheme();
   return (
-    <View style={[styles.card, { backgroundColor: theme.card }]}>
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: theme.card, shadowColor: theme.shadowColor },
+      ]}
+    >
       <Text style={[styles.title, { color: theme.text }]}>
         Consumo reciente
       </Text>
@@ -23,7 +28,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginVertical: 8,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,

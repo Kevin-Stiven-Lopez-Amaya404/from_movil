@@ -7,7 +7,6 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 10,
     padding: 14,
-    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 3,

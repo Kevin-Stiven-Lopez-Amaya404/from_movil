@@ -69,7 +69,7 @@ export default function WelcomeScreen() {
                     backgroundColor: palette.card,
                     shadowColor: palette.welcomeShadow,
                     borderColor: palette.fieldBorder === "transparent"
-                      ? "#E1EAF5"
+                      ? palette.border
                       : palette.fieldBorder,
                   },
                 ]}
@@ -87,7 +87,7 @@ export default function WelcomeScreen() {
               <View
                 style={[
                   styles.connectionBadge,
-                  { backgroundColor: palette.card },
+                  { backgroundColor: palette.card, shadowColor: palette.welcomeShadow },
                 ]}
               >
                 <Ionicons color={palette.button} name="wifi" size={19} />
@@ -95,7 +95,7 @@ export default function WelcomeScreen() {
               <View
                 style={[
                   styles.securityBadge,
-                  { backgroundColor: palette.card },
+                  { backgroundColor: palette.card, shadowColor: palette.welcomeShadow },
                 ]}
               >
                 <Ionicons
@@ -158,7 +158,7 @@ export default function WelcomeScreen() {
                 styles.secondaryButton,
                 {
                   borderColor: palette.fieldBorder === "transparent"
-                    ? "#CBD5E1"
+                    ? palette.border
                     : palette.fieldBorder,
                 },
                 pressed && styles.secondaryButtonPressed,

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
+import { useAppTheme } from "@/lib/theme/app-theme";
 import { typography } from "@/lib/theme/typography";
 
 type HomeHeroCardProps = {
@@ -29,13 +30,23 @@ export function HomeHeroCard({
   title,
   value,
 }: HomeHeroCardProps) {
+  const theme = useAppTheme();
+
   return (
-    <View style={[styles.heroCard, { backgroundColor }]}> 
+    <View style={[styles.heroCard, { backgroundColor, shadowColor: theme.shadowColor }]}>
       {/* Titulo principal del hero card. */}
       <Text style={[styles.heroTitle, { color: textColor }]}>{title}</Text>
 
       {/* Valor destacado, con opcion para reducir tamaño cuando es muy largo. */}
-      <Text style={[styles.heroAmount, compactValue && styles.heroAmountTiny]}>{value}</Text>
+      <Text
+        style={[
+          styles.heroAmount,
+          { color: theme.onPrimary },
+          compactValue && styles.heroAmountTiny,
+        ]}
+      >
+        {value}
+      </Text>
 
       {/* Texto descriptivo de debajo del valor. */}
       <Text style={[styles.heroText, { color: mutedColor }]}>{description}</Text>
@@ -49,7 +60,6 @@ const styles = StyleSheet.create({
     elevation: 8,
     paddingHorizontal: 18,
     paddingVertical: 17,
-    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.24,
     shadowRadius: 5,
@@ -61,7 +71,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   heroAmount: {
-    color: "#FFFFFF",
     fontFamily: appFont,
     fontSize: 28,
     fontWeight: "800",

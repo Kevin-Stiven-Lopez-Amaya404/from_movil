@@ -33,7 +33,7 @@ export function DashboardHeader({
               },
             ]}
           >
-            <Ionicons name="home" size={19} color="#FFFFFF" />
+            <Ionicons name="home" size={19} color={theme.onSolidAction} />
           </View>
 
           <Text

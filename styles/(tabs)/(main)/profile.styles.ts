@@ -58,7 +58,6 @@ export const styles = StyleSheet.create({
   },
   row: {
     alignItems: "center",
-    borderTopColor: "#E2E8F0",
     borderTopWidth: 1,
     flexDirection: "row",
     minHeight: 56,
@@ -75,7 +74,6 @@ export const styles = StyleSheet.create({
   rowTitle: { fontFamily: appFont, fontSize: 13, fontWeight: "800" },
   rowDescription: { fontFamily: appFont, fontSize: 10, marginTop: 2 },
   preferenceCard: {
-    borderBottomColor: "rgba(148,163,184,0.25)",
     borderBottomWidth: 1,
     paddingBottom: 12,
     paddingTop: 8,

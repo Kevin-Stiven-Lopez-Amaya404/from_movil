@@ -1,6 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 
-import { theme } from '@/constants/theme';
 import { useAuthPalette } from '@/lib/theme/appearance';
 import { typography } from '@/lib/theme/typography';
 
@@ -28,9 +27,7 @@ export function PrimaryButton({ disabled = false, loading = false, onPress, styl
         isInactive
           ? [styles.buttonDisabled, { backgroundColor: palette.disabledBackground }]
           : null,
-        pressed && !isInactive
-          ? [styles.buttonPressed, { backgroundColor: palette.primaryButtonPressed }]
-          : null,
+        pressed && !isInactive && { backgroundColor: palette.primaryButtonPressed },
       ]}
     >
       {loading ? (
@@ -47,7 +44,6 @@ export function PrimaryButton({ disabled = false, loading = false, onPress, styl
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    backgroundColor: theme.colors.buttonPrimary,
     borderRadius: 16,
     justifyContent: 'center',
     minHeight: 54,
@@ -55,14 +51,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   buttonDisabled: {
-    backgroundColor: '#9AA8C2',
     opacity: 0.8,
   },
-  buttonPressed: {
-    backgroundColor: '#004FA5',
-  },
   text: {
-    color: '#FFFFFF',
     fontFamily: typography.fontFamily.emphasis,
     fontSize: 17,
     fontWeight: '800',

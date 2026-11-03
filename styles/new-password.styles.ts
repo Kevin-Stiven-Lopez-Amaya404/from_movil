@@ -14,7 +14,6 @@ export const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    color: "#3F3F3F",
     fontFamily: authFont,
     fontSize: 20,
     fontWeight: "700",
@@ -27,12 +26,10 @@ export const styles = StyleSheet.create({
   },
 
   input: {
-    backgroundColor: "#FBFBFD",
     borderColor: "transparent",
     borderWidth: 1,
     borderRadius: 17,
 
-    color: "#3F3F3F",
 
     fontFamily: authFont,
     fontSize: 15,
@@ -42,7 +39,6 @@ export const styles = StyleSheet.create({
 
     paddingHorizontal: 18,
 
-    shadowColor: "#000000",
     shadowOffset: {
       width: 0,
       height: 5,
@@ -56,7 +52,6 @@ export const styles = StyleSheet.create({
   strengthContainer: {
     height: 4,
 
-    backgroundColor: "#E0E0E0",
 
     borderRadius: 2,
 

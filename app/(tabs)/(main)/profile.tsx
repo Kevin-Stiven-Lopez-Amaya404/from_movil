@@ -289,7 +289,7 @@ export default function ProfileScreen() {
           </Section>
 
           <Section icon="options-outline" title="Preferencias" theme={theme}>
-            <View style={styles.preferenceCard}>
+            <View style={[styles.preferenceCard, { borderBottomColor: theme.divider }]}>
               <View style={styles.preferenceHeader}>
                 <View
                   style={[

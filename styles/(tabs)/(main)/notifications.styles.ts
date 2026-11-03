@@ -49,7 +49,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   invitationButtonText: {
-    color: "#FFFFFF",
     fontFamily: profileFont,
     fontSize: 12,
     fontWeight: "800",
@@ -86,7 +85,6 @@ export const styles = StyleSheet.create({
   },
   notificationRow: {
     alignItems: "center",
-    borderBottomColor: "rgba(148,163,184,0.25)",
     borderBottomWidth: 1,
     flexDirection: "row",
     paddingHorizontal: 14,

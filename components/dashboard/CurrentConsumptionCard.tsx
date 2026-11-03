@@ -21,6 +21,7 @@ export function CurrentConsumptionCard({ power, isOn }: Props) {
         {
           backgroundColor: theme.card,
           borderColor: theme.borderLight,
+          shadowColor: theme.shadowColor,
         },
       ]}
     >

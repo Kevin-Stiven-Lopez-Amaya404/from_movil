@@ -136,6 +136,7 @@ export default function LanguageScreen() {
                   }}
                   style={({ pressed }) => [
                     styles.optionRow,
+                    { borderBottomColor: theme.divider },
                     active && {
                       backgroundColor: theme.rowAlt,
                     },
@@ -155,7 +156,7 @@ export default function LanguageScreen() {
                     <View
                       style={[styles.checkDot, { backgroundColor: theme.solidActionBackground }]}
                     >
-                      <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                      <Ionicons name="checkmark" size={12} color={theme.onSolidAction} />
                     </View>
                   ) : (
                     <View

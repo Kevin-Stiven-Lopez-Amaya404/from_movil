@@ -10,7 +10,6 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 10,
     elevation: 2,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,

@@ -14,7 +14,6 @@ export const styles = StyleSheet.create({
     marginTop: 16,
   },
   primaryText: {
-    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "800",
     marginLeft: 8,

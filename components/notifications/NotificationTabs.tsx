@@ -76,7 +76,7 @@ export function NotificationTabs({
                 <Text
                   style={[
                     styles.badgeText,
-                    { color: selected ? "#FFFFFF" : theme.text },
+                    { color: selected ? theme.onSolidAction : theme.text },
                   ]}
                 >
                   {count > 99 ? "99+" : count}

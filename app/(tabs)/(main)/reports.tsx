@@ -662,7 +662,7 @@ export default function ReportsScreen() {
                   >
                     <Text
                       style={{
-                        color: selected ? "#FFFFFF" : theme.text,
+                        color: selected ? theme.onSolidAction : theme.text,
                         fontSize: 13,
                         fontWeight: "800",
                       }}

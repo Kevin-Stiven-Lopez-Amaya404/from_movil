@@ -154,16 +154,16 @@ export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
         ]}
       >
         {isScanning ? (
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={theme.onSolidAction} />
         ) : (
           <Ionicons
             name="bluetooth-outline"
             size={20}
-            color="#FFFFFF"
+            color={theme.onSolidAction}
           />
         )}
 
-        <Text style={styles.primaryText}>
+        <Text style={[styles.primaryText, { color: theme.onSolidAction }]}>
           {isScanning ? "Buscando..." : "Buscar por Bluetooth"}
         </Text>
       </Pressable>

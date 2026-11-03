@@ -1,11 +1,9 @@
 import { StyleSheet } from "react-native";
-import { profileFont, profileTheme } from "./profileTheme";
+import { profileFont } from "./profileTheme";
 
 export const styles = StyleSheet.create({
   boxedRow: {
     alignItems: "center",
-    backgroundColor: profileTheme.row,
-    borderColor: profileTheme.divider,
     borderRadius: 10,
     borderWidth: 1,
     flexDirection: "row",
@@ -19,11 +17,7 @@ export const styles = StyleSheet.create({
     marginLeft: 12,
     minWidth: 0,
   },
-  dangerText: {
-    color: profileTheme.danger,
-  },
   description: {
-    color: profileTheme.muted,
     fontFamily: profileFont,
     fontSize: 12,
     fontWeight: "700",
@@ -40,7 +34,6 @@ export const styles = StyleSheet.create({
     opacity: 0.72,
   },
   title: {
-    color: profileTheme.text,
     fontFamily: profileFont,
     fontSize: 16,
     fontWeight: "800",

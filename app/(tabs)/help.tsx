@@ -117,8 +117,8 @@ export default function HelpScreen() {
             onPress={contactSupport}
             style={({ pressed }) => [styles.supportButton, { backgroundColor: theme.solidActionBackground }, pressed && styles.pressed]}
           >
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#FFFFFF" />
-            <Text style={styles.supportText}>Contactar soporte</Text>
+            <Ionicons name="chatbubble-ellipses-outline" size={20} color={theme.onSolidAction} />
+            <Text style={[styles.supportText, { color: theme.onSolidAction }]}>Contactar soporte</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -143,6 +143,6 @@ const styles = StyleSheet.create({
   question: { flex: 1, fontSize: 15, fontWeight: "800", paddingRight: 12 },
   answer: { fontSize: 13, fontWeight: "600", lineHeight: 19, paddingBottom: 10, paddingRight: 18 },
   supportButton: { alignItems: "center", borderRadius: 14, flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 18, minHeight: 48 },
-  supportText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
+  supportText: { fontSize: 14, fontWeight: "800" },
   pressed: { opacity: 0.72 },
 });

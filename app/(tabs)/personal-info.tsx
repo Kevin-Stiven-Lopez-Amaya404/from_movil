@@ -89,7 +89,7 @@ export default function PersonalInfoScreen() {
               { backgroundColor: theme.card, borderColor: theme.borderLight },
             ]}
           >
-            <View style={styles.row}>
+            <View style={[styles.row, { borderBottomColor: theme.divider }]}>
               <View style={[styles.rowIcon, { backgroundColor: theme.rowAlt }]}>
                 <Ionicons name="person-outline" size={18} color={theme.blue} />
               </View>
@@ -103,7 +103,7 @@ export default function PersonalInfoScreen() {
               </View>
             </View>
 
-            <View style={styles.row}>
+            <View style={[styles.row, { borderBottomColor: theme.divider }]}>
               <View style={[styles.rowIcon, { backgroundColor: theme.rowAlt }]}>
                 <Ionicons name="mail-outline" size={18} color={theme.blue} />
               </View>
@@ -117,7 +117,7 @@ export default function PersonalInfoScreen() {
               </View>
             </View>
 
-            <View style={styles.row}>
+            <View style={[styles.row, { borderBottomColor: theme.divider }]}>
               <View style={[styles.rowIcon, { backgroundColor: theme.rowAlt }]}>
                 <Ionicons
                   name="shield-checkmark-outline"

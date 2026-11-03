@@ -45,7 +45,6 @@ export const styles = StyleSheet.create({
     marginLeft: 10,
   },
   addButtonText: {
-    color: "#FFFFFF",
     fontFamily: typography.fontFamily.emphasis,
     fontSize: 14,
     fontWeight: "700",
@@ -112,14 +111,12 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   primaryButtonText: {
-    color: "#FFFFFF",
     fontFamily: typography.fontFamily.emphasis,
     fontSize: 13,
     fontWeight: "800",
   },
   modalOverlay: {
     alignItems: "center",
-    backgroundColor: "rgba(15,23,42,0.48)",
     flex: 1,
     justifyContent: "center",
     padding: 20,

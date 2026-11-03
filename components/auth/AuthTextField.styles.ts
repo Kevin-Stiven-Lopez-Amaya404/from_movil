@@ -1,5 +1,4 @@
 import { StyleSheet } from "react-native";
-import { theme } from "@/constants/theme";
 import { typography } from "@/lib/theme/typography";
 
 export const styles = StyleSheet.create({
@@ -8,12 +7,9 @@ export const styles = StyleSheet.create({
   },
 
   input: {
-    backgroundColor: "#FBFBFD",
     borderColor: "transparent",
     borderRadius: 16,
     borderWidth: 1,
-
-    color: "#3F3F3F",
 
     fontFamily: typography.fontFamily.emphasis,
     fontSize: 16,
@@ -30,12 +26,10 @@ export const styles = StyleSheet.create({
   },
 
   inputError: {
-    borderColor: theme.colors.error,
+    borderColor: "transparent",
   },
 
   label: {
-    color: theme.colors.textDark,
-
     fontFamily: typography.fontFamily.emphasis,
     fontSize: 13,
     fontWeight: "800",
@@ -66,8 +60,6 @@ export const styles = StyleSheet.create({
   },
 
   errorText: {
-    color: theme.colors.error,
-
     fontFamily: typography.fontFamily.emphasis,
     fontSize: 12,
     fontWeight: "700",

@@ -23,7 +23,11 @@ export function EnergyRealtimeCard({
     <View
       style={[
         styles.card,
-        { backgroundColor: theme.card, borderColor: theme.borderLight },
+        {
+          backgroundColor: theme.card,
+          borderColor: theme.borderLight,
+          shadowColor: theme.shadowColor,
+        },
       ]}
     >
       <View style={styles.header}>

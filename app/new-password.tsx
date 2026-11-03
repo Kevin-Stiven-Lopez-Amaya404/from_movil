@@ -175,10 +175,10 @@ export default function NewPasswordScreen() {
                     }%`,
                     backgroundColor:
                       strength < 2
-                        ? "#FF4D4D"
+                        ? palette.danger
                         : strength < passwordRules.length
-                          ? "#FFA500"
-                          : palette.button,
+                          ? palette.warning
+                          : palette.success,
                   },
                 ]}
               />

@@ -56,7 +56,6 @@ export const styles = StyleSheet.create({
     marginBottom: 18,
   },
   infoRow: {
-    borderTopColor: "rgba(148,163,184,0.25)",
     borderTopWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",

@@ -1235,7 +1235,7 @@ export default function PrepareShellyScreen() {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.primaryButtonText}>
+            <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
               Confirmar nombre
             </Text>
           </Pressable>
@@ -1285,9 +1285,9 @@ export default function PrepareShellyScreen() {
               ]}
             >
               {pairingLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={theme.onSolidAction} />
               ) : (
-                <Text style={styles.primaryButtonText}>
+                <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
                   Iniciar vinculación
                 </Text>
               )}
@@ -1346,7 +1346,7 @@ export default function PrepareShellyScreen() {
               style={[styles.primaryButton, {backgroundColor: theme.solidActionBackground},
                 pairingLoading && styles.disabled]}
             >
-              <Text style={styles.primaryButtonText}>Configurar MQTT (laboratorio)</Text>
+              <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>Configurar MQTT (laboratorio)</Text>
             </Pressable>
           ) : null}
 
@@ -1373,9 +1373,9 @@ export default function PrepareShellyScreen() {
                 pairingLoading && styles.disabled]}
             >
               {pairingLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={theme.onSolidAction} />
               ) : (
-                <Text style={styles.primaryButtonText}>
+                <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
                   Verificar MQTT y finalizar
                 </Text>
               )}
@@ -1395,9 +1395,9 @@ export default function PrepareShellyScreen() {
               ]}
             >
               {pairingLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={theme.onSolidAction} />
               ) : (
-                <Text style={styles.primaryButtonText}>
+                <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
                   Finalizar vinculación
                 </Text>
               )}

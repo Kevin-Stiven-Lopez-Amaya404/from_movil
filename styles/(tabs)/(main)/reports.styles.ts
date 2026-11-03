@@ -248,7 +248,6 @@ export const styles = StyleSheet.create({
   },
   premiumText: {
     flex: 1,
-    color: "#E2E8F0",
     fontSize: 15,
     lineHeight: 22,
     fontWeight: "600",
@@ -262,7 +261,6 @@ export const styles = StyleSheet.create({
     overflow: "hidden",
   },
   premiumGoldBtnText: {
-    color: "#451A03",
     fontSize: 16,
     fontWeight: "800",
     fontFamily: typography.fontFamily.emphasis,
@@ -371,7 +369,6 @@ export const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.65)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -423,7 +420,6 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
   },
   modalConfirmText: {
-    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
   },

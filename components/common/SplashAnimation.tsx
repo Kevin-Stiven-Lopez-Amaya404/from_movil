@@ -184,7 +184,7 @@ export default function SplashAnimation({ onFinish }: Props) {
   const backgroundColor =
     colorPalette === "emerald"
       ? theme.dark ? theme.background : theme.primary
-      : "#005CC1";
+      : "#005CC1"; // Excepción intencional: azul propio de la animación de splash.
 
   return (
     <Animated.View style={[styles.container, { backgroundColor }, screenStyle]}>

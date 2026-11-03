@@ -19,7 +19,6 @@ type SummaryTileProps = {
   label: string;
   value: string;
   onPress: () => void;
-  tint: "blue" | "green";
   theme: Theme;
 };
 
@@ -28,16 +27,9 @@ function SummaryTile({
   label,
   value,
   onPress,
-  tint,
   theme,
 }: SummaryTileProps) {
-  const isGreen = tint === "green";
-  const accent = isGreen
-    ? theme.dark ? "#86EFAC" : "#168044"
-    : theme.blueForeground;
-  const background = isGreen
-    ? theme.dark ? "#1A332B" : "#EFF9F1"
-    : theme.blueSurface;
+  const accent = theme.decorativeAccent;
 
   return (
     <Pressable
@@ -47,8 +39,8 @@ function SummaryTile({
       style={({ pressed }) => [
         styles.summaryTile,
         {
-          backgroundColor: background,
-          borderColor: theme.dark ? theme.border : background,
+          backgroundColor: theme.blueSurface,
+          borderColor: theme.dark ? theme.border : theme.blueSurface,
         },
         pressed && styles.pressed,
       ]}
@@ -57,7 +49,7 @@ function SummaryTile({
         <View
           style={[
             styles.summaryIcon,
-            { backgroundColor: theme.card },
+            { backgroundColor: theme.surfaceSecondary },
           ]}
         >
           <Ionicons name={icon} size={24} color={accent} />
@@ -80,7 +72,6 @@ type NavigationRowProps = {
   subtitle: string;
   onPress: () => void;
   theme: Theme;
-  tint: "orange" | "blue" | "purple";
 };
 
 function NavigationRow({
@@ -89,20 +80,8 @@ function NavigationRow({
   subtitle,
   onPress,
   theme,
-  tint,
 }: NavigationRowProps) {
-  const accent =
-    tint === "orange"
-      ? theme.dark ? "#FDBA74" : "#C15A10"
-      : tint === "purple"
-        ? theme.dark ? "#C4B5FD" : "#6D45BF"
-        : theme.blueForeground;
-  const iconBackground =
-    tint === "orange"
-      ? theme.dark ? "#39291E" : "#FFF2E7"
-      : tint === "purple"
-        ? theme.dark ? "#302640" : "#F1ECFF"
-        : theme.blueSurface;
+  const accent = theme.decorativeAccent;
 
   return (
     <Pressable
@@ -121,7 +100,7 @@ function NavigationRow({
       <View
         style={[
           styles.navigationIcon,
-          { backgroundColor: iconBackground },
+          { backgroundColor: theme.surfaceSecondary },
         ]}
       >
         <Ionicons name={icon} size={24} color={accent} />
@@ -287,7 +266,12 @@ export default function DashboardScreen() {
               },
             ]}
           >
-            <View style={styles.heroMedia}>
+            <View
+              style={[
+                styles.heroMedia,
+                { backgroundColor: theme.surfaceSecondary },
+              ]}
+            >
               <Animated.Image
                 source={require("../../../assets/images/dashboard-eco.jpg")}
                 resizeMode="cover"
@@ -305,7 +289,6 @@ export default function DashboardScreen() {
               icon="home-outline"
               label="Mis hogares"
               value={homesDisplay}
-              tint="blue"
               theme={theme}
               onPress={() => router.navigate("/(tabs)/(main)/homes")}
             />
@@ -313,7 +296,6 @@ export default function DashboardScreen() {
               icon="power-outline"
               label="Dispositivos encendidos"
               value={poweredOnDisplay}
-              tint="green"
               theme={theme}
               onPress={() => router.push("/(tabs)/devices")}
             />
@@ -338,7 +320,6 @@ export default function DashboardScreen() {
               icon="notifications-outline"
               title="Estado y alertas"
               subtitle={alertsSubtitle}
-              tint="orange"
               theme={theme}
               onPress={() =>
                 router.navigate({
@@ -351,7 +332,6 @@ export default function DashboardScreen() {
               icon="hardware-chip-outline"
               title="Mis dispositivos"
               subtitle="Ver y gestionar dispositivos"
-              tint="blue"
               theme={theme}
               onPress={() => router.push("/(tabs)/devices")}
             />
@@ -359,7 +339,6 @@ export default function DashboardScreen() {
               icon="star-outline"
               title="Mis favoritos"
               subtitle={favoritesSubtitle}
-              tint="purple"
               theme={theme}
               onPress={() => router.push("/(tabs)/favorites")}
             />

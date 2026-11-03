@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { useAppTheme } from "@/lib/theme/app-theme";
 
-import { profileFont, profileTheme } from "./profileTheme";
+import { profileFont } from "./profileTheme";
 
 type ProfileModuleProps = PropsWithChildren<{
   /** Texto secundario que resume el contenido del modulo. */
@@ -32,20 +32,17 @@ export function ProfileModule({ children, subtitle, title }: ProfileModuleProps)
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: profileTheme.card,
     borderRadius: 16,
     gap: 12,
     marginTop: 20,
     padding: 14,
   },
   title: {
-    color: profileTheme.text,
     fontFamily: profileFont,
     fontSize: 18,
     fontWeight: "900",
   },
   subtitle: {
-    color: profileTheme.muted,
     fontFamily: profileFont,
     fontSize: 12,
     fontWeight: "700",

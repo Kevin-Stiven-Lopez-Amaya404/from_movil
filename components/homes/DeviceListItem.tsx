@@ -33,6 +33,7 @@ export function DeviceListItem({
           backgroundColor: theme.row,
           borderColor: hasAlert ? theme.danger : theme.borderLight,
           borderWidth: hasAlert ? 1 : 0,
+          shadowColor: theme.shadowColor,
         },
         selected && { borderColor: theme.blue, borderWidth: 1.5 },
       ]}
@@ -97,7 +98,7 @@ export function DeviceListItem({
           false: theme.deviceSwitchTrackInactive,
           true: theme.deviceSwitchTrackActive,
         }}
-        thumbColor={device.online ? theme.deviceSwitchThumbActive : "#FFFFFF"}
+        thumbColor={device.online ? theme.deviceSwitchThumbActive : theme.surface}
       />
     </View>
   );

@@ -48,6 +48,8 @@ export function getAppTheme(
   const row = emerald
     ? surface
     : dark ? "#111827" : "#FFFFFF";
+  const warning = dark ? "#FBBF24" : "#B45309";
+  const success = emerald ? primary : dark ? "#4ADE80" : "#15803D";
 
   return {
     dark,
@@ -59,7 +61,8 @@ export function getAppTheme(
     info: emerald
       ? dark ? "#60A5FA" : "#2563EB"
       : dark ? "#8AB4FF" : "#0047AB",
-    onPrimary: emerald && dark ? "#0D1714" : "#FFFFFF",
+    onPrimary: dark ? emerald ? "#0D1714" : "#0B1220" : "#FFFFFF",
+    onSolidAction: "#FFFFFF",
     background: emerald
       ? dark ? "#0D1714" : "#F5FAF7"
       : dark ? "#101827" : "#F8FAFC",
@@ -116,17 +119,83 @@ export function getAppTheme(
     // ESTADOS
     // ==========================================
 
-    warning: dark ? "#FBBF24" : "#B45309",
+    warning,
 
     danger: dark ? "#FF6B57" : "#C62817",
+    onDanger: dark
+      ? emerald ? "#0D1714" : "#0B1220"
+      : "#FFFFFF",
 
     dangerSoft: dark ? "#3A1D1A" : "#FFF1EF",
 
-    success: emerald ? primary : dark ? "#4ADE80" : "#15803D",
+    success,
+    decorativeAccent: dark ? "#CBD5E1" : "#64748B",
+    overlay: dark
+      ? "rgba(15, 23, 42, 0.48)"
+      : "rgba(0, 0, 0, 0.48)",
+    overlayStrong: "rgba(0, 0, 0, 0.65)",
+    overlaySubtle: "rgba(16, 24, 39, 0.18)",
+    shadowColor: dark ? "#000000" : "#0A192F",
 
     successSoft: emerald
       ? primarySoft
       : dark ? "#123521" : "#DCFCE7",
+
+    auth: {
+      background: emerald
+        ? dark ? "#0D1714" : "#F5FAF7"
+        : dark ? "#0B1220" : "#FFFFFF",
+      button: emerald
+        ? primary
+        : dark ? "#2563EB" : "#0047AB",
+      buttonPressed: emerald
+        ? primaryPressed
+        : dark ? "#1D4ED8" : "#003380",
+      primaryButton: emerald ? primary : "#0047AB",
+      primaryButtonPressed: emerald ? primaryPressed : "#003380",
+      card: emerald
+        ? surface
+        : dark ? "#151F33" : "#FBFBFD",
+      danger: dark ? "#FCA5A5" : "#C62828",
+      divider: emerald
+        ? divider
+        : dark ? "#26344F" : "#DDE2F5",
+      field: emerald
+        ? surfaceSecondary
+        : dark ? "#121A2C" : "#FBFBFD",
+      fieldBorder: emerald
+        ? border
+        : dark ? "#2D3B59" : "transparent",
+      border: emerald
+        ? border
+        : dark ? "#2D3B59" : "#CBD5E1",
+      link: emerald ? primary : dark ? "#93C5FD" : "#0047AB",
+      muted: emerald
+        ? textSecondary
+        : dark ? "#A7B3C8" : "#5F6F8C",
+      onPrimary: emerald && dark ? "#0D1714" : "#FFFFFF",
+      primarySoft: emerald
+        ? primarySoft
+        : dark ? "#172A47" : "#EEF4FF",
+      disabledBackground: emerald ? primarySoft : "#9AA8C2",
+      disabledForeground: emerald ? textSecondary : "#0B1220",
+      checkboxIdle: emerald ? surfaceSecondary : "#D8DADC",
+      formError: emerald
+        ? dark ? "#FCA5A5" : "#C62828"
+        : "#D32F2F",
+      welcomeButton: emerald ? primary : "#0047AB",
+      welcomeButtonPressed: emerald ? primaryPressed : "#003380",
+      welcomeSoftPressed: emerald
+        ? dark
+          ? "rgba(16, 185, 129, 0.16)"
+          : "rgba(16, 185, 129, 0.08)"
+        : "rgba(0, 71, 171, 0.08)",
+      welcomeShadow: emerald ? primary : "#0047AB",
+      text: emerald ? textPrimary : dark ? "#F8FAFC" : "#3F3F3F",
+      title: emerald ? primary : dark ? "#93C5FD" : "#0047AB",
+      warning,
+      success,
+    },
 
     // ==========================================
     // BARRA DE NAVEGACIÓN

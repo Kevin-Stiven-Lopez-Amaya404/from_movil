@@ -211,7 +211,7 @@ export default function FavoritesScreen() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Ionicons name="star" size={23} color="#F5B400" />
+                    <Ionicons name="star" size={23} color={theme.blue} />
                   </Pressable>
 
                   {/* NAVIGATION */}

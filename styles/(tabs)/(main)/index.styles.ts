@@ -44,7 +44,6 @@ export const styles = StyleSheet.create({
   heroMedia: {
     height: 152,
     overflow: "hidden",
-    backgroundColor: "#D6EAE2",
   },
   heroImage: {
     width: "100%",

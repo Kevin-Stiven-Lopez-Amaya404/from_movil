@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { useAppTheme } from "@/lib/theme/app-theme";
 
-import { profileFont, profileTheme } from "./profileTheme";
+import { profileFont } from "./profileTheme";
 
 type ProfileSectionHeaderProps = {
   /** Cambia color a rojo para secciones sensibles, como desactivar cuenta. */
@@ -40,11 +40,7 @@ const styles = StyleSheet.create({
   copy: {
     flex: 1,
   },
-  dangerTitle: {
-    color: profileTheme.danger,
-  },
   description: {
-    color: profileTheme.muted,
     fontFamily: profileFont,
     fontSize: 12,
     fontWeight: "700",
@@ -57,7 +53,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
-    color: profileTheme.text,
     fontFamily: profileFont,
     fontSize: 17,
     fontWeight: "800",

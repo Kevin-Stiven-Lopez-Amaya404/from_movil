@@ -53,7 +53,6 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
   submitText: {
-    color: "#FFFFFF",
     fontFamily: profileFont,
     fontSize: 17,
     fontWeight: "800",

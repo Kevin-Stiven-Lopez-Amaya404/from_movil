@@ -57,7 +57,7 @@ export function HomeListItem({
         onPress={onFavoritePress}
         style={styles.favoriteButton}
       >
-        <Ionicons name={favorite ? "star" : "star-outline"} size={25} color={favorite ? "#F5B400" : theme.mutedStrong} />
+        <Ionicons name={favorite ? "star" : "star-outline"} size={25} color={favorite ? theme.blue : theme.mutedStrong} />
       </Pressable>
     </Pressable>
   );

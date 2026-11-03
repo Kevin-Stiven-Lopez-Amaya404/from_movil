@@ -443,7 +443,7 @@ export default function HomesScreen() {
                       styles.filterText,
                       {
                         color: active
-                          ? "#FFFFFF"
+                          ? theme.onSolidAction
                           : theme.text,
                       },
                     ]}
@@ -456,7 +456,7 @@ export default function HomesScreen() {
                       styles.filterCount,
                       {
                         color: active
-                          ? "#FFFFFF"
+                          ? theme.onSolidAction
                           : theme.muted,
                       },
                     ]}
@@ -682,7 +682,7 @@ export default function HomesScreen() {
                       <Ionicons
                         name={home.favorite ? "star" : "star-outline"}
                         size={20}
-                        color={home.favorite ? "#D99810" : theme.muted}
+                        color={home.favorite ? theme.blue : theme.muted}
                       />
                     </Pressable>
 
@@ -743,6 +743,7 @@ export default function HomesScreen() {
           style={[
             styles.modalOverlay,
             {
+              backgroundColor: theme.overlay,
               paddingBottom: Math.max(insets.bottom, 22),
               paddingTop: Math.max(insets.top, 22),
             },
@@ -831,7 +832,7 @@ export default function HomesScreen() {
                       styles.disabled,
                   ]}
                 >
-                  <Text style={styles.primaryActionText}>
+                  <Text style={[styles.primaryActionText, { color: theme.onSolidAction }]}>
                     {creating ? "Creando..." : "Crear hogar"}
                   </Text>
                 </Pressable>
@@ -854,6 +855,7 @@ export default function HomesScreen() {
           style={[
             styles.modalOverlay,
             {
+              backgroundColor: theme.overlay,
               paddingBottom: Math.max(insets.bottom, 22),
               paddingTop: Math.max(insets.top, 22),
             },
@@ -943,7 +945,7 @@ export default function HomesScreen() {
                       styles.disabled,
                   ]}
                 >
-                  <Text style={styles.primaryActionText}>
+                  <Text style={[styles.primaryActionText, { color: theme.onSolidAction }]}>
                     {saving ? "Guardando..." : "Guardar"}
                   </Text>
                 </Pressable>

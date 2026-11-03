@@ -38,7 +38,6 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statusDot: {
-    backgroundColor: "#86EFAC",
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -193,7 +192,6 @@ export const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     padding: 22,
-    backgroundColor: "rgba(0,0,0,0.48)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -250,7 +248,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   primaryActionText: {
-    color: "#FFFFFF",
     fontFamily: typography.fontFamily.emphasis,
     fontSize: 13,
     fontWeight: "800",

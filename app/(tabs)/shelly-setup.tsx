@@ -319,9 +319,9 @@ export default function ShellySetupScreen() {
                       <Ionicons
                         name="open-outline"
                         size={20}
-                        color="#FFFFFF"
+                        color={theme.onSolidAction}
                       />
-                      <Text style={styles.primaryText}>
+                      <Text style={[styles.primaryText, { color: theme.onSolidAction }]}>
                         Abrir panel del Shelly
                       </Text>
                     </Pressable>
@@ -430,7 +430,7 @@ export default function ShellySetupScreen() {
                       { backgroundColor: theme.solidActionBackground },
                     ]}
                   >
-                    <Text style={styles.primaryText}>
+                    <Text style={[styles.primaryText, { color: theme.onSolidAction }]}>
                       Continuar
                     </Text>
                   </Pressable>
@@ -443,7 +443,7 @@ export default function ShellySetupScreen() {
                       { backgroundColor: theme.solidActionBackground },
                     ]}
                   >
-                    <Text style={styles.primaryText}>
+                    <Text style={[styles.primaryText, { color: theme.onSolidAction }]}>
                       Cerrar asistente
                     </Text>
                   </Pressable>

@@ -66,7 +66,6 @@ export const styles = StyleSheet.create({
     gap: 9,
   },
   primaryText: {
-    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "800",
   },

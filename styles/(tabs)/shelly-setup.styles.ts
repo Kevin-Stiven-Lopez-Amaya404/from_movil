@@ -78,7 +78,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   primaryText: {
-    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "800",
   },

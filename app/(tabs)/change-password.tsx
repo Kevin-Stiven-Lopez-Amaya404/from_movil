@@ -195,9 +195,9 @@ export default function ChangePasswordScreen() {
                       width: `${passwordRules.length > 0 ? (strength / passwordRules.length) * 100 : 0}%`,
                       backgroundColor:
                         strength < 2
-                          ? "#FF4D4D"
+                          ? theme.danger
                           : strength < passwordRules.length
-                            ? "#FFA500"
+                            ? theme.warning
                             : theme.passwordStrong,
                     },
                   ]}

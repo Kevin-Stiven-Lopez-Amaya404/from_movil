@@ -376,16 +376,16 @@ export default function AddDeviceScreen() {
             ]}
           >
             {wifiSearching ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={theme.onSolidAction} />
             ) : (
               <Ionicons
                 name="search"
                 size={20}
-                color="#FFFFFF"
+                color={theme.onSolidAction}
               />
             )}
 
-            <Text style={styles.primaryButtonText}>
+            <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
               {wifiSearching
                 ? "Buscando en la red..."
                 : "Buscar dispositivos"}

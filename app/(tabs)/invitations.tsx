@@ -134,7 +134,7 @@ export default function InvitationsScreen() {
               onPress={() => void loadInvitations()}
               style={{ padding: 14, backgroundColor: theme.solidActionBackground, borderRadius: 12 }}
             >
-              <Text style={{ color: "#FFFFFF", textAlign: "center" }}>
+              <Text style={{ color: theme.onSolidAction, textAlign: "center" }}>
                 Reintentar
               </Text>
             </Pressable>
@@ -232,12 +232,12 @@ export default function InvitationsScreen() {
                   }}
                 >
                   {processingId === invitation.id ? (
-                    <ActivityIndicator color="#FFFFFF" />
+                    <ActivityIndicator color={theme.onSolidAction} />
                   ) : (
                     <Text
                       style={{
                         textAlign: "center",
-                        color: "#FFFFFF",
+                        color: theme.onSolidAction,
                         fontWeight: "600",
                       }}
                     >
