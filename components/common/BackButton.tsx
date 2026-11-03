@@ -39,6 +39,7 @@ export function BackButton({ color, fallbackHref }: BackButtonProps) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Cerrar"
+      hitSlop={8}
       onPress={handlePress}
       style={({ pressed }) => [
         styles.button,
@@ -54,10 +55,10 @@ export function BackButton({ color, fallbackHref }: BackButtonProps) {
 const styles = StyleSheet.create({
   button: {
     alignItems: "center",
-    borderRadius: 21,
-    height: 42,
+    borderRadius: 22,
+    height: 44,
     justifyContent: "center",
-    width: 42,
+    width: 44,
   },
   buttonPressed: {
     opacity: 0.65,
