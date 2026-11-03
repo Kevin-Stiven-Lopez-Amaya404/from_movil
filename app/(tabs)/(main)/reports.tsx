@@ -19,9 +19,10 @@ import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DeviceConsumptionRankingCard } from "@/components/energy/DeviceConsumptionRankingCard";
-import { EnergyCostSummaryCard } from "@/components/energy/EnergyCostSummaryCard";
+import { EnergyPlanningSection } from "@/components/energy/EnergyPlanningSection";
 import { EnergyExportCard } from "@/components/energy/EnergyExportCard";
 import { Button } from "@/components/ui/Button";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import {
@@ -50,6 +51,13 @@ const HISTORY_PERIODS: HistoryPeriod[] = [
   "Últimos 7 días",
   "Últimos 30 días",
   "Todo el historial",
+];
+
+type EnergySection = "consumption" | "planning";
+
+const ENERGY_SECTIONS: { label: string; value: EnergySection }[] = [
+  { label: "Consumo", value: "consumption" },
+  { label: "Planificación", value: "planning" },
 ];
 
 function getConsumptionRange(period: HistoryPeriod) {
@@ -108,6 +116,9 @@ export default function ReportsScreen() {
   );
   const [historyPeriod, setHistoryPeriod] =
     useState<HistoryPeriod>("Últimos 7 días");
+  const [energySection, setEnergySection] =
+    useState<EnergySection>("consumption");
+  const [hasVisitedPlanning, setHasVisitedPlanning] = useState(false);
   const [dailySeries, setDailySeries] = useState<
     { label: string; value: number }[]
   >([]);
@@ -587,10 +598,24 @@ export default function ReportsScreen() {
             </View>
           )}
 
-          {/* ============================================================ */}
+          <SegmentedControl
+            accessibilityLabel="Secciones de Energía"
+            containerStyle={styles.sectionSwitcher}
+            items={ENERGY_SECTIONS}
+            onValueChange={(section) => {
+              setEnergySection(section);
+              if (section === "planning") setHasVisitedPlanning(true);
+            }}
+            selectedValue={energySection}
+            testID="energy-section-control"
+          />
+
           <View
             style={[
               styles.cardContainer,
+              energySection === "consumption"
+                ? styles.activeSection
+                : styles.hiddenSection,
               {
                 backgroundColor: theme.card,
                 borderColor: theme.borderLight,
@@ -682,18 +707,16 @@ export default function ReportsScreen() {
             ) : null}
           </View>
 
-          {/* Resumen económico compacto y accesos a pantallas independientes. */}
-          {activeHomeId && selectedHome && !isGuest ? (
-            <EnergyCostSummaryCard
-              key={activeHomeId}
-              homeId={activeHomeId}
-              homeRole={selectedHome.homeRole}
-            />
-          ) : null}
-
           {/* PESTAÑA 1: HISTORIA (IMÁGENES 2 Y 3)                         */}
           {/* ============================================================ */}
-          <View style={styles.historySection}>
+          <View
+            style={[
+              styles.historySection,
+              energySection === "consumption"
+                ? styles.activeSection
+                : styles.hiddenSection,
+            ]}
+          >
             <View style={styles.periodRow}>
               {HISTORY_PERIODS.map((period) => {
                 const selected = historyPeriod === period;
@@ -906,6 +929,20 @@ export default function ReportsScreen() {
             </View>
           )}
           </View>
+          {hasVisitedPlanning ? (
+            <View
+              style={
+                energySection === "planning"
+                  ? styles.activeSection
+                  : styles.hiddenSection
+              }
+            >
+              <EnergyPlanningSection
+                homeId={selectedHome ? activeHomeId ?? null : null}
+                homeRole={selectedHome?.homeRole}
+              />
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
