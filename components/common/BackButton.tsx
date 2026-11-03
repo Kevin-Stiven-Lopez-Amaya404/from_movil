@@ -23,7 +23,7 @@ type BackButtonProps = {
  * para enviar al usuario a una ruta segura.
  */
 export function BackButton({
-  accessibilityLabel = "Cerrar",
+  accessibilityLabel = "Volver",
   backgroundColor,
   color,
   disabled = false,
@@ -66,7 +66,7 @@ export function BackButton({
         pressed && styles.buttonPressed,
       ]}
     >
-      <Ionicons name="close" size={21} color={color ?? palette.link} />
+      <Ionicons name="chevron-back" size={24} color={color ?? palette.link} />
     </Pressable>
   );
 }

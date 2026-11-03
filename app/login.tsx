@@ -10,18 +10,28 @@ import { getApiErrorMessage } from "@/lib/api/api-error";
 import { useAuthSession } from "@/lib/auth/auth-session-context";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { useAppTheme } from "@/lib/theme/app-theme";
 import { getAuthPalette } from "@/lib/theme/appearance";
 
 import { isValidEmail } from "@/lib/utils/validators";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { styles } from "../styles/login.styles";
+
+/**
+ * "Recordarme" todavía no tiene efecto en el inicio de sesión.
+ * Se oculta para no mostrar un control que no hace nada; cuando se
+ * implemente, basta con cambiar este valor a `true`.
+ */
+const SHOW_REMEMBER_ME = false;
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuthSession();
   const layout = useResponsiveLayout();
+  const theme = useAppTheme();
 
   const {
     colorPalette,
@@ -50,6 +60,9 @@ export default function LoginScreen() {
 
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  /** Error general del formulario (credenciales o conexión). */
+  const [formError, setFormError] = useState("");
 
   // ==========================================
   // VALIDACIONES
@@ -80,51 +93,40 @@ export default function LoginScreen() {
       return;
     }
 
-    // ========================================
-    // VALIDACIÓN
-    // ========================================
-
+    // Los errores de cada campo ya se muestran debajo de él.
     if (!canSubmit) {
-      Alert.alert("Datos incompletos", "Corrige los campos marcados.");
-
       return;
     }
 
-    // ========================================
-    // INICIAR AUTENTICACIÓN
-    // ========================================
-
+    setFormError("");
     setSubmitting(true);
 
     try {
       const loggedUser = await login(cleanEmail, password);
 
-      // ======================================
-      // CREDENCIALES INCORRECTAS
-      // ======================================
-
       if (!loggedUser) {
-        Alert.alert(
-          "No pudimos iniciar sesión",
-          "Correo o contraseña incorrectos.",
-        );
-
+        setFormError("Correo o contraseña incorrectos.");
         return;
       }
-
-      // ======================================
-      // LOGIN EXITOSO
-      // ======================================
 
       setSessionName(loggedUser.name.split(" ")[0] || loggedUser.name);
       setSessionEmail(loggedUser.email);
       setSessionRole(loggedUser.role ?? "miembro");
-
     } catch (error) {
-      Alert.alert("Error de conexión", getApiErrorMessage(error));
+      setFormError(getApiErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function updateEmail(value: string) {
+    setEmail(value);
+    if (formError) setFormError("");
+  }
+
+  function updatePassword(value: string) {
+    setPassword(value);
+    if (formError) setFormError("");
   }
 
   // ==========================================
@@ -135,23 +137,25 @@ export default function LoginScreen() {
     <AuthScreenLayout
       compact={layout.compact}
       contentStyle={styles.screenContent}
-      contentTopPadding={layout.compact ? 14 : 22}
+      contentTopPadding={layout.compact ? 4 : 8}
     >
-      {/* ====================================== */}
-      {/* BOTÓN VOLVER                           */}
-      {/* ====================================== */}
-
+      {/* Volver: anclado arriba, fuera del contenido */}
       <View style={styles.header}>
-        <BackButton color={palette.link} fallbackHref="/welcome" />
-        <View style={styles.headerSpacer} />
+        <BackButton
+          accessibilityLabel="Volver"
+          backgroundColor="transparent"
+          color={theme.textPrimary}
+          fallbackHref="/welcome"
+        />
       </View>
 
       <View style={styles.introSection}>
         <Text
+          accessibilityRole="header"
           style={[
             styles.title,
             layout.tiny && styles.titleTiny,
-            { color: palette.title },
+            { color: theme.textPrimary },
           ]}
         >
           Bienvenido de nuevo
@@ -166,198 +170,130 @@ export default function LoginScreen() {
       {/* ====================================== */}
 
       <View style={styles.formContainer}>
-        {/* ==================================== */}
-        {/* CORREO                               */}
-        {/* ==================================== */}
+        <AuthTextField
+          autoCapitalize="none"
+          autoCorrect={false}
+          error={emailError}
+          inputStyle={styles.input}
+          keyboardType="email-address"
+          label="Correo electrónico"
+          onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+          onChangeText={updateEmail}
+          placeholder="nombre@correo.com"
+          returnKeyType="next"
+          value={email}
+          variant="outlined"
+        />
 
-        <View style={styles.fieldGroup}>
-          <Text
-            style={[
-              styles.fieldLabel,
-              {
-                color: palette.text,
-              },
-            ]}
-          >
-            Correo electrónico
-          </Text>
-
-          <AuthTextField
-            error={emailError}
-            variant="outlined"
-            inputStyle={[
-              styles.input,
-              {
-                backgroundColor: palette.field,
-                borderColor: palette.fieldBorder,
-                color: palette.text,
-              },
-            ]}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            onBlur={() =>
-              setTouched((prev) => ({
-                ...prev,
-                email: true,
-              }))
-            }
-            onChangeText={setEmail}
-            placeholder="Correo electrónico"
-            placeholderTextColor={palette.muted}
-            value={email}
-          />
-        </View>
-
-        {/* ==================================== */}
-        {/* CONTRASEÑA                            */}
-        {/* ==================================== */}
-
-        <View style={styles.fieldGroup}>
-          <Text
-            style={[
-              styles.fieldLabel,
-              {
-                color: palette.text,
-              },
-            ]}
-          >
-            Contraseña
-          </Text>
-
+        <View>
           <AuthPasswordField
             error={passwordError}
-            variant="outlined"
-            inputStyle={[
-              styles.input,
-              {
-                backgroundColor: palette.field,
-                borderColor: palette.fieldBorder,
-                color: palette.text,
-              },
-            ]}
-            onBlur={() =>
-              setTouched((prev) => ({
-                ...prev,
-                password: true,
-              }))
-            }
-            onChangeText={setPassword}
+            inputStyle={styles.input}
+            label="Contraseña"
+            onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
+            onChangeText={updatePassword}
+            onSubmitEditing={() => void handleLogin()}
             onToggleVisibility={() => setShowPassword((prev) => !prev)}
-            placeholder="Contraseña"
+            placeholder="Tu contraseña"
+            returnKeyType="go"
             showPassword={showPassword}
             value={password}
+            variant="outlined"
           />
+
+          <View
+            style={[
+              styles.optionsRow,
+              !SHOW_REMEMBER_ME && styles.optionsRowEnd,
+            ]}
+          >
+            {SHOW_REMEMBER_ME ? (
+              <View style={styles.rememberContainer}>
+                <AuthCheckboxRow
+                  checked={rememberMe}
+                  label="Recordarme"
+                  onToggle={() => setRememberMe((prev) => !prev)}
+                />
+              </View>
+            ) : null}
+
+            <Pressable
+              accessibilityRole="link"
+              hitSlop={8}
+              onPress={() => router.push("/forgot-password")}
+              style={styles.forgotButton}
+            >
+              <Text style={[styles.linkText, { color: palette.link }]}>
+                ¿Olvidaste tu contraseña?
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
-        {/* ==================================== */}
-        {/* RECORDAR / OLVIDÉ                     */}
-        {/* ==================================== */}
-
-        <View style={styles.optionsRow}>
-          <View style={styles.rememberContainer}>
-            <AuthCheckboxRow
-              checked={rememberMe}
-              label="Recordarme"
-              labelStyle={{
-                color: palette.text,
-              }}
-              onToggle={() => setRememberMe((prev) => !prev)}
-            />
-          </View>
-
-          <Pressable
-            onPress={() => router.push("/forgot-password")}
-            style={styles.forgotButton}
-            accessibilityRole="button"
-            accessibilityLabel="Recuperar contraseña"
+        {/* Error general: credenciales incorrectas o fallo de conexión */}
+        {formError ? (
+          <View
+            accessibilityLiveRegion="polite"
+            accessibilityRole="alert"
+            style={[styles.formError, { backgroundColor: theme.dangerSoft }]}
           >
-            <Text
-              style={[
-                styles.forgotText,
-                {
-                  color: palette.link,
-                },
-              ]}
-            >
-              ¿Olvidaste tu contraseña?
+            <Ionicons
+              accessible={false}
+              color={palette.danger}
+              name="alert-circle-outline"
+              size={18}
+            />
+            <Text style={[styles.formErrorText, { color: palette.danger }]}>
+              {formError}
+            </Text>
+          </View>
+        ) : null}
+
+        <PrimaryButton
+          loading={submitting}
+          onPress={() => void handleLogin()}
+          style={[styles.button, { backgroundColor: palette.button }]}
+          text="Iniciar sesión"
+        />
+      </View>
+
+      {/* Espacio flexible: los enlaces secundarios quedan al final */}
+      <View style={styles.spacer} />
+
+      <View style={styles.footer}>
+        <View style={styles.registerRow}>
+          <Text style={[styles.footerText, { color: palette.muted }]}>
+            ¿No tienes una cuenta?
+          </Text>
+          <Pressable
+            accessibilityRole="link"
+            hitSlop={8}
+            onPress={() => router.push("/register")}
+          >
+            <Text style={[styles.linkText, { color: palette.link }]}>
+              Regístrate
             </Text>
           </Pressable>
         </View>
 
-        {/* ==================================== */}
-        {/* BOTÓN PRINCIPAL                       */}
-        {/* ==================================== */}
-
-        <PrimaryButton
-          loading={submitting}
-          onPress={handleLogin}
-          style={{
-            backgroundColor: palette.button,
-          }}
-          text="Iniciar sesión"
-        />
-
         <Pressable
+          accessibilityRole="link"
+          hitSlop={8}
           onPress={() =>
             router.push({
               pathname: "/request-reactivation",
               params: { email: cleanEmail },
             })
           }
-          style={styles.reactivationLink}
-          accessibilityRole="link"
-          accessibilityLabel="Solicitar reactivación de cuenta"
         >
-          <Text style={[styles.reactivationLinkText, { color: palette.link }]}>
-            ¿Tu cuenta está desactivada? Solicita reactivación
+          <Text style={[styles.footerText, { color: palette.muted }]}>
+            ¿Cuenta desactivada?{" "}
+            <Text style={[styles.linkText, { color: palette.link }]}>
+              Reactívala
+            </Text>
           </Text>
         </Pressable>
-
-        {/* ==================================== */}
-        {/* REGISTRO                              */}
-        {/* ==================================== */}
-
-        <View style={styles.registerRow}>
-          <Text
-            style={[
-              styles.registerText,
-              {
-                color: palette.muted,
-              },
-            ]}
-          >
-            ¿No tienes una cuenta?
-          </Text>
-
-          <Pressable
-            onPress={() => router.push("/register")}
-            accessibilityRole="link"
-            accessibilityLabel="Registrarse"
-          >
-            <Text
-              style={[
-                styles.registerLink,
-                {
-                  color: palette.link,
-                },
-              ]}
-            >
-              Registrarse
-            </Text>
-          </Pressable>
-        </View>
       </View>
     </AuthScreenLayout>
   );
 }
-
-// ======================================================
-// TIPOGRAFÍA
-// ======================================================
-
-
-
-// ======================================================
-// ESTILOS
-// ======================================================

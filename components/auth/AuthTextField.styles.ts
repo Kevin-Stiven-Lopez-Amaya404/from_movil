@@ -11,9 +11,9 @@ export const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
 
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: typography.size.body,
-    fontWeight: "700",
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 16,
+    fontWeight: "400",
 
     minHeight: 52,
 
@@ -31,10 +31,10 @@ export const styles = StyleSheet.create({
 
   label: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: typography.size.helper,
-    fontWeight: "800",
+    fontSize: 14,
+    fontWeight: "600",
 
-    marginBottom: 7,
+    marginBottom: 8,
     marginLeft: 2,
   },
 
@@ -61,10 +61,10 @@ export const styles = StyleSheet.create({
 
   errorText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: typography.size.caption,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "500",
 
-    marginLeft: 4,
-    marginTop: 5,
+    marginLeft: 2,
+    marginTop: 6,
   },
 });
