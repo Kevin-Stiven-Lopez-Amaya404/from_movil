@@ -54,7 +54,7 @@ export const styles = StyleSheet.create({
   },
   badgeText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: "800",
   },
   activeIndicator: {
@@ -65,7 +65,7 @@ export const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 2,
   },
 });
