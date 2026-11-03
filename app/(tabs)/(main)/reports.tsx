@@ -33,6 +33,7 @@ import {
   type DeviceConsumptionRankingResult,
 } from "@/lib/services/device-consumption-ranking";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { isForbiddenError } from "@/lib/features/energy-sql034/energy-rules";
 
 import { buildHomeConsumptionCsv } from "@/lib/utils/consumption-csv";
 import { buildHomeConsumptionPdfHtml } from "@/lib/utils/consumption-pdf";
@@ -81,8 +82,9 @@ export default function ReportsScreen() {
   const selectedHome = accessibleHomes.find(
     (home) => home.id === activeHomeId,
   );
+  const selectedHomeRole = selectedHome?.homeRole;
   const isGuest = selectedHome?.homeRole === "GUEST";
-  const canViewDetails =
+  const canRequestDetails =
     selectedHome?.homeRole === "OWNER" ||
     selectedHome?.homeRole === "MEMBER";
   const [focusRefreshVersion, setFocusRefreshVersion] =
@@ -114,6 +116,7 @@ export default function ReportsScreen() {
   >([]);
   const [exportingCsv, setExportingCsv] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const exportInFlight = useRef(false);
   const [homeSelectorOpen, setHomeSelectorOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadedQueryKey, setLoadedQueryKey] = useState<symbol | null>(null);
@@ -122,18 +125,24 @@ export default function ReportsScreen() {
     data: DeviceConsumptionRankingResult | null;
     error: string | null;
   } | null>(null);
+  const [dailyQueryState, setDailyQueryState] = useState<{
+    queryKey: symbol;
+    error: string | null;
+  } | null>(null);
 
-  const hasRealConsumptionSource = Boolean(activeHomeId);
+  const hasRealConsumptionSource = Boolean(
+    activeHomeId && selectedHome?.homeRole,
+  );
   const consumptionQueryKey = useMemo(
     () =>
-      activeHomeId
+      activeHomeId && selectedHomeRole
         ? Symbol(
-            `consumption-query:${activeHomeId}:${selectedHome?.homeRole ?? "UNKNOWN"}:${historyPeriod}:${focusRefreshVersion}`,
+            `consumption-query:${activeHomeId}:${selectedHomeRole}:${historyPeriod}:${focusRefreshVersion}`,
           )
         : null,
     [
       activeHomeId,
-      selectedHome?.homeRole,
+      selectedHomeRole,
       historyPeriod,
       focusRefreshVersion,
     ],
@@ -150,10 +159,14 @@ export default function ReportsScreen() {
     rankingQueryState?.queryKey === consumptionQueryKey
       ? rankingQueryState
       : null;
+  const visibleDailyError =
+    dailyQueryState?.queryKey === consumptionQueryKey
+      ? dailyQueryState.error
+      : null;
 
   const isRankingLoading =
     Boolean(activeHomeId) &&
-    canViewDetails &&
+    canRequestDetails &&
     !visibleRankingState;
 
   const hasCurrentHomeData =
@@ -173,17 +186,19 @@ export default function ReportsScreen() {
   const isLoading = hasRealConsumptionSource && !hasCurrentHomeData;
   const canExportCsv =
     Boolean(selectedHome) &&
-    canViewDetails &&
+    canRequestDetails &&
     hasCurrentHomeData &&
     !visibleError &&
+    !visibleDailyError &&
     dailyRecords.length > 0 &&
     !exportingPdf &&
     !exportingCsv;
   const canExportPdf =
     Boolean(selectedHome) &&
-    canViewDetails &&
+    canRequestDetails &&
     hasCurrentHomeData &&
     !visibleError &&
+    !visibleDailyError &&
     realConsumptionKwh !== null &&
     realReadingsCount !== null &&
     Boolean(visibleRankingState?.data) &&
@@ -193,7 +208,7 @@ export default function ReportsScreen() {
   useEffect(() => {
     const homeId = activeHomeId;
 
-    if (!homeId || consumptionQueryKey === null) {
+    if (!homeId || consumptionQueryKey === null || !selectedHome?.homeRole) {
       return;
     }
 
@@ -202,14 +217,47 @@ export default function ReportsScreen() {
     const query = consumptionRange;
     const requestKey = consumptionQueryKey;
 
-    Promise.all([
+    Promise.allSettled([
       consumptionService.getHomeSummary(homeId, query),
-      canViewDetails
+      canRequestDetails
         ? consumptionService.getHomeDaily(homeId, query)
         : Promise.resolve([] as HomeDailyConsumptionRecord[]),
     ])
-      .then(([summary, daily]) => {
+      .then(([summaryResult, dailyResult]) => {
         if (!active) return;
+
+        if (summaryResult.status === "rejected") {
+          const status = (summaryResult.reason as { status?: unknown })?.status;
+          setRealConsumptionKwh(null);
+          setRealReadingsCount(null);
+          setDailySeries([]);
+          setDailyRecords([]);
+          setDailyQueryState({ queryKey: requestKey, error: null });
+          setError(
+            isForbiddenError(summaryResult.reason)
+              ? "No tienes permiso para consultar el consumo de este hogar."
+              : status === 401
+                ? "Tu sesión no está autorizada para consultar este hogar."
+                : "No se pudo cargar el consumo real del hogar.",
+          );
+          setLoadedQueryKey(requestKey);
+          return;
+        }
+
+        const summary = summaryResult.value;
+        let daily: HomeDailyConsumptionRecord[] = [];
+        let dailyError: string | null = null;
+
+        if (dailyResult.status === "fulfilled") {
+          daily = dailyResult.value;
+        } else {
+          const status = (dailyResult.reason as { status?: unknown })?.status;
+          dailyError = isForbiddenError(dailyResult.reason)
+            ? "Tu rol no tiene permiso para consultar el detalle diario de este hogar."
+            : status === 401
+              ? "Tu sesión no está autorizada para consultar el detalle diario."
+              : "No se pudo cargar el detalle diario del hogar.";
+        }
 
         setRealConsumptionKwh(summary.totalEnergyDeltaKwh);
         setRealReadingsCount(summary.readingsCount ?? null);
@@ -245,16 +293,20 @@ export default function ReportsScreen() {
 
         setDailyRecords([...daily]);
         setDailySeries(mappedSeries);
+        setDailyQueryState({ queryKey: requestKey, error: dailyError });
         setError(null);
         setLoadedQueryKey(requestKey);
       })
       .catch(() => {
         if (!active) return;
-
         setRealConsumptionKwh(null);
         setRealReadingsCount(null);
         setDailySeries([]);
         setDailyRecords([]);
+        setDailyQueryState({
+          queryKey: requestKey,
+          error: "No se pudo procesar el consumo del hogar.",
+        });
         setError("No se pudo cargar el consumo real del hogar.");
         setLoadedQueryKey(requestKey);
       });
@@ -267,13 +319,14 @@ export default function ReportsScreen() {
     historyPeriod,
     consumptionRange,
     consumptionQueryKey,
-    canViewDetails,
+    canRequestDetails,
+    selectedHome?.homeRole,
   ]);
 
   useEffect(() => {
     const homeId = activeHomeId;
 
-    if (!homeId || consumptionQueryKey === null || !canViewDetails) {
+    if (!homeId || consumptionQueryKey === null || !canRequestDetails) {
       return;
     }
 
@@ -291,14 +344,15 @@ export default function ReportsScreen() {
           error: null,
         });
       })
-      .catch(() => {
+      .catch((error) => {
         if (!active) return;
 
         setRankingQueryState({
           queryKey: requestKey,
           data: null,
-          error:
-            "No se pudo consultar el consumo de los dispositivos.",
+          error: isForbiddenError(error)
+            ? "No tienes permiso para ver el consumo por dispositivo."
+            : "No se pudo consultar el consumo de los dispositivos.",
         });
       });
 
@@ -310,7 +364,7 @@ export default function ReportsScreen() {
     historyPeriod,
     consumptionRange,
     consumptionQueryKey,
-    canViewDetails,
+    canRequestDetails,
   ]);
 
 
@@ -325,10 +379,11 @@ export default function ReportsScreen() {
 
   // Estados de la pestaña "Historia"
   async function handleExportCsv(): Promise<void> {
-    if (!canExportCsv || !selectedHome) {
+    if (exportInFlight.current || !canExportCsv || !selectedHome) {
       return;
     }
 
+    exportInFlight.current = true;
     setExportingCsv(true);
 
     try {
@@ -347,6 +402,7 @@ export default function ReportsScreen() {
 
       Alert.alert("Error al exportar", message);
     } finally {
+      exportInFlight.current = false;
       setExportingCsv(false);
     }
   }
@@ -355,6 +411,7 @@ export default function ReportsScreen() {
     const rankingData = visibleRankingState?.data;
 
     if (
+      exportInFlight.current ||
       !canExportPdf ||
       !selectedHome ||
       realConsumptionKwh === null ||
@@ -364,6 +421,7 @@ export default function ReportsScreen() {
       return;
     }
 
+    exportInFlight.current = true;
     setExportingPdf(true);
 
     try {
@@ -385,6 +443,7 @@ export default function ReportsScreen() {
 
       Alert.alert("Error al exportar PDF", message);
     } finally {
+      exportInFlight.current = false;
       setExportingPdf(false);
     }
   }
@@ -595,7 +654,15 @@ export default function ReportsScreen() {
               </Text>
             </View>
 
-            {isLoading ? (
+            {!activeHomeId ? (
+              <Text style={[styles.summaryNote, { color: theme.muted }]}>
+                Selecciona un hogar para consultar su consumo.
+              </Text>
+            ) : !selectedHome?.homeRole ? (
+              <Text style={[styles.summaryNote, { color: theme.danger }]}>
+                No se pudo verificar tu rol en este hogar.
+              </Text>
+            ) : isLoading ? (
               <Text style={[styles.summaryNote, { color: theme.muted }]}>
                 Consultando consumo...
               </Text>
@@ -615,7 +682,7 @@ export default function ReportsScreen() {
             ) : null}
           </View>
 
-          {/* COSTO ESTIMADO, PRESUPUESTO Y META (SQL034)                  */}
+          {/* Resumen económico compacto y accesos a pantallas independientes. */}
           {activeHomeId && selectedHome && !isGuest ? (
             <EnergyCostSummaryCard
               key={activeHomeId}
@@ -658,7 +725,7 @@ export default function ReportsScreen() {
                 );
               })}
             </View>
-            {canViewDetails ? (
+            {canRequestDetails ? (
               <>
                 <View
               style={[
@@ -693,6 +760,10 @@ export default function ReportsScreen() {
                 ) : visibleError ? (
                   <Text style={[styles.chartEmptyText, { color: theme.danger }]}>
                     {visibleError}
+                  </Text>
+                ) : visibleDailyError ? (
+                  <Text style={[styles.chartEmptyText, { color: theme.danger }]}>
+                    {visibleDailyError}
                   </Text>
                 ) : chartPoints.length === 0 ? (
                   <Text style={[styles.chartEmptyText, { color: theme.muted }]}>
@@ -789,6 +860,20 @@ export default function ReportsScreen() {
                 />
               </>
 
+          ) : !selectedHome ? (
+            <View
+              style={[
+                styles.cardContainer,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.borderLight,
+                },
+              ]}
+            >
+              <Text style={{ color: theme.muted, fontSize: typography.size.helper }}>
+                Selecciona un hogar para consultar los datos disponibles.
+              </Text>
+            </View>
           ) : isGuest ? (
             <View
               style={[
@@ -800,12 +885,26 @@ export default function ReportsScreen() {
               ]}
             >
               <Text style={{ color: theme.muted, fontSize: typography.size.helper }}>
-                Puedes consultar el consumo total del hogar.
-                El detalle por día y dispositivo está reservado
-                para propietarios y miembros.
+                El detalle diario, el ranking y las exportaciones requieren
+                autorización adicional para este hogar.
               </Text>
             </View>
-            ) : null}
+          ) : (
+            <View
+              style={[
+                styles.cardContainer,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: theme.borderLight,
+                },
+              ]}
+            >
+              <Text style={{ color: theme.danger, fontSize: typography.size.helper }}>
+                No se pudo verificar tu rol. El detalle de consumo y los datos
+                económicos están ocultos.
+              </Text>
+            </View>
+          )}
           </View>
         </View>
       </ScrollView>

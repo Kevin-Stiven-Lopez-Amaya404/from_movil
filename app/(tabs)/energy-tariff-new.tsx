@@ -2,8 +2,9 @@
  * EN-03: Registrar una nueva tarifa referencial (solo OWNER).
  * Crea una nueva vigencia; nunca modifica tarifas anteriores.
  */
+import { useNavigation, usePreventRemove } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -35,21 +36,53 @@ import { styles } from "../../styles/(tabs)/energy.styles";
 export default function EnergyTariffNewScreen() {
   const { homeId } = useLocalSearchParams<{ homeId?: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const theme = useAppTheme();
   const layout = useResponsiveLayout();
   const { accessibleHomes } = useSmartHome();
   const home = accessibleHomes.find((item) => item.id === homeId);
   const access = getEnergyAccess(home?.homeRole);
 
+  const [initialDate] = useState(() => todayBogota());
   const [price, setPrice] = useState("");
-  const [effectiveFrom, setEffectiveFrom] = useState(() => todayBogota());
+  const [effectiveFrom, setEffectiveFrom] = useState(initialDate);
   const [touched, setTouched] = useState(false);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const allowRemoveRef = useRef(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const priceResult = normalizeDecimalInput(price, "tariff");
   const dateValid = isValidLocalDate(effectiveFrom);
   const canSubmit = priceResult.ok && dateValid && !saving;
+  const hasUnsavedChanges = price.trim().length > 0 || effectiveFrom !== initialDate;
+
+  usePreventRemove(hasUnsavedChanges || saving, ({ data }) => {
+    if (allowRemoveRef.current) {
+      allowRemoveRef.current = false;
+      return;
+    }
+    if (saving) return;
+
+    Alert.alert("¿Descartar la nueva tarifa?", "Los datos escritos no se guardarán.", [
+      { text: "Seguir editando", style: "cancel" },
+      {
+        text: "Descartar",
+        style: "destructive",
+        onPress: () => navigation.dispatch(data.action),
+      },
+    ]);
+  });
+
+  function navigateBack() {
+    if (router.canGoBack()) {
+      router.back();
+    } else if (homeId) {
+      router.replace({ pathname: "/energy-tariffs", params: { homeId } });
+    } else {
+      router.replace("/(tabs)/(main)/reports");
+    }
+  }
 
   function handleSubmit() {
     setTouched(true);
@@ -66,6 +99,8 @@ export default function EnergyTariffNewScreen() {
         {
           text: "Guardar",
           onPress: async () => {
+            if (savingRef.current) return;
+            savingRef.current = true;
             setSaving(true);
             setServerError(null);
             try {
@@ -74,11 +109,13 @@ export default function EnergyTariffNewScreen() {
                 effectiveFrom,
               });
               Alert.alert("Tarifa registrada", "La nueva tarifa quedó guardada.");
-              router.back();
+              allowRemoveRef.current = true;
+              navigateBack();
             } catch (error) {
               // Se conservan los valores escritos para corregir y reintentar.
               setServerError(energyErrorMessage(error));
             } finally {
+              savingRef.current = false;
               setSaving(false);
             }
           },
@@ -103,7 +140,11 @@ export default function EnergyTariffNewScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <View style={styles.header}>
-            <BackButton color={theme.text} fallbackHref="/(tabs)/(main)/reports" />
+            <BackButton
+              color={theme.text}
+              fallbackHref="/(tabs)/energy-tariffs"
+              accessibilityLabel="Volver al historial de tarifas"
+            />
             <View style={styles.headerTexts}>
               <Text style={[styles.title, { color: theme.text }]}>
                 Nueva tarifa

@@ -72,6 +72,11 @@ export const styles = StyleSheet.create({
     fontWeight: "900",
     marginTop: 2,
   },
+  compactCostValue: {
+    fontSize: typography.size.section,
+    fontWeight: "900",
+    marginTop: 2,
+  },
   value: {
     fontSize: typography.size.body,
     fontWeight: "700",
@@ -119,6 +124,26 @@ export const styles = StyleSheet.create({
     marginTop: 10,
   },
   secondaryButtonText: {
+    fontSize: typography.size.helper,
+    fontWeight: "700",
+  },
+  costSummaryLinks: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 14,
+  },
+  costSummaryLink: {
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: "row",
+    gap: 7,
+    justifyContent: "center",
+    minHeight: 48,
+    paddingHorizontal: 10,
+  },
+  costSummaryLinkText: {
     fontSize: typography.size.helper,
     fontWeight: "700",
   },
