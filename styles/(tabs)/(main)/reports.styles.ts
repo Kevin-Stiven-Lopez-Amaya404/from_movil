@@ -20,6 +20,16 @@ export const styles = StyleSheet.create({
     fontWeight: "900",
     fontFamily: typography.fontFamily.emphasis,
   },
+  sectionSwitcher: {
+    marginBottom: 20,
+  },
+  activeSection: {
+    width: "100%",
+  },
+  hiddenSection: {
+    display: "none",
+    width: "100%",
+  },
   headerIconBtnDark: {
     width: 34,
     height: 34,
