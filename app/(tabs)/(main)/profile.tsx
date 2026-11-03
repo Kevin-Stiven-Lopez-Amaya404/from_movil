@@ -5,7 +5,6 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ProfileMenuItem } from "@/components/profile/ProfileMenuItem";
-import { ProfileShortcutCard } from "@/components/profile/ProfileShortcutCard";
 import { SettingsSectionCard } from "@/components/settings/SettingsSectionCard";
 import { useAuthSession } from "@/lib/auth/auth-session-context";
 import { useSmartHome } from "@/lib/context/smart-home-context";
@@ -21,17 +20,21 @@ export default function ProfileScreen() {
   const theme = useAppTheme();
   const { t } = useTranslation();
   const { logout } = useAuthSession();
-  const { sessionEmail, sessionName, sessionRole } = useSmartHome();
+  const { sessionEmail, sessionName } = useSmartHome();
   const logoutLock = useRef(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const initial = sessionName.trim().charAt(0).toUpperCase() || "U";
-  const roleLabel =
-    sessionRole === "admin"
-      ? t("profile.roleAdmin")
-      : sessionRole === "miembro"
-        ? t("profile.roleMember")
-        : t("profile.roleGuest");
+  const displayName = sessionName.trim();
+  const displayEmail = sessionEmail.trim();
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => Array.from(part)[0] ?? "")
+    .join("")
+    .toUpperCase();
+  const nameValue = displayName || t("profile.dataUnavailable");
+  const emailValue = displayEmail || t("profile.dataUnavailable");
 
   function confirmLogout() {
     if (logoutLock.current) return;
@@ -53,7 +56,7 @@ export default function ProfileScreen() {
       try {
         await logout();
       } catch {
-        // El cierre de sesión local se conserva aunque falle la solicitud remota.
+        // Local session cleanup is preserved if the remote request fails.
       } finally {
         router.replace("/welcome");
       }
@@ -74,23 +77,10 @@ export default function ProfileScreen() {
         }}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${sessionName}. ${sessionEmail}. ${roleLabel}`}
-            accessibilityHint={t("profile.openPersonalInfoHint")}
-            onPress={() =>
-              router.push({
-                pathname: "/(tabs)/personal-info",
-                params: { from: "profile" },
-              })
-            }
-            style={({ pressed }) => [
-              styles.identityCard,
-              { backgroundColor: theme.card, borderColor: theme.borderLight },
-              pressed && styles.pressed,
-            ]}
-          >
+          <View style={styles.identity}>
             <View
+              accessible={false}
+              importantForAccessibility="no-hide-descendants"
               style={[
                 styles.avatar,
                 {
@@ -99,58 +89,84 @@ export default function ProfileScreen() {
                 },
               ]}
             >
-              <Text style={[styles.avatarText, { color: theme.blue }]}>
-                {initial}
-              </Text>
-            </View>
-            <View style={styles.identityCopy}>
-              <Text style={[styles.identityName, { color: theme.text }]}>
-                {sessionName}
-              </Text>
-              <Text style={[styles.identityEmail, { color: theme.muted }]}>
-                {sessionEmail}
-              </Text>
-              <View
-                style={[
-                  styles.rolePill,
-                  { backgroundColor: theme.successSoft },
-                ]}
-              >
+              {initials ? (
+                <Text style={[styles.avatarText, { color: theme.blue }]}>
+                  {initials}
+                </Text>
+              ) : (
                 <Ionicons
-                  name="shield-checkmark"
-                  size={13}
-                  color={theme.success}
+                  name="person-outline"
+                  size={34}
+                  color={theme.blue}
                   accessible={false}
                 />
-                <Text style={[styles.roleText, { color: theme.success }]}>
-                  {roleLabel}
+              )}
+            </View>
+            <Text
+              accessibilityRole="header"
+              style={[styles.identityName, { color: theme.text }]}
+            >
+              {nameValue}
+            </Text>
+            <Text style={[styles.identityEmail, { color: theme.muted }]}>
+              {emailValue}
+            </Text>
+          </View>
+
+          <SettingsSectionCard
+            iconName="person-outline"
+            title={t("profile.personalInfo")}
+          >
+            <View style={styles.accountDetails}>
+              <View style={styles.accountField}>
+                <Text style={[styles.accountLabel, { color: theme.muted }]}>
+                  {t("profile.registeredName")}
+                </Text>
+                <Text style={[styles.accountValue, { color: theme.text }]}>
+                  {nameValue}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.accountDivider,
+                  { backgroundColor: theme.divider },
+                ]}
+              />
+              <View style={styles.accountField}>
+                <Text style={[styles.accountLabel, { color: theme.muted }]}>
+                  {t("profile.registeredEmail")}
+                </Text>
+                <Text style={[styles.accountValue, { color: theme.text }]}>
+                  {emailValue}
                 </Text>
               </View>
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={theme.muted}
-              accessible={false}
-            />
-          </Pressable>
+          </SettingsSectionCard>
 
-          <View style={styles.shortcuts}>
-            <ProfileShortcutCard
-              icon="options-outline"
-              title={t("settings.title")}
-              description={t("settings.subtitle")}
+          <SettingsSectionCard
+            iconName="shield-checkmark-outline"
+            title={t("profile.securityTitle")}
+            description={t("profile.securityDescription")}
+          >
+            <ProfileMenuItem
+              variant="menu"
+              icon="lock-closed-outline"
+              title={t("settings.changePassword")}
+              description={t("settings.changePasswordDescription")}
+              showChevron
               onPress={() =>
                 router.push({
-                  pathname: "/(tabs)/settings",
+                  pathname: "/(tabs)/change-password",
                   params: { from: "profile" },
                 })
               }
             />
-            <ProfileShortcutCard
-              icon="shield-checkmark-outline"
-              title={t("settings.accountSecurity")}
-              description={t("settings.accountSecurityDescription")}
+            <ProfileMenuItem
+              variant="menu"
+              icon="log-in-outline"
+              title={t("profile.manageSessions")}
+              description={t("profile.manageSessionsDescription")}
+              showChevron
               onPress={() =>
                 router.push({
                   pathname: "/(tabs)/account-security",
@@ -158,68 +174,56 @@ export default function ProfileScreen() {
                 })
               }
             />
-          </View>
-
-          <SettingsSectionCard
-            iconName="help-circle-outline"
-            title={t("settings.helpSupport")}
-          >
-            <ProfileMenuItem
-              variant="menu"
-              icon="help-circle-outline"
-              title={t("profile.helpCenter")}
-              description={t("profile.helpSubtitle")}
-              onPress={() =>
-                router.push({
-                  pathname: "/(tabs)/help",
-                  params: { from: "profile" },
-                })
-              }
-            />
-            <ProfileMenuItem
-              variant="menu"
-              icon="information-circle-outline"
-              title={t("settings.about")}
-              description={t("settings.aboutDescription")}
-              onPress={() =>
-                router.push({
-                  pathname: "/(tabs)/about-smart-home",
-                  params: { from: "profile" },
-                })
-              }
-            />
           </SettingsSectionCard>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("action.logout")}
-            accessibilityState={{ disabled: loggingOut, busy: loggingOut }}
-            disabled={loggingOut}
-            onPress={confirmLogout}
-            style={({ pressed }) => [
-              styles.logout,
-              {
-                backgroundColor: theme.dangerSoft,
-                borderColor: theme.dangerSoft,
-                opacity: loggingOut ? 0.72 : 1,
-              },
-              pressed && styles.pressed,
-            ]}
+          <ProfileMenuItem
+            variant="boxed"
+            icon="options-outline"
+            title={t("settings.title")}
+            description={t("profile.settingsDescription")}
+            showChevron
+            onPress={() =>
+              router.push({
+                pathname: "/(tabs)/settings",
+                params: { from: "profile" },
+              })
+            }
+          />
+
+          <View
+            style={[styles.logoutArea, { borderTopColor: theme.borderLight }]}
           >
-            {loggingOut ? (
-              <ActivityIndicator color={theme.danger} />
-            ) : (
-              <Ionicons
-                name="log-out-outline"
-                size={21}
-                color={theme.danger}
-                accessible={false}
-              />
-            )}
-            <Text style={[styles.logoutText, { color: theme.danger }]}>
-              {t("action.logout")}
-            </Text>
-          </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("action.logout")}
+              accessibilityState={{ disabled: loggingOut, busy: loggingOut }}
+              disabled={loggingOut}
+              onPress={confirmLogout}
+              style={({ pressed }) => [
+                styles.logout,
+                {
+                  backgroundColor: theme.dangerSoft,
+                  borderColor: theme.borderLight,
+                  opacity: loggingOut ? 0.72 : 1,
+                },
+                pressed && styles.pressed,
+              ]}
+            >
+              {loggingOut ? (
+                <ActivityIndicator color={theme.danger} />
+              ) : (
+                <Ionicons
+                  name="log-out-outline"
+                  size={21}
+                  color={theme.danger}
+                  accessible={false}
+                />
+              )}
+              <Text style={[styles.logoutText, { color: theme.danger }]}>
+                {t("action.logout")}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
