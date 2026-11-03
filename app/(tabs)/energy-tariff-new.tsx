@@ -2,8 +2,8 @@
  * EN-03: Registrar una nueva tarifa referencial (solo OWNER).
  * Crea una nueva vigencia; nunca modifica tarifas anteriores.
  */
-import { useNavigation, usePreventRemove } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useNavigation, usePreventRemove } from "expo-router/react-navigation";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
