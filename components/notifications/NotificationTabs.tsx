@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useAppTheme } from "@/lib/theme/app-theme";
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   label: {
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "800",
     flexShrink: 1,
   },
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: typography.size.caption,
     fontWeight: "800",
   },
 });
