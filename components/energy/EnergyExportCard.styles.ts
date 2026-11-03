@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -8,11 +9,11 @@ export const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "800",
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 4,
   },
   actions: {
@@ -36,15 +37,15 @@ export const styles = StyleSheet.create({
     minWidth: 0,
   },
   actionTitle: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
   actionDescription: {
-    fontSize: 10,
+    fontSize: typography.size.caption,
     marginTop: 3,
   },
   note: {
-    fontSize: 11,
+    fontSize: typography.size.caption,
     lineHeight: 17,
     marginTop: 10,
   },

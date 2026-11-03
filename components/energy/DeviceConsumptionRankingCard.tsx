@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Text, View } from "react-native";
 
@@ -70,16 +71,16 @@ export function DeviceConsumptionRankingCard({
       {loading ? (
         <View style={styles.loading}>
           <ActivityIndicator color={theme.blue} />
-          <Text style={{ color: theme.muted, fontSize: 12 }}>
+          <Text style={{ color: theme.muted, fontSize: typography.size.caption }}>
             Consultando dispositivos...
           </Text>
         </View>
       ) : error ? (
-        <Text style={{ color: theme.danger, fontSize: 13 }}>
+        <Text style={{ color: theme.danger, fontSize: typography.size.helper }}>
           {error}
         </Text>
       ) : items.length === 0 ? (
-        <Text style={{ color: theme.muted, fontSize: 13 }}>
+        <Text style={{ color: theme.muted, fontSize: typography.size.helper }}>
           {data?.deviceCount === 0
             ? "Este hogar todavía no tiene dispositivos."
             : data?.measuredDeviceCount === 0
