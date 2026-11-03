@@ -10,12 +10,12 @@ import { styles, BAR_HORIZONTAL_PADDING } from "./LiquidNavigation.styles";
 
 
 const ITEMS = [
-  { route: "index", label: "Inicio", icon: "home" as const },
-  { route: "homes", label: "Hogares", icon: "home-outline" as const },
-  { route: "reports", label: "Energía", icon: "flash-outline" as const },
-  { route: "notifications", label: "Avisos", icon: "notifications-outline" as const },
-  { route: "profile", label: "Perfil", icon: "person-outline" as const },
-];
+  { route: "index", label: "Inicio", icon: "home-outline", activeIcon: "home" },
+  { route: "homes", label: "Hogares", icon: "business-outline", activeIcon: "business" },
+  { route: "reports", label: "Energía", icon: "flash-outline", activeIcon: "flash" },
+  { route: "notifications", label: "Avisos", icon: "notifications-outline", activeIcon: "notifications" },
+  { route: "profile", label: "Perfil", icon: "person-outline", activeIcon: "person" },
+] as const;
 
 
 const BAR_BOTTOM_GAP = 12;
@@ -147,7 +147,7 @@ export function LiquidNavigation({
             >
               <View style={styles.iconWrap}>
                 <Ionicons
-                  name={item.icon}
+                  name={selected ? item.activeIcon : item.icon}
                   size={25}
                   color={selected ? theme.tab.activeText : theme.muted}
                 />
