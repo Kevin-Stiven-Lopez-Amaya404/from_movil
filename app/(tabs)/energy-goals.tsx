@@ -4,6 +4,7 @@
  * El PUT reemplaza ambos campos: el que quede vacío se envía como null.
  */
 import { Ionicons } from "@expo/vector-icons";
+import { usePreventRemove, useNavigation } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
@@ -19,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackButton } from "@/components/common/BackButton";
 import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
+import { EnergyGoalProgressRow } from "@/components/energy/EnergyGoalProgressRow";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { Goal } from "@/lib/features/energy-sql034/types";
 import {
@@ -43,6 +45,7 @@ import { styles } from "../../styles/(tabs)/energy.styles";
 
 export default function EnergyGoalsScreen() {
   const params = useLocalSearchParams<{ homeId?: string; month?: string }>();
+  const navigation = useNavigation();
   const theme = useAppTheme();
   const layout = useResponsiveLayout();
   const { accessibleHomes } = useSmartHome();
@@ -65,6 +68,10 @@ export default function EnergyGoalsScreen() {
     home && access.canRequest ? `${home.id}:${month}` : null,
     () => energyService.getGoal(home!.id, month),
   );
+  const summaryQuery = useEnergyQuery(
+    home && access.canRequest ? `${home.id}:${month}` : null,
+    () => energyService.getSummary(home!.id, month),
+  );
   const goal: Goal | null = query.data?.goal ?? null;
   const blocked = !home || !access.canRequest || isForbiddenError(query.error);
 
@@ -76,12 +83,75 @@ export default function EnergyGoalsScreen() {
     budgetResult.value === null &&
     targetResult.value === null;
   const formValid = budgetResult.ok && targetResult.ok && !bothEmpty;
+  const hasUnsavedChanges =
+    editing &&
+    (budgetText !== trimDecimalZeros(goal?.monthlyBudgetCop) ||
+      targetText !== trimDecimalZeros(goal?.targetKwh));
+
+  usePreventRemove(hasUnsavedChanges || saving, ({ data }) => {
+    if (saving) return;
+
+    Alert.alert("¿Descartar los cambios?", "Los valores editados no se guardarán.", [
+      { text: "Seguir editando", style: "cancel" },
+      {
+        text: "Descartar",
+        style: "destructive",
+        onPress: () => navigation.dispatch(data.action),
+      },
+    ]);
+  });
+
+  const progressUnavailableText = summaryQuery.loading
+    ? "Consultando el progreso mensual..."
+    : isForbiddenError(summaryQuery.error)
+      ? "El servidor no autorizó consultar el progreso de consumo."
+      : summaryQuery.error
+        ? "No fue posible cargar el progreso mensual."
+        : summaryQuery.data?.readingsCount === 0
+          ? "No hay mediciones registradas para calcular el progreso."
+        : "Avance no disponible.";
+  const hasMeasurements = (summaryQuery.data?.readingsCount ?? 0) > 0;
+
+  function closeEditor() {
+    if (saving || !editing) return;
+
+    if (hasUnsavedChanges) {
+      Alert.alert("¿Descartar los cambios?", "Los valores editados no se guardarán.", [
+        { text: "Seguir editando", style: "cancel" },
+        {
+          text: "Descartar",
+          style: "destructive",
+          onPress: () => setEditing(false),
+        },
+      ]);
+      return;
+    }
+
+    setEditing(false);
+  }
 
   function changeMonth(delta: number) {
     if (saving) return;
-    setEditing(false);
-    setServerError(null);
-    setMonth((value) => shiftMonth(value, delta));
+
+    const applyMonthChange = () => {
+      setEditing(false);
+      setServerError(null);
+      setMonth((value) => shiftMonth(value, delta));
+    };
+
+    if (hasUnsavedChanges) {
+      Alert.alert("¿Descartar los cambios?", "Los valores editados no se guardarán.", [
+        { text: "Seguir editando", style: "cancel" },
+        {
+          text: "Descartar y cambiar",
+          style: "destructive",
+          onPress: applyMonthChange,
+        },
+      ]);
+      return;
+    }
+
+    applyMonthChange();
   }
 
   function startEditing() {
@@ -118,12 +188,14 @@ export default function EnergyGoalsScreen() {
               await energyService.saveGoal(home.id, month, body);
               setEditing(false);
               query.reload();
+              summaryQuery.reload();
             } catch (error) {
               setServerError(energyErrorMessage(error));
               const serverCode = (error as { serverCode?: string })?.serverCode;
               if (serverCode === "ENERGY_GOAL_CONCURRENT_WRITE") {
                 // Otra sesión cambió el mes: se recargan los datos actuales.
                 query.reload();
+                summaryQuery.reload();
               }
             } finally {
               setSaving(false);
@@ -150,7 +222,10 @@ export default function EnergyGoalsScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <View style={styles.header}>
-            <BackButton color={theme.text} fallbackHref="/(tabs)/(main)/reports" />
+            <BackButton
+              color={theme.text}
+              fallbackHref="/(tabs)/(main)/reports"
+            />
             <View style={styles.headerTexts}>
               <Text style={[styles.title, { color: theme.text }]}>
                 Presupuesto y meta
@@ -227,6 +302,7 @@ export default function EnergyGoalsScreen() {
                   <TextInput
                     accessibilityLabel="Presupuesto mensual en pesos"
                     value={budgetText}
+                    onBlur={() => setTouched(true)}
                     onChangeText={(text) => {
                       setBudgetText(text);
                       setServerError(null);
@@ -249,6 +325,7 @@ export default function EnergyGoalsScreen() {
                   <TextInput
                     accessibilityLabel="Meta de consumo en kilovatios hora"
                     value={targetText}
+                    onBlur={() => setTouched(true)}
                     onChangeText={(text) => {
                       setTargetText(text);
                       setServerError(null);
@@ -285,8 +362,8 @@ export default function EnergyGoalsScreen() {
 
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityState={{ disabled: saving, busy: saving }}
-                    disabled={saving}
+                    accessibilityState={{ disabled: !formValid || saving, busy: saving }}
+                    disabled={!formValid || saving}
                     onPress={handleSave}
                     style={[
                       styles.primaryButton,
@@ -307,7 +384,7 @@ export default function EnergyGoalsScreen() {
                   <Pressable
                     accessibilityRole="button"
                     disabled={saving}
-                    onPress={() => setEditing(false)}
+                    onPress={closeEditor}
                     style={[styles.secondaryButton, { borderColor: theme.border }]}
                   >
                     <Text style={[styles.secondaryButtonText, { color: theme.text }]}>
@@ -328,7 +405,7 @@ export default function EnergyGoalsScreen() {
                     Presupuesto mensual
                   </Text>
                   <Text style={[styles.value, { color: theme.text }]}>
-                    {goal?.monthlyBudgetCop
+                    {goal?.monthlyBudgetCop !== null && goal?.monthlyBudgetCop !== undefined
                       ? formatCop(goal.monthlyBudgetCop)
                       : "No configurado"}
                   </Text>
@@ -337,8 +414,36 @@ export default function EnergyGoalsScreen() {
                     Meta de consumo
                   </Text>
                   <Text style={[styles.value, { color: theme.text }]}>
-                    {goal?.targetKwh ? formatKwh(goal.targetKwh) : "No configurada"}
+                    {goal?.targetKwh !== null && goal?.targetKwh !== undefined
+                      ? formatKwh(goal.targetKwh)
+                      : "No configurada"}
                   </Text>
+
+                  {goal?.monthlyBudgetCop !== null &&
+                  goal?.monthlyBudgetCop !== undefined ? (
+                    <EnergyGoalProgressRow
+                      title="Presupuesto usado"
+                      limitLabel={formatCop(goal.monthlyBudgetCop)}
+                      percent={
+                        hasMeasurements
+                          ? summaryQuery.data?.budgetUsagePercent ?? null
+                          : null
+                      }
+                      unavailableText={progressUnavailableText}
+                    />
+                  ) : null}
+                  {goal?.targetKwh !== null && goal?.targetKwh !== undefined ? (
+                    <EnergyGoalProgressRow
+                      title="Meta de consumo usada"
+                      limitLabel={formatKwh(goal.targetKwh)}
+                      percent={
+                        hasMeasurements
+                          ? summaryQuery.data?.targetUsagePercent ?? null
+                          : null
+                      }
+                      unavailableText={progressUnavailableText}
+                    />
+                  ) : null}
 
                   {goal ? (
                     <Text style={[styles.note, { color: theme.muted }]}>
