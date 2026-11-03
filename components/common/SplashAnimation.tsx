@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from "react";
-import { View } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -12,21 +11,24 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { useSmartHome } from "@/lib/context/smart-home-context";
-import { useAppTheme } from "@/lib/theme/app-theme";
-import { styles } from "./SplashAnimation.styles";
+import { styles, SPLASH_BACKGROUND } from "./SplashAnimation.styles";
 
-const ANIMATION_DURATION_MS = 1680;
+const ANIMATION_DURATION_MS = 950;
 const SMART_HOME_LOGO = require("@/assets/images/logo-smart-home-white.png");
 
 interface Props {
-  /** Callback que avisa al layout raíz que terminó el splash. */
+  /** Callback que avisa al layout raíz que terminó la animación. */
   onFinish: () => void;
 }
 
+/**
+ * Animación de bienvenida (solo la primera vez por instalación).
+ *
+ * Arranca sobre el mismo color del splash nativo para que no haya salto:
+ * el logo aparece con un fundido y un leve crecimiento, se sostiene un
+ * instante y la capa completa se desvanece sobre la primera pantalla.
+ */
 export default function SplashAnimation({ onFinish }: Props) {
-  const theme = useAppTheme();
-  const { colorPalette } = useSmartHome();
   const progress = useSharedValue(0);
   const reduceMotion = useReducedMotion();
   const hasFinished = useRef(false);
@@ -54,7 +56,7 @@ export default function SplashAnimation({ onFinish }: Props) {
       1,
       {
         duration: ANIMATION_DURATION_MS,
-        easing: Easing.linear,
+        easing: Easing.out(Easing.cubic),
       },
       (finished) => {
         if (finished) runOnJS(finishOnce)();
@@ -64,108 +66,19 @@ export default function SplashAnimation({ onFinish }: Props) {
     return () => cancelAnimation(progress);
   }, [finishOnce, progress, reduceMotion]);
 
-  const leftShapeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      progress.value,
-      [0, 0.1, 0.28, 0.48],
-      [0, 0.24, 0.2, 0],
-      Extrapolation.CLAMP,
-    ),
-    transform: [
-      {
-        translateX: interpolate(
-          progress.value,
-          [0, 0.28, 0.48],
-          [-32, 0, -10],
-          Extrapolation.CLAMP,
-        ),
-      },
-      {
-        translateY: interpolate(
-          progress.value,
-          [0, 0.28, 0.48],
-          [-18, 0, -12],
-          Extrapolation.CLAMP,
-        ),
-      },
-      {
-        scale: interpolate(
-          progress.value,
-          [0, 0.28, 0.48],
-          [0.78, 1, 1.04],
-          Extrapolation.CLAMP,
-        ),
-      },
-    ],
-  }));
-
-  const rightShapeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      progress.value,
-      [0, 0.1, 0.28, 0.48],
-      [0, 0.24, 0.2, 0],
-      Extrapolation.CLAMP,
-    ),
-    transform: [
-      {
-        translateX: interpolate(
-          progress.value,
-          [0, 0.28, 0.48],
-          [32, 0, 10],
-          Extrapolation.CLAMP,
-        ),
-      },
-      {
-        translateY: interpolate(
-          progress.value,
-          [0, 0.28, 0.48],
-          [18, 0, 12],
-          Extrapolation.CLAMP,
-        ),
-      },
-      {
-        scale: interpolate(
-          progress.value,
-          [0, 0.28, 0.48],
-          [0.78, 1, 1.04],
-          Extrapolation.CLAMP,
-        ),
-      },
-    ],
-  }));
-
-  const haloStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      progress.value,
-      [0.16, 0.4, 0.78, 1],
-      [0, 0.14, 0.14, 0],
-      Extrapolation.CLAMP,
-    ),
-    transform: [
-      {
-        scale: interpolate(
-          progress.value,
-          [0.16, 0.4],
-          [0.92, 1],
-          Extrapolation.CLAMP,
-        ),
-      },
-    ],
-  }));
-
   const logoStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
       progress.value,
-      [0.16, 0.43, 0.79, 1],
-      [0, 1, 1, 0],
+      [0, 0.45],
+      [0, 1],
       Extrapolation.CLAMP,
     ),
     transform: [
       {
         scale: interpolate(
           progress.value,
-          [0.16, 0.43],
-          [0.975, 1],
+          [0, 0.45],
+          [0.94, 1],
           Extrapolation.CLAMP,
         ),
       },
@@ -175,38 +88,28 @@ export default function SplashAnimation({ onFinish }: Props) {
   const screenStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
       progress.value,
-      [0, 0.8, 1],
+      [0, 0.72, 1],
       [1, 1, 0],
       Extrapolation.CLAMP,
     ),
   }));
 
-  const backgroundColor =
-    colorPalette === "emerald"
-      ? theme.dark ? theme.background : theme.primary
-      : "#005CC1"; // Excepción intencional: azul propio de la animación de splash.
-
   return (
-    <Animated.View style={[styles.container, { backgroundColor }, screenStyle]}>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.halo,
-          colorPalette === "emerald" && { backgroundColor: theme.accent },
-          haloStyle,
-        ]}
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.container,
+        { backgroundColor: SPLASH_BACKGROUND },
+        screenStyle,
+      ]}
+    >
+      <Animated.Image
+        accessible
+        accessibilityLabel="Smart Home"
+        resizeMode="contain"
+        source={SMART_HOME_LOGO}
+        style={[styles.logo, logoStyle]}
       />
-      <View style={styles.markStage}>
-        <Animated.View style={[styles.geometryLeft, leftShapeStyle]} />
-        <Animated.View style={[styles.geometryRight, rightShapeStyle]} />
-        <Animated.Image
-          accessible
-          accessibilityLabel="SmartHome"
-          resizeMode="contain"
-          source={SMART_HOME_LOGO}
-          style={[styles.logo, logoStyle]}
-        />
-      </View>
     </Animated.View>
   );
 }

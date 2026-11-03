@@ -1,12 +1,12 @@
-
 import {
   DarkTheme,
   DefaultTheme,
   Stack,
   ThemeProvider,
 } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -20,26 +20,56 @@ import {
   SmartHomeProvider,
   useSmartHome,
 } from "@/lib/context/smart-home-context";
+import {
+  hasSeenIntroSplash,
+  markIntroSplashSeen,
+} from "@/lib/preferences/intro-splash-preferences";
 import { getAppTheme } from "@/lib/theme/app-theme";
+import { markAppReady } from "@/lib/ui/app-ready";
+
+// El splash nativo se mantiene visible hasta que sepamos qué mostrar.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.setOptions({ duration: 200, fade: true });
 
 export const unstable_settings = {
   initialRouteName: "welcome",
 };
 
+/**
+ * checking: leyendo si ya se vio la animación (cubre el splash nativo).
+ * intro:    primera vez en esta instalación, se reproduce la animación.
+ * done:     la animación terminó o no corresponde mostrarla.
+ */
+type IntroPhase = "checking" | "intro" | "done";
+
 type RootNavigatorProps = {
-  splashDone: boolean;
-  onSplashFinish: () => void;
+  introPhase: IntroPhase;
+  onIntroFinish: () => void;
   loadingBackground: string;
   loadingColor: string;
 };
 
 function RootNavigator({
-  splashDone,
-  onSplashFinish,
+  introPhase,
+  onIntroFinish,
   loadingBackground,
   loadingColor,
 }: RootNavigatorProps) {
   const { isAuthenticated, isLoading } = useAuthSession();
+
+  // Ocultar el splash nativo:
+  // - Primera vez: en cuanto arranca la animación (mismo fondo, sin salto).
+  // - Resto de veces: cuando la sesión ya está restaurada, para entrar directo.
+  useEffect(() => {
+    if (introPhase === "checking") return;
+    if (introPhase === "intro" || !isLoading) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+    // La app ya es visible: las pantallas pueden animar su entrada.
+    if (introPhase === "done" && !isLoading) {
+      markAppReady();
+    }
+  }, [introPhase, isLoading]);
 
   return (
     <>
@@ -65,13 +95,13 @@ function RootNavigator({
         <Stack.Screen name="reactivate-account" />
       </Stack>
 
-      {/* Splash visual sin desmontar el navegador */}
-      {!splashDone && (
-        <SplashAnimation onFinish={onSplashFinish} />
+      {/* Animación de bienvenida: solo la primera vez por instalación */}
+      {introPhase === "intro" && (
+        <SplashAnimation onFinish={onIntroFinish} />
       )}
 
-      {/* Esperar la restauración de la sesión */}
-      {splashDone && isLoading && (
+      {/* Solo aparece si la animación terminó y la sesión aún no está lista */}
+      {introPhase === "done" && isLoading && (
         <View
           style={[
             styles.loadingOverlay,
@@ -89,11 +119,11 @@ function RootNavigator({
 }
 
 function RootContent({
-  splashDone,
-  onSplashFinish,
+  introPhase,
+  onIntroFinish,
 }: {
-  splashDone: boolean;
-  onSplashFinish: () => void;
+  introPhase: IntroPhase;
+  onIntroFinish: () => void;
 }) {
   const { colorPalette, effectiveColorMode } = useSmartHome();
 
@@ -127,8 +157,8 @@ function RootContent({
         }}
       >
         <RootNavigator
-          splashDone={splashDone}
-          onSplashFinish={onSplashFinish}
+          introPhase={introPhase}
+          onIntroFinish={onIntroFinish}
           loadingBackground={theme.background}
           loadingColor={theme.blue}
         />
@@ -137,7 +167,7 @@ function RootContent({
       <StatusBar
         animated
         style={
-          splashDone
+          introPhase === "done"
             ? theme.dark
               ? "light"
               : "dark"
@@ -149,10 +179,23 @@ function RootContent({
 }
 
 export default function RootLayout() {
-  const [splashDone, setSplashDone] = useState(false);
+  const [introPhase, setIntroPhase] = useState<IntroPhase>("checking");
 
-  const finishSplash = useCallback(() => {
-    setSplashDone(true);
+  useEffect(() => {
+    let active = true;
+
+    hasSeenIntroSplash().then((seen) => {
+      if (active) setIntroPhase(seen ? "done" : "intro");
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const finishIntro = useCallback(() => {
+    setIntroPhase("done");
+    void markIntroSplashSeen();
   }, []);
 
   return (
@@ -160,8 +203,8 @@ export default function RootLayout() {
       <AuthSessionProvider>
         <SmartHomeProvider>
           <RootContent
-            onSplashFinish={finishSplash}
-            splashDone={splashDone}
+            introPhase={introPhase}
+            onIntroFinish={finishIntro}
           />
         </SmartHomeProvider>
       </AuthSessionProvider>
