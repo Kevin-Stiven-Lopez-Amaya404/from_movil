@@ -5,6 +5,7 @@ import type { ColorPaletteName } from "@/lib/domain/preferences";
 import { typography } from "@/lib/theme/typography";
 
 type ColorPaletteSelectorProps = {
+  accessibilityLabel?: string;
   activePalette: ColorPaletteName;
   borderColor: string;
   labels: Record<ColorPaletteName, string>;
@@ -19,6 +20,7 @@ type ColorPaletteSelectorProps = {
 const PALETTES: ColorPaletteName[] = ["classic", "emerald"];
 
 export function ColorPaletteSelector({
+  accessibilityLabel,
   activePalette,
   borderColor,
   labels,
@@ -32,7 +34,11 @@ export function ColorPaletteSelector({
   return (
     <View style={styles.container}>
       <Text style={[styles.title, { color: textColor }]}>{title}</Text>
-      <View style={styles.options}>
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel={accessibilityLabel ?? title}
+        style={styles.options}
+      >
         {PALETTES.map((palette) => {
           const active = activePalette === palette;
 
@@ -52,6 +58,7 @@ export function ColorPaletteSelector({
               ]}
             >
               <Ionicons
+                accessible={false}
                 name={active ? "checkmark-circle" : "ellipse-outline"}
                 size={17}
                 color={active ? onPrimaryColor : textColor}

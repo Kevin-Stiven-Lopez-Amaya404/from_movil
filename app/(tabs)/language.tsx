@@ -7,7 +7,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
 import { useSmartHome } from "@/lib/context/smart-home-context";
-import type { AppLanguage } from "@/lib/domain/preferences";
+import {
+  SUPPORTED_APP_LANGUAGES,
+  type AppLanguage,
+} from "@/lib/domain/preferences";
 import {
   returnToParent,
   useAndroidBackFallback,
@@ -16,11 +19,19 @@ import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { styles } from "../../styles/(tabs)/language.styles";
 
-const languages: { code: AppLanguage; label: string; native: string }[] = [
-  { code: "es", label: "Español", native: "Español (Colombia)" },
-  { code: "en", label: "English", native: "English" },
-  { code: "pt", label: "Português", native: "Português (Brasil)" },
-];
+const languageLabels: Record<
+  AppLanguage,
+  { label: string; native: string }
+> = {
+  es: { label: "Español", native: "Español (Colombia)" },
+  en: { label: "English", native: "English" },
+  pt: { label: "Português", native: "Português (Brasil)" },
+};
+
+const languages = SUPPORTED_APP_LANGUAGES.map((code) => ({
+  code,
+  ...languageLabels[code],
+}));
 
 export default function LanguageScreen() {
   const router = useRouter();
@@ -28,7 +39,10 @@ export default function LanguageScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const { language, setLanguage } = useSmartHome();
-  useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
+  const parentKey = from === "settings" ? "settings" : "profile";
+  const parentHref =
+    from === "settings" ? "/(tabs)/settings" : "/(tabs)/(main)/profile";
+  useAndroidBackFallback(from !== parentKey, parentHref);
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -63,8 +77,8 @@ export default function LanguageScreen() {
               returnToParent(
                 router,
                 from,
-                "profile",
-                "/(tabs)/(main)/profile",
+                parentKey,
+                parentHref,
               )
             }
             style={({ pressed }) => [
@@ -130,8 +144,8 @@ export default function LanguageScreen() {
                     returnToParent(
                       router,
                       from,
-                      "profile",
-                      "/(tabs)/(main)/profile",
+                      parentKey,
+                      parentHref,
                     );
                   }}
                   style={({ pressed }) => [

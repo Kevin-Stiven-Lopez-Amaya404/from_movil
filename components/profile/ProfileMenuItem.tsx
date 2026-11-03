@@ -19,6 +19,7 @@ type ProfileMenuItemProps = {
   /** `boxed` muestra la fila como tarjeta; `plain` como opcion simple. */
   variant?: "plain" | "boxed" | "menu";
   showChevron?: boolean;
+  accessibilityHint?: string;
 };
 
 /**
@@ -29,6 +30,7 @@ type ProfileMenuItemProps = {
  */
 export function ProfileMenuItem({
   description,
+  accessibilityHint,
   icon,
   intent = "default",
   onPress,
@@ -45,7 +47,8 @@ export function ProfileMenuItem({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={description ? `${title}. ${description}` : title}
+      accessibilityHint={accessibilityHint}
       style={({ pressed }) => [
         variant === "boxed"
           ? [styles.boxedRow, { backgroundColor: theme.row, borderColor: theme.border }]
@@ -58,17 +61,32 @@ export function ProfileMenuItem({
     >
       {variant === "menu" ? (
         <View style={[styles.menuIcon, { backgroundColor: theme.rowAlt }]}>
-          <Ionicons name={icon} size={20} color={iconColor} />
+          <Ionicons
+            accessible={false}
+            name={icon}
+            size={20}
+            color={iconColor}
+          />
         </View>
       ) : (
-        <Ionicons name={icon} size={variant === "boxed" ? 28 : 25} color={iconColor} />
+        <Ionicons
+          accessible={false}
+          name={icon}
+          size={variant === "boxed" ? 28 : 25}
+          color={iconColor}
+        />
       )}
       <View style={styles.copy}>
         <Text style={[styles.title, { color: intent === "danger" ? theme.danger : theme.text }]}>{title}</Text>
         {!!description && <Text style={[styles.description, { color: theme.muted }]}>{description}</Text>}
       </View>
       {showChevron || variant === "menu" ? (
-        <Ionicons name="chevron-forward" size={18} color={theme.muted} />
+        <Ionicons
+          accessible={false}
+          name="chevron-forward"
+          size={18}
+          color={theme.muted}
+        />
       ) : null}
     </Pressable>
   );

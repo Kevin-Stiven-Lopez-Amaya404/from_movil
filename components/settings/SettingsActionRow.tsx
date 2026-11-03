@@ -1,9 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { typography } from "@/lib/theme/typography";
 
 type SettingsActionRowProps = {
+  accessibilityHint?: string;
   backgroundColor: string;
   borderColor: string;
   description?: string;
@@ -14,6 +21,7 @@ type SettingsActionRowProps = {
   title: string;
   mutedColor?: string;
   showChevron?: boolean;
+  pending?: boolean;
 };
 
 const appFont = typography.fontFamily.emphasis;
@@ -25,6 +33,7 @@ const appFont = typography.fontFamily.emphasis;
  * icono → título → descripción → chevron.
  */
 export function SettingsActionRow({
+  accessibilityHint,
   backgroundColor,
   borderColor,
   description,
@@ -35,11 +44,15 @@ export function SettingsActionRow({
   textColor,
   title,
   showChevron = true,
+  pending = false,
 }: SettingsActionRowProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={description ? `${title}. ${description}` : title}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: pending, busy: pending }}
+      disabled={pending}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
@@ -47,10 +60,11 @@ export function SettingsActionRow({
           backgroundColor,
           borderColor,
         },
-        pressed && styles.pressed,
+        (pressed || pending) && styles.pressed,
       ]}
     >
       <View
+        accessible={false}
         style={[
           styles.iconContainer,
           {
@@ -63,7 +77,6 @@ export function SettingsActionRow({
 
       <View style={styles.rowCopy}>
         <Text
-          numberOfLines={1}
           style={[
             styles.rowText,
             {
@@ -76,7 +89,6 @@ export function SettingsActionRow({
 
         {!!description && (
           <Text
-            numberOfLines={2}
             style={[
               styles.rowDescription,
               {
@@ -89,13 +101,20 @@ export function SettingsActionRow({
         )}
       </View>
 
-      {showChevron && (
+      {pending ? (
+        <ActivityIndicator
+          size="small"
+          color={mutedColor ?? textColor}
+          accessible={false}
+        />
+      ) : showChevron ? (
         <Ionicons
           name="chevron-forward"
           size={18}
           color={mutedColor ?? textColor}
+          accessible={false}
         />
-      )}
+      ) : null}
     </Pressable>
   );
 }
@@ -108,6 +127,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 11,
     minHeight: 62,
+    marginBottom: 8,
     paddingHorizontal: 12,
     paddingVertical: 9,
   },
