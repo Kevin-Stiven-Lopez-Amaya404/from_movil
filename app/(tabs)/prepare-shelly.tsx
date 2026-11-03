@@ -26,6 +26,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ShellyLanTelemetry } from "@/components/shelly/shelly-lan-telemetry";
+import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
 import { ApiError } from "@/lib/api/api-error";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { PairingSession } from "@/lib/pairing/pairing-types";
@@ -999,6 +1000,7 @@ export default function PrepareShellyScreen() {
         { backgroundColor: theme.background },
       ]}
     >
+      <KeyboardAvoidingScreen>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
@@ -1491,6 +1493,7 @@ export default function PrepareShellyScreen() {
           ) : null}
         </View>
       </ScrollView>
+      </KeyboardAvoidingScreen>
     </SafeAreaView>
   );
 }

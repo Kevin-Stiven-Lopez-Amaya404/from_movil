@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
 import { EnergyRealtimeCard } from "@/components/homes/EnergyRealtimeCard";
 import { ShellyDeviceCard } from "@/components/homes/ShellyDeviceCard";
 import { useSmartHome } from "@/lib/context/smart-home-context";
@@ -244,7 +245,9 @@ export default function HomeDetailScreen() {
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.background }]}
     >
+      <KeyboardAvoidingScreen>
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: layout.gutter,
@@ -495,6 +498,7 @@ export default function HomeDetailScreen() {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingScreen>
 
       <Modal
         visible={!!telemetryDevice}

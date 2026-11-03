@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 
+import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { AppLanguage } from "@/lib/domain/preferences";
 import {
@@ -46,7 +47,9 @@ export default function LanguageScreen() {
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.background }]}
     >
+      <KeyboardAvoidingScreen>
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: layout.gutter,
@@ -165,6 +168,7 @@ export default function LanguageScreen() {
           </View>
         </View>
       </ScrollView>
+      </KeyboardAvoidingScreen>
     </SafeAreaView>
   );
 }

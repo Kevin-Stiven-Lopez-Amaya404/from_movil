@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { HomeMember, HomeRole } from "@/lib/domain/home";
 import { useAndroidBackFallback } from "@/lib/navigation/use-android-back-fallback";
@@ -223,6 +224,7 @@ export default function AccessScreen() {
         { backgroundColor: theme.background },
       ]}
     >
+      <KeyboardAvoidingScreen>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -681,6 +683,7 @@ export default function AccessScreen() {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingScreen>
     </SafeAreaView>
   );
 }

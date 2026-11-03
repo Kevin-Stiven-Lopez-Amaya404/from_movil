@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackButton } from "@/components/common/BackButton";
+import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { Goal } from "@/lib/features/energy-sql034/types";
 import {
@@ -138,6 +139,7 @@ export default function EnergyGoalsScreen() {
       edges={["top", "left", "right"]}
       style={[styles.safeArea, { backgroundColor: theme.background }]}
     >
+      <KeyboardAvoidingScreen>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
@@ -361,6 +363,7 @@ export default function EnergyGoalsScreen() {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingScreen>
     </SafeAreaView>
   );
 }

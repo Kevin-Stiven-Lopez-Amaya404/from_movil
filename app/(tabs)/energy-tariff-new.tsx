@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackButton } from "@/components/common/BackButton";
+import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import {
   energyErrorMessage,
@@ -91,6 +92,7 @@ export default function EnergyTariffNewScreen() {
       edges={["top", "left", "right"]}
       style={[styles.safeArea, { backgroundColor: theme.background }]}
     >
+      <KeyboardAvoidingScreen>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
@@ -228,6 +230,7 @@ export default function EnergyTariffNewScreen() {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingScreen>
     </SafeAreaView>
   );
 }
