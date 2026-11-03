@@ -20,7 +20,7 @@ export function getAppTheme(
   const emerald = colorPalette === "emerald";
   const primary = emerald
     ? dark ? "#34D399" : "#047857"
-    : "#0047AB";
+    : dark ? "#8AB4FF" : "#0047AB";
   const primaryPressed = emerald
     ? dark ? "#6EE7B7" : "#065F46"
     : "#003380";
@@ -38,7 +38,7 @@ export function getAppTheme(
     : dark ? "#F8FAFC" : "#0A192F";
   const textSecondary = emerald
     ? dark ? "#B2C5B9" : "#526B5D"
-    : dark ? "#CBD5E1" : "#64748B";
+    : dark ? "#CBD5E1" : "#5B6B80";
   const border = emerald
     ? dark ? "#2B4537" : "#D6E7DD"
     : dark ? "#334155" : "#E2E8F0";
@@ -58,7 +58,7 @@ export function getAppTheme(
     accent: emerald ? "#10B981" : "#22C55E",
     info: emerald
       ? dark ? "#60A5FA" : "#2563EB"
-      : "#0047AB",
+      : dark ? "#8AB4FF" : "#0047AB",
     onPrimary: emerald && dark ? "#0D1714" : "#FFFFFF",
     background: emerald
       ? dark ? "#0D1714" : "#F5FAF7"
@@ -83,27 +83,27 @@ export function getAppTheme(
     brandSoftStrong: emerald
       ? primarySoft
       : "#EEF4FF",
-    mutedStrong: emerald ? textSecondary : "#6B7280",
+    mutedStrong: emerald ? textSecondary : dark ? "#6B7280" : "#5B6B80",
     chartGrid: emerald
       ? divider
       : dark ? "#263750" : "#E5EDF7",
     switchTrackActive: emerald ? primarySoft : "#0B5ED7",
     switchTrackInactive: emerald
-      ? dark ? "#3D4C43" : "#DCE8DF"
-      : "#CBD5E1",
+      ? dark ? "#82988A" : "#789184"
+      : dark ? "#CBD5E1" : "#7D8799",
     deviceSwitchTrackInactive: emerald
-      ? dark ? "#3D4C43" : "#DCE8DF"
-      : "#CDD2E4",
+      ? dark ? "#82988A" : "#789184"
+      : dark ? "#CDD2E4" : "#7D8799",
     deviceSwitchTrackActive: emerald
       ? dark ? "#176B4E" : "#A7E4C6"
       : "#BDE8CB",
     deviceSwitchThumbActive: emerald
       ? dark ? "#34D399" : "#047857"
-      : "#2AAF5D",
-    passwordStrong: emerald ? primary : "#003380",
+      : "#15803D",
+    passwordStrong: emerald ? primary : dark ? "#8AB4FF" : "#003380",
     passwordTrack: emerald ? divider : "#E2E8F0",
     profileDivider: emerald ? divider : "#E2E8F0",
-    primary: emerald ? primary : "#003380",
+    primary: emerald ? primary : dark ? "#8AB4FF" : "#003380",
     card: surface,
     row,
     rowAlt: surfaceSecondary,
@@ -116,13 +116,13 @@ export function getAppTheme(
     // ESTADOS
     // ==========================================
 
-    warning: emerald ? dark ? "#FBBF24" : "#B45309" : "#FF3B20",
+    warning: dark ? "#FBBF24" : "#B45309",
 
-    danger: "#FF3B20",
+    danger: dark ? "#FF6B57" : "#C62817",
 
     dangerSoft: dark ? "#3A1D1A" : "#FFF1EF",
 
-    success: emerald ? primary : "#22C55E",
+    success: emerald ? primary : dark ? "#4ADE80" : "#15803D",
 
     successSoft: emerald
       ? primarySoft

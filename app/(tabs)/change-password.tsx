@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
 import { AuthPasswordField } from "@/components/auth/AuthTextField";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 
@@ -100,7 +101,9 @@ export default function ChangePasswordScreen() {
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.background }]}
     >
+      <KeyboardAvoidingScreen>
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: layout.gutter,
@@ -220,6 +223,7 @@ export default function ChangePasswordScreen() {
           </View>
         </View>
       </ScrollView>
+      </KeyboardAvoidingScreen>
     </SafeAreaView>
   );
 }
