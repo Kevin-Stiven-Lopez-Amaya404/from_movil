@@ -1,7 +1,17 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -11,7 +21,7 @@ import { canControlHome } from "@/lib/domain/home";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { getDeviceControlErrorMessage } from "@/lib/utils/control-error-message";
-import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
+import { getDevicePresentationList } from "@/lib/utils/device-presentation";
 import { styles } from "../../styles/(tabs)/devices.styles";
 
 function formatLastSeenAt(lastSeenAt?: string | null) {
@@ -37,10 +47,11 @@ export default function DevicesScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const [pendingDeviceId, setPendingDeviceId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
 
   const {
     devices,
-    homes,
     accessibleHomes,
     deviceLoadStatusByHome,
     homesLoadStatus,
@@ -49,12 +60,31 @@ export default function DevicesScreen() {
     toggleDevice,
   } = useSmartHome();
 
-  const accessibleHomeIds = new Set(accessibleHomes.map((home) => home.id));
-  const visibleDevices = devices.filter((device) =>
-    accessibleHomeIds.has(device.homeId),
+  const accessibleHomesById = useMemo(
+    () => new Map(accessibleHomes.map((home) => [home.id, home])),
+    [accessibleHomes],
+  );
+  const resolvedSmartAlertIds = useMemo(
+    () => new Set(resolvedSmartAlerts),
+    [resolvedSmartAlerts],
+  );
+  const activeHomeFilter =
+    selectedHomeId !== null &&
+    accessibleHomesById.has(selectedHomeId)
+      ? selectedHomeId
+      : null;
+  const { accessibleDevices, visibleDevices } = useMemo(
+    () =>
+      getDevicePresentationList(
+        devices,
+        accessibleHomes,
+        searchQuery,
+        activeHomeFilter,
+      ),
+    [accessibleHomes, activeHomeFilter, devices, searchQuery],
   );
 
-  const onlineCount = visibleDevices.filter(
+  const onlineCount = accessibleDevices.filter(
     (device) =>
       device.connectivityStatus === "ONLINE" && device.online,
   ).length;
@@ -75,7 +105,18 @@ export default function DevicesScreen() {
       (home) => deviceLoadStatusByHome[home.id] === "loaded",
     );
 
-  const { count: alertCount } = useActiveDeviceAlerts();
+  const alertCount = accessibleDevices.filter(
+    (device) =>
+      (device.critical || device.connectivityStatus === "OFFLINE") &&
+      !resolvedSmartAlertIds.has(device.id),
+  ).length;
+  const areFiltersActive =
+    searchQuery.trim().length > 0 || activeHomeFilter !== null;
+  const resultCountText = areDeviceListsLoaded
+    ? areFiltersActive
+      ? `${visibleDevices.length} de ${accessibleDevices.length}`
+      : `${accessibleDevices.length} dispositivos`
+    : `${visibleDevices.length} visibles`;
 
   function openDeviceHome(homeId: string) {
     setActiveHomeId(homeId);
@@ -103,6 +144,108 @@ export default function DevicesScreen() {
     }
   }
 
+  const renderEmptyState = () => {
+    if (homesLoadStatus !== "loaded" || isDeviceListLoading) return null;
+
+    if (accessibleHomes.length === 0) {
+      return (
+        <View
+          style={[
+            styles.statePanel,
+            {
+              backgroundColor: theme.card,
+              borderColor: theme.borderLight,
+            },
+          ]}
+        >
+          <Ionicons name="home-outline" size={25} color={theme.blue} />
+          <Text style={[styles.statePanelTitle, { color: theme.text }]}>
+            Aún no tienes hogares
+          </Text>
+          <Text style={[styles.statePanelCopy, { color: theme.muted }]}>
+            Agrega o acepta un hogar para ver sus dispositivos.
+          </Text>
+          <Button
+            variant="text"
+            icon={<Ionicons name="arrow-forward" size={16} color={theme.blue} />}
+            label="Ver mis hogares"
+            labelSize="helper"
+            onPress={() => router.push("/(tabs)/(main)/homes")}
+            style={styles.stateAction}
+          />
+        </View>
+      );
+    }
+
+    if (accessibleDevices.length === 0 && !hasDeviceLoadError) {
+      return (
+        <View
+          style={[
+            styles.statePanel,
+            {
+              backgroundColor: theme.card,
+              borderColor: theme.borderLight,
+            },
+          ]}
+        >
+          <Ionicons name="hardware-chip-outline" size={25} color={theme.blue} />
+          <Text style={[styles.statePanelTitle, { color: theme.text }]}>
+            Aún no hay dispositivos
+          </Text>
+          <Text style={[styles.statePanelCopy, { color: theme.muted }]}>
+            Añade un dispositivo a uno de tus hogares para empezar.
+          </Text>
+          <Button
+            variant="text"
+            icon={<Ionicons name="arrow-forward" size={16} color={theme.blue} />}
+            label="Agregar dispositivo"
+            labelSize="helper"
+            onPress={() => router.push("/(tabs)/add-device")}
+            style={styles.stateAction}
+          />
+        </View>
+      );
+    }
+
+    if (accessibleDevices.length > 0 && areFiltersActive) {
+      const partialCopy = hasDeviceLoadError || !areDeviceListsLoaded;
+
+      return (
+        <View
+          style={[
+            styles.statePanel,
+            {
+              backgroundColor: theme.card,
+              borderColor: theme.borderLight,
+            },
+          ]}
+        >
+          <Ionicons name="search-outline" size={25} color={theme.muted} />
+          <Text style={[styles.statePanelTitle, { color: theme.text }]}>
+            Sin resultados
+          </Text>
+          <Text style={[styles.statePanelCopy, { color: theme.muted }]}>
+            {partialCopy
+              ? "No hay coincidencias entre los dispositivos cargados hasta ahora."
+              : "No encontramos dispositivos con esos criterios."}
+          </Text>
+          <Button
+            variant="text"
+            label="Limpiar búsqueda y filtros"
+            labelSize="helper"
+            onPress={() => {
+              setSearchQuery("");
+              setSelectedHomeId(null);
+            }}
+            style={styles.stateAction}
+          />
+        </View>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <SafeAreaView
       style={[
@@ -112,350 +255,462 @@ export default function DevicesScreen() {
         },
       ]}
     >
-      <ScrollView
+      <FlatList
+        data={visibleDevices}
+        keyExtractor={(device) => device.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
-          styles.container,
+          styles.listContainer,
           {
             paddingHorizontal: layout.gutter,
             paddingTop: layout.screenTop,
             paddingBottom: layout.screenBottom,
           },
         ]}
-      >
-        <View
-          style={[
-            styles.content,
-            {
-              maxWidth: layout.contentWidth,
-            },
-          ]}
-        >
-          {/* HEADER */}
-          <View style={styles.header}>
-            <ScreenHeader
-              accessibilityLabel="Cerrar dispositivos"
-              backBackgroundColor={theme.card}
-              fallbackHref="/(tabs)/(main)/index"
-              subtitle="Todos tus dispositivos Smart Home"
-              title="Dispositivos"
-              titleSize="title"
-            />
-          </View>
-
-          {/* SUMMARY */}
+        ListHeaderComponent={
           <View
             style={[
-              styles.summaryCard,
+              styles.content,
               {
-                backgroundColor: theme.card,
-                borderColor: theme.borderLight,
+                maxWidth: layout.contentWidth,
               },
             ]}
           >
-            <View
-              style={[
-                styles.summaryItem,
-                {
-                  backgroundColor: theme.rowAlt,
-                },
-              ]}
-            >
-              <Ionicons
-                name="hardware-chip-outline"
-                size={23}
-                color={theme.blue}
+            <View style={styles.header}>
+              <ScreenHeader
+                accessibilityLabel="Cerrar dispositivos"
+                backBackgroundColor={theme.card}
+                fallbackHref="/(tabs)/(main)/index"
+                subtitle="Consulta y controla tus equipos"
+                title="Dispositivos"
+                titleSize="title"
               />
-
-              <Text style={[styles.summaryNumber, { color: theme.text }]}>
-                {areDeviceListsLoaded ? visibleDevices.length : "—"}
-              </Text>
-
-              <Text style={[styles.summaryLabel, { color: theme.muted }]}>
-                Total
-              </Text>
             </View>
 
             <View
               style={[
-                styles.summaryItem,
+                styles.summaryCard,
                 {
-                  backgroundColor: theme.rowAlt,
+                  backgroundColor: theme.card,
+                  borderColor: theme.borderLight,
                 },
               ]}
             >
-              <Ionicons name="wifi-outline" size={23} color={theme.success} />
+              <View style={[styles.summaryItem, { backgroundColor: theme.rowAlt }]}>
+                <Ionicons
+                  name="hardware-chip-outline"
+                  size={22}
+                  color={theme.blue}
+                  accessible={false}
+                />
+                <Text
+                  accessibilityLabel={
+                    areDeviceListsLoaded
+                      ? `${accessibleDevices.length} dispositivos en total`
+                      : "Total de dispositivos aún no disponible"
+                  }
+                  style={[styles.summaryNumber, { color: theme.text }]}
+                >
+                  {areDeviceListsLoaded ? accessibleDevices.length : "—"}
+                </Text>
+                <Text style={[styles.summaryLabel, { color: theme.muted }]}>
+                  Total
+                </Text>
+              </View>
 
-              <Text style={[styles.summaryNumber, { color: theme.text }]}>
-                {areDeviceListsLoaded ? onlineCount : "—"}
-              </Text>
+              <View style={[styles.summaryItem, { backgroundColor: theme.rowAlt }]}>
+                <Ionicons
+                  name="wifi-outline"
+                  size={22}
+                  color={theme.success}
+                  accessible={false}
+                />
+                <Text
+                  accessibilityLabel={
+                    areDeviceListsLoaded
+                      ? `${onlineCount} dispositivos conectados`
+                      : "Dispositivos conectados aún no disponible"
+                  }
+                  style={[styles.summaryNumber, { color: theme.text }]}
+                >
+                  {areDeviceListsLoaded ? onlineCount : "—"}
+                </Text>
+                <Text style={[styles.summaryLabel, { color: theme.muted }]}>
+                  Conectados
+                </Text>
+              </View>
 
-              <Text style={[styles.summaryLabel, { color: theme.muted }]}>
-                Conectados
-              </Text>
+              <View style={[styles.summaryItem, { backgroundColor: theme.rowAlt }]}>
+                <Ionicons
+                  name="warning-outline"
+                  size={22}
+                  color={theme.danger}
+                  accessible={false}
+                />
+                <Text
+                  accessibilityLabel={
+                    areDeviceListsLoaded
+                      ? `${alertCount} alertas activas`
+                      : "Total de alertas aún no disponible"
+                  }
+                  style={[styles.summaryNumber, { color: theme.text }]}
+                >
+                  {areDeviceListsLoaded ? alertCount : "—"}
+                </Text>
+                <Text style={[styles.summaryLabel, { color: theme.muted }]}>
+                  Alertas
+                </Text>
+              </View>
             </View>
 
-            <View
-              style={[
-                styles.summaryItem,
-                {
-                  backgroundColor: theme.rowAlt,
-                },
-              ]}
-            >
-              <Ionicons name="warning-outline" size={23} color={theme.danger} />
-
-              <Text style={[styles.summaryNumber, { color: theme.text }]}>
-                {areDeviceListsLoaded ? alertCount : "—"}
-              </Text>
-
-              <Text style={[styles.summaryLabel, { color: theme.muted }]}>
-                Alertas
-              </Text>
-            </View>
-          </View>
-
-          {/* DEVICES */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Mis dispositivos
-            </Text>
-
-            {isDeviceListLoading ? (
-              <View
-                style={[
-                  styles.statePanel,
-                  {
-                    backgroundColor: theme.card,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <ActivityIndicator color={theme.blue} />
-                <Text style={[styles.statePanelCopy, { color: theme.muted }]}>
-                  Cargando dispositivos...
+            <View style={styles.section}>
+              <View style={styles.sectionHeading}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  Mis dispositivos
+                </Text>
+                <Text
+                  accessibilityLiveRegion="polite"
+                  style={[styles.resultCount, { color: theme.muted }]}
+                >
+                  {resultCountText}
                 </Text>
               </View>
-            ) : null}
 
-            {hasDeviceLoadError ? (
-              <View
-                style={[
-                  styles.statePanel,
-                  {
-                    backgroundColor: theme.dangerSoft,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <Ionicons name="warning-outline" size={21} color={theme.danger} />
-                <Text style={[styles.statePanelCopy, { color: theme.text }]}>
-                  No se pudieron cargar los dispositivos de todos tus hogares.
-                </Text>
-              </View>
-            ) : null}
-
-            {homesLoadStatus === "loaded" && accessibleHomes.length === 0 ? (
-              <View
-                style={[
-                  styles.statePanel,
-                  {
-                    backgroundColor: theme.card,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <Ionicons name="home-outline" size={25} color={theme.blue} />
-                <Text style={[styles.statePanelTitle, { color: theme.text }]}>
-                  Aún no tienes hogares
-                </Text>
-                <Text style={[styles.statePanelCopy, { color: theme.muted }]}>
-                  Agrega o acepta un hogar para ver sus dispositivos.
-                </Text>
-                <Button
-                  variant="text"
-                  icon={<Ionicons name="arrow-forward" size={16} color={theme.blue} />}
-                  label="Ver mis hogares"
-                  labelSize="helper"
-                  onPress={() => router.push("/(tabs)/(main)/homes")}
-                  style={styles.stateAction}
-                />
-              </View>
-            ) : null}
-
-            {areDeviceListsLoaded &&
-            !hasDeviceLoadError &&
-            accessibleHomes.length > 0 &&
-            visibleDevices.length === 0 ? (
-              <View
-                style={[
-                  styles.statePanel,
-                  {
-                    backgroundColor: theme.card,
-                    borderColor: theme.borderLight,
-                  },
-                ]}
-              >
-                <Ionicons name="hardware-chip-outline" size={25} color={theme.blue} />
-                <Text style={[styles.statePanelTitle, { color: theme.text }]}>
-                  Aún no hay dispositivos
-                </Text>
-                <Text style={[styles.statePanelCopy, { color: theme.muted }]}>
-                  Añade un dispositivo a uno de tus hogares para empezar.
-                </Text>
-                <Button
-                  variant="text"
-                  icon={<Ionicons name="arrow-forward" size={16} color={theme.blue} />}
-                  label="Agregar dispositivo"
-                  labelSize="helper"
-                  onPress={() => router.push("/(tabs)/add-device")}
-                  style={styles.stateAction}
-                />
-              </View>
-            ) : null}
-
-            {visibleDevices.map((device) => {
-              const home = homes.find((item) => item.id === device.homeId);
-              const canControlDevice = canControlHome(home?.homeRole);
-              const confirmedOnline =
-                device.connectivityStatus === "ONLINE" && device.online;
-              const confirmedOffline =
-                device.connectivityStatus === "OFFLINE";
-
-              const hasAlert =
-                (device.critical || confirmedOffline) &&
-                !resolvedSmartAlerts.includes(device.id);
-
-              const statusText = hasAlert
-                ? device.critical
-                  ? "Requiere atención"
-                  : "Sin conexión"
-                : confirmedOnline
-                  ? "Conectado"
-                  : confirmedOffline
-                    ? "Sin conexión"
-                    : "Estado sin confirmar";
-
-              const statusColor = hasAlert
-                ? theme.danger
-                : confirmedOnline
-                  ? theme.success
-                  : theme.muted;
-
-              return (
+              {accessibleDevices.length > 0 ? (
                 <View
-                  key={device.id}
                   style={[
-                    styles.deviceCard,
+                    styles.searchBox,
                     {
                       backgroundColor: theme.card,
-                      borderColor: hasAlert ? theme.danger : theme.borderLight,
+                      borderColor: theme.borderLight,
                     },
-                    hasAlert && styles.alertBorder,
                   ]}
                 >
-                  {/* DEVICE NAVIGATION */}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Abrir ${device.name}`}
-                    onPress={() => openDeviceHome(device.homeId)}
-                    style={({ pressed }) => [
-                      styles.deviceContent,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.deviceIcon,
-                        {
-                          backgroundColor: theme.rowAlt,
-                        },
-                      ]}
+                  <Ionicons
+                    name="search-outline"
+                    size={19}
+                    color={theme.muted}
+                    accessible={false}
+                  />
+                  <TextInput
+                    accessibilityLabel="Buscar dispositivos"
+                    accessibilityHint="Filtra por el nombre del dispositivo o del hogar."
+                    autoCapitalize="none"
+                    clearButtonMode="never"
+                    onChangeText={setSearchQuery}
+                    placeholder="Buscar dispositivo u hogar"
+                    placeholderTextColor={theme.muted}
+                    returnKeyType="search"
+                    style={[styles.searchInput, { color: theme.text }]}
+                    value={searchQuery}
+                  />
+                  {searchQuery.length > 0 ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Limpiar búsqueda"
+                      hitSlop={4}
+                      onPress={() => setSearchQuery("")}
+                      style={styles.clearSearchButton}
                     >
-                      <MaterialCommunityIcons
-                        name={device.icon as never}
-                        size={28}
-                        color={confirmedOnline ? theme.blue : theme.muted}
-                      />
-                    </View>
+                      <Ionicons name="close-circle" size={20} color={theme.muted} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
 
-                    <View style={styles.deviceCopy}>
-                      <View style={styles.deviceTitleRow}>
+              {accessibleHomes.length > 1 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.homeFilters}
+                  accessibilityLabel="Filtrar dispositivos por hogar"
+                >
+                  {[
+                    { id: null, name: "Todos" },
+                    ...accessibleHomes.map((home) => ({
+                      id: home.id,
+                      name: home.name,
+                    })),
+                  ].map((home) => {
+                    const selected = activeHomeFilter === home.id;
+
+                    return (
+                      <Pressable
+                        key={home.id ?? "all-homes"}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Filtrar por ${home.name}`}
+                        accessibilityState={{ selected }}
+                        onPress={() => setSelectedHomeId(home.id)}
+                        style={({ pressed }) => [
+                          styles.homeFilter,
+                          {
+                            backgroundColor: selected
+                              ? theme.tab.activeBackground
+                              : theme.card,
+                            borderColor: selected
+                              ? theme.tab.activeBorder
+                              : theme.borderLight,
+                          },
+                          pressed && styles.pressed,
+                        ]}
+                      >
                         <Text
-                          numberOfLines={1}
+                          numberOfLines={2}
                           style={[
-                            styles.deviceTitle,
+                            styles.homeFilterText,
                             {
-                              color: theme.text,
+                              color: selected
+                                ? theme.tab.activeText
+                                : theme.muted,
                             },
                           ]}
                         >
-                          {device.name}
+                          {home.name}
                         </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              ) : null}
 
-                        {hasAlert && (
-                          <Ionicons
-                            name="warning-outline"
-                            size={16}
-                            color={theme.danger}
-                          />
-                        )}
-                      </View>
+              {isDeviceListLoading ? (
+                <View
+                  accessibilityLiveRegion="polite"
+                  style={[
+                    styles.statePanel,
+                    styles.inlineStatePanel,
+                    {
+                      backgroundColor: theme.card,
+                      borderColor: theme.borderLight,
+                    },
+                  ]}
+                >
+                  <ActivityIndicator color={theme.blue} />
+                  <Text
+                    style={[
+                      styles.statePanelCopy,
+                      styles.inlineStateCopy,
+                      { color: theme.muted },
+                    ]}
+                  >
+                    Cargando dispositivos...
+                  </Text>
+                </View>
+              ) : null}
 
-                      <Text
-                        numberOfLines={1}
-                        style={[
-                          styles.deviceMeta,
-                          {
-                            color: theme.muted,
-                          },
-                        ]}
-                      >
-                        {home?.name ?? "Hogar"}
-                      </Text>
+              {hasDeviceLoadError ? (
+                <View
+                  accessibilityLiveRegion="polite"
+                  style={[
+                    styles.statePanel,
+                    styles.inlineStatePanel,
+                    {
+                      backgroundColor: theme.dangerSoft,
+                      borderColor: theme.borderLight,
+                    },
+                  ]}
+                >
+                  <Ionicons name="warning-outline" size={21} color={theme.danger} />
+                  <Text
+                    style={[
+                      styles.statePanelCopy,
+                      styles.inlineStateCopy,
+                      { color: theme.text },
+                    ]}
+                  >
+                    No se pudieron cargar todos los hogares. Se muestran los datos disponibles.
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        }
+        ListEmptyComponent={
+          <View
+            style={[
+              styles.content,
+              {
+                maxWidth: layout.contentWidth,
+              },
+            ]}
+          >
+            {renderEmptyState()}
+          </View>
+        }
+        renderItem={({ item: device }) => {
+          const home = accessibleHomesById.get(device.homeId);
+          const canControlDevice = canControlHome(home?.homeRole);
+          const confirmedOnline =
+            device.connectivityStatus === "ONLINE" && device.online;
+          const confirmedOffline = device.connectivityStatus === "OFFLINE";
+          const isRelayOn = device.state === "on";
+          const isPending = pendingDeviceId === device.id;
+          const hasAlert =
+            (device.critical || confirmedOffline) &&
+            !resolvedSmartAlertIds.has(device.id);
+          const connectionLabel = confirmedOnline
+            ? "Conectado"
+            : confirmedOffline
+              ? "Sin conexión"
+              : "Estado desconocido";
+          const connectionIcon = confirmedOnline
+            ? "checkmark-circle-outline"
+            : confirmedOffline
+              ? "cloud-offline-outline"
+              : "help-circle-outline";
+          const connectionColor = confirmedOnline
+            ? theme.success
+            : confirmedOffline
+              ? theme.warning
+              : theme.muted;
+          const relayLabel = confirmedOnline
+            ? `Relé ${isRelayOn ? "encendido" : "apagado"}`
+            : `Último estado del relé: ${isRelayOn ? "encendido" : "apagado"}`;
+          const switchDisabled =
+            !confirmedOnline || !canControlDevice || pendingDeviceId !== null;
+          const switchHint = pendingDeviceId !== null
+            ? "Espera a que termine la actualización del dispositivo."
+            : !confirmedOnline
+              ? "El dispositivo no tiene conexión confirmada."
+              : !canControlDevice
+                ? "Tu rol en este hogar no permite controlar el dispositivo."
+                : "Cambia el estado del relé.";
 
-                      <Text
-                        style={[
-                          styles.deviceStatus,
-                          {
-                            color: statusColor,
-                          },
-                        ]}
-                      >
-                        {statusText}
-                      </Text>
-                      <Text style={[styles.deviceLastSeen, { color: theme.muted }]}>
-                        {formatLastSeenAt(device.lastSeenAt)}
-                      </Text>
-                    </View>
-                  </Pressable>
-
-                  {/* DEVICE SWITCH */}
-                  <Switch
-                    value={device.state === "on"}
-                    disabled={
-                      !confirmedOnline ||
-                      !canControlDevice ||
-                      pendingDeviceId === device.id
-                    }
-                    onValueChange={() => {
-                      void handleToggleDevice(device.id);
-                    }}
-                    accessibilityLabel={`Cambiar estado de ${device.name}`}
-                    trackColor={{
-                      false: theme.border,
-                      true: theme.successSoft,
-                    }}
-                    thumbColor={
-                      device.state === "on" ? theme.success : theme.card
-                    }
+          return (
+            <View
+              style={[
+                styles.deviceCard,
+                {
+                  backgroundColor: theme.card,
+                  borderColor: hasAlert ? theme.danger : theme.borderLight,
+                },
+                hasAlert && styles.alertBorder,
+                { maxWidth: layout.contentWidth },
+              ]}
+            >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Abrir ${device.name}, hogar ${home?.name ?? "sin nombre"}, ${connectionLabel}, ${relayLabel}`}
+                accessibilityHint="Abre el detalle de este hogar."
+                onPress={() => openDeviceHome(device.homeId)}
+                style={({ pressed }) => [
+                  styles.deviceContent,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.deviceIcon,
+                    {
+                      backgroundColor: theme.rowAlt,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name={device.icon as never}
+                    size={27}
+                    color={confirmedOnline ? theme.blue : theme.muted}
+                    accessible={false}
                   />
                 </View>
-              );
-            })}
-          </View>
-        </View>
-      </ScrollView>
+
+                <View style={styles.deviceCopy}>
+                  <Text
+                    style={[styles.deviceTitle, { color: theme.text }]}
+                  >
+                    {device.name}
+                  </Text>
+
+                  {hasAlert ? (
+                    <View style={styles.alertLabel}>
+                      <Ionicons
+                        name="warning-outline"
+                        size={14}
+                        color={theme.danger}
+                        accessible={false}
+                      />
+                      <Text style={[styles.alertText, { color: theme.danger }]}>
+                        {device.critical ? "Requiere atención" : "Alerta de conexión"}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  <View style={styles.homeLabel}>
+                    <Ionicons
+                      name="home-outline"
+                      size={14}
+                      color={theme.muted}
+                      accessible={false}
+                    />
+                    <Text
+                      style={[styles.deviceMeta, { color: theme.muted }]}
+                    >
+                      {home?.name ?? "Hogar"}
+                    </Text>
+                  </View>
+
+                  <View style={styles.connectionLabel}>
+                    <Ionicons
+                      name={connectionIcon}
+                      size={15}
+                      color={connectionColor}
+                      accessible={false}
+                    />
+                    <Text
+                      style={[styles.deviceStatus, { color: connectionColor }]}
+                    >
+                      {connectionLabel}
+                    </Text>
+                  </View>
+
+                  <Text
+                    style={[styles.relayState, { color: theme.textSecondary }]}
+                  >
+                    {relayLabel}
+                  </Text>
+                  <Text style={[styles.deviceLastSeen, { color: theme.muted }]}>
+                    {formatLastSeenAt(device.lastSeenAt)}
+                  </Text>
+                </View>
+              </Pressable>
+
+              <View style={styles.switchContainer}>
+                {isPending ? (
+                  <ActivityIndicator
+                    accessibilityLabel="Actualizando estado"
+                    color={theme.blue}
+                    size="small"
+                  />
+                ) : null}
+                <Switch
+                  value={isRelayOn}
+                  disabled={switchDisabled}
+                  onValueChange={() => {
+                    void handleToggleDevice(device.id);
+                  }}
+                  accessibilityRole="switch"
+                  accessibilityLabel={`Relé de ${device.name}`}
+                  accessibilityHint={switchHint}
+                  accessibilityState={{
+                    checked: isRelayOn,
+                    disabled: switchDisabled,
+                    busy: isPending,
+                  }}
+                  trackColor={{
+                    false: theme.switchTrackInactive,
+                    true: theme.switchTrackActive,
+                  }}
+                  thumbColor={
+                    confirmedOnline && isRelayOn
+                      ? theme.onPrimary
+                      : theme.surfaceSecondary
+                  }
+                />
+              </View>
+            </View>
+          );
+        }}
+      />
     </SafeAreaView>
   );
 }

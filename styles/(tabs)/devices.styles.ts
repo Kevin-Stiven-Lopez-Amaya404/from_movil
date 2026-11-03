@@ -6,8 +6,9 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
 
-  container: {
+  listContainer: {
     alignItems: "center",
+    flexGrow: 1,
   },
 
   content: {
@@ -21,46 +22,22 @@ export const styles = StyleSheet.create({
     gap: 12,
   },
 
-  backButton: {
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-  },
-
-  headerCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  title: {
-    fontSize: typography.size.title,
-    fontWeight: "900",
-  },
-
-  subtitle: {
-    fontSize: typography.size.helper,
-    fontWeight: "600",
-    marginTop: 3,
-  },
-
   summaryCard: {
     borderRadius: 18,
     borderWidth: 1,
     flexDirection: "row",
-    gap: 8,
-    marginTop: 22,
-    padding: 10,
+    gap: 7,
+    marginTop: 18,
+    padding: 8,
   },
 
   summaryItem: {
     alignItems: "center",
     borderRadius: 14,
     flex: 1,
-    minHeight: 88,
+    minHeight: 86,
     justifyContent: "center",
+    paddingHorizontal: 3,
   },
 
   summaryNumber: {
@@ -76,13 +53,86 @@ export const styles = StyleSheet.create({
   },
 
   section: {
-    marginTop: 28,
+    marginTop: 24,
+  },
+
+  sectionHeading: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
   },
 
   sectionTitle: {
     fontSize: typography.size.section,
     fontWeight: "900",
-    marginBottom: 12,
+    flexShrink: 1,
+  },
+
+  resultCount: {
+    fontSize: typography.size.caption,
+    fontWeight: "700",
+    marginLeft: 8,
+  },
+
+  searchBox: {
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    minHeight: 48,
+    paddingLeft: 12,
+  },
+
+  searchInput: {
+    flex: 1,
+    fontSize: typography.size.helper,
+    minHeight: 46,
+    minWidth: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+
+  clearSearchButton: {
+    alignItems: "center",
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+
+  homeFilters: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 9,
+  },
+
+  homeFilter: {
+    alignItems: "center",
+    borderRadius: 18,
+    borderWidth: 1,
+    justifyContent: "center",
+    maxWidth: 180,
+    minHeight: 44,
+    paddingHorizontal: 14,
+  },
+
+  homeFilterText: {
+    fontSize: typography.size.caption,
+    fontWeight: "800",
+  },
+
+  inlineStatePanel: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    minHeight: 68,
+    padding: 14,
+  },
+
+  inlineStateCopy: {
+    flex: 1,
+    textAlign: "left",
   },
 
   statePanel: {
@@ -117,18 +167,15 @@ export const styles = StyleSheet.create({
     paddingVertical: 5,
   },
 
-  stateActionText: {
-    fontSize: typography.size.helper,
-    fontWeight: "800",
-  },
-
   deviceCard: {
     alignItems: "center",
     borderRadius: 16,
     borderWidth: 1,
     flexDirection: "row",
     marginBottom: 10,
-    padding: 13,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    width: "100%",
   },
 
   alertBorder: {
@@ -139,50 +186,81 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     flexDirection: "row",
+    minHeight: 52,
     minWidth: 0,
   },
 
   deviceIcon: {
     alignItems: "center",
-    borderRadius: 12,
-    height: 48,
+    borderRadius: 14,
+    height: 46,
     justifyContent: "center",
-    width: 48,
+    width: 46,
   },
 
   deviceCopy: {
     flex: 1,
-    marginLeft: 12,
+    gap: 3,
+    marginLeft: 10,
     minWidth: 0,
   },
 
-  deviceTitleRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 6,
-  },
-
   deviceTitle: {
-    flex: 1,
     fontSize: typography.size.helper,
     fontWeight: "900",
+  },
+
+  alertLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+
+  alertText: {
+    flexShrink: 1,
+    fontSize: typography.size.caption,
+    fontWeight: "800",
+  },
+
+  homeLabel: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 5,
   },
 
   deviceMeta: {
     fontSize: typography.size.caption,
     fontWeight: "600",
-    marginTop: 3,
+    flex: 1,
+  },
+
+  connectionLabel: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 5,
   },
 
   deviceStatus: {
     fontSize: typography.size.caption,
     fontWeight: "800",
-    marginTop: 4,
   },
+
+  relayState: {
+    fontSize: typography.size.caption,
+    fontWeight: "700",
+  },
+
+  switchContainer: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 4,
+    justifyContent: "center",
+    minWidth: 54,
+  },
+
   deviceLastSeen: {
     fontSize: typography.size.caption,
     fontWeight: "600",
-    marginTop: 2,
   },
 
   pressed: {

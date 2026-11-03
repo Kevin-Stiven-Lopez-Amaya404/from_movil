@@ -29,7 +29,33 @@ export function ShellyDeviceCard({
   onToggleState,
 }: ShellyDeviceCardProps) {
   const isOnline = device.online;
+  const isConfirmedOnline =
+    device.connectivityStatus === "ONLINE" && device.online;
+  const isConfirmedOffline = device.connectivityStatus === "OFFLINE";
   const isOn = device.state === "on";
+  const connectionLabel = isConfirmedOnline
+    ? "Conectado"
+    : isConfirmedOffline
+      ? "Sin conexión"
+      : "Estado sin confirmar";
+  const connectionIcon = isConfirmedOnline
+    ? "cloud-done-outline"
+    : isConfirmedOffline
+      ? "cloud-offline-outline"
+      : "cloud-outline";
+  const connectionColor = isConfirmedOnline
+    ? theme.success
+    : isConfirmedOffline
+      ? theme.warning
+      : theme.muted;
+  const relayLabel = isConfirmedOnline
+    ? `${connectionLabel} · ${isOn ? "Encendido" : "Apagado"} · ${device.power} W`
+    : `${connectionLabel} · Último estado del relé: ${isOn ? "Encendido" : "Apagado"}`;
+  const relayColor = isConfirmedOnline
+    ? isOn
+      ? theme.success
+      : theme.muted
+    : connectionColor;
 
   return (
     <View
@@ -50,25 +76,33 @@ export function ShellyDeviceCard({
             size={13}
             color={theme.muted}
             style={styles.statusIcon}
+            accessible={false}
           />
           <Ionicons
-            name={isOnline ? "cloud-done-outline" : "cloud-offline-outline"}
+            name={connectionIcon}
             size={13}
-            color={isOnline ? theme.blue : theme.muted}
+            color={connectionColor}
             style={styles.statusIcon}
+            accessible={false}
           />
           <Ionicons
             name="sync-outline"
             size={13}
             color={theme.muted}
             style={styles.statusIcon}
+            accessible={false}
           />
         </View>
 
         <View style={styles.topStatusActions}>
           {device.critical && (
             <View style={styles.criticalBadge}>
-              <Ionicons name="warning" size={11} color={theme.danger} />
+              <Ionicons
+                name="warning"
+                size={11}
+                color={theme.danger}
+                accessible={false}
+              />
               <Text style={[styles.criticalText, { color: theme.danger }]}>
                 Atención
               </Text>
@@ -90,7 +124,7 @@ export function ShellyDeviceCard({
       <View style={styles.body}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Ver detalles de ${device.name}`}
+          accessibilityLabel={`Ver detalles de ${device.name}, ${connectionLabel}, relé ${isOn ? "encendido" : "apagado"}`}
           accessibilityHint="Muestra las mediciones y el estado del dispositivo"
           onPress={onPress}
           style={styles.bodyContent}
@@ -105,7 +139,7 @@ export function ShellyDeviceCard({
               width="48"
               height="34"
               rx="4"
-              fill={isOnline ? theme.danger : theme.dangerSoft}
+              fill={isConfirmedOnline ? theme.danger : theme.dangerSoft}
               stroke={theme.danger}
               strokeWidth="1"
             />
@@ -155,21 +189,14 @@ export function ShellyDeviceCard({
           </Text>
 
           <Text
-            numberOfLines={1}
             style={[
               styles.deviceStatus,
               {
-                color: isOnline
-                  ? isOn
-                    ? theme.success
-                    : theme.muted
-                  : theme.muted,
+                color: relayColor,
               },
             ]}
           >
-            {isOnline
-              ? `${isOn ? "Encendido" : "Apagado"} · ${device.power} W`
-              : "El dispositivo está fuera de línea"}
+            {relayLabel}
           </Text>
         </View>
         </Pressable>
@@ -181,7 +208,9 @@ export function ShellyDeviceCard({
             accessibilityLabel={`Control de ${device.name}`}
             accessibilityHint={
               !isOnline
-                ? "El dispositivo está fuera de línea"
+                ? isConfirmedOffline
+                  ? "El dispositivo está sin conexión."
+                  : "El estado de conexión no está confirmado."
                 : !canControl
                   ? "Tu rol no permite controlar este dispositivo"
                   : isPending
