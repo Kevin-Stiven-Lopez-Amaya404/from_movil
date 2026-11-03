@@ -24,6 +24,11 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  topStatusActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+  },
   statusIcon: {
     opacity: 0.8,
   },
@@ -41,6 +46,13 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  bodyContent: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    minHeight: 48,
+    minWidth: 0,
+  },
   shellyThumb: {
     width: 52,
     height: 42,
@@ -50,6 +62,7 @@ export const styles = StyleSheet.create({
   info: {
     flex: 1,
     marginLeft: 12,
+    minWidth: 0,
     justifyContent: "center",
   },
   deviceName: {
@@ -75,7 +88,7 @@ export const styles = StyleSheet.create({
   menuButton: {
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 32,
-    minWidth: 24,
+    height: 48,
+    width: 48,
   },
 });

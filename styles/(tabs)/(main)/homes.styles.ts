@@ -59,7 +59,7 @@ export const styles = StyleSheet.create({
     gap: 5,
     borderRadius: 12,
     paddingHorizontal: 12,
-    minHeight: 42,
+    minHeight: 48,
   },
   newHomeText: {
     fontFamily: typography.fontFamily.emphasis,
@@ -74,7 +74,7 @@ export const styles = StyleSheet.create({
     paddingRight: 2,
   },
   filterChip: {
-    minHeight: 42,
+    minHeight: 48,
     paddingHorizontal: 15,
     borderRadius: 22,
     borderWidth: 1,
@@ -150,19 +150,19 @@ export const styles = StyleSheet.create({
     lineHeight: 18,
   },
   menuButton: {
-    width: 37,
+    width: 48,
     minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
   },
   favoriteButton: {
-    width: 36,
-    minHeight: 44,
+    width: 48,
+    minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
   },
   arrowButton: {
-    width: 32,
+    width: 44,
     minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
@@ -195,7 +195,12 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  modalWidth: { width: "100%", maxWidth: 420 },
+  modalWidth: { flex: 1, width: "100%", maxWidth: 420 },
+  modalScroll: { flex: 1, width: "100%" },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
   modalCard: {
     borderRadius: 20,
     borderWidth: 1,
@@ -228,7 +233,7 @@ export const styles = StyleSheet.create({
     marginTop: 22,
   },
   secondaryAction: {
-    minHeight: 44,
+    minHeight: 48,
     borderWidth: 1,
     borderRadius: 12,
     justifyContent: "center",
@@ -241,7 +246,7 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
   },
   primaryAction: {
-    minHeight: 44,
+    minHeight: 48,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",

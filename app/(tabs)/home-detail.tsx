@@ -5,7 +5,17 @@ import {
   type Href,
 } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
@@ -163,6 +173,8 @@ export default function HomeDetailScreen() {
   }
 
   function handleDeleteDevice(device: SmartDevice) {
+    if (operationLoading) return;
+
     Alert.alert("Eliminar dispositivo", `¿Quieres eliminar ${device.name}?`, [
       { text: "Cancelar", style: "cancel" },
       {
@@ -187,7 +199,7 @@ export default function HomeDetailScreen() {
   }
 
   async function saveDeviceName() {
-    if (!deviceMenu) return;
+    if (!deviceMenu || operationLoading) return;
     const name = deviceDraftName.trim();
     if (name.length < 2 || name.length > 60) {
       Alert.alert("Nombre no válido", "Usa entre 2 y 60 caracteres.");
@@ -206,6 +218,28 @@ export default function HomeDetailScreen() {
     } finally {
       setOperationLoading(false);
     }
+  }
+
+  function closeDeviceMenu() {
+    if (operationLoading) return;
+
+    if (editingName && deviceMenu && deviceDraftName !== deviceMenu.name) {
+      Alert.alert("¿Descartar los cambios?", "El nombre editado no se guardará.", [
+        { text: "Seguir editando", style: "cancel" },
+        {
+          text: "Descartar",
+          style: "destructive",
+          onPress: () => {
+            setDeviceMenu(null);
+            setEditingName(false);
+          },
+        },
+      ]);
+      return;
+    }
+
+    setDeviceMenu(null);
+    setEditingName(false);
   }
 
   async function toggleDevice(device: SmartDevice) {
@@ -277,7 +311,10 @@ export default function HomeDetailScreen() {
                 ]}
               >
                 <View style={styles.homeHeaderCopy}>
-                  <Text style={[styles.homeTitle, { color: theme.text }]}>
+                  <Text
+                    numberOfLines={2}
+                    style={[styles.homeTitle, { color: theme.text }]}
+                  >
                     {activeHome.name}
                   </Text>
                   <Text style={[styles.subtitle, { color: theme.muted }]}>
@@ -346,7 +383,12 @@ export default function HomeDetailScreen() {
                   Dispositivos
                 </Text>
                 {canManage ? (
-                  <Pressable onPress={openPairing} hitSlop={8}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Agregar dispositivo a ${activeHome.name}`}
+                    onPress={openPairing}
+                    style={styles.addDeviceButton}
+                  >
                     <Ionicons name="add-circle" size={26} color={theme.blue} />
                   </Pressable>
                 ) : null}
@@ -363,6 +405,8 @@ export default function HomeDetailScreen() {
               >
                 <Ionicons name="search-outline" size={18} color={theme.muted} />
                 <TextInput
+                  accessibilityLabel="Buscar dispositivo"
+                  accessibilityHint="Filtra los dispositivos de este hogar por nombre"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   placeholder="Buscar dispositivo"
@@ -370,7 +414,12 @@ export default function HomeDetailScreen() {
                   style={[styles.searchInput, { color: theme.text }]}
                 />
                 {searchQuery ? (
-                  <Pressable onPress={() => setSearchQuery("")}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Borrar búsqueda"
+                    onPress={() => setSearchQuery("")}
+                    style={styles.clearSearchButton}
+                  >
                     <Ionicons
                       name="close-circle"
                       size={18}
@@ -385,7 +434,9 @@ export default function HomeDetailScreen() {
                   key={device.id}
                   device={device}
                   theme={theme}
-                  canControl={canControl && pendingDeviceId !== device.id}
+                  canControl={canControl}
+                  canManage={canManage}
+                  isPending={pendingDeviceId !== null}
                   onPress={() => setTelemetryDevice(device)}
                   onMenu={() => {
                     setDeviceMenu(device);
@@ -452,6 +503,7 @@ export default function HomeDetailScreen() {
                       borderColor: theme.borderLight,
                     },
                   ]}
+                  accessibilityLiveRegion="polite"
                 >
                   <Ionicons
                     name={
@@ -485,15 +537,40 @@ export default function HomeDetailScreen() {
                 styles.emptyCard,
                 { backgroundColor: theme.card, borderColor: theme.borderLight },
               ]}
+              accessibilityLiveRegion="polite"
             >
-              <Ionicons name="home-outline" size={34} color={theme.muted} />
+              <Ionicons
+                name={homesLoadStatus === "error" ? "alert-circle-outline" : homesLoadStatus === "loading" ? "time-outline" : "home-outline"}
+                size={34}
+                color={homesLoadStatus === "error" ? theme.danger : theme.muted}
+              />
               <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                No hay hogares disponibles
+                {homesLoadStatus === "loading"
+                  ? "Cargando hogares..."
+                  : homesLoadStatus === "error"
+                    ? "No se pudieron cargar los hogares"
+                    : "No hay hogares disponibles"}
               </Text>
               <Text style={[styles.emptyText, { color: theme.muted }]}>
-                Inicia sesión o solicita acceso a un hogar para ver sus
-                dispositivos.
+                {homesLoadStatus === "loading"
+                  ? "Estamos consultando los hogares disponibles."
+                  : homesLoadStatus === "error"
+                    ? "Comprueba tu conexión e inténtalo nuevamente."
+                    : "Inicia sesión o solicita acceso a un hogar para ver sus dispositivos."}
               </Text>
+              {homesLoadStatus !== "loading" ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Volver a la pantalla anterior"
+                  onPress={goBack}
+                  style={[
+                    styles.primaryButton,
+                    { backgroundColor: theme.solidActionBackground },
+                  ]}
+                >
+                  <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>Volver</Text>
+                </Pressable>
+              ) : null}
             </View>
           )}
         </View>
@@ -507,6 +584,11 @@ export default function HomeDetailScreen() {
         onRequestClose={() => setTelemetryDevice(null)}
       >
         <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+          <ScrollView
+            style={styles.modalScroll}
+            contentContainerStyle={styles.modalScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
           <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderCopy}>
@@ -517,7 +599,12 @@ export default function HomeDetailScreen() {
                   {telemetryDevice?.modelName ?? 'Modelo no identificado'}
                 </Text>
               </View>
-              <Pressable onPress={() => setTelemetryDevice(null)} hitSlop={8}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar detalle del dispositivo"
+                onPress={() => setTelemetryDevice(null)}
+                style={styles.clearSearchButton}
+              >
                 <Ionicons
                   name="close-circle-outline"
                   size={26}
@@ -566,7 +653,16 @@ export default function HomeDetailScreen() {
 
             {telemetryDevice && canControl ? (
               <Pressable
-                disabled={pendingDeviceId === telemetryDevice.id}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  telemetryDevice.state === "on"
+                    ? `Apagar ${telemetryDevice.name}`
+                    : `Encender ${telemetryDevice.name}`
+                }
+                disabled={pendingDeviceId !== null || !telemetryDevice.online}
+                accessibilityState={{
+                  disabled: pendingDeviceId !== null || !telemetryDevice.online,
+                }}
                 onPress={() => void toggleTelemetryDevice()}
                 style={[
                   styles.primaryButton,
@@ -591,6 +687,7 @@ export default function HomeDetailScreen() {
               </Pressable>
             ) : null}
           </View>
+        </ScrollView>
         </View>
       </Modal>
 
@@ -598,18 +695,26 @@ export default function HomeDetailScreen() {
         visible={!!deviceMenu}
         transparent
         animationType="fade"
-        onRequestClose={() => {
-          setDeviceMenu(null);
-          setEditingName(false);
-        }}
+        onRequestClose={closeDeviceMenu}
       >
         <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalKeyboardAvoiding}
+          >
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
           <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>
               {editingName ? "Renombrar dispositivo" : deviceMenu?.name}
             </Text>
             {editingName ? (
               <TextInput
+                accessibilityLabel="Nombre del dispositivo"
                 value={deviceDraftName}
                 onChangeText={setDeviceDraftName}
                 autoFocus
@@ -627,6 +732,8 @@ export default function HomeDetailScreen() {
             ) : (
               <>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Renombrar ${deviceMenu?.name ?? "dispositivo"}`}
                   disabled={!canManage || operationLoading}
                   onPress={() => {
                     setDeviceDraftName(deviceMenu?.name ?? "");
@@ -644,6 +751,8 @@ export default function HomeDetailScreen() {
                   </Text>
                 </Pressable>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Eliminar ${deviceMenu?.name ?? "dispositivo"}`}
                   disabled={!canManage || operationLoading}
                   onPress={() => {
                     if (deviceMenu) handleDeleteDevice(deviceMenu);
@@ -664,10 +773,8 @@ export default function HomeDetailScreen() {
             )}
             <View style={styles.modalActions}>
               <Pressable
-                onPress={() => {
-                  setDeviceMenu(null);
-                  setEditingName(false);
-                }}
+                accessibilityRole="button"
+                onPress={closeDeviceMenu}
                 style={[
                   styles.secondaryButton,
                   { borderColor: theme.borderLight },
@@ -695,6 +802,8 @@ export default function HomeDetailScreen() {
               ) : null}
             </View>
           </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </SafeAreaView>
