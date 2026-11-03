@@ -1,10 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { GoogleIcon } from "@/components/icons/GoogleIcon";
 import { useAuthPalette } from "@/lib/theme/appearance";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useRouter } from "expo-router";
 import {
-  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -17,19 +15,6 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const palette = useAuthPalette();
-
-  function handleGoogleLogin() {
-    Alert.alert(
-      "Inicio con Google",
-      "El inicio de sesión con Google todavía no está disponible. Para continuar, inicia sesión con tu correo y contraseña.",
-      [
-        {
-          text: "Ir a iniciar sesión",
-          onPress: () => router.push("/login"),
-        },
-      ],
-    );
-  }
 
   return (
     <SafeAreaView
@@ -114,7 +99,7 @@ export default function WelcomeScreen() {
                 ]}
               />
               <Text style={[styles.eyebrowText, { color: palette.link }]}>
-                HOGAR CONECTADO
+                SMART HOME
               </Text>
             </View>
 
@@ -167,21 +152,6 @@ export default function WelcomeScreen() {
             >
               <Text style={[styles.secondaryButtonText, { color: palette.text }]}>
                 Crear cuenta
-              </Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityLabel="Inicio con Google no disponible"
-              accessibilityRole="button"
-              onPress={handleGoogleLogin}
-              style={({ pressed }) => [
-                styles.googleButton,
-                pressed && styles.googleButtonPressed,
-              ]}
-            >
-              <GoogleIcon size={20} />
-              <Text style={[styles.googleButtonText, { color: palette.muted }]}>
-                Inicio con Google · No disponible
               </Text>
             </Pressable>
           </View>

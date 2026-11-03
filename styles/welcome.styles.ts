@@ -12,7 +12,8 @@ export const styles = StyleSheet.create({
   content: {
     alignItems: "center",
     flexGrow: 1,
-    justifyContent: "space-evenly",
+    justifyContent: "center",
+    gap: 28,
     paddingBottom: 12,
     width: "100%",
   },
@@ -133,7 +134,7 @@ export const styles = StyleSheet.create({
     alignSelf: "center",
     gap: 10,
     maxWidth: 360,
-    paddingTop: 12,
+    paddingTop: 0,
     width: "100%",
   },
   primaryButton: {
@@ -167,21 +168,5 @@ export const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.emphasis,
     fontSize: typography.size.body,
     fontWeight: "700",
-  },
-  googleButton: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 9,
-    justifyContent: "center",
-    minHeight: 42,
-    paddingHorizontal: 8,
-  },
-  googleButtonPressed: {
-    opacity: 0.65,
-  },
-  googleButtonText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: typography.size.caption,
-    fontWeight: "600",
   },
 });
