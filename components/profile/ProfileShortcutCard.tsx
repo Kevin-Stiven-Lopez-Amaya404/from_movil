@@ -32,9 +32,10 @@ export function ProfileShortcutCard({
         pressed && styles.pressed,
       ]}
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={`${title}. ${description}`}
     >
       <View
+        accessible={false}
         style={[
           styles.iconContainer,
           {
@@ -42,7 +43,12 @@ export function ProfileShortcutCard({
           },
         ]}
       >
-        <Ionicons name={icon} size={24} color={theme.blue} />
+        <Ionicons
+          accessible={false}
+          name={icon}
+          size={24}
+          color={theme.blue}
+        />
       </View>
 
       <Text

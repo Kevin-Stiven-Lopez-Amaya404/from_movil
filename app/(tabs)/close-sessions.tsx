@@ -1,12 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 
 import { authService } from "@/lib/services/auth-service";
 import { clearSession } from "@/lib/session/session-store";
+import { runSingleFlight } from "@/lib/utils/async-action-lock";
 import {
   returnToParent,
   useAndroidBackFallback,
@@ -21,13 +22,14 @@ export default function CloseSessionsScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const [submitting, setSubmitting] = useState(false);
+  const closeSessionsLock = useRef(false);
   useAndroidBackFallback(
     from !== "account-security",
     "/(tabs)/account-security",
   );
 
   function requestCloseSessions() {
-    if (submitting) return;
+    if (submitting || closeSessionsLock.current) return;
 
     Alert.alert(
       "Cerrar todas las sesiones",
@@ -44,24 +46,26 @@ export default function CloseSessionsScreen() {
   }
 
   async function closeAllSessions() {
-    setSubmitting(true);
+    await runSingleFlight(closeSessionsLock, async () => {
+      setSubmitting(true);
 
-    try {
-      await authService.logout(true);
-      await clearSession();
-      Alert.alert(
-        "Solicitud confirmada",
-        "La solicitud de cierre global de sesiones fue procesada.",
-        [{ text: "Aceptar", onPress: () => router.replace("/login") }],
-      );
-    } catch {
-      Alert.alert(
-        "Cierre no confirmado",
-        "No se pudo confirmar el cierre global de sesiones. Intenta nuevamente.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
+      try {
+        await authService.logout(true);
+        await clearSession();
+        Alert.alert(
+          "Solicitud confirmada",
+          "La solicitud de cierre global de sesiones fue procesada.",
+          [{ text: "Aceptar", onPress: () => router.replace("/login") }],
+        );
+      } catch {
+        Alert.alert(
+          "Cierre no confirmado",
+          "No se pudo confirmar el cierre global de sesiones. Intenta nuevamente.",
+        );
+      } finally {
+        setSubmitting(false);
+      }
+    });
   }
 
   return (
@@ -79,6 +83,8 @@ export default function CloseSessionsScreen() {
         >
           <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Volver a seguridad de la cuenta"
               onPress={() =>
                 returnToParent(
                   router,
@@ -92,7 +98,12 @@ export default function CloseSessionsScreen() {
                 pressed && styles.pressed,
               ]}
             >
-              <Ionicons name="close" size={34} color={theme.text} />
+              <Ionicons
+                accessible={false}
+                name="close"
+                size={34}
+                color={theme.text}
+              />
             </Pressable>
 
             <Text style={[styles.title, { color: theme.text }]}>
@@ -136,6 +147,9 @@ export default function CloseSessionsScreen() {
           ]}
         >
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar todas las sesiones"
+            accessibilityState={{ disabled: submitting, busy: submitting }}
             disabled={submitting}
             onPress={requestCloseSessions}
             style={({ pressed }) => [

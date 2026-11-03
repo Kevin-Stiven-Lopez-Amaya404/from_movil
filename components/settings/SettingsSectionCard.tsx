@@ -29,9 +29,11 @@ export function SettingsSectionCard({
           name={iconName}
           size={17}
           color={danger ? theme.danger : theme.blue}
+          accessible={false}
         />
         <View style={styles.sectionCopy}>
           <Text
+            accessibilityRole="header"
             style={[
               styles.sectionTitle,
               { color: danger ? theme.danger : theme.text },

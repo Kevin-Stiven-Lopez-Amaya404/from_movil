@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -8,10 +8,11 @@ import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScre
 import { AuthPasswordField } from "@/components/auth/AuthTextField";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 
-import { getApiErrorMessage } from "@/lib/api/api-error";
 import { changeUserPassword } from "@/lib/auth/auth-store";
+import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { runSingleFlight } from "@/lib/utils/async-action-lock";
 import { getPasswordRules } from "@/lib/utils/validators";
 import {
   returnToParent,
@@ -24,7 +25,11 @@ export default function ChangePasswordScreen() {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
+  const { t } = useTranslation();
+  const parentKey = from === "settings" ? "settings" : "profile";
+  const parentHref =
+    from === "settings" ? "/(tabs)/settings" : "/(tabs)/(main)/profile";
+  useAndroidBackFallback(from !== parentKey, parentHref);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -32,6 +37,7 @@ export default function ChangePasswordScreen() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const passwordChangeLock = useRef(false);
 
   const passwordRules = getPasswordRules(newPassword);
   const strength = passwordRules.filter((rule) => rule.passed).length;
@@ -41,6 +47,8 @@ export default function ChangePasswordScreen() {
     newPassword.length > 0 && newPassword === confirmPassword;
 
   async function handleSave() {
+    if (passwordChangeLock.current) return;
+
     if (!currentPassword.trim()) {
       Alert.alert(
         "Contraseña actual requerida",
@@ -65,36 +73,38 @@ export default function ChangePasswordScreen() {
       return;
     }
 
-    setSubmitting(true);
+    await runSingleFlight(passwordChangeLock, async () => {
+      setSubmitting(true);
 
-    try {
-      await changeUserPassword(currentPassword, newPassword, confirmPassword);
+      try {
+        await changeUserPassword(currentPassword, newPassword, confirmPassword);
 
-      Alert.alert(
-        "Contraseña actualizada",
-        "Tu contraseña se ha cambiado correctamente.",
-        [
-          {
-            text: "Aceptar",
-            onPress: () => {
-              returnToParent(
-                router,
-                from,
-                "profile",
-                "/(tabs)/(main)/profile",
-              );
+        Alert.alert(
+          "Contraseña actualizada",
+          "Tu contraseña se ha cambiado correctamente.",
+          [
+            {
+              text: "Aceptar",
+              onPress: () => {
+                returnToParent(
+                  router,
+                  from,
+                  parentKey,
+                  parentHref,
+                );
+              },
             },
-          },
-        ],
-      );
-    } catch (error: unknown) {
-      Alert.alert(
-        "No se pudo cambiar la contraseña",
-        getApiErrorMessage(error),
-      );
-    } finally {
-      setSubmitting(false);
-    }
+          ],
+        );
+      } catch {
+        Alert.alert(
+          t("settings.changePassword"),
+          t("settings.passwordChangeError"),
+        );
+      } finally {
+        setSubmitting(false);
+      }
+    });
   }
 
   return (
@@ -117,8 +127,8 @@ export default function ChangePasswordScreen() {
               returnToParent(
                 router,
                 from,
-                "profile",
-                "/(tabs)/(main)/profile",
+                parentKey,
+                parentHref,
               );
             }}
             style={({ pressed }) => [

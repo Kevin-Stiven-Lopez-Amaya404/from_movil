@@ -5,6 +5,7 @@ import type { ColorMode } from "@/lib/domain/preferences";
 import { typography } from "@/lib/theme/typography";
 
 type ThemeModeSelectorProps = {
+  accessibilityLabel?: string;
   activeMode: ColorMode;
   borderColor: string;
   onPrimaryColor: string;
@@ -18,6 +19,7 @@ const appFont = typography.fontFamily.emphasis;
 
 /** Selector del modo de apariencia preferido por el usuario. */
 export function ThemeModeSelector({
+  accessibilityLabel,
   activeMode,
   blueColor,
   borderColor,
@@ -27,7 +29,11 @@ export function ThemeModeSelector({
   rowColor,
 }: ThemeModeSelectorProps) {
   return (
-    <View style={styles.themeRow}>
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={accessibilityLabel}
+      style={styles.themeRow}
+    >
       {(["system", "light", "dark"] as ColorMode[]).map((mode) => {
         const active = activeMode === mode;
         const icon =
@@ -41,6 +47,7 @@ export function ThemeModeSelector({
           <Pressable
             key={mode}
             accessibilityRole="radio"
+            accessibilityLabel={labels[mode]}
             accessibilityState={{ checked: active }}
             style={[
               styles.themeButton,
@@ -49,7 +56,12 @@ export function ThemeModeSelector({
             ]}
             onPress={() => onChange(mode)}
           >
-            <Ionicons name={icon} size={16} color={active ? onPrimaryColor : blueColor} />
+            <Ionicons
+              accessible={false}
+              name={icon}
+              size={16}
+              color={active ? onPrimaryColor : blueColor}
+            />
             <Text style={[styles.themeText, { color: active ? onPrimaryColor : blueColor }]}>
               {labels[mode]}
             </Text>

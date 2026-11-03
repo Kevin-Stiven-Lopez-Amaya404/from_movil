@@ -6,13 +6,17 @@ export const appFont = profileFont;
 
 export const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  content: { alignSelf: "center", width: "100%" },
+  content: {
+    alignSelf: "center",
+    gap: 14,
+    width: "100%",
+  },
   identityCard: {
     alignItems: "center",
     borderRadius: 17,
     borderWidth: 1,
     flexDirection: "row",
-    marginBottom: 17,
+    marginBottom: 0,
     padding: 13,
   },
   avatar: {
@@ -25,6 +29,11 @@ export const styles = StyleSheet.create({
   },
   avatarText: { fontFamily: appFont, fontSize: typography.size.title, fontWeight: "900" },
   identityCopy: { flex: 1, marginHorizontal: 12 },
+  shortcuts: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
   identityName: { fontFamily: appFont, fontSize: typography.size.bodyLarge, fontWeight: "900" },
   identityEmail: { fontFamily: appFont, fontSize: typography.size.caption, marginTop: 3 },
   rolePill: {

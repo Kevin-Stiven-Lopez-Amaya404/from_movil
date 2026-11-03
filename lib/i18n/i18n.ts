@@ -71,6 +71,11 @@ const dictionaries = {
 
     "profile.editInfo": "Editar información de perfil",
     "profile.greeting": "Hola, {name}",
+    "profile.personalInfo": "Información personal",
+    "profile.openPersonalInfoHint": "Abre la información de tu cuenta.",
+    "profile.roleAdmin": "Administrador",
+    "profile.roleMember": "Miembro",
+    "profile.roleGuest": "Invitado",
 
     "profile.helpCenter": "Centro de ayuda",
     "profile.helpSubtitle": "Soporte y preguntas frecuentes",
@@ -100,6 +105,20 @@ const dictionaries = {
     "profile.session": "Sesión",
 
     "settings.account": "Cuenta",
+    "settings.accountSecurity": "Seguridad de la cuenta",
+    "settings.accountSecurityDescription":
+      "Revisa alertas, sesiones y el estado de los dispositivos.",
+    "settings.backToProfileHint": "Regresa a tu perfil.",
+    "settings.changePassword": "Cambiar contraseña",
+    "settings.changePasswordDescription":
+      "Actualiza la contraseña de tu cuenta.",
+    "settings.passwordChangeError":
+      "No se pudo cambiar la contraseña. Revisa la contraseña actual e inténtalo de nuevo.",
+    "settings.dangerZone": "Zona de peligro",
+    "settings.deactivateHint":
+      "Solicita desactivar tu cuenta después de confirmar.",
+    "settings.deactivationError":
+      "No se pudo desactivar la cuenta. Inténtalo de nuevo más tarde.",
 
     "settings.about": "Información",
     "settings.aboutDescription":
@@ -131,6 +150,12 @@ const dictionaries = {
       "Informa errores o problemas de la aplicación.",
 
     "settings.subtitle": "Cuenta, preferencias y seguridad.",
+    "settings.openLanguageHint": "Abre la selección de idioma.",
+    "settings.openPasswordHint": "Abre el formulario para cambiar la contraseña.",
+    "settings.sync": "Sincronización automática",
+    "settings.syncDescription":
+      "La app recibe cambios en tiempo real cuando el servicio está disponible.",
+    "settings.system": "Sistema",
 
     "settings.title": "Configuración",
 
@@ -205,6 +230,11 @@ const dictionaries = {
 
     "profile.editInfo": "Edit profile information",
     "profile.greeting": "Hello, {name}",
+    "profile.personalInfo": "Personal information",
+    "profile.openPersonalInfoHint": "Opens your account information.",
+    "profile.roleAdmin": "Administrator",
+    "profile.roleMember": "Member",
+    "profile.roleGuest": "Guest",
 
     "profile.helpCenter": "Help center",
     "profile.helpSubtitle": "Support and frequently asked questions",
@@ -233,6 +263,20 @@ const dictionaries = {
     "profile.session": "Session",
 
     "settings.account": "Account",
+    "settings.accountSecurity": "Account security",
+    "settings.accountSecurityDescription":
+      "Review alerts, sessions, and device status.",
+    "settings.backToProfileHint": "Returns to your profile.",
+    "settings.changePassword": "Change password",
+    "settings.changePasswordDescription":
+      "Update your account password.",
+    "settings.passwordChangeError":
+      "The password could not be changed. Check your current password and try again.",
+    "settings.dangerZone": "Danger zone",
+    "settings.deactivateHint":
+      "Requests account deactivation after confirmation.",
+    "settings.deactivationError":
+      "The account could not be deactivated. Try again later.",
 
     "settings.about": "About",
     "settings.aboutDescription":
@@ -263,6 +307,12 @@ const dictionaries = {
       "Report errors or application problems.",
 
     "settings.subtitle": "Account, preferences and security.",
+    "settings.openLanguageHint": "Opens language selection.",
+    "settings.openPasswordHint": "Opens the password change form.",
+    "settings.sync": "Automatic synchronization",
+    "settings.syncDescription":
+      "The app receives real-time updates when the service is available.",
+    "settings.system": "System",
 
     "settings.title": "Settings",
 
@@ -338,6 +388,11 @@ const dictionaries = {
 
     "profile.editInfo": "Editar informações do perfil",
     "profile.greeting": "Olá, {name}",
+    "profile.personalInfo": "Informações pessoais",
+    "profile.openPersonalInfoHint": "Abre as informações da sua conta.",
+    "profile.roleAdmin": "Administrador",
+    "profile.roleMember": "Membro",
+    "profile.roleGuest": "Convidado",
 
     "profile.helpCenter": "Central de ajuda",
     "profile.helpSubtitle": "Suporte e perguntas frequentes",
@@ -368,6 +423,20 @@ const dictionaries = {
     "profile.session": "Sessão",
 
     "settings.account": "Conta",
+    "settings.accountSecurity": "Segurança da conta",
+    "settings.accountSecurityDescription":
+      "Revise alertas, sessões e o estado dos dispositivos.",
+    "settings.backToProfileHint": "Volta ao seu perfil.",
+    "settings.changePassword": "Alterar senha",
+    "settings.changePasswordDescription":
+      "Atualize a senha da sua conta.",
+    "settings.passwordChangeError":
+      "Não foi possível alterar a senha. Verifique a senha atual e tente novamente.",
+    "settings.dangerZone": "Zona de perigo",
+    "settings.deactivateHint":
+      "Solicita a desativação da conta após a confirmação.",
+    "settings.deactivationError":
+      "Não foi possível desativar a conta. Tente novamente mais tarde.",
 
     "settings.about": "Informações",
     "settings.aboutDescription":
@@ -398,6 +467,12 @@ const dictionaries = {
       "Informe erros ou problemas do aplicativo.",
 
     "settings.subtitle": "Conta, preferências e segurança.",
+    "settings.openLanguageHint": "Abre a seleção de idioma.",
+    "settings.openPasswordHint": "Abre o formulário para alterar a senha.",
+    "settings.sync": "Sincronização automática",
+    "settings.syncDescription":
+      "O app recebe atualizações em tempo real quando o serviço está disponível.",
+    "settings.system": "Sistema",
 
     "settings.title": "Configurações",
 

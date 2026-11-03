@@ -1,21 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { useRef, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-
+import { ProfileMenuItem } from "@/components/profile/ProfileMenuItem";
+import { ProfileShortcutCard } from "@/components/profile/ProfileShortcutCard";
+import { SettingsSectionCard } from "@/components/settings/SettingsSectionCard";
 import { useAuthSession } from "@/lib/auth/auth-session-context";
-import { ThemeModeSelector } from "@/components/settings/ThemeModeSelector";
-import { ColorPaletteSelector } from "@/components/settings/ColorPaletteSelector";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
-import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
-import { ProfileMenuItem } from "@/components/profile/ProfileMenuItem";
-import { SettingsSectionCard } from "@/components/settings/SettingsSectionCard";
+import { runSingleFlight } from "@/lib/utils/async-action-lock";
 import { styles } from "../../../styles/(tabs)/(main)/profile.styles";
-
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -23,88 +21,43 @@ export default function ProfileScreen() {
   const theme = useAppTheme();
   const { t } = useTranslation();
   const { logout } = useAuthSession();
-  const {
-    colorMode,
-    colorPalette,
-    deactivateAccount,
-    language,
-    sessionEmail,
-    sessionName,
-    sessionRole,
-    setColorMode,
-    setColorPalette,
-  } = useSmartHome();
+  const { sessionEmail, sessionName, sessionRole } = useSmartHome();
+  const logoutLock = useRef(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  const { count: pendingAlerts } = useActiveDeviceAlerts();
   const initial = sessionName.trim().charAt(0).toUpperCase() || "U";
-  const languageLabel =
-    language === "en"
-      ? "English"
-      : language === "pt"
-        ? "Português (Brasil)"
-        : "Español (Colombia)";
   const roleLabel =
     sessionRole === "admin"
-      ? "Administrador"
+      ? t("profile.roleAdmin")
       : sessionRole === "miembro"
-        ? "Miembro"
-        : "Invitado";
-  const colorModeLabel = {
-    system: "Sistema",
-    light: "Claro",
-    dark: "Oscuro",
-  }[colorMode];
+        ? t("profile.roleMember")
+        : t("profile.roleGuest");
 
   function confirmLogout() {
+    if (logoutLock.current) return;
+
     Alert.alert(t("action.logout"), t("profile.logoutPrompt"), [
       { text: t("action.cancel"), style: "cancel" },
       {
         text: t("action.logout"),
         style: "destructive",
-        onPress: () => {
-          void (async () => {
-            try {
-              await logout();
-            } catch {
-              // El contexto siempre limpia la sesión local aunque el backend no responda.
-            } finally {
-              router.replace("/welcome");
-            }
-          })();
-        },
+        onPress: () => void endSession(),
       },
     ]);
   }
 
-  function showPending(title: string) {
-    Alert.alert(title, t("common.readyBackend"), [
-      { text: t("action.cancel") },
-    ]);
-  }
+  async function endSession() {
+    await runSingleFlight(logoutLock, async () => {
+      setLoggingOut(true);
 
-  function confirmDeactivation() {
-    Alert.alert(t("profile.deactivateAccount"), t("profile.deactivatePrompt"), [
-      { text: t("action.cancel"), style: "cancel" },
-      {
-        text: t("action.deactivate"),
-        style: "destructive",
-        onPress: () => {
-          void (async () => {
-            try {
-              await deactivateAccount();
-              router.replace("/welcome");
-            } catch (error) {
-              Alert.alert(
-                t("profile.deactivateAccount"),
-                error instanceof Error
-                  ? error.message
-                  : "No se pudo desactivar la cuenta. Inténtalo de nuevo.",
-              );
-            }
-          })();
-        },
-      },
-    ]);
+      try {
+        await logout();
+      } catch {
+        // El cierre de sesión local se conserva aunque falle la solicitud remota.
+      } finally {
+        router.replace("/welcome");
+      }
+    });
   }
 
   return (
@@ -123,7 +76,8 @@ export default function ProfileScreen() {
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Ver información personal"
+            accessibilityLabel={`${sessionName}. ${sessionEmail}. ${roleLabel}`}
+            accessibilityHint={t("profile.openPersonalInfoHint")}
             onPress={() =>
               router.push({
                 pathname: "/(tabs)/personal-info",
@@ -166,36 +120,37 @@ export default function ProfileScreen() {
                   name="shield-checkmark"
                   size={13}
                   color={theme.success}
+                  accessible={false}
                 />
                 <Text style={[styles.roleText, { color: theme.success }]}>
                   {roleLabel}
                 </Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.muted} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={theme.muted}
+              accessible={false}
+            />
           </Pressable>
 
-          <SettingsSectionCard iconName="lock-closed-outline" title="Seguridad">
-            <ProfileMenuItem
-              variant="menu"
-              icon="lock-closed-outline"
-              title="Cambiar contraseña"
+          <View style={styles.shortcuts}>
+            <ProfileShortcutCard
+              icon="options-outline"
+              title={t("settings.title")}
+              description={t("settings.subtitle")}
               onPress={() =>
                 router.push({
-                  pathname: "/(tabs)/change-password",
+                  pathname: "/(tabs)/settings",
                   params: { from: "profile" },
                 })
               }
             />
-            <ProfileMenuItem
-              variant="menu"
+            <ProfileShortcutCard
               icon="shield-checkmark-outline"
-              title="Seguridad de la cuenta"
-              description={
-                pendingAlerts === 1
-                  ? "1 alerta pendiente"
-                  : `${pendingAlerts} alertas pendientes`
-              }
+              title={t("settings.accountSecurity")}
+              description={t("settings.accountSecurityDescription")}
               onPress={() =>
                 router.push({
                   pathname: "/(tabs)/account-security",
@@ -203,79 +158,17 @@ export default function ProfileScreen() {
                 })
               }
             />
-          </SettingsSectionCard>
+          </View>
 
-          <SettingsSectionCard iconName="options-outline" title="Preferencias">
-            <View style={[styles.preferenceCard, { borderBottomColor: theme.divider }]}>
-              <View style={styles.preferenceHeader}>
-                <View
-                  style={[
-                    styles.preferenceIcon,
-                    { backgroundColor: theme.rowAlt },
-                  ]}
-                >
-                  <Ionicons
-                    name="contrast-outline"
-                    size={18}
-                    color={theme.blue}
-                  />
-                </View>
-                <View style={styles.preferenceTextWrap}>
-                  <Text style={[styles.preferenceTitle, { color: theme.text }]}>
-                    Apariencia
-                  </Text>
-                  <Text
-                    style={[styles.preferenceSubtitle, { color: theme.muted }]}
-                  >
-                    {colorModeLabel}
-                  </Text>
-                </View>
-              </View>
-
-              <ThemeModeSelector
-                activeMode={colorMode}
-                blueColor={theme.blue}
-                borderColor={theme.border}
-                labels={{ system: "Sistema", dark: "Oscuro", light: "Claro" }}
-                onPrimaryColor={theme.onPrimary}
-                onChange={setColorMode}
-                rowColor={theme.row}
-              />
-              <ColorPaletteSelector
-                activePalette={colorPalette}
-                borderColor={theme.border}
-                labels={{
-                  classic: t("settings.paletteClassic"),
-                  emerald: t("settings.paletteEmerald"),
-                }}
-                onChange={setColorPalette}
-                onPrimaryColor={theme.onPrimary}
-                primaryColor={theme.blue}
-                rowColor={theme.row}
-                textColor={theme.text}
-                title={t("settings.colorPalette")}
-              />
-            </View>
-
-            <ProfileMenuItem
-              variant="menu"
-              icon="language-outline"
-              title="Idioma"
-              description={languageLabel}
-              onPress={() =>
-                router.push({
-                  pathname: "/(tabs)/language",
-                  params: { from: "profile" },
-                })
-              }
-            />
-          </SettingsSectionCard>
-
-          <SettingsSectionCard iconName="help-circle-outline" title="Ayuda">
+          <SettingsSectionCard
+            iconName="help-circle-outline"
+            title={t("settings.helpSupport")}
+          >
             <ProfileMenuItem
               variant="menu"
               icon="help-circle-outline"
-              title="Centro de ayuda"
+              title={t("profile.helpCenter")}
+              description={t("profile.helpSubtitle")}
               onPress={() =>
                 router.push({
                   pathname: "/(tabs)/help",
@@ -285,14 +178,9 @@ export default function ProfileScreen() {
             />
             <ProfileMenuItem
               variant="menu"
-              icon="alert-circle-outline"
-              title={t("profile.reportProblem")}
-              onPress={() => showPending(t("profile.reportProblem"))}
-            />
-            <ProfileMenuItem
-              variant="menu"
               icon="information-circle-outline"
-              title="Acerca de Smart Home"
+              title={t("settings.about")}
+              description={t("settings.aboutDescription")}
               onPress={() =>
                 router.push({
                   pathname: "/(tabs)/about-smart-home",
@@ -305,32 +193,33 @@ export default function ProfileScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t("action.logout")}
+            accessibilityState={{ disabled: loggingOut, busy: loggingOut }}
+            disabled={loggingOut}
             onPress={confirmLogout}
             style={({ pressed }) => [
               styles.logout,
               {
                 backgroundColor: theme.dangerSoft,
                 borderColor: theme.dangerSoft,
+                opacity: loggingOut ? 0.72 : 1,
               },
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name="log-out-outline" size={21} color={theme.danger} />
+            {loggingOut ? (
+              <ActivityIndicator color={theme.danger} />
+            ) : (
+              <Ionicons
+                name="log-out-outline"
+                size={21}
+                color={theme.danger}
+                accessible={false}
+              />
+            )}
             <Text style={[styles.logoutText, { color: theme.danger }]}>
               {t("action.logout")}
             </Text>
           </Pressable>
-
-          <SettingsSectionCard iconName="warning-outline" title="Zona de peligro">
-            <ProfileMenuItem
-              variant="menu"
-              intent="danger"
-              icon="person-remove-outline"
-              title={t("profile.deactivateAccount")}
-              description={t("profile.deactivateDescription")}
-              onPress={confirmDeactivation}
-            />
-          </SettingsSectionCard>
         </View>
       </ScrollView>
     </SafeAreaView>

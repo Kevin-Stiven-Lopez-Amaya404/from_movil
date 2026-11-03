@@ -18,6 +18,10 @@ import type {
   EffectiveColorMode,
 } from "@/lib/domain/preferences";
 import {
+  loadLanguagePreference,
+  saveLanguagePreference,
+} from "@/lib/preferences/secure-language-preferences";
+import {
   loadColorPalettePreference,
   loadColorModePreference,
   saveColorPalettePreference,
@@ -191,7 +195,8 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       : colorMode;
   const colorModeTouchedRef = useRef(false);
   const colorPaletteTouchedRef = useRef(false);
-  const [language, setLanguage] = useState<AppLanguage>("es");
+  const languageTouchedRef = useRef(false);
+  const [language, setLanguageState] = useState<AppLanguage>("es");
   const [homesLoadStatus, setHomesLoadStatus] =
     useState<DataLoadStatus>("loading");
 
@@ -209,6 +214,24 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       })
       .catch((error: unknown) => {
         console.warn("[Appearance] No se pudo cargar la preferencia.", error);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    void loadLanguagePreference()
+      .then((storedLanguage) => {
+        if (active && !languageTouchedRef.current) {
+          setLanguageState(storedLanguage);
+        }
+      })
+      .catch((error: unknown) => {
+        console.warn("[Language] No se pudo cargar la preferencia.", error);
       });
 
     return () => {
@@ -257,6 +280,15 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
 
     void saveColorPalettePreference(palette).catch((error: unknown) => {
       console.warn("[Appearance] No se pudo guardar la paleta.", error);
+    });
+  }, []);
+
+  const setLanguage = useCallback((nextLanguage: AppLanguage) => {
+    languageTouchedRef.current = true;
+    setLanguageState(nextLanguage);
+
+    void saveLanguagePreference(nextLanguage).catch((error: unknown) => {
+      console.warn("[Language] No se pudo guardar la preferencia.", error);
     });
   }, []);
 
@@ -555,11 +587,11 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setAccountActive,
       setColorMode,
       setColorPalette,
+      setLanguage,
       setHomeConsumptionGoal: (homeId, targetWh) => {
         if (!Number.isFinite(targetWh) || targetWh <= 0) return;
         setHomeConsumptionGoals((items) => ({ ...items, [homeId]: targetWh }));
       },
-      setLanguage,
       setSessionName,
       setSessionEmail,
       setSessionRole,
@@ -729,6 +761,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setHomeDeviceState,
       setColorMode,
       setColorPalette,
+      setLanguage,
       accessibleHomes,
       language,
       lastSync,
