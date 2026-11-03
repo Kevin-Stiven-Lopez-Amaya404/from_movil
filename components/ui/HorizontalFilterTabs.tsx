@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
+import { useAppTheme } from "@/lib/theme/app-theme";
 import { FilterChip, type FilterItem, type FilterChipRole } from "@/components/ui/FilterChip";
 
 type ItemLayout = {
@@ -33,6 +34,7 @@ export function HorizontalFilterTabs<T extends string | number>({
   selectedValue,
   testID,
 }: HorizontalFilterTabsProps<T>) {
+  const theme = useAppTheme();
   const scrollRef = useRef<ScrollView>(null);
   const itemLayouts = useRef<Record<string, ItemLayout>>({});
 
@@ -75,8 +77,14 @@ export function HorizontalFilterTabs<T extends string | number>({
           />
         ))}
       </ScrollView>
-      <View pointerEvents="none" style={styles.fadeLeft} />
-      <View pointerEvents="none" style={styles.fadeRight} />
+      <View
+        pointerEvents="none"
+        style={[styles.fadeLeft, { backgroundColor: theme.overlaySubtle }]}
+      />
+      <View
+        pointerEvents="none"
+        style={[styles.fadeRight, { backgroundColor: theme.overlaySubtle }]}
+      />
     </View>
   );
 }
@@ -92,7 +100,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   fadeLeft: {
-    backgroundColor: "rgba(16, 24, 39, 0.18)",
     bottom: 0,
     left: 0,
     position: "absolute",
@@ -100,7 +107,6 @@ const styles = StyleSheet.create({
     width: 14,
   },
   fadeRight: {
-    backgroundColor: "rgba(16, 24, 39, 0.18)",
     bottom: 0,
     position: "absolute",
     right: 0,

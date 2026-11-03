@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -17,7 +18,7 @@ export const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 23,
+    fontSize: typography.size.section,
     fontWeight: "900",
   },
   closeButton: {
@@ -29,12 +30,12 @@ export const styles = StyleSheet.create({
     marginLeft: 12,
   },
   homeLabel: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "700",
     marginTop: 6,
   },
   description: {
-    fontSize: 14,
+    fontSize: typography.size.helper,
     lineHeight: 21,
     marginTop: 12,
   },
@@ -50,20 +51,19 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   primaryButtonText: {
-    color: "#FFFFFF",
     fontWeight: "800",
-    fontSize: 14,
+    fontSize: typography.size.helper,
   },
   resultsSection: {
     marginTop: 30,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "800",
     marginBottom: 5,
   },
   message: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     lineHeight: 19,
     marginTop: 14,
   },
@@ -87,11 +87,11 @@ export const styles = StyleSheet.create({
     gap: 5,
   },
   deviceName: {
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
   deviceCaption: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     lineHeight: 17,
   },
   selectButton: {

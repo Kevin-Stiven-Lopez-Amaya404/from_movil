@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { activateUserAccount } from "@/lib/auth/auth-store";
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 28,
   },
-  title: { fontSize: 22, fontWeight: "800", textAlign: "center" },
-  message: { fontSize: 15, lineHeight: 22, marginTop: 12, textAlign: "center" },
+  title: { fontSize: typography.size.section, fontWeight: "800", textAlign: "center" },
+  message: { fontSize: typography.size.body, lineHeight: 22, marginTop: 12, textAlign: "center" },
   button: { marginTop: 28, width: "100%" },
 });

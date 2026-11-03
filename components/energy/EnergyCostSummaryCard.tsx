@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 /**
  * EN-01: Costo estimado del mes, presupuesto, meta y tarifa vigente (SQL034).
  * Se muestra dentro de la pantalla Energía, debajo del consumo existente.
@@ -266,7 +267,7 @@ export function EnergyCostSummaryCard({ homeId, homeRole }: Props) {
           {currentTariff ? (
             <Text style={[styles.value, { color: theme.text }]}>
               {formatTariff(currentTariff.unitPriceCopKwh)}
-              <Text style={{ fontSize: 13, fontWeight: "400", color: theme.muted }}>
+              <Text style={{ fontSize: typography.size.helper, fontWeight: "400", color: theme.muted }}>
                 {"  "}desde {formatLocalDate(currentTariff.effectiveFrom)}
               </Text>
             </Text>

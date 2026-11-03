@@ -7,7 +7,6 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 14,
     padding: 16,
-    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -26,13 +25,13 @@ export const styles = StyleSheet.create({
 
   title: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 19,
+    fontSize: typography.size.section,
     fontWeight: typography.weight.bold,
   },
 
   subtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 3,
   },
 
@@ -45,7 +44,7 @@ export const styles = StyleSheet.create({
 
   viewText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: typography.weight.bold,
   },
 
@@ -76,13 +75,13 @@ export const styles = StyleSheet.create({
 
   deviceName: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: typography.weight.bold,
   },
 
   deviceRoom: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     marginTop: 2,
   },
 
@@ -100,7 +99,7 @@ export const styles = StyleSheet.create({
 
   power: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: typography.weight.bold,
   },
 
@@ -119,7 +118,7 @@ export const styles = StyleSheet.create({
 
   emptyText: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     marginTop: 8,
   },
 

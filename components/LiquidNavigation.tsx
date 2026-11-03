@@ -107,7 +107,7 @@ export function LiquidNavigation({
           {
             backgroundColor: theme.tabBar,
             borderColor: theme.borderLight,
-            shadowColor: "#0A192F",
+            shadowColor: theme.shadow,
           },
         ]}
       >
@@ -152,8 +152,8 @@ export function LiquidNavigation({
                   color={selected ? theme.tab.activeText : theme.muted}
                 />
                 {showBadge ? (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>
+                  <View style={[styles.badge, { backgroundColor: theme.danger }]}>
+                    <Text style={[styles.badgeText, { color: theme.onDanger }]}>
                       {unreadNotificationCount > 9
                         ? "9+"
                         : String(unreadNotificationCount)}

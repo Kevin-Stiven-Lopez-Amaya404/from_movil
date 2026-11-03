@@ -14,9 +14,8 @@ export function FormErrorText({ children }: FormErrorTextProps) {
 
 const styles = StyleSheet.create({
   text: {
-    color: '#D32F2F',
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: '700',
     marginTop: 6,
   },

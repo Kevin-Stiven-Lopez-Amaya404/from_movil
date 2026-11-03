@@ -91,14 +91,14 @@ export default function AboutSmartHomeScreen() {
               claridad y rapidez.
             </Text>
 
-            <View style={styles.infoRow}>
+            <View style={[styles.infoRow, { borderTopColor: theme.divider }]}>
               <Text style={[styles.label, { color: theme.muted }]}>
                 Versión
               </Text>
               <Text style={[styles.value, { color: theme.text }]}>1.0.0</Text>
             </View>
 
-            <View style={styles.infoRow}>
+            <View style={[styles.infoRow, { borderTopColor: theme.divider }]}>
               <Text style={[styles.label, { color: theme.muted }]}>
                 Plataforma
               </Text>
@@ -107,7 +107,7 @@ export default function AboutSmartHomeScreen() {
               </Text>
             </View>
 
-            <View style={styles.infoRow}>
+            <View style={[styles.infoRow, { borderTopColor: theme.divider }]}>
               <Text style={[styles.label, { color: theme.muted }]}>Estado</Text>
               <Text style={[styles.value, { color: theme.text }]}>Beta</Text>
             </View>

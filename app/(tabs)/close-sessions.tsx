@@ -145,9 +145,9 @@ export default function CloseSessionsScreen() {
             ]}
           >
             {submitting ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={theme.onSolidAction} />
             ) : (
-              <Text style={styles.submitText}>Cerrar todas las sesiones</Text>
+              <Text style={[styles.submitText, { color: theme.onSolidAction }]}>Cerrar todas las sesiones</Text>
             )}
           </Pressable>
         </View>

@@ -3,6 +3,8 @@ import { useRouter } from "expo-router";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Button } from "@/components/ui/Button";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
@@ -56,38 +58,14 @@ export default function FavoritesScreen() {
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           {/* HEADER */}
           <View style={styles.header}>
-            <Pressable
-              onPress={() => {
-                if (router.canGoBack()) {
-                  router.back();
-                } else {
-                  router.replace("/(tabs)/(main)/index");
-                }
-              }}
-              accessibilityRole="button"
+            <ScreenHeader
               accessibilityLabel="Cerrar favoritos"
-              hitSlop={8}
-              style={({ pressed }) => [
-                styles.backButton,
-                {
-                  backgroundColor: theme.card,
-                  borderColor: theme.borderLight,
-                },
-                pressed && styles.pressed,
-              ]}
-            >
-              <Ionicons name="close" size={21} color={theme.text} />
-            </Pressable>
-
-            <View style={styles.headerCopy}>
-              <Text style={[styles.title, { color: theme.text }]}>
-                Favoritos
-              </Text>
-
-              <Text style={[styles.subtitle, { color: theme.muted }]}>
-                Tus hogares guardados para acceder rápidamente
-              </Text>
-            </View>
+              backBackgroundColor={theme.card}
+              fallbackHref="/(tabs)/(main)/index"
+              subtitle="Tus hogares guardados para acceder rápidamente"
+              title="Favoritos"
+              titleSize="title"
+            />
           </View>
 
           {/* FAVORITE HOMES */}
@@ -132,20 +110,15 @@ export default function FavoritesScreen() {
                   Marca un hogar con la estrella para tenerlo disponible aquí.
                 </Text>
 
-                <Pressable
-                  accessibilityRole="button"
+                <Button
+                  colorSource="solidAction"
+                  icon={<Ionicons name="arrow-forward" size={16} color={theme.onSolidAction} />}
+                  label="Ver mis hogares"
+                  labelSize="helper"
                   onPress={() => router.push("/(tabs)/(main)/homes")}
-                  style={({ pressed }) => [
-                    styles.emptyAction,
-                    { backgroundColor: theme.solidActionBackground },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={[styles.emptyActionText, { color: theme.onPrimary }]}>
-                    Ver mis hogares
-                  </Text>
-                  <Ionicons name="arrow-forward" size={16} color={theme.onPrimary} />
-                </Pressable>
+                  style={styles.emptyAction}
+                  variant="primary"
+                />
               </View>
             ) : (
               favoriteHomes.map((home) => (
@@ -211,7 +184,7 @@ export default function FavoritesScreen() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Ionicons name="star" size={23} color="#F5B400" />
+                    <Ionicons name="star" size={23} color={theme.blue} />
                   </Pressable>
 
                   {/* NAVIGATION */}

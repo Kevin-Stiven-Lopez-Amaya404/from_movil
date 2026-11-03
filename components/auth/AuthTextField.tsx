@@ -98,7 +98,7 @@ export function AuthTextField({
                 borderColor: focused
                   ? palette.button
                   : palette.fieldBorder === "transparent"
-                    ? "#CBD5E1"
+                    ? palette.border
                     : palette.fieldBorder,
               }
             : null,
@@ -181,7 +181,7 @@ export function AuthPasswordField(
                   borderColor: focused
                     ? palette.button
                     : palette.fieldBorder === "transparent"
-                      ? "#CBD5E1"
+                      ? palette.border
                       : palette.fieldBorder,
                 }
               : null,

@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -35,12 +36,12 @@ export const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 25,
+    fontSize: typography.size.title,
     fontWeight: "900",
   },
 
   subtitle: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "600",
     marginTop: 3,
   },
@@ -63,13 +64,13 @@ export const styles = StyleSheet.create({
   },
 
   summaryNumber: {
-    fontSize: 20,
+    fontSize: typography.size.section,
     fontWeight: "900",
     marginTop: 5,
   },
 
   summaryLabel: {
-    fontSize: 10,
+    fontSize: typography.size.caption,
     fontWeight: "700",
     marginTop: 1,
   },
@@ -79,7 +80,7 @@ export const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 19,
+    fontSize: typography.size.section,
     fontWeight: "900",
     marginBottom: 12,
   },
@@ -96,13 +97,13 @@ export const styles = StyleSheet.create({
   },
 
   statePanelTitle: {
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "800",
     textAlign: "center",
   },
 
   statePanelCopy: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     lineHeight: 18,
     textAlign: "center",
   },
@@ -117,7 +118,7 @@ export const styles = StyleSheet.create({
   },
 
   stateActionText: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
 
@@ -163,23 +164,23 @@ export const styles = StyleSheet.create({
 
   deviceTitle: {
     flex: 1,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "900",
   },
 
   deviceMeta: {
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "600",
     marginTop: 3,
   },
 
   deviceStatus: {
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "800",
     marginTop: 4,
   },
   deviceLastSeen: {
-    fontSize: 10,
+    fontSize: typography.size.caption,
     fontWeight: "600",
     marginTop: 2,
   },

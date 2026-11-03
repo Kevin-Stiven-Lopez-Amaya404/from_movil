@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { reactivateUserAccount } from "@/lib/auth/auth-store";
@@ -120,12 +121,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
   },
   title: {
-    fontSize: 22,
+    fontSize: typography.size.section,
     fontWeight: "800",
     textAlign: "center",
   },
   message: {
-    fontSize: 15,
+    fontSize: typography.size.body,
     lineHeight: 22,
     marginTop: 12,
     textAlign: "center",

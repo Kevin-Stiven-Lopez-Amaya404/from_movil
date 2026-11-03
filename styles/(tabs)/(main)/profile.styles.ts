@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 import { profileFont } from "@/components/profile/profileTheme";
 
@@ -22,10 +23,10 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     width: 68,
   },
-  avatarText: { fontFamily: appFont, fontSize: 27, fontWeight: "900" },
+  avatarText: { fontFamily: appFont, fontSize: typography.size.title, fontWeight: "900" },
   identityCopy: { flex: 1, marginHorizontal: 12 },
-  identityName: { fontFamily: appFont, fontSize: 17, fontWeight: "900" },
-  identityEmail: { fontFamily: appFont, fontSize: 12, marginTop: 3 },
+  identityName: { fontFamily: appFont, fontSize: typography.size.bodyLarge, fontWeight: "900" },
+  identityEmail: { fontFamily: appFont, fontSize: typography.size.caption, marginTop: 3 },
   rolePill: {
     alignItems: "center",
     alignSelf: "flex-start",
@@ -37,7 +38,7 @@ export const styles = StyleSheet.create({
   },
   roleText: {
     fontFamily: appFont,
-    fontSize: 10,
+    fontSize: typography.size.caption,
     fontWeight: "800",
     marginLeft: 4,
   },
@@ -49,7 +50,7 @@ export const styles = StyleSheet.create({
     marginBottom: 6,
     paddingHorizontal: 2,
   },
-  sectionTitle: { fontFamily: appFont, fontSize: 14, fontWeight: "900" },
+  sectionTitle: { fontFamily: appFont, fontSize: typography.size.helper, fontWeight: "900" },
   rows: {
     borderRadius: 15,
     borderWidth: 1,
@@ -58,7 +59,6 @@ export const styles = StyleSheet.create({
   },
   row: {
     alignItems: "center",
-    borderTopColor: "#E2E8F0",
     borderTopWidth: 1,
     flexDirection: "row",
     minHeight: 56,
@@ -72,10 +72,9 @@ export const styles = StyleSheet.create({
     width: 34,
   },
   rowCopy: { flex: 1, marginHorizontal: 10 },
-  rowTitle: { fontFamily: appFont, fontSize: 13, fontWeight: "800" },
-  rowDescription: { fontFamily: appFont, fontSize: 10, marginTop: 2 },
+  rowTitle: { fontFamily: appFont, fontSize: typography.size.helper, fontWeight: "800" },
+  rowDescription: { fontFamily: appFont, fontSize: typography.size.caption, marginTop: 2 },
   preferenceCard: {
-    borderBottomColor: "rgba(148,163,184,0.25)",
     borderBottomWidth: 1,
     paddingBottom: 12,
     paddingTop: 8,
@@ -95,12 +94,12 @@ export const styles = StyleSheet.create({
   preferenceTextWrap: { flex: 1, marginLeft: 10 },
   preferenceTitle: {
     fontFamily: appFont,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "900",
   },
   preferenceSubtitle: {
     fontFamily: appFont,
-    fontSize: 10,
+    fontSize: typography.size.caption,
     marginTop: 2,
   },
   logout: {
@@ -114,7 +113,7 @@ export const styles = StyleSheet.create({
   },
   logoutText: {
     fontFamily: appFont,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "900",
     marginLeft: 8,
   },

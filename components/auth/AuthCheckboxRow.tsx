@@ -19,7 +19,6 @@ export function AuthCheckboxRow({ checked, disabled = false, label, labelStyle, 
       <View
         style={[
           styles.checkbox,
-          checked && styles.checkboxChecked,
           { backgroundColor: checked ? palette.button : palette.checkboxIdle },
         ]}
       >
@@ -42,20 +41,15 @@ const styles = StyleSheet.create({
   },
   checkbox: {
     alignItems: 'center',
-    backgroundColor: '#D8DADC',
     borderRadius: 6,
     height: 20,
     justifyContent: 'center',
     width: 20,
   },
-  checkboxChecked: {
-    backgroundColor: '#0864C8',
-  },
   label: {
-    color: '#3F3F3F',
     flex: 1,
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: '700',
   },
 });

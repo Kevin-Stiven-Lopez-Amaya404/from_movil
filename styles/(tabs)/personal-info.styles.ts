@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 import { profileFont } from "@/components/profile/profileTheme";
 
@@ -28,18 +29,18 @@ export const styles = StyleSheet.create({
   },
   avatarText: {
     fontFamily: profileFont,
-    fontSize: 26,
+    fontSize: typography.size.title,
     fontWeight: "900",
   },
   headerCopy: { flex: 1, marginLeft: 12 },
   title: {
     fontFamily: profileFont,
-    fontSize: 20,
+    fontSize: typography.size.section,
     fontWeight: "900",
   },
   subtitle: {
     fontFamily: profileFont,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 2,
   },
   card: {
@@ -50,7 +51,6 @@ export const styles = StyleSheet.create({
   },
   row: {
     alignItems: "center",
-    borderBottomColor: "rgba(148,163,184,0.25)",
     borderBottomWidth: 1,
     flexDirection: "row",
     paddingHorizontal: 14,
@@ -66,14 +66,14 @@ export const styles = StyleSheet.create({
   rowContent: { flex: 1, marginLeft: 12 },
   label: {
     fontFamily: profileFont,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "700",
     marginBottom: 2,
     textTransform: "uppercase",
   },
   value: {
     fontFamily: profileFont,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "800",
   },
   pressed: { opacity: 0.72 },

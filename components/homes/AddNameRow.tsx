@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flex: 1,
     fontFamily: appFont,
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "700",
     height: 48,
     paddingHorizontal: 14,

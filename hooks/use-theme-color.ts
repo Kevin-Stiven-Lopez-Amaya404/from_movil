@@ -5,19 +5,22 @@
  * actual del sistema. Esto es util para componentes que requieren colores
  * adaptativos pero no usan el tema global completo.
  */
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useAppTheme } from "@/lib/theme/app-theme";
+
+type ThemeColorName = "tint" | "icon" | "background" | "text";
 
 export function useThemeColor(
   props: { light?: string; dark?: string },
-  colorName: keyof typeof Colors.light & keyof typeof Colors.dark,
+  colorName: ThemeColorName,
 ) {
-  const theme = useColorScheme() === "dark" ? "dark" : "light";
-  const colorFromProps = props[theme];
+  const theme = useAppTheme();
+  const colorFromProps = props[theme.dark ? "dark" : "light"];
 
   if (colorFromProps) {
     return colorFromProps;
   }
 
-  return Colors[theme][colorName];
+  if (colorName === "tint") return theme.blue;
+  if (colorName === "background") return theme.background;
+  return colorName === "icon" ? theme.muted : theme.text;
 }

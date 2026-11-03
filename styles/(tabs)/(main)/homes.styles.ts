@@ -7,13 +7,13 @@ export const styles = StyleSheet.create({
 
   title: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 30,
+    fontSize: typography.size.screenTitle,
     fontWeight: "900",
     lineHeight: 36,
   },
   subtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     lineHeight: 21,
     marginTop: 7,
   },
@@ -38,19 +38,18 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statusDot: {
-    backgroundColor: "#86EFAC",
     width: 8,
     height: 8,
     borderRadius: 4,
   },
   summaryCaption: {
-    fontSize: 10,
+    fontSize: typography.size.caption,
     fontWeight: "800",
     letterSpacing: 0.8,
   },
   summaryNumber: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 18,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "900",
   },
   newHomeButton: {
@@ -64,7 +63,7 @@ export const styles = StyleSheet.create({
   },
   newHomeText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
 
@@ -85,12 +84,12 @@ export const styles = StyleSheet.create({
   },
   filterText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
   filterCount: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "700",
   },
 
@@ -103,11 +102,11 @@ export const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "900",
     letterSpacing: 0.8,
   },
-  visibleCount: { fontSize: 12 },
+  visibleCount: { fontSize: typography.size.caption },
   homesList: { gap: 12 },
   homeCard: {
     flexDirection: "row",
@@ -141,13 +140,13 @@ export const styles = StyleSheet.create({
   },
   homeName: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "800",
     flexShrink: 1,
   },
   homeMeta: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     lineHeight: 18,
   },
   menuButton: {
@@ -181,19 +180,18 @@ export const styles = StyleSheet.create({
   emptyTitle: {
     textAlign: "center",
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "800",
   },
   emptyCopy: {
     textAlign: "center",
-    fontSize: 13,
+    fontSize: typography.size.helper,
     lineHeight: 19,
   },
 
   modalOverlay: {
     flex: 1,
     padding: 22,
-    backgroundColor: "rgba(0,0,0,0.48)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -205,12 +203,12 @@ export const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 21,
+    fontSize: typography.size.section,
     fontWeight: "900",
   },
   modalCopy: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     lineHeight: 19,
     marginTop: 8,
   },
@@ -221,7 +219,7 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     fontFamily: typography.fontFamily.regular,
-    fontSize: 15,
+    fontSize: typography.size.body,
   },
   modalActions: {
     flexDirection: "row",
@@ -239,7 +237,7 @@ export const styles = StyleSheet.create({
   },
   secondaryActionText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "700",
   },
   primaryAction: {
@@ -250,9 +248,8 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   primaryActionText: {
-    color: "#FFFFFF",
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
   disabled: { opacity: 0.5 },

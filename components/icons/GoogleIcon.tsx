@@ -11,6 +11,7 @@ type Props = {
  * Se usa en el boton "Continuar con Google". Aunque el login real con Google
  * no esta implementado, centralizar el icono evita depender de imagenes externas.
  */
+// Excepción intencional: mantiene los colores oficiales del logotipo de Google.
 export function GoogleIcon({ size = 24 }: Props) {
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48">

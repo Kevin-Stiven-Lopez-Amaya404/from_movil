@@ -24,18 +24,18 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 32,
+    fontSize: typography.size.screenTitle,
     fontWeight: "800",
     lineHeight: 39,
     textAlign: "center",
   },
   titleTiny: {
-    fontSize: 28,
+    fontSize: typography.size.title,
     lineHeight: 34,
   },
   subtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 16,
+    fontSize: typography.size.body,
     lineHeight: 22,
     textAlign: "center",
   },
@@ -49,7 +49,7 @@ export const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "700",
     marginLeft: 2,
   },
@@ -57,7 +57,7 @@ export const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     fontFamily: typography.fontFamily.regular,
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "500",
     minHeight: 56,
     paddingHorizontal: 16,
@@ -80,7 +80,7 @@ export const styles = StyleSheet.create({
   },
   forgotText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "700",
     textAlign: "right",
   },
@@ -92,7 +92,7 @@ export const styles = StyleSheet.create({
   },
   reactivationLinkText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "700",
     lineHeight: 19,
     textAlign: "center",
@@ -109,12 +109,12 @@ export const styles = StyleSheet.create({
   },
   registerText: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "500",
   },
   registerLink: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
 });

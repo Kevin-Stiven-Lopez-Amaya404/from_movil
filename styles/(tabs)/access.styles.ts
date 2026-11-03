@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -9,7 +10,7 @@ export const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 16,
   },
-  title: { flex: 1, fontSize: 23, fontWeight: "900" },
+  title: { flex: 1, fontSize: typography.size.section, fontWeight: "900" },
   closeButton: {
     width: 40,
     height: 40,
@@ -26,7 +27,7 @@ export const styles = StyleSheet.create({
     borderRadius: 13,
     marginBottom: 16,
   },
-  homeName: { flex: 1, fontSize: 14, fontWeight: "800" },
+  homeName: { flex: 1, fontSize: typography.size.helper, fontWeight: "800" },
   card: {
     borderRadius: 18,
     borderWidth: 1,
@@ -34,13 +35,13 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 12,
   },
-  cardTitle: { fontSize: 16, fontWeight: "800" },
+  cardTitle: { fontSize: typography.size.body, fontWeight: "800" },
   input: {
     borderWidth: 1,
     borderRadius: 12,
     height: 48,
     paddingHorizontal: 14,
-    fontSize: 14,
+    fontSize: typography.size.helper,
   },
   roles: { flexDirection: "row", gap: 10 },
   roleOption: {
@@ -51,9 +52,9 @@ export const styles = StyleSheet.create({
     borderRadius: 13,
     minHeight: 75,
   },
-  roleTitle: { fontSize: 13, fontWeight: "800" },
+  roleTitle: { fontSize: typography.size.helper, fontWeight: "800" },
   roleDescription: {
-    fontSize: 11,
+    fontSize: typography.size.caption,
     lineHeight: 16,
     marginTop: 5,
   },
@@ -66,8 +67,7 @@ export const styles = StyleSheet.create({
     gap: 9,
   },
   primaryText: {
-    color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
   sectionHeader: {
@@ -82,8 +82,8 @@ export const styles = StyleSheet.create({
     borderRadius: 13,
     paddingVertical: 14,
   },
-  statNumber: { fontSize: 22, fontWeight: "900" },
-  statLabel: { fontSize: 12, marginTop: 3 },
+  statNumber: { fontSize: typography.size.section, fontWeight: "900" },
+  statLabel: { fontSize: typography.size.caption, marginTop: 3 },
   memberRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -99,13 +99,13 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
   memberCopy: { flex: 1 },
-  memberName: { fontSize: 13, fontWeight: "800" },
+  memberName: { fontSize: typography.size.helper, fontWeight: "800" },
   memberDetail: {
-    fontSize: 11,
+    fontSize: typography.size.caption,
     lineHeight: 16,
     marginTop: 3,
   },
-  memberStatus: { fontSize: 11, fontWeight: "800" },
+  memberStatus: { fontSize: typography.size.caption, fontWeight: "800" },
   showAll: { alignSelf: "center", padding: 8 },
   history: {
     borderTopWidth: 1,
@@ -113,13 +113,13 @@ export const styles = StyleSheet.create({
     marginTop: 4,
     gap: 12,
   },
-  historyTitle: { fontSize: 14, fontWeight: "800" },
+  historyTitle: { fontSize: typography.size.helper, fontWeight: "800" },
   activityRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
-  activityName: { fontSize: 12, fontWeight: "700" },
-  emptyText: { fontSize: 12, lineHeight: 18 },
-  note: { fontSize: 12, lineHeight: 18 },
+  activityName: { fontSize: typography.size.caption, fontWeight: "700" },
+  emptyText: { fontSize: typography.size.caption, lineHeight: 18 },
+  note: { fontSize: typography.size.caption, lineHeight: 18 },
 });

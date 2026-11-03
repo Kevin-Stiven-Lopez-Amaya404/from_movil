@@ -61,7 +61,11 @@ export default function RegisterScreen() {
           ? "En progreso"
           : "Completa los requisitos";
   const strengthColor =
-    strength < 2 ? "#DC4A4A" : strength < passwordRules.length ? "#D58A12" : "#16804A";
+    strength < 2
+      ? palette.danger
+      : strength < passwordRules.length
+        ? palette.warning
+        : palette.success;
 
   const passwordIsStrong =
     passwordRules.length > 0 && strength === passwordRules.length;
@@ -250,7 +254,7 @@ export default function RegisterScreen() {
                 backgroundColor: palette.card,
                 borderColor:
                   palette.fieldBorder === "transparent"
-                    ? "#E1E8F0"
+                    ? palette.border
                     : palette.fieldBorder,
               },
             ]}
@@ -285,7 +289,7 @@ export default function RegisterScreen() {
               {passwordRules.map((rule) => (
                 <View key={rule.label} style={styles.ruleItem}>
                   <Ionicons
-                    color={rule.passed ? "#16804A" : palette.muted}
+                    color={rule.passed ? palette.success : palette.muted}
                     name={rule.passed ? "checkmark-circle" : "ellipse-outline"}
                     size={14}
                   />

@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
@@ -86,10 +87,10 @@ export function ShellyLanTelemetry({ ip, expectedId }: Props) {
     >
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <View style={{ flex: 1, gap: 3 }}>
-          <Text style={{ color: theme.text, fontWeight: "800", fontSize: 16 }}>
+          <Text style={{ color: theme.text, fontWeight: "800", fontSize: typography.size.body }}>
             Lectura del Shelly en vivo
           </Text>
-          <Text style={{ color: theme.muted, fontSize: 12 }}>
+          <Text style={{ color: theme.muted, fontSize: typography.size.caption }}>
             Modo de demostracion LAN - sin vinculacion definitiva
           </Text>
         </View>
@@ -100,14 +101,14 @@ export function ShellyLanTelemetry({ ip, expectedId }: Props) {
         <>
           <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 10 }}>
             <View style={{ flex: 1, padding: 12, backgroundColor: theme.rowAlt, borderRadius: 10 }}>
-              <Text style={{ color: theme.muted, fontSize: 12 }}>Potencia actual</Text>
-              <Text style={{ color: theme.text, fontWeight: "800", fontSize: 20 }}>
+              <Text style={{ color: theme.muted, fontSize: typography.size.caption }}>Potencia actual</Text>
+              <Text style={{ color: theme.text, fontWeight: "800", fontSize: typography.size.section }}>
                 {metric(reading.activePowerWatts)} W
               </Text>
             </View>
             <View style={{ flex: 1, padding: 12, backgroundColor: theme.rowAlt, borderRadius: 10 }}>
-              <Text style={{ color: theme.muted, fontSize: 12 }}>Energia local acumulada</Text>
-              <Text style={{ color: theme.text, fontWeight: "800", fontSize: 20 }}>
+              <Text style={{ color: theme.muted, fontSize: typography.size.caption }}>Energia local acumulada</Text>
+              <Text style={{ color: theme.text, fontWeight: "800", fontSize: typography.size.section }}>
                 {metric(reading.totalEnergyWh)} Wh
               </Text>
             </View>
@@ -115,7 +116,7 @@ export function ShellyLanTelemetry({ ip, expectedId }: Props) {
           <Text style={{ color: theme.text }}>
             Rele: <Text style={{ fontWeight: "800" }}>{reading.output ? "Encendido" : "Apagado"}</Text>
           </Text>
-          <Text style={{ color: theme.muted, fontSize: 12 }}>
+          <Text style={{ color: theme.muted, fontSize: typography.size.caption }}>
             Lectura local: {new Date(reading.measuredAt).toLocaleTimeString()}
           </Text>
         </>
@@ -125,7 +126,7 @@ export function ShellyLanTelemetry({ ip, expectedId }: Props) {
         </Text>
       )}
 
-      {error ? <Text style={{ color: theme.danger, fontSize: 12 }}>{error}</Text> : null}
+      {error ? <Text style={{ color: theme.danger, fontSize: typography.size.caption }}>{error}</Text> : null}
 
       <Pressable
         accessibilityRole="button"

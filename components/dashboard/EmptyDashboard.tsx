@@ -17,7 +17,7 @@ export function EmptyDashboard({ onAddPress }: Props) {
         Agrega tu primer hogar para comenzar a monitorear tu consumo eléctrico.
       </Text>
       <Pressable style={[styles.addButton, { backgroundColor: theme.solidActionBackground }]} onPress={onAddPress}>
-        <Text style={[styles.addButtonText, { color: "#FFFFFF" }]}>Agregar hogar</Text>
+        <Text style={[styles.addButtonText, { color: theme.onSolidAction }]}>Agregar hogar</Text>
       </Pressable>
     </View>
   );
@@ -49,7 +49,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   addButtonText: {
-    color: "#fff",
     fontFamily: typography.fontFamily.emphasis,
     fontSize: typography.size.body,
     fontWeight: typography.weight.semibold,

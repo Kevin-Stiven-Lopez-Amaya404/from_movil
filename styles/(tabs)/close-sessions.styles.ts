@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 import { profileFont } from "@/components/profile/profileTheme";
 
@@ -12,13 +13,13 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontFamily: profileFont,
-    fontSize: 28,
+    fontSize: typography.size.title,
     fontWeight: "900",
     lineHeight: 36,
   },
   description: {
     fontFamily: profileFont,
-    fontSize: 17,
+    fontSize: typography.size.bodyLarge,
     lineHeight: 25,
     marginTop: 14,
   },
@@ -34,7 +35,7 @@ export const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontFamily: profileFont,
-    fontSize: 15,
+    fontSize: typography.size.body,
     lineHeight: 22,
   },
   footer: {
@@ -53,9 +54,8 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
   submitText: {
-    color: "#FFFFFF",
     fontFamily: profileFont,
-    fontSize: 17,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "800",
   },
   pressed: { opacity: 0.7 },

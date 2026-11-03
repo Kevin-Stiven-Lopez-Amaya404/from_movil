@@ -1,9 +1,11 @@
+import { typography } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Button } from "@/components/ui/Button";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import {
   returnToParent,
@@ -111,15 +113,16 @@ export default function HelpScreen() {
             })}
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Contactar soporte"
+          <Button
+            fullWidth
+            colorSource="solidAction"
+            icon={<Ionicons name="chatbubble-ellipses-outline" size={20} color={theme.onSolidAction} />}
+            label="Contactar soporte"
+            labelSize="helper"
             onPress={contactSupport}
-            style={({ pressed }) => [styles.supportButton, { backgroundColor: theme.solidActionBackground }, pressed && styles.pressed]}
-          >
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#FFFFFF" />
-            <Text style={styles.supportText}>Contactar soporte</Text>
-          </Pressable>
+            variant="primary"
+            style={styles.supportButton}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -134,15 +137,15 @@ const styles = StyleSheet.create({
   header: { alignItems: "center", flexDirection: "row", gap: 13 },
   headerIcon: { alignItems: "center", borderRadius: 16, height: 54, justifyContent: "center", width: 54 },
   headerCopy: { flex: 1, minWidth: 0 },
-  title: { fontSize: 27, fontWeight: "900" },
-  subtitle: { fontSize: 13, fontWeight: "600", lineHeight: 18, marginTop: 4 },
+  title: { fontSize: typography.size.title, fontWeight: "900" },
+  subtitle: { fontSize: typography.size.helper, fontWeight: "600", lineHeight: 18, marginTop: 4 },
   card: { borderRadius: 18, borderWidth: 1, marginTop: 26, paddingHorizontal: 14 },
-  sectionTitle: { fontSize: 18, fontWeight: "900", paddingBottom: 4, paddingTop: 16 },
+  sectionTitle: { fontSize: typography.size.bodyLarge, fontWeight: "900", paddingBottom: 4, paddingTop: 16 },
   faq: { borderTopWidth: 1, marginTop: 10, paddingTop: 10 },
   faqButton: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", minHeight: 48 },
-  question: { flex: 1, fontSize: 15, fontWeight: "800", paddingRight: 12 },
-  answer: { fontSize: 13, fontWeight: "600", lineHeight: 19, paddingBottom: 10, paddingRight: 18 },
+  question: { flex: 1, fontSize: typography.size.body, fontWeight: "800", paddingRight: 12 },
+  answer: { fontSize: typography.size.helper, fontWeight: "600", lineHeight: 19, paddingBottom: 10, paddingRight: 18 },
   supportButton: { alignItems: "center", borderRadius: 14, flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 18, minHeight: 48 },
-  supportText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
+  supportText: { fontSize: typography.size.helper, fontWeight: "800" },
   pressed: { opacity: 0.72 },
 });

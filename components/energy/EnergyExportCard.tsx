@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
+import { Button } from "@/components/ui/Button";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { styles } from "./EnergyExportCard.styles";
 
@@ -64,51 +65,26 @@ export function EnergyExportCard({
 
       <View style={styles.actions}>
         {exports.map((item) => (
-          <Pressable
+          <Button
             key={item.key}
-            accessibilityRole="button"
             accessibilityLabel={`Exportar ${item.title}`}
-            accessibilityState={{
-              disabled: !item.enabled,
-              busy: item.loading,
-            }}
+            description={item.description}
             disabled={!item.enabled}
+            icon={<Ionicons name={item.icon} size={20} color={theme.blue} />}
+            label={item.title}
+            labelSize="helper"
+            loading={item.loading}
             onPress={item.action}
-            style={({ pressed }) => [
+            style={[
               styles.action,
               {
                 borderColor: theme.borderLight,
                 backgroundColor: theme.rowAlt,
-                opacity: item.enabled ? (pressed ? 0.75 : 1) : 0.45,
+                opacity: item.enabled ? 1 : 0.45,
               },
             ]}
-          >
-            {item.loading ? (
-              <ActivityIndicator color={theme.blue} size="small" />
-            ) : (
-              <Ionicons
-                name={item.icon}
-                size={20}
-                color={theme.blue}
-              />
-            )}
-
-            <View style={styles.actionCopy}>
-              <Text
-                numberOfLines={1}
-                style={[styles.actionTitle, { color: theme.text }]}
-              >
-                {item.title}
-              </Text>
-
-              <Text
-                numberOfLines={1}
-                style={[styles.actionDescription, { color: theme.muted }]}
-              >
-                {item.description}
-              </Text>
-            </View>
-          </Pressable>
+            variant="secondary"
+          />
         ))}
       </View>
 

@@ -34,6 +34,7 @@ export function ShellyDeviceCard({
         {
           backgroundColor: theme.card,
           borderColor: theme.borderLight,
+          shadowColor: theme.shadowColor,
         },
       ]}
     >
@@ -85,23 +86,23 @@ export function ShellyDeviceCard({
               width="48"
               height="34"
               rx="4"
-              fill={isOnline ? "#C62828" : "#5A3030"}
-              stroke="#B71C1C"
+              fill={isOnline ? theme.danger : theme.dangerSoft}
+              stroke={theme.danger}
               strokeWidth="1"
             />
             {/* Bornes de conexión superiores */}
-            <Rect x="6" y="1" width="7" height="6" rx="1" fill="#78909C" />
-            <Rect x="15" y="1" width="7" height="6" rx="1" fill="#78909C" />
-            <Rect x="24" y="1" width="7" height="6" rx="1" fill="#78909C" />
-            <Rect x="33" y="1" width="7" height="6" rx="1" fill="#78909C" />
-            <Rect x="41" y="1" width="5" height="6" rx="1" fill="#78909C" />
+            <Rect x="6" y="1" width="7" height="6" rx="1" fill={theme.muted} />
+            <Rect x="15" y="1" width="7" height="6" rx="1" fill={theme.muted} />
+            <Rect x="24" y="1" width="7" height="6" rx="1" fill={theme.muted} />
+            <Rect x="33" y="1" width="7" height="6" rx="1" fill={theme.muted} />
+            <Rect x="41" y="1" width="5" height="6" rx="1" fill={theme.muted} />
             {/* Texto Shelly en miniatura */}
             <SvgText
               x="26"
               y="22"
               fontSize="6.5"
               fontWeight="bold"
-              fill="#FFFFFF"
+              fill={theme.onDanger}
               textAnchor="middle"
             >
               Shelly
@@ -110,7 +111,7 @@ export function ShellyDeviceCard({
               x="26"
               y="30"
               fontSize="5"
-              fill="#FFCDD2"
+              fill={theme.dangerSoft}
               textAnchor="middle"
             >
               {device.modelName === 'Shelly 1PM Gen4' ? '1PM GEN4' : 'SHELLY'}
@@ -143,7 +144,7 @@ export function ShellyDeviceCard({
                   ? isOn
                     ? theme.success
                     : theme.muted
-                  : "#8E99A8",
+                  : theme.muted,
               },
             ]}
           >
@@ -162,7 +163,7 @@ export function ShellyDeviceCard({
               false: theme.switchTrackInactive,
               true: theme.switchTrackActive,
             }}
-            thumbColor={isOnline && isOn ? "#FFFFFF" : "#F8FAFC"}
+            thumbColor={isOnline && isOn ? theme.onPrimary : theme.surfaceSecondary}
           />
           <Pressable
             accessibilityLabel={`Acciones de ${device.name}`}

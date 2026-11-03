@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -111,7 +112,7 @@ export default function InvitationsScreen() {
 
         <Text
           style={{
-            fontSize: 26,
+            fontSize: typography.size.title,
             fontWeight: "700",
             color: theme.text,
           }}
@@ -134,7 +135,7 @@ export default function InvitationsScreen() {
               onPress={() => void loadInvitations()}
               style={{ padding: 14, backgroundColor: theme.solidActionBackground, borderRadius: 12 }}
             >
-              <Text style={{ color: "#FFFFFF", textAlign: "center" }}>
+              <Text style={{ color: theme.onSolidAction, textAlign: "center" }}>
                 Reintentar
               </Text>
             </Pressable>
@@ -178,7 +179,7 @@ export default function InvitationsScreen() {
             >
               <Text
                 style={{
-                  fontSize: 17,
+                  fontSize: typography.size.bodyLarge,
                   fontWeight: "700",
                   color: theme.text,
                 }}
@@ -194,7 +195,7 @@ export default function InvitationsScreen() {
                     : invitation.role}
               </Text>
 
-              <Text style={{ color: theme.muted, fontSize: 12 }}>
+              <Text style={{ color: theme.muted, fontSize: typography.size.caption }}>
                 Hogar: {invitation.homeId ?? "Sin identificador"}
               </Text>
 
@@ -232,12 +233,12 @@ export default function InvitationsScreen() {
                   }}
                 >
                   {processingId === invitation.id ? (
-                    <ActivityIndicator color="#FFFFFF" />
+                    <ActivityIndicator color={theme.onSolidAction} />
                   ) : (
                     <Text
                       style={{
                         textAlign: "center",
-                        color: "#FFFFFF",
+                        color: theme.onSolidAction,
                         fontWeight: "600",
                       }}
                     >

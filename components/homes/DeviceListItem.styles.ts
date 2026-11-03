@@ -10,7 +10,6 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 10,
     elevation: 2,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
@@ -44,17 +43,17 @@ export const styles = StyleSheet.create({
   },
   itemTitle: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: typography.weight.bold,
   },
   itemSubtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     marginTop: 2,
   },
   deviceAlertText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     marginTop: 3,
     fontWeight: typography.weight.bold,
   },

@@ -318,9 +318,9 @@ export default function HomeDetailScreen() {
                     <Ionicons
                       name="person-add-outline"
                       size={19}
-                      color="#FFFFFF"
+                      color={theme.onSolidAction}
                     />
-                    <Text style={styles.addButtonText}>Invitar</Text>
+                    <Text style={[styles.addButtonText, { color: theme.onSolidAction }]}>Invitar</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -433,9 +433,9 @@ export default function HomeDetailScreen() {
                       <Ionicons
                         name="bluetooth-outline"
                         size={18}
-                        color="#FFFFFF"
+                        color={theme.onSolidAction}
                       />
-                      <Text style={styles.primaryButtonText}>
+                      <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
                         Buscar Shelly cercano
                       </Text>
                     </Pressable>
@@ -506,7 +506,7 @@ export default function HomeDetailScreen() {
         animationType="slide"
         onRequestClose={() => setTelemetryDevice(null)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
           <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderCopy}>
@@ -578,8 +578,12 @@ export default function HomeDetailScreen() {
                   },
                 ]}
               >
-                <Ionicons name="power" size={19} color="#FFFFFF" />
-                <Text style={styles.primaryButtonText}>
+                <Ionicons
+                  name="power"
+                  size={19}
+                  color={telemetryDevice.state === "on" ? theme.onDanger : theme.onSolidAction}
+                />
+                <Text style={[styles.primaryButtonText, { color: telemetryDevice.state === "on" ? theme.onDanger : theme.onSolidAction }]}>
                   {telemetryDevice.state === "on"
                     ? "Apagar relé"
                     : "Encender relé"}
@@ -599,7 +603,7 @@ export default function HomeDetailScreen() {
           setEditingName(false);
         }}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
           <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>
               {editingName ? "Renombrar dispositivo" : deviceMenu?.name}
@@ -684,7 +688,7 @@ export default function HomeDetailScreen() {
                     { backgroundColor: theme.solidActionBackground },
                   ]}
                 >
-                  <Text style={styles.primaryButtonText}>
+                  <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
                     {operationLoading ? "Guardando..." : "Guardar"}
                   </Text>
                 </Pressable>

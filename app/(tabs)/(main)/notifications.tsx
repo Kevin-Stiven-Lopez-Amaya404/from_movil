@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useFocusEffect,
@@ -332,9 +333,9 @@ export default function NotificationsScreen() {
                           ]}
                         >
                           {responding ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
+                            <ActivityIndicator size="small" color={theme.onSolidAction} />
                           ) : (
-                            <Text style={styles.invitationButtonText}>
+                            <Text style={[styles.invitationButtonText, { color: theme.onSolidAction }]}>
                               Aceptar
                             </Text>
                           )}
@@ -383,7 +384,7 @@ export default function NotificationsScreen() {
                 <Text
                   style={{
                     color: theme.muted,
-                    fontSize: 13,
+                    fontSize: typography.size.helper,
                     marginBottom: 12,
                   }}
                 >
@@ -395,7 +396,7 @@ export default function NotificationsScreen() {
                 <Text
                   style={{
                     color: theme.muted,
-                    fontSize: 13,
+                    fontSize: typography.size.helper,
                     marginBottom: 12,
                   }}
                 >
@@ -544,7 +545,7 @@ export default function NotificationsScreen() {
               </Text>
             ) : (
               visibleNotifications.map((item) => (
-                <View key={item.id} style={styles.notificationRow}>
+                <View key={item.id} style={[styles.notificationRow, { borderBottomColor: theme.divider }]}>
                   <Pressable
                     onPress={() => {
                       const originalNotification = remoteNotifications.find(

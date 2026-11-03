@@ -16,7 +16,7 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
   screenTitle: {
-    fontSize: 28,
+    fontSize: typography.size.title,
     fontWeight: "900",
     fontFamily: typography.fontFamily.emphasis,
   },
@@ -37,13 +37,13 @@ export const styles = StyleSheet.create({
     marginBottom: 14,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "800",
     fontFamily: typography.fontFamily.emphasis,
     marginBottom: 12,
   },
   summaryHeading: {
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "700",
     marginBottom: 14,
   },
@@ -53,12 +53,12 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   summaryValue: {
-    fontSize: 35,
+    fontSize: typography.size.screenTitle,
     fontWeight: "900",
     fontVariant: ["tabular-nums"],
   },
   summaryUnit: {
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "700",
   },
   summaryFooter: {
@@ -68,7 +68,7 @@ export const styles = StyleSheet.create({
     marginTop: 14,
   },
   summaryNote: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 10,
   },
   periodRow: {
@@ -78,7 +78,6 @@ export const styles = StyleSheet.create({
   },
   periodButton: {
     flex: 1,
-    minHeight: 44,
     borderWidth: 1,
     borderRadius: 12,
     alignItems: "center",
@@ -98,7 +97,7 @@ export const styles = StyleSheet.create({
     padding: 6,
   },
   dateNavText: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "700",
     fontFamily: typography.fontFamily.emphasis,
   },
@@ -109,7 +108,7 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
   },
   chartCardTitle: {
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "800",
     fontFamily: typography.fontFamily.emphasis,
   },
@@ -124,7 +123,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   chartEmptyText: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     textAlign: "center",
     paddingVertical: 40,
     fontFamily: typography.fontFamily.regular,
@@ -141,7 +140,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
   },
   energyValueLabel: {
-    fontSize: 10,
+    fontSize: typography.size.caption,
     textAlign: "center",
     marginBottom: 8,
     fontFamily: typography.fontFamily.emphasis,
@@ -160,7 +159,7 @@ export const styles = StyleSheet.create({
   },
   energyDayLabel: {
     marginTop: 10,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     textAlign: "center",
     fontFamily: typography.fontFamily.regular,
   },
@@ -172,7 +171,7 @@ export const styles = StyleSheet.create({
   },
   axisLabel: {
     width: 48,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontFamily: typography.fontFamily.regular,
   },
   gridLine: {
@@ -184,7 +183,7 @@ export const styles = StyleSheet.create({
   noDataOverlayText: {
     position: "absolute",
     alignSelf: "center",
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontFamily: typography.fontFamily.emphasis,
     backgroundColor: "transparent",
     paddingHorizontal: 8,
@@ -204,17 +203,17 @@ export const styles = StyleSheet.create({
     marginBottom: 4,
   },
   timestampText: {
-    fontSize: 10,
+    fontSize: typography.size.caption,
     fontFamily: typography.fontFamily.regular,
   },
   timezoneFooter: {
-    fontSize: 11,
+    fontSize: typography.size.caption,
     marginTop: 10,
     textAlign: "center",
     fontFamily: typography.fontFamily.regular,
   },
   deviceHistoryMeta: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     marginBottom: 10,
     fontFamily: typography.fontFamily.regular,
   },
@@ -227,7 +226,7 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
   },
   deviceStatText: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "700",
     fontFamily: typography.fontFamily.emphasis,
   },
@@ -248,8 +247,7 @@ export const styles = StyleSheet.create({
   },
   premiumText: {
     flex: 1,
-    color: "#E2E8F0",
-    fontSize: 15,
+    fontSize: typography.size.body,
     lineHeight: 22,
     fontWeight: "600",
     fontFamily: typography.fontFamily.regular,
@@ -262,8 +260,7 @@ export const styles = StyleSheet.create({
     overflow: "hidden",
   },
   premiumGoldBtnText: {
-    color: "#451A03",
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "800",
     fontFamily: typography.fontFamily.emphasis,
   },
@@ -275,12 +272,12 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   monthlyMonth: {
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "700",
     fontFamily: typography.fontFamily.emphasis,
   },
   monthlyKwh: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 2,
     fontFamily: typography.fontFamily.regular,
   },
@@ -293,7 +290,7 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
   },
   monthlyDownloadText: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "700",
     fontFamily: typography.fontFamily.emphasis,
   },
@@ -307,7 +304,7 @@ export const styles = StyleSheet.create({
     marginBottom: 14,
   },
   tariffSubtitle: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     marginTop: 2,
     fontFamily: typography.fontFamily.regular,
   },
@@ -324,11 +321,11 @@ export const styles = StyleSheet.create({
     marginBottom: 14,
   },
   tariffRateLabel: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontFamily: typography.fontFamily.regular,
   },
   tariffRateValue: {
-    fontSize: 20,
+    fontSize: typography.size.section,
     fontWeight: "800",
     marginTop: 2,
     fontFamily: typography.fontFamily.emphasis,
@@ -343,17 +340,17 @@ export const styles = StyleSheet.create({
     padding: 12,
   },
   tariffStatLabel: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontFamily: typography.fontFamily.regular,
   },
   tariffStatVal: {
-    fontSize: 18,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "800",
     marginTop: 4,
     fontFamily: typography.fontFamily.emphasis,
   },
   tariffStatSub: {
-    fontSize: 11,
+    fontSize: typography.size.caption,
     marginTop: 2,
     fontFamily: typography.fontFamily.regular,
   },
@@ -365,13 +362,12 @@ export const styles = StyleSheet.create({
   },
   tipText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     lineHeight: 18,
     fontFamily: typography.fontFamily.regular,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.65)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -383,13 +379,13 @@ export const styles = StyleSheet.create({
     padding: 20,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "800",
     marginBottom: 8,
     fontFamily: typography.fontFamily.emphasis,
   },
   modalText: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     lineHeight: 18,
     marginBottom: 14,
     fontFamily: typography.fontFamily.regular,
@@ -399,7 +395,7 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 14,
-    fontSize: 16,
+    fontSize: typography.size.body,
     marginBottom: 18,
   },
   modalActions: {
@@ -414,7 +410,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
   },
   modalCancelText: {
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "700",
   },
   modalConfirmBtn: {
@@ -423,8 +419,7 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
   },
   modalConfirmText: {
-    color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "700",
   },
 });

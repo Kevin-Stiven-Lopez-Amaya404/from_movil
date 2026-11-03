@@ -114,6 +114,7 @@ export default function AccountSecurityScreen() {
               }
               style={({ pressed }) => [
                 styles.controlRow,
+                { borderBottomColor: theme.divider },
                 pressed && styles.pressed,
               ]}
             >

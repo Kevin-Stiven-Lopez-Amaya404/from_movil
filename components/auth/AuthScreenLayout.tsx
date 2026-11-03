@@ -93,14 +93,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 42,
+    fontSize: typography.size.brand,
     fontWeight: '700',
     lineHeight: 50,
     marginBottom: 24,
     textAlign: 'center',
   },
   titleCompact: {
-    fontSize: 36,
+    fontSize: typography.size.screenTitle,
     lineHeight: 43,
     marginBottom: 18,
   },

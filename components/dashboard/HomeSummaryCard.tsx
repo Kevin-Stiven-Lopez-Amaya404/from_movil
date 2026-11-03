@@ -26,6 +26,7 @@ export function HomeSummaryCard({ name, power, deviceCount, onPress }: Props) {
         {
           backgroundColor: theme.card,
           borderColor: theme.borderLight,
+          shadowColor: theme.shadowColor,
         },
         pressed && styles.pressed,
       ]}

@@ -1,5 +1,7 @@
 import { StyleSheet } from "react-native";
 
+// Excepción intencional: estos tonos pertenecen a la animación de marca del splash.
+
 export const styles = StyleSheet.create({
   container: {
     alignItems: "center",

@@ -57,7 +57,7 @@ export function HomeListItem({
         onPress={onFavoritePress}
         style={styles.favoriteButton}
       >
-        <Ionicons name={favorite ? "star" : "star-outline"} size={25} color={favorite ? "#F5B400" : theme.mutedStrong} />
+        <Ionicons name={favorite ? "star" : "star-outline"} size={25} color={favorite ? theme.blue : theme.mutedStrong} />
       </Pressable>
     </Pressable>
   );
@@ -85,12 +85,12 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontFamily: appFont,
-    fontSize: 17,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "800",
   },
   itemSubtitle: {
     fontFamily: appFont,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "700",
     marginTop: 4,
   },

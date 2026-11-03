@@ -53,6 +53,7 @@ export function ActiveDevicesCard({
         {
           backgroundColor: theme.card,
           borderColor: theme.borderLight,
+          shadowColor: theme.shadowColor,
         },
       ]}
     >

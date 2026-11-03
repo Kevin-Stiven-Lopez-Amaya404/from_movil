@@ -43,7 +43,6 @@ export const styles = StyleSheet.create({
   },
   badge: {
     alignItems: "center",
-    backgroundColor: "#FF4D4F",
     borderRadius: 999,
     justifyContent: "center",
     minWidth: 18,
@@ -54,9 +53,8 @@ export const styles = StyleSheet.create({
     top: -4,
   },
   badgeText: {
-    color: "#FFFFFF",
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: "800",
   },
   activeIndicator: {
@@ -67,7 +65,7 @@ export const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 2,
   },
 });

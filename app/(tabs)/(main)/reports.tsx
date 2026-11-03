@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 /**
  * Pantalla de Análisis Energético y Reportes.
  *
@@ -20,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { DeviceConsumptionRankingCard } from "@/components/energy/DeviceConsumptionRankingCard";
 import { EnergyCostSummaryCard } from "@/components/energy/EnergyCostSummaryCard";
 import { EnergyExportCard } from "@/components/energy/EnergyExportCard";
+import { Button } from "@/components/ui/Button";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import {
@@ -443,7 +445,7 @@ export default function ReportsScreen() {
                 style={{
                   flexShrink: 1,
                   color: theme.text,
-                  fontSize: 13,
+                  fontSize: typography.size.helper,
                   fontWeight: "600",
                 }}
               >
@@ -506,7 +508,7 @@ export default function ReportsScreen() {
                       style={{
                         flex: 1,
                         color: theme.text,
-                        fontSize: 14,
+                        fontSize: typography.size.helper,
                         fontWeight: isSelected ? "600" : "400",
                       }}
                     >
@@ -588,7 +590,7 @@ export default function ReportsScreen() {
                 color={theme.muted}
               />
 
-              <Text style={{ color: theme.muted, fontSize: 12 }}>
+              <Text style={{ color: theme.muted, fontSize: typography.size.caption }}>
                 {historyPeriod}
               </Text>
             </View>
@@ -637,10 +639,13 @@ export default function ReportsScreen() {
                       : "Todo";
 
                 return (
-                  <Pressable
+                  <Button
                     key={period}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
+                    selected={selected}
+                    variant={selected ? "primary" : "secondary"}
+                    colorSource="solidAction"
+                    labelSize="helper"
+                    label={label}
                     onPress={() => {
                       if (selected) return;
 
@@ -648,28 +653,8 @@ export default function ReportsScreen() {
                       setRankingQueryState(null);
                       setHistoryPeriod(period);
                     }}
-                    style={[
-                      styles.periodButton,
-                      {
-                        backgroundColor: selected
-                          ? theme.solidActionBackground
-                          : theme.card,
-                        borderColor: selected
-                          ? theme.solidActionBackground
-                          : theme.borderLight,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        color: selected ? "#FFFFFF" : theme.text,
-                        fontSize: 13,
-                        fontWeight: "800",
-                      }}
-                    >
-                      {label}
-                    </Text>
-                  </Pressable>
+                    style={styles.periodButton}
+                  />
                 );
               })}
             </View>
@@ -814,7 +799,7 @@ export default function ReportsScreen() {
                 },
               ]}
             >
-              <Text style={{ color: theme.muted, fontSize: 13 }}>
+              <Text style={{ color: theme.muted, fontSize: typography.size.helper }}>
                 Puedes consultar el consumo total del hogar.
                 El detalle por día y dispositivo está reservado
                 para propietarios y miembros.

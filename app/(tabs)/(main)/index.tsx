@@ -1,143 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, Text, View } from "react-native";
+import { AccessibilityInfo, Animated, Easing, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
+import { NavigationRow } from "@/components/dashboard/NavigationRow";
+import { SummaryTile } from "@/components/dashboard/SummaryTile";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { styles } from "../../../styles/(tabs)/(main)/index.styles";
 
-
-type Theme = ReturnType<typeof useAppTheme>;
-type IconName = React.ComponentProps<typeof Ionicons>["name"];
-
-type SummaryTileProps = {
-  icon: IconName;
-  label: string;
-  value: string;
-  onPress: () => void;
-  tint: "blue" | "green";
-  theme: Theme;
-};
-
-function SummaryTile({
-  icon,
-  label,
-  value,
-  onPress,
-  tint,
-  theme,
-}: SummaryTileProps) {
-  const isGreen = tint === "green";
-  const accent = isGreen
-    ? theme.dark ? "#86EFAC" : "#168044"
-    : theme.blueForeground;
-  const background = isGreen
-    ? theme.dark ? "#1A332B" : "#EFF9F1"
-    : theme.blueSurface;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${label}: ${value}. Abrir sección.`}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.summaryTile,
-        {
-          backgroundColor: background,
-          borderColor: theme.dark ? theme.border : background,
-        },
-        pressed && styles.pressed,
-      ]}
-    >
-      <View style={styles.summaryTop}>
-        <View
-          style={[
-            styles.summaryIcon,
-            { backgroundColor: theme.card },
-          ]}
-        >
-          <Ionicons name={icon} size={24} color={accent} />
-        </View>
-        <Ionicons name="arrow-forward" size={17} color={accent} />
-      </View>
-      <Text style={[styles.summaryValue, { color: theme.text }]}>
-        {value}
-      </Text>
-      <Text style={[styles.summaryLabel, { color: theme.muted }]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-type NavigationRowProps = {
-  icon: IconName;
-  title: string;
-  subtitle: string;
-  onPress: () => void;
-  theme: Theme;
-  tint: "orange" | "blue" | "purple";
-};
-
-function NavigationRow({
-  icon,
-  title,
-  subtitle,
-  onPress,
-  theme,
-  tint,
-}: NavigationRowProps) {
-  const accent =
-    tint === "orange"
-      ? theme.dark ? "#FDBA74" : "#C15A10"
-      : tint === "purple"
-        ? theme.dark ? "#C4B5FD" : "#6D45BF"
-        : theme.blueForeground;
-  const iconBackground =
-    tint === "orange"
-      ? theme.dark ? "#39291E" : "#FFF2E7"
-      : tint === "purple"
-        ? theme.dark ? "#302640" : "#F1ECFF"
-        : theme.blueSurface;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${title}. ${subtitle}`}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.navigationRow,
-        {
-          backgroundColor: theme.card,
-          borderColor: theme.borderLight,
-        },
-        pressed && styles.pressed,
-      ]}
-    >
-      <View
-        style={[
-          styles.navigationIcon,
-          { backgroundColor: iconBackground },
-        ]}
-      >
-        <Ionicons name={icon} size={24} color={accent} />
-      </View>
-      <View style={styles.navigationCopy}>
-        <Text style={[styles.navigationTitle, { color: theme.text }]}>
-          {title}
-        </Text>
-        <Text style={[styles.navigationSubtitle, { color: theme.muted }]}>
-          {subtitle}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={theme.muted} />
-    </Pressable>
-  );
-}
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -287,7 +161,12 @@ export default function DashboardScreen() {
               },
             ]}
           >
-            <View style={styles.heroMedia}>
+            <View
+              style={[
+                styles.heroMedia,
+                { backgroundColor: theme.surfaceSecondary },
+              ]}
+            >
               <Animated.Image
                 source={require("../../../assets/images/dashboard-eco.jpg")}
                 resizeMode="cover"
@@ -305,7 +184,6 @@ export default function DashboardScreen() {
               icon="home-outline"
               label="Mis hogares"
               value={homesDisplay}
-              tint="blue"
               theme={theme}
               onPress={() => router.navigate("/(tabs)/(main)/homes")}
             />
@@ -313,7 +191,6 @@ export default function DashboardScreen() {
               icon="power-outline"
               label="Dispositivos encendidos"
               value={poweredOnDisplay}
-              tint="green"
               theme={theme}
               onPress={() => router.push("/(tabs)/devices")}
             />
@@ -338,7 +215,6 @@ export default function DashboardScreen() {
               icon="notifications-outline"
               title="Estado y alertas"
               subtitle={alertsSubtitle}
-              tint="orange"
               theme={theme}
               onPress={() =>
                 router.navigate({
@@ -351,7 +227,6 @@ export default function DashboardScreen() {
               icon="hardware-chip-outline"
               title="Mis dispositivos"
               subtitle="Ver y gestionar dispositivos"
-              tint="blue"
               theme={theme}
               onPress={() => router.push("/(tabs)/devices")}
             />
@@ -359,7 +234,6 @@ export default function DashboardScreen() {
               icon="star-outline"
               title="Mis favoritos"
               subtitle={favoritesSubtitle}
-              tint="purple"
               theme={theme}
               onPress={() => router.push("/(tabs)/favorites")}
             />

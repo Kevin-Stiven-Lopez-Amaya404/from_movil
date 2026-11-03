@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 import { profileFont } from "@/components/profile/profileTheme";
 
@@ -20,18 +21,18 @@ export const styles = StyleSheet.create({
   headerCopy: { flex: 1, marginLeft: 12 },
   title: {
     fontFamily: profileFont,
-    fontSize: 20,
+    fontSize: typography.size.section,
     fontWeight: "900",
   },
   subtitle: {
     fontFamily: profileFont,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 2,
   },
   section: { marginTop: 24 },
   sectionTitle: {
     fontFamily: profileFont,
-    fontSize: 18,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "900",
     marginBottom: 12,
   },
@@ -49,14 +50,13 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   invitationButtonText: {
-    color: "#FFFFFF",
     fontFamily: profileFont,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "800",
   },
   invitationRejectText: {
     fontFamily: profileFont,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "800",
   },
   disabledButton: { opacity: 0.55 },
@@ -86,7 +86,6 @@ export const styles = StyleSheet.create({
   },
   notificationRow: {
     alignItems: "center",
-    borderBottomColor: "rgba(148,163,184,0.25)",
     borderBottomWidth: 1,
     flexDirection: "row",
     paddingHorizontal: 14,
@@ -116,17 +115,17 @@ export const styles = StyleSheet.create({
   },
   notificationTitle: {
     fontFamily: profileFont,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
   notificationText: {
     fontFamily: profileFont,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     marginTop: 4,
   },
   notificationTime: {
     fontFamily: profileFont,
-    fontSize: 10,
+    fontSize: typography.size.caption,
     marginLeft: 8,
     marginTop: 2,
   },
@@ -141,7 +140,7 @@ export const styles = StyleSheet.create({
   },
   markAllText: {
     fontFamily: profileFont,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "800",
   },
   filtersRow: {
@@ -157,12 +156,12 @@ export const styles = StyleSheet.create({
   },
   filterText: {
     fontFamily: profileFont,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "800",
   },
   emptyState: {
     fontFamily: profileFont,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     paddingHorizontal: 16,
     paddingVertical: 20,
     textAlign: "center",

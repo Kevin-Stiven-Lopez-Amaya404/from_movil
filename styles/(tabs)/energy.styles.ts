@@ -21,12 +21,12 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: typography.size.title,
     fontWeight: "900",
     fontFamily: typography.fontFamily.emphasis,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     marginTop: 2,
   },
   card: {
@@ -36,7 +36,7 @@ export const styles = StyleSheet.create({
     marginBottom: 14,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "800",
   },
   rowBetween: {
@@ -59,26 +59,26 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
   monthLabel: {
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "700",
   
   },
   label: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     marginTop: 12,
   },
   bigValue: {
-    fontSize: 28,
+    fontSize: typography.size.title,
     fontWeight: "900",
     marginTop: 2,
   },
   value: {
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "700",
     marginTop: 2,
   },
   note: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 6,
     lineHeight: 17,
   },
@@ -106,7 +106,7 @@ export const styles = StyleSheet.create({
     marginTop: 14,
   },
   primaryButtonText: {
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "800",
   },
   secondaryButton: {
@@ -119,7 +119,7 @@ export const styles = StyleSheet.create({
     marginTop: 10,
   },
   secondaryButtonText: {
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "700",
   },
   listItem: {
@@ -134,7 +134,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   badgeText: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "800",
   },
   input: {
@@ -142,11 +142,11 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 12,
-    fontSize: 16,
+    fontSize: typography.size.body,
     marginTop: 6,
   },
   fieldError: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 4,
   },
   centerBox: {

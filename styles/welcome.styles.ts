@@ -48,7 +48,6 @@ export const styles = StyleSheet.create({
     elevation: 4,
     height: 142,
     justifyContent: "center",
-    shadowColor: "#0047AB",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 18,
@@ -72,7 +71,6 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     left: 12,
     position: "absolute",
-    shadowColor: "#0A192F",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -88,7 +86,6 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     position: "absolute",
     right: 14,
-    shadowColor: "#0A192F",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -102,32 +99,31 @@ export const styles = StyleSheet.create({
     marginBottom: 9,
   },
   eyebrowDot: {
-    backgroundColor: "#0047AB",
     borderRadius: 4,
     height: 7,
     width: 7,
   },
   eyebrowText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "800",
     letterSpacing: 1.4,
   },
   title: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 33,
+    fontSize: typography.size.screenTitle,
     fontWeight: "800",
     lineHeight: 40,
     maxWidth: 340,
     textAlign: "center",
   },
   titleTiny: {
-    fontSize: 28,
+    fontSize: typography.size.title,
     lineHeight: 34,
   },
   subtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 16,
+    fontSize: typography.size.body,
     lineHeight: 23,
     marginTop: 10,
     maxWidth: 330,
@@ -142,7 +138,6 @@ export const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#0047AB",
     borderRadius: 16,
     flexDirection: "row",
     justifyContent: "center",
@@ -150,12 +145,10 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   primaryButtonPressed: {
-    backgroundColor: "#003380",
   },
   primaryButtonText: {
-    color: "#FFFFFF",
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "800",
     marginRight: 9,
   },
@@ -169,11 +162,10 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   secondaryButtonPressed: {
-    backgroundColor: "rgba(0, 71, 171, 0.08)",
   },
   secondaryButtonText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "700",
   },
   googleButton: {
@@ -189,7 +181,7 @@ export const styles = StyleSheet.create({
   },
   googleButtonText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "600",
   },
 });

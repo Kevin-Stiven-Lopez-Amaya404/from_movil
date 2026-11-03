@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -23,11 +24,11 @@ export const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 22,
+    fontSize: typography.size.section,
     fontWeight: "900",
   },
   kicker: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "700",
     marginBottom: 11,
   },
@@ -49,10 +50,10 @@ export const styles = StyleSheet.create({
   },
   deviceName: {
     fontWeight: "800",
-    fontSize: 16,
+    fontSize: typography.size.body,
   },
   deviceStatus: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
   },
   errorSection: {
     marginTop: 15,
@@ -68,7 +69,7 @@ export const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
   },
   label: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "700",
   },
   homeRow: {
@@ -78,7 +79,7 @@ export const styles = StyleSheet.create({
     marginTop: 12,
   },
   homeName: {
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "700",
   },
   nameInput: {
@@ -87,10 +88,10 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     height: 50,
-    fontSize: 15,
+    fontSize: typography.size.body,
   },
   helperText: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     lineHeight: 18,
     marginTop: 6,
   },
@@ -103,8 +104,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   primaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
   confirmation: {
@@ -114,7 +114,7 @@ export const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   pendingNote: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     lineHeight: 19,
     marginTop: 27,
   },
