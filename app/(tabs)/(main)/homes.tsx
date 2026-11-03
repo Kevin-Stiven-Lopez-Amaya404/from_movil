@@ -47,6 +47,7 @@ export default function HomesScreen() {
   const [createVisible, setCreateVisible] = useState(false);
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [favoritePendingIds, setFavoritePendingIds] = useState<string[]>([]);
 
   const [editingHome, setEditingHome] = useState<{
     id: string;
@@ -106,6 +107,9 @@ export default function HomesScreen() {
   }
 
   async function toggleFavorite(home: SmartHomePlace) {
+    if (favoritePendingIds.includes(home.id)) return;
+
+    setFavoritePendingIds((current) => [...current, home.id]);
     try {
       await toggleHomeFavorite(home.id);
     } catch (error) {
@@ -115,7 +119,48 @@ export default function HomesScreen() {
           ? error.message
           : "Vuelve a intentarlo.",
       );
+    } finally {
+      setFavoritePendingIds((current) => current.filter((id) => id !== home.id));
     }
+  }
+
+  function closeCreateForm() {
+    if (creating) return;
+
+    if (newName.trim()) {
+      Alert.alert("¿Descartar el hogar?", "El nombre que escribiste no se guardará.", [
+        { text: "Seguir editando", style: "cancel" },
+        {
+          text: "Descartar",
+          style: "destructive",
+          onPress: () => {
+            setCreateVisible(false);
+            setNewName("");
+          },
+        },
+      ]);
+      return;
+    }
+
+    setCreateVisible(false);
+  }
+
+  function closeEditForm() {
+    if (saving || !editingHome) return;
+
+    if (editName !== editingHome.name) {
+      Alert.alert("¿Descartar los cambios?", "El nombre editado no se guardará.", [
+        { text: "Seguir editando", style: "cancel" },
+        {
+          text: "Descartar",
+          style: "destructive",
+          onPress: () => setEditingHome(null),
+        },
+      ]);
+      return;
+    }
+
+    setEditingHome(null);
   }
 
   async function createHome() {
@@ -322,6 +367,7 @@ export default function HomesScreen() {
       ]}
     >
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: layout.gutter,
@@ -365,7 +411,19 @@ export default function HomesScreen() {
           >
             <View style={styles.summaryCopy}>
               <View style={styles.summaryStatus}>
-                <View style={[styles.statusDot, { backgroundColor: theme.success }]} />
+                <View
+                  style={[
+                    styles.statusDot,
+                    {
+                      backgroundColor:
+                        homesLoadStatus === "loaded"
+                          ? theme.success
+                          : homesLoadStatus === "error"
+                            ? theme.danger
+                            : theme.muted,
+                    },
+                  ]}
+                />
 
                 <Text style={[styles.summaryCaption, { color: theme.muted }]}>
                   HOGARES DISPONIBLES
@@ -375,7 +433,9 @@ export default function HomesScreen() {
               <Text style={[styles.summaryNumber, { color: theme.text }]}>
                 {isLoaded
                   ? homeCountText(accessibleHomes.length)
-                  : "Consultando..."}
+                  : homesLoadStatus === "error"
+                    ? "No disponibles"
+                    : "Consultando..."}
               </Text>
             </View>
 
@@ -383,6 +443,7 @@ export default function HomesScreen() {
               accessibilityRole="button"
               accessibilityLabel="Crear nuevo hogar"
               disabled={!isLoaded || creating}
+              accessibilityState={{ disabled: !isLoaded || creating }}
               onPress={() => setCreateVisible(true)}
               style={({ pressed }) => [
                 styles.newHomeButton,
@@ -422,8 +483,9 @@ export default function HomesScreen() {
                 <Pressable
                   key={item.key}
                   accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={`${item.label}: ${item.count} hogares`}
+                  accessibilityState={{ selected: active, disabled: !isLoaded }}
+                  accessibilityLabel={`${item.label}: ${item.count} ${item.count === 1 ? "hogar" : "hogares"}`}
+                  disabled={!isLoaded}
                   onPress={() => setFilter(item.key)}
                   style={({ pressed }) => [
                     styles.filterChip,
@@ -435,7 +497,8 @@ export default function HomesScreen() {
                         ? theme.solidActionBackground
                         : theme.borderLight,
                     },
-                    pressed && styles.pressed,
+                    !isLoaded && styles.disabled,
+                    pressed && isLoaded && styles.pressed,
                   ]}
                 >
                   <Text
@@ -501,6 +564,7 @@ export default function HomesScreen() {
                   borderColor: theme.borderLight,
                 },
               ]}
+              accessibilityLiveRegion="polite"
             >
               <Ionicons
                 name="time-outline"
@@ -526,6 +590,7 @@ export default function HomesScreen() {
                   borderColor: theme.borderLight,
                 },
               ]}
+              accessibilityLiveRegion="polite"
             >
               <Ionicons
                 name="alert-circle-outline"
@@ -560,6 +625,7 @@ export default function HomesScreen() {
                   borderColor: theme.borderLight,
                 },
               ]}
+              accessibilityLiveRegion="polite"
             >
               <Ionicons
                 name={
@@ -638,7 +704,7 @@ export default function HomesScreen() {
                       <View style={styles.homeText}>
                         <View style={styles.nameLine}>
                           <Text
-                            numberOfLines={1}
+                            numberOfLines={2}
                             style={[
                               styles.homeName,
                               { color: theme.text },
@@ -671,9 +737,12 @@ export default function HomesScreen() {
                           ? `Quitar ${home.name} de favoritos`
                           : `Agregar ${home.name} a favoritos`
                       }
-                      accessibilityState={{ selected: home.favorite }}
+                      accessibilityState={{
+                        selected: home.favorite,
+                        disabled: favoritePendingIds.includes(home.id),
+                      }}
+                      disabled={favoritePendingIds.includes(home.id)}
                       onPress={() => void toggleFavorite(home)}
-                      hitSlop={6}
                       style={({ pressed }) => [
                         styles.favoriteButton,
                         pressed && styles.pressed,
@@ -691,6 +760,7 @@ export default function HomesScreen() {
                         accessibilityRole="button"
                         accessibilityLabel={`Opciones de ${home.name}`}
                         disabled={deletingId !== null}
+                        accessibilityState={{ disabled: deletingId !== null }}
                         onPress={() => openOptions(home)}
                         hitSlop={8}
                         style={({ pressed }) => [
@@ -735,9 +805,7 @@ export default function HomesScreen() {
         visible={createVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => {
-          if (!creating) setCreateVisible(false);
-        }}
+        onRequestClose={closeCreateForm}
       >
         <View
           style={[
@@ -753,6 +821,12 @@ export default function HomesScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.modalWidth}
           >
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
             <View
               style={[
                 styles.modalCard,
@@ -805,7 +879,7 @@ export default function HomesScreen() {
                 <Pressable
                   accessibilityRole="button"
                   disabled={creating}
-                  onPress={() => setCreateVisible(false)}
+                  onPress={closeCreateForm}
                   style={[
                     styles.secondaryAction,
                     { borderColor: theme.borderLight },
@@ -838,6 +912,7 @@ export default function HomesScreen() {
                 </Pressable>
               </View>
             </View>
+            </ScrollView>
           </KeyboardAvoidingView>
         </View>
       </Modal>
@@ -847,9 +922,7 @@ export default function HomesScreen() {
         visible={editingHome !== null}
         transparent
         animationType="fade"
-        onRequestClose={() => {
-          if (!saving) setEditingHome(null);
-        }}
+        onRequestClose={closeEditForm}
       >
         <View
           style={[
@@ -865,6 +938,12 @@ export default function HomesScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.modalWidth}
           >
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
             <View
               style={[
                 styles.modalCard,
@@ -918,7 +997,7 @@ export default function HomesScreen() {
                 <Pressable
                   accessibilityRole="button"
                   disabled={saving}
-                  onPress={() => setEditingHome(null)}
+                  onPress={closeEditForm}
                   style={[
                     styles.secondaryAction,
                     { borderColor: theme.borderLight },
@@ -951,6 +1030,7 @@ export default function HomesScreen() {
                 </Pressable>
               </View>
             </View>
+            </ScrollView>
           </KeyboardAvoidingView>
         </View>
       </Modal>

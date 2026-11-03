@@ -11,6 +11,8 @@ type ShellyDeviceCardProps = {
   device: SmartDevice;
   theme: AppTheme;
   canControl: boolean;
+  canManage: boolean;
+  isPending: boolean;
   onPress: () => void;
   onMenu: () => void;
   onToggleState: () => void;
@@ -20,6 +22,8 @@ export function ShellyDeviceCard({
   device,
   theme,
   canControl,
+  canManage,
+  isPending,
   onPress,
   onMenu,
   onToggleState,
@@ -61,21 +65,36 @@ export function ShellyDeviceCard({
           />
         </View>
 
-        {device.critical && (
-          <View style={styles.criticalBadge}>
-            <Ionicons name="warning" size={11} color={theme.danger} />
-            <Text style={[styles.criticalText, { color: theme.danger }]}>
-              Atención
-            </Text>
-          </View>
-        )}
+        <View style={styles.topStatusActions}>
+          {device.critical && (
+            <View style={styles.criticalBadge}>
+              <Ionicons name="warning" size={11} color={theme.danger} />
+              <Text style={[styles.criticalText, { color: theme.danger }]}>
+                Atención
+              </Text>
+            </View>
+          )}
+          {canManage ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Acciones de ${device.name}`}
+              onPress={onMenu}
+              style={styles.menuButton}
+            >
+              <Ionicons name="ellipsis-vertical" size={21} color={theme.muted} />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={onPress}
-        style={styles.body}
-      >
+      <View style={styles.body}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Ver detalles de ${device.name}`}
+          accessibilityHint="Muestra las mediciones y el estado del dispositivo"
+          onPress={onPress}
+          style={styles.bodyContent}
+        >
         {/* Gráfico miniatura auténtico del Shelly 1PM Gen4 (Rojo) */}
         <View style={styles.shellyThumb}>
           <Svg width="52" height="42" viewBox="0 0 52 42">
@@ -153,29 +172,36 @@ export function ShellyDeviceCard({
               : "El dispositivo está fuera de línea"}
           </Text>
         </View>
+        </Pressable>
 
         <View style={styles.deviceActions}>
           <Switch
             value={isOn}
             onValueChange={onToggleState}
-            disabled={!canControl || !isOnline}
+            accessibilityLabel={`Control de ${device.name}`}
+            accessibilityHint={
+              !isOnline
+                ? "El dispositivo está fuera de línea"
+                : !canControl
+                  ? "Tu rol no permite controlar este dispositivo"
+                  : isPending
+                    ? "Espera a que termine la operación actual"
+                    : undefined
+            }
+            accessibilityState={{
+              checked: isOn,
+              disabled: !canControl || !isOnline || isPending,
+            }}
+            disabled={!canControl || !isOnline || isPending}
             trackColor={{
               false: theme.switchTrackInactive,
               true: theme.switchTrackActive,
             }}
             thumbColor={isOnline && isOn ? theme.onPrimary : theme.surfaceSecondary}
           />
-          <Pressable
-            accessibilityLabel={`Acciones de ${device.name}`}
-            onPress={onMenu}
-            hitSlop={8}
-            style={styles.menuButton}
-          >
-            <Ionicons name="ellipsis-vertical" size={21} color={theme.muted} />
-          </Pressable>
-          <Ionicons name="chevron-forward" size={20} color={theme.muted} />
+          <Ionicons name="chevron-forward" size={20} color={theme.muted} accessible={false} />
         </View>
-      </Pressable>
+      </View>
     </View>
   );
 }

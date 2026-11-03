@@ -21,6 +21,9 @@ export function EnergyRealtimeCard({
 
   return (
     <View
+      accessible
+      accessibilityRole="summary"
+      accessibilityLabel={`Consumo en tiempo real. Potencia actual del hogar: ${power} vatios. ${isOnline ? "En línea" : "Sin conexión"}.`}
       style={[
         styles.card,
         {
