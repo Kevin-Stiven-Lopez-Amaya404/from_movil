@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 
 import { Ionicons } from "@expo/vector-icons";
 import type { ReactNode } from "react";
@@ -145,11 +146,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "800",
   },
   description: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     lineHeight: 18,
     marginTop: 4,
   },

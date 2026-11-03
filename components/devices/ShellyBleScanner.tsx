@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -243,7 +244,7 @@ export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
               {inspectingId === device.id ? (
                 <ActivityIndicator size="small" color={theme.blue} />
               ) : (
-                <Text style={{ color: theme.blue, fontSize: 12 }}>
+                <Text style={{ color: theme.blue, fontSize: typography.size.caption }}>
                   Leer info
                 </Text>
               )}

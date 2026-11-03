@@ -1,8 +1,9 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   description: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     lineHeight: 19,
   },
   primaryButton: {
@@ -14,7 +15,7 @@ export const styles = StyleSheet.create({
     marginTop: 16,
   },
   primaryText: {
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "800",
     marginLeft: 8,
   },
@@ -24,7 +25,7 @@ export const styles = StyleSheet.create({
   },
   message: {
     marginTop: 12,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     lineHeight: 18,
   },
   deviceRow: {
@@ -40,10 +41,10 @@ export const styles = StyleSheet.create({
   },
   deviceName: {
     fontWeight: "800",
-    fontSize: 13,
+    fontSize: typography.size.helper,
   },
   deviceMeta: {
-    fontSize: 11,
+    fontSize: typography.size.caption,
     marginTop: 4,
   },
   inspectButton: {
