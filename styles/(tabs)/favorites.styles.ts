@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -34,12 +35,12 @@ export const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 25,
+    fontSize: typography.size.title,
     fontWeight: "900",
   },
 
   subtitle: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "600",
     marginTop: 3,
   },
@@ -58,7 +59,7 @@ export const styles = StyleSheet.create({
 
   sectionTitle: {
     flex: 1,
-    fontSize: 17,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "900",
   },
 
@@ -71,7 +72,7 @@ export const styles = StyleSheet.create({
   },
 
   countText: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "800",
   },
 
@@ -109,12 +110,12 @@ export const styles = StyleSheet.create({
   },
 
   cardTitle: {
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "900",
   },
 
   cardSubtitle: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "600",
     marginTop: 3,
   },
@@ -150,13 +151,13 @@ export const styles = StyleSheet.create({
   },
 
   emptyTitle: {
-    fontSize: 17,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "900",
     marginTop: 12,
   },
 
   emptyDescription: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "600",
     lineHeight: 18,
     marginTop: 5,
@@ -175,7 +176,7 @@ export const styles = StyleSheet.create({
   },
 
   emptyActionText: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
 

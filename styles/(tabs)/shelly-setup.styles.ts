@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -17,16 +18,16 @@ export const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 23,
+    fontSize: typography.size.section,
     fontWeight: "800",
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: typography.size.helper,
     lineHeight: 21,
     marginTop: 8,
   },
   homeLabel: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     marginTop: 18,
   },
   progressHeader: {
@@ -37,7 +38,7 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "700",
   },
   progressBar: {
@@ -57,11 +58,11 @@ export const styles = StyleSheet.create({
     gap: 14,
   },
   cardTitle: {
-    fontSize: 19,
+    fontSize: typography.size.section,
     fontWeight: "800",
   },
   description: {
-    fontSize: 14,
+    fontSize: typography.size.helper,
     lineHeight: 21,
   },
   addressBox: {
@@ -78,11 +79,11 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   primaryText: {
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
   note: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     lineHeight: 19,
   },
   actions: {

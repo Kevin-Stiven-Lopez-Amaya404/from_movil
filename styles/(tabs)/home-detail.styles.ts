@@ -15,7 +15,7 @@ export const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 3,
   },
   homeHeader: {
@@ -30,7 +30,7 @@ export const styles = StyleSheet.create({
   homeHeaderCopy: { flex: 1 },
   homeTitle: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 19,
+    fontSize: typography.size.section,
     fontWeight: "800",
   },
   addButton: {
@@ -46,7 +46,7 @@ export const styles = StyleSheet.create({
   },
   addButtonText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "700",
   },
   sectionHeader: {
@@ -61,7 +61,7 @@ export const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "800",
   },
   searchBox: {
@@ -76,7 +76,7 @@ export const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     minHeight: 42,
   },
   emptyCard: {
@@ -88,14 +88,14 @@ export const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "800",
     marginTop: 12,
     textAlign: "center",
   },
   emptyText: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     lineHeight: 19,
     marginTop: 6,
     textAlign: "center",
@@ -112,7 +112,7 @@ export const styles = StyleSheet.create({
   },
   primaryButtonText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
   modalOverlay: {
@@ -131,22 +131,22 @@ export const styles = StyleSheet.create({
   modalHeaderCopy: { flex: 1 },
   modalTitle: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 18,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "800",
   },
   telemetryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   telemetryCell: { borderRadius: 12, minHeight: 64, padding: 11, width: "48%" },
-  telemetryLabel: { fontFamily: typography.fontFamily.regular, fontSize: 11 },
+  telemetryLabel: { fontFamily: typography.fontFamily.regular, fontSize: typography.size.caption },
   telemetryValue: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "700",
     marginTop: 5,
   },
   nameInput: {
     borderRadius: 11,
     borderWidth: 1,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     marginTop: 15,
     paddingHorizontal: 12,
     paddingVertical: 11,
@@ -159,7 +159,7 @@ export const styles = StyleSheet.create({
   },
   menuText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "700",
   },
   modalActions: {
@@ -179,7 +179,7 @@ export const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "700",
   },
   primarySmallButton: {

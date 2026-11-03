@@ -14,19 +14,19 @@ export const styles = StyleSheet.create({
   headerCopy: { flex: 1 },
   brand: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "900",
     letterSpacing: 1.8,
     marginBottom: 13,
   },
   greeting: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 28,
+    fontSize: typography.size.title,
     fontWeight: "900",
     lineHeight: 35,
   },
   greetingSubtitle: {
-    fontSize: 14,
+    fontSize: typography.size.helper,
     marginTop: 4,
   },
   headerSymbol: {
@@ -76,20 +76,20 @@ export const styles = StyleSheet.create({
   },
   summaryValue: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 29,
+    fontSize: typography.size.title,
     lineHeight: 34,
     fontWeight: "900",
     marginTop: 11,
   },
   summaryLabel: {
-    fontSize: 12,
+    fontSize: typography.size.caption,
     lineHeight: 17,
     fontWeight: "700",
     marginTop: 2,
   },
   sectionTitle: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 19,
+    fontSize: typography.size.section,
     fontWeight: "900",
     marginTop: 28,
     marginBottom: 13,
@@ -115,10 +115,10 @@ export const styles = StyleSheet.create({
   navigationCopy: { flex: 1, gap: 4 },
   navigationTitle: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "800",
   },
-  navigationSubtitle: { fontSize: 12, lineHeight: 17 },
-  stateNote: { fontSize: 12, lineHeight: 17, marginTop: 10 },
+  navigationSubtitle: { fontSize: typography.size.caption, lineHeight: 17 },
+  stateNote: { fontSize: typography.size.caption, lineHeight: 17, marginTop: 10 },
   pressed: { opacity: 0.73 },
 });

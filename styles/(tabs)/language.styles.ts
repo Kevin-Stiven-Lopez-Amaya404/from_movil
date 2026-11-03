@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { StyleSheet } from "react-native";
 import { profileFont } from "@/components/profile/profileTheme";
 
@@ -29,12 +30,12 @@ export const styles = StyleSheet.create({
   headerCopy: { flex: 1, marginLeft: 12 },
   title: {
     fontFamily: profileFont,
-    fontSize: 20,
+    fontSize: typography.size.section,
     fontWeight: "900",
   },
   subtitle: {
     fontFamily: profileFont,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 2,
   },
   searchBox: {
@@ -50,7 +51,7 @@ export const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontFamily: profileFont,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "600",
   },
   card: {
@@ -69,12 +70,12 @@ export const styles = StyleSheet.create({
   optionTextWrap: { flex: 1 },
   optionLabel: {
     fontFamily: profileFont,
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "800",
   },
   optionNative: {
     fontFamily: profileFont,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     marginTop: 2,
   },
   checkDot: {
