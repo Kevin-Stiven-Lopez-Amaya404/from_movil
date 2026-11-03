@@ -47,7 +47,7 @@ export const styles = StyleSheet.create({
    */
   homeBadgeText: {
     fontFamily: appFont,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "800",
   },
   /**
@@ -65,7 +65,7 @@ export const styles = StyleSheet.create({
    */
   homeName: {
     fontFamily: appFont,
-    fontSize: 18,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "900",
   },
   /**
@@ -87,7 +87,7 @@ export const styles = StyleSheet.create({
    */
   wattsText: {
     fontFamily: appFont,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "900",
   },
 });

@@ -33,21 +33,21 @@ export const styles = StyleSheet.create({
 
   label: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: typography.weight.medium,
     marginTop: 16,
   },
 
   value: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 28,
+    fontSize: typography.size.title,
     fontWeight: typography.weight.heavy,
     marginTop: 2,
   },
 
   comparison: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: typography.weight.bold,
     marginTop: 4,
   },

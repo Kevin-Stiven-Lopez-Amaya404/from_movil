@@ -41,13 +41,13 @@ export const styles = StyleSheet.create({
 
   name: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: typography.weight.bold,
   },
 
   devices: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 3,
   },
 
@@ -68,7 +68,7 @@ export const styles = StyleSheet.create({
 
   power: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: typography.weight.bold,
   },
 });

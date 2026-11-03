@@ -29,7 +29,7 @@ export const styles = StyleSheet.create({
 
   brandTitle: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 20,
+    fontSize: typography.size.section,
     fontWeight: typography.weight.bold,
   },
 
@@ -68,13 +68,13 @@ export const styles = StyleSheet.create({
 
   greeting: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 28,
+    fontSize: typography.size.title,
     fontWeight: typography.weight.heavy,
   },
 
   subtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: typography.weight.medium,
     marginTop: 4,
   },

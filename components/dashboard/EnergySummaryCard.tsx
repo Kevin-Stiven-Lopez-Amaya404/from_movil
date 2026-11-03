@@ -59,12 +59,12 @@ const styles = StyleSheet.create({
   },
   energyLabel: {
     fontFamily: appFont,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "700",
   },
   energyValue: {
     fontFamily: appFont,
-    fontSize: 28,
+    fontSize: typography.size.title,
     fontWeight: "900",
     marginTop: 4,
   },
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   },
   energyPillText: {
     fontFamily: appFont,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "800",
   },
 });
