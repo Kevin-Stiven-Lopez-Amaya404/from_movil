@@ -4,8 +4,8 @@
  * El PUT reemplaza ambos campos: el que quede vacío se envía como null.
  */
 import { Ionicons } from "@expo/vector-icons";
-import { usePreventRemove, useNavigation } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
+import { usePreventRemove, useNavigation } from "expo-router/react-navigation";
 import { useState } from "react";
 import {
   ActivityIndicator,
