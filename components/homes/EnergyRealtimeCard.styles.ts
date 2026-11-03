@@ -20,12 +20,12 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 20,
+    fontSize: typography.size.section,
     fontWeight: "800",
   },
   subtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     marginTop: 4,
   },
   onlineBadge: {
@@ -43,7 +43,7 @@ export const styles = StyleSheet.create({
   },
   onlineText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "700",
   },
   gaugeArea: {
@@ -58,13 +58,13 @@ export const styles = StyleSheet.create({
   },
   value: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 42,
+    fontSize: typography.size.brand,
     fontWeight: "800",
     marginTop: 2,
   },
   unit: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 17,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "700",
     marginTop: -4,
   },
@@ -76,6 +76,6 @@ export const styles = StyleSheet.create({
   },
   statusText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
+    fontSize: typography.size.helper,
   },
 });

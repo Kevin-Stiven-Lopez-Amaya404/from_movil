@@ -33,7 +33,7 @@ export const styles = StyleSheet.create({
     gap: 4,
   },
   criticalText: {
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "700",
     fontFamily: typography.fontFamily.emphasis,
   },
@@ -53,17 +53,17 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
   deviceName: {
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "700",
     fontFamily: typography.fontFamily.emphasis,
   },
   deviceModel: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     marginTop: 2,
   },
   deviceStatus: {
-    fontSize: 13,
+    fontSize: typography.size.helper,
     marginTop: 2,
     fontFamily: typography.fontFamily.regular,
   },

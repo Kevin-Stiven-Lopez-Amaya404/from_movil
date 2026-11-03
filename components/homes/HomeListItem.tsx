@@ -85,12 +85,12 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     fontFamily: appFont,
-    fontSize: 17,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "800",
   },
   itemSubtitle: {
     fontFamily: appFont,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "700",
     marginTop: 4,
   },

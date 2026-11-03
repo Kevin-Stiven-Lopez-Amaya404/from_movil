@@ -67,22 +67,22 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontFamily: appFont,
-    fontSize: 17,
+    fontSize: typography.size.bodyLarge,
     fontWeight: "800",
   },
   heroAmount: {
     fontFamily: appFont,
-    fontSize: 28,
+    fontSize: typography.size.title,
     fontWeight: "800",
     letterSpacing: 0,
     marginTop: 13,
   },
   heroAmountTiny: {
-    fontSize: 24,
+    fontSize: typography.size.title,
   },
   heroText: {
     fontFamily: appFont,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "800",
     marginTop: 20,
   },
