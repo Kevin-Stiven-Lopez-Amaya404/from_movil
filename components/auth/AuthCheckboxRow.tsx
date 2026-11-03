@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
   label: {
     flex: 1,
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: '700',
   },
 });

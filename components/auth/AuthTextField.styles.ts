@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
 
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "700",
 
     minHeight: 52,
@@ -31,7 +31,7 @@ export const styles = StyleSheet.create({
 
   label: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "800",
 
     marginBottom: 7,
@@ -61,7 +61,7 @@ export const styles = StyleSheet.create({
 
   errorText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "700",
 
     marginLeft: 4,

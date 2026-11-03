@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 17,
+    fontSize: typography.size.bodyLarge,
     fontWeight: '800',
   },
 });
