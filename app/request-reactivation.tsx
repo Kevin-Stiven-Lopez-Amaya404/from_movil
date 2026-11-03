@@ -65,7 +65,12 @@ export default function RequestReactivationScreen() {
         <BackButton color={palette.link} fallbackHref="/login" />
       </View>
 
-      <Text style={[styles.sectionTitle, { color: palette.text }]}>Reactivar cuenta</Text>
+      <Text
+        accessibilityRole="header"
+        style={[styles.sectionTitle, { color: palette.text }]}
+      >
+        Reactivar cuenta
+      </Text>
       <Text style={[styles.description, { color: palette.muted }]}>
         Ingresa el correo de la cuenta. Si está desactivada, recibirás un enlace
         para reactivarla.
@@ -76,6 +81,7 @@ export default function RequestReactivationScreen() {
           error={submitted ? emailError : ""}
           inputStyle={styles.input}
           keyboardType="email-address"
+          label="Correo electrónico"
           autoCapitalize="none"
           autoCorrect={false}
           onChangeText={setEmail}

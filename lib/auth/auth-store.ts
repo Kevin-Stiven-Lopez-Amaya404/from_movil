@@ -29,6 +29,10 @@ export async function activateUserAccount(token: string): Promise<void> {
   await authService.activateAccount(token);
 }
 
+export async function resendAccountActivation(email: string): Promise<void> {
+  await authService.resendActivation(normalizeEmail(email));
+}
+
 export async function requestAccountReactivation(
   email: string,
 ): Promise<RequestAccountReactivationResponse> {

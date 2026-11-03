@@ -16,7 +16,7 @@ type BackButtonProps = {
 };
 
 /**
- * Boton reutilizable para cerrar una pantalla.
+ * Botón reutilizable para volver desde una pantalla.
  *
  * En movil intenta usar `router.back()` cuando existe historial.
  * En web o cuando no hay historial confiable, usa `router.replace(fallbackHref)`
@@ -34,7 +34,7 @@ export function BackButton({
   const palette = useAuthPalette();
 
   /**
-   * Decide entre volver en el historial o reemplazar por una ruta fallback.
+   * Usa el historial cuando es posible y una ruta segura como fallback.
    * Esta proteccion evita pantallas sin salida cuando el usuario entra directo por URL.
    */
   function handlePress() {
