@@ -24,17 +24,17 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 31,
+    fontSize: typography.size.screenTitle,
     fontWeight: "800",
     lineHeight: 38,
   },
   titleTiny: {
-    fontSize: 27,
+    fontSize: typography.size.title,
     lineHeight: 33,
   },
   subtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 15,
+    fontSize: typography.size.body,
     lineHeight: 21,
   },
   formContainer: {
@@ -45,7 +45,7 @@ export const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     fontFamily: typography.fontFamily.regular,
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "500",
     minHeight: 54,
     paddingHorizontal: 15,
@@ -65,12 +65,12 @@ export const styles = StyleSheet.create({
   },
   strengthTitle: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "700",
   },
   strengthLabel: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "800",
   },
   strengthTrack: {
@@ -98,18 +98,18 @@ export const styles = StyleSheet.create({
   ruleText: {
     flexShrink: 1,
     fontFamily: typography.fontFamily.regular,
-    fontSize: 10,
+    fontSize: typography.size.caption,
     lineHeight: 14,
   },
   termsText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 13,
+    fontSize: typography.size.helper,
     fontWeight: "600",
     lineHeight: 19,
   },
   termsError: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "600",
     marginLeft: 8,
     marginTop: 5,
@@ -128,7 +128,7 @@ export const styles = StyleSheet.create({
   },
   loginText: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "500",
   },
   loginLink: {

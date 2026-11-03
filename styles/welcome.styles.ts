@@ -105,25 +105,25 @@ export const styles = StyleSheet.create({
   },
   eyebrowText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "800",
     letterSpacing: 1.4,
   },
   title: {
     fontFamily: typography.fontFamily.display,
-    fontSize: 33,
+    fontSize: typography.size.screenTitle,
     fontWeight: "800",
     lineHeight: 40,
     maxWidth: 340,
     textAlign: "center",
   },
   titleTiny: {
-    fontSize: 28,
+    fontSize: typography.size.title,
     lineHeight: 34,
   },
   subtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: 16,
+    fontSize: typography.size.body,
     lineHeight: 23,
     marginTop: 10,
     maxWidth: 330,
@@ -148,7 +148,7 @@ export const styles = StyleSheet.create({
   },
   primaryButtonText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "800",
     marginRight: 9,
   },
@@ -165,7 +165,7 @@ export const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "700",
   },
   googleButton: {
@@ -181,7 +181,7 @@ export const styles = StyleSheet.create({
   },
   googleButtonText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "600",
   },
 });

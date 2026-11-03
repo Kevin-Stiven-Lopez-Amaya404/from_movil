@@ -15,7 +15,7 @@ export const styles = StyleSheet.create({
 
   sectionTitle: {
     fontFamily: authFont,
-    fontSize: 20,
+    fontSize: typography.size.section,
     fontWeight: "700",
     marginBottom: 20,
   },
@@ -32,7 +32,7 @@ export const styles = StyleSheet.create({
 
 
     fontFamily: authFont,
-    fontSize: 15,
+    fontSize: typography.size.body,
     fontWeight: "500",
 
     height: 56,
