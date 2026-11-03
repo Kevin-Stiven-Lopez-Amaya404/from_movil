@@ -267,7 +267,7 @@ export default function DashboardScreen() {
                 {firstName ? `Hola, ${firstName}` : "Hola"}
               </Text>
               <Text style={[styles.greetingSubtitle, { color: theme.muted }]}>
-                Tu hogar, más inteligente. OTA Preview 01
+                Tu hogar, más inteligente.
               </Text>
             </View>
             <View

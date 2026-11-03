@@ -237,7 +237,7 @@ export default function ProfileScreen() {
                 {sessionName}
               </Text>
               <Text style={[styles.identityEmail, { color: theme.muted }]}>
-                {sessionEmail || "pepe@smarthome.com"}
+                {sessionEmail}
               </Text>
               <View
                 style={[
@@ -258,28 +258,6 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={theme.muted} />
           </Pressable>
 
-          <Section icon="person-outline" title="Cuenta" theme={theme}>
-            <Row
-              icon="person-outline"
-              title="Información personal"
-              onPress={() =>
-                router.push({
-                  pathname: "/(tabs)/personal-info",
-                  params: { from: "profile" },
-                })
-              }
-              theme={theme}
-            />
-            <Row
-              danger
-              icon="person-remove-outline"
-              title={t("profile.deactivateAccount")}
-              description={t("profile.deactivateDescription")}
-              onPress={confirmDeactivation}
-              theme={theme}
-            />
-          </Section>
-
           <Section icon="lock-closed-outline" title="Seguridad" theme={theme}>
             <Row
               icon="lock-closed-outline"
@@ -295,7 +273,11 @@ export default function ProfileScreen() {
             <Row
               icon="shield-checkmark-outline"
               title="Seguridad de la cuenta"
-              description={`${pendingAlerts} alertas pendientes`}
+              description={
+                pendingAlerts === 1
+                  ? "1 alerta pendiente"
+                  : `${pendingAlerts} alertas pendientes`
+              }
               onPress={() =>
                 router.push({
                   pathname: "/(tabs)/account-security",
@@ -421,6 +403,17 @@ export default function ProfileScreen() {
               {t("action.logout")}
             </Text>
           </Pressable>
+
+          <Section icon="warning-outline" title="Zona de peligro" theme={theme}>
+            <Row
+              danger
+              icon="person-remove-outline"
+              title={t("profile.deactivateAccount")}
+              description={t("profile.deactivateDescription")}
+              onPress={confirmDeactivation}
+              theme={theme}
+            />
+          </Section>
         </View>
       </ScrollView>
     </SafeAreaView>
