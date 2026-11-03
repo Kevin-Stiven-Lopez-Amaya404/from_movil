@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
@@ -134,15 +135,15 @@ const styles = StyleSheet.create({
   header: { alignItems: "center", flexDirection: "row", gap: 13 },
   headerIcon: { alignItems: "center", borderRadius: 16, height: 54, justifyContent: "center", width: 54 },
   headerCopy: { flex: 1, minWidth: 0 },
-  title: { fontSize: 27, fontWeight: "900" },
-  subtitle: { fontSize: 13, fontWeight: "600", lineHeight: 18, marginTop: 4 },
+  title: { fontSize: typography.size.title, fontWeight: "900" },
+  subtitle: { fontSize: typography.size.helper, fontWeight: "600", lineHeight: 18, marginTop: 4 },
   card: { borderRadius: 18, borderWidth: 1, marginTop: 26, paddingHorizontal: 14 },
-  sectionTitle: { fontSize: 18, fontWeight: "900", paddingBottom: 4, paddingTop: 16 },
+  sectionTitle: { fontSize: typography.size.bodyLarge, fontWeight: "900", paddingBottom: 4, paddingTop: 16 },
   faq: { borderTopWidth: 1, marginTop: 10, paddingTop: 10 },
   faqButton: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", minHeight: 48 },
-  question: { flex: 1, fontSize: 15, fontWeight: "800", paddingRight: 12 },
-  answer: { fontSize: 13, fontWeight: "600", lineHeight: 19, paddingBottom: 10, paddingRight: 18 },
+  question: { flex: 1, fontSize: typography.size.body, fontWeight: "800", paddingRight: 12 },
+  answer: { fontSize: typography.size.helper, fontWeight: "600", lineHeight: 19, paddingBottom: 10, paddingRight: 18 },
   supportButton: { alignItems: "center", borderRadius: 14, flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 18, minHeight: 48 },
-  supportText: { fontSize: 14, fontWeight: "800" },
+  supportText: { fontSize: typography.size.helper, fontWeight: "800" },
   pressed: { opacity: 0.72 },
 });

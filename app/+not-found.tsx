@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
@@ -53,12 +54,12 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   title: {
-    fontSize: 22,
+    fontSize: typography.size.section,
     fontWeight: "800",
     textAlign: "center",
   },
   message: {
-    fontSize: 15,
+    fontSize: typography.size.body,
     textAlign: "center",
   },
   closeLink: {

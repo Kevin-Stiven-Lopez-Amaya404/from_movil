@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useFocusEffect,
@@ -383,7 +384,7 @@ export default function NotificationsScreen() {
                 <Text
                   style={{
                     color: theme.muted,
-                    fontSize: 13,
+                    fontSize: typography.size.helper,
                     marginBottom: 12,
                   }}
                 >
@@ -395,7 +396,7 @@ export default function NotificationsScreen() {
                 <Text
                   style={{
                     color: theme.muted,
-                    fontSize: 13,
+                    fontSize: typography.size.helper,
                     marginBottom: 12,
                   }}
                 >

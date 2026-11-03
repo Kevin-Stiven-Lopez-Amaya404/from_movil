@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -111,7 +112,7 @@ export default function InvitationsScreen() {
 
         <Text
           style={{
-            fontSize: 26,
+            fontSize: typography.size.title,
             fontWeight: "700",
             color: theme.text,
           }}
@@ -178,7 +179,7 @@ export default function InvitationsScreen() {
             >
               <Text
                 style={{
-                  fontSize: 17,
+                  fontSize: typography.size.bodyLarge,
                   fontWeight: "700",
                   color: theme.text,
                 }}
@@ -194,7 +195,7 @@ export default function InvitationsScreen() {
                     : invitation.role}
               </Text>
 
-              <Text style={{ color: theme.muted, fontSize: 12 }}>
+              <Text style={{ color: theme.muted, fontSize: typography.size.caption }}>
                 Hogar: {invitation.homeId ?? "Sin identificador"}
               </Text>
 

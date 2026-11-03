@@ -1,3 +1,4 @@
+import { typography } from "@/lib/theme/typography";
 /**
  * Pantalla de Análisis Energético y Reportes.
  *
@@ -443,7 +444,7 @@ export default function ReportsScreen() {
                 style={{
                   flexShrink: 1,
                   color: theme.text,
-                  fontSize: 13,
+                  fontSize: typography.size.helper,
                   fontWeight: "600",
                 }}
               >
@@ -506,7 +507,7 @@ export default function ReportsScreen() {
                       style={{
                         flex: 1,
                         color: theme.text,
-                        fontSize: 14,
+                        fontSize: typography.size.helper,
                         fontWeight: isSelected ? "600" : "400",
                       }}
                     >
@@ -588,7 +589,7 @@ export default function ReportsScreen() {
                 color={theme.muted}
               />
 
-              <Text style={{ color: theme.muted, fontSize: 12 }}>
+              <Text style={{ color: theme.muted, fontSize: typography.size.caption }}>
                 {historyPeriod}
               </Text>
             </View>
@@ -663,7 +664,7 @@ export default function ReportsScreen() {
                     <Text
                       style={{
                         color: selected ? theme.onSolidAction : theme.text,
-                        fontSize: 13,
+                        fontSize: typography.size.helper,
                         fontWeight: "800",
                       }}
                     >
@@ -814,7 +815,7 @@ export default function ReportsScreen() {
                 },
               ]}
             >
-              <Text style={{ color: theme.muted, fontSize: 13 }}>
+              <Text style={{ color: theme.muted, fontSize: typography.size.helper }}>
                 Puedes consultar el consumo total del hogar.
                 El detalle por día y dispositivo está reservado
                 para propietarios y miembros.
