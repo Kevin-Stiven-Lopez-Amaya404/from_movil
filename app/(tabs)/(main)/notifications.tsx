@@ -84,9 +84,9 @@ export default function NotificationsScreen() {
         await acceptInvitation(invitationId);
 
         Alert.alert(
-          "InvitaciÃ³n aceptada",
+          "Invitación aceptada",
           "El acceso fue aceptado. Si el nuevo hogar " +
-            "no aparece, vuelve a iniciar sesiÃ³n " +
+            "no aparece, vuelve a iniciar sesión " +
             "para actualizar tus hogares.",
         );
       } else {
@@ -108,7 +108,7 @@ export default function NotificationsScreen() {
     .filter((item) => item.status !== "DISMISSED")
     .map((item) => ({
     id: item.id,
-    title: item.title ?? item.type ?? "NotificaciÃ³n",
+    title: item.title ?? item.type ?? "Notificación",
     description: item.message ?? item.description ?? "",
     time: item.createdAt
       ? new Date(item.createdAt).toLocaleString()
@@ -143,8 +143,8 @@ export default function NotificationsScreen() {
     label: string;
   }[] = [
     { key: "ALL", label: "Todas" },
-    { key: "UNREAD", label: "No leÃ­das" },
-    { key: "READ", label: "LeÃ­das" },
+    { key: "UNREAD", label: "No leídas" },
+    { key: "READ", label: "Leídas" },
   ];
 
   function openAlert(alert: (typeof activeAlerts)[number]) {
@@ -209,17 +209,17 @@ export default function NotificationsScreen() {
       const message =
         notification.message ??
         notification.description ??
-        "No hay mÃ¡s detalles disponibles.";
+        "No hay más detalles disponibles.";
 
       Alert.alert(
-        notification.title ?? "NotificaciÃ³n",
+        notification.title ?? "Notificación",
         targetHomeId
-          ? `${message}\n\nEl hogar ya no estÃ¡ disponible o no tienes acceso.`
+          ? `${message}\n\nEl hogar ya no está disponible o no tienes acceso.`
           : message,
       );
     } catch (error) {
       Alert.alert(
-        "No se pudo abrir la notificaciÃ³n",
+        "No se pudo abrir la notificación",
         error instanceof Error ? error.message : "Intenta nuevamente.",
       );
     } finally {
@@ -308,7 +308,7 @@ export default function NotificationsScreen() {
                           { color: theme.text },
                         ]}
                       >
-                        {invitation.homeName ?? "InvitaciÃ³n a un hogar"}
+                        {invitation.homeName ?? "Invitación a un hogar"}
                       </Text>
                       <Text
                         style={[
@@ -321,7 +321,7 @@ export default function NotificationsScreen() {
                       <View style={styles.invitationActions}>
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel={`Aceptar invitaciÃ³n a ${invitation.homeName ?? "un hogar"}`}
+                          accessibilityLabel={`Aceptar invitación a ${invitation.homeName ?? "un hogar"}`}
                           disabled={disabled}
                           onPress={() =>
                             void respondToInvitation(invitation.id, "accept")
@@ -342,7 +342,7 @@ export default function NotificationsScreen() {
                         </Pressable>
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel={`Rechazar invitaciÃ³n a ${invitation.homeName ?? "un hogar"}`}
+                          accessibilityLabel={`Rechazar invitación a ${invitation.homeName ?? "un hogar"}`}
                           disabled={disabled}
                           onPress={() =>
                             void respondToInvitation(invitation.id, "reject")
@@ -499,7 +499,7 @@ export default function NotificationsScreen() {
                 ]}
               >
                 <Text style={[styles.markAllText, { color: theme.blue }]}>
-                  Marcar todas como leÃ­das
+                  Marcar todas como leídas
                 </Text>
               </Pressable>
             ) : null}
@@ -597,7 +597,7 @@ export default function NotificationsScreen() {
                       { borderColor: theme.borderLight },
                       pressed && styles.pressed,
                     ]}
-                    accessibilityLabel={`Descartar notificaciÃ³n ${item.title}`}
+                    accessibilityLabel={`Descartar notificación ${item.title}`}
                   >
                     <Ionicons name="trash-outline" size={15} color={theme.muted} />
                   </Pressable>
