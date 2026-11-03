@@ -2,119 +2,104 @@ import { StyleSheet } from "react-native";
 import { typography } from "@/lib/theme/typography";
 
 export const styles = StyleSheet.create({
+  // Columna completa: encabezado arriba, formulario, enlaces al final.
   screenContent: {
     flexGrow: 1,
-    justifyContent: "center",
   },
   header: {
-    alignItems: "center",
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 26,
-    minHeight: 46,
-  },
-  headerSpacer: {
-    height: 42,
-    width: 42,
+    marginBottom: 16,
+    marginLeft: -10, // alinea la flecha con el borde del texto
   },
   introSection: {
-    alignItems: "center",
-    gap: 7,
-    marginBottom: 25,
+    gap: 8,
+    marginBottom: 32,
   },
   title: {
     fontFamily: typography.fontFamily.display,
-    fontSize: typography.size.screenTitle,
-    fontWeight: "800",
-    lineHeight: 39,
-    textAlign: "center",
+    fontSize: 28,
+    fontWeight: "700",
+    lineHeight: 34,
   },
   titleTiny: {
     fontSize: typography.size.title,
-    lineHeight: 34,
+    lineHeight: 32,
   },
   subtitle: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.body,
-    lineHeight: 22,
-    textAlign: "center",
+    fontSize: 16,
+    lineHeight: 24,
   },
   formContainer: {
-    gap: 17,
+    gap: 20,
     width: "100%",
-  },
-  fieldGroup: {
-    gap: 7,
-    width: "100%",
-  },
-  fieldLabel: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: typography.size.helper,
-    fontWeight: "700",
-    marginLeft: 2,
   },
   input: {
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.body,
-    fontWeight: "500",
-    minHeight: 56,
+    fontSize: 16,
+    fontWeight: "400",
+    minHeight: 52,
     paddingHorizontal: 16,
   },
   optionsRow: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: -5,
-    width: "100%",
+    marginTop: 12,
+  },
+  optionsRowEnd: {
+    justifyContent: "flex-end",
   },
   rememberContainer: {
     flex: 1,
   },
   forgotButton: {
-    alignItems: "flex-end",
-    maxWidth: "58%",
-    paddingLeft: 8,
-    paddingVertical: 7,
+    paddingVertical: 4,
   },
-  forgotText: {
+  linkText: {
     fontFamily: typography.fontFamily.emphasis,
-    fontSize: typography.size.helper,
-    fontWeight: "700",
-    textAlign: "right",
+    fontSize: 14,
+    fontWeight: "600",
   },
-  reactivationLink: {
-    alignSelf: "center",
-    marginTop: -4,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+  formError: {
+    alignItems: "center",
+    borderRadius: 12,
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  reactivationLinkText: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: typography.size.helper,
-    fontWeight: "700",
-    lineHeight: 19,
-    textAlign: "center",
+  formErrorText: {
+    flex: 1,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  button: {
+    borderRadius: 12,
+    minHeight: 52,
+  },
+  spacer: {
+    flexGrow: 1,
+    minHeight: 32,
+  },
+  footer: {
+    alignItems: "center",
+    gap: 12,
+    paddingTop: 8,
   },
   registerRow: {
     alignItems: "center",
-    alignSelf: "center",
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 5,
+    gap: 6,
     justifyContent: "center",
-    marginTop: 1,
-    paddingVertical: 5,
   },
-  registerText: {
+  footerText: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: typography.size.helper,
-    fontWeight: "500",
-  },
-  registerLink: {
-    fontFamily: typography.fontFamily.emphasis,
-    fontSize: typography.size.helper,
-    fontWeight: "800",
+    fontSize: 14,
+    textAlign: "center",
   },
 });
