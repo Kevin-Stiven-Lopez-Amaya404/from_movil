@@ -1,88 +1,56 @@
 import { Ionicons } from "@expo/vector-icons";
-import { PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 import { Text, View } from "react-native";
+
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { styles } from "./SettingsSectionCard.styles";
 
-
-
-type SettingsSectionCardProps = PropsWithChildren<{
-  backgroundColor: string;
-  description: string;
-  descriptionColor: string;
-  iconColor: string;
+type Props = PropsWithChildren<{
   iconName: keyof typeof Ionicons.glyphMap;
-  danger?: boolean;
   title: string;
-  titleColor: string;
+  description?: string;
+  danger?: boolean;
 }>;
 
-/**
- * Grupo de opciones de configuración.
- *
- * Organiza cada categoría como una sección de menú:
- * encabezado + descripción + opciones internas.
- */
+/** Grupo temático de opciones de perfil o configuración. */
 export function SettingsSectionCard({
-  backgroundColor,
   children,
   danger = false,
   description,
-  descriptionColor,
-  iconColor,
   iconName,
   title,
-  titleColor,
-}: SettingsSectionCardProps) {
+}: Props) {
   const theme = useAppTheme();
 
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <View
-          style={[
-            styles.sectionIcon,
-            {
-              backgroundColor: danger ? theme.dangerSoft : theme.surfaceSecondary,
-            },
-          ]}
-        >
-          <Ionicons name={iconName} size={19} color={iconColor} />
-        </View>
-
+        <Ionicons
+          name={iconName}
+          size={17}
+          color={danger ? theme.danger : theme.blue}
+        />
         <View style={styles.sectionCopy}>
           <Text
             style={[
               styles.sectionTitle,
-              {
-                color: danger ? theme.danger : titleColor,
-              },
+              { color: danger ? theme.danger : theme.text },
             ]}
           >
             {title}
           </Text>
-
-          <Text
-            style={[
-              styles.sectionDescription,
-              {
-                color: descriptionColor,
-              },
-            ]}
-          >
-            {description}
-          </Text>
+          {description ? (
+            <Text style={[styles.sectionDescription, { color: theme.muted }]}>
+              {description}
+            </Text>
+          ) : null}
         </View>
       </View>
-
       <View
         style={[
           styles.menu,
-          {
-            backgroundColor,
-            borderColor: danger ? theme.dangerSoft : "transparent",
-            borderWidth: danger ? 1 : 0,
-          },
+          { backgroundColor: theme.card, borderColor: theme.borderLight },
+          danger && { borderColor: theme.dangerSoft },
         ]}
       >
         {children}

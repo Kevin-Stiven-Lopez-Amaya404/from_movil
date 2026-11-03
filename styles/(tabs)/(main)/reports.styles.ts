@@ -78,7 +78,6 @@ export const styles = StyleSheet.create({
   },
   periodButton: {
     flex: 1,
-    minHeight: 44,
     borderWidth: 1,
     borderRadius: 12,
     alignItems: "center",

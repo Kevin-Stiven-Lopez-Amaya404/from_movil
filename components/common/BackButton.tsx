@@ -9,6 +9,10 @@ type BackButtonProps = {
   color?: string;
   /** Ruta segura a la que se navega si no existe historial para volver. */
   fallbackHref: Href;
+  accessibilityLabel?: string;
+  backgroundColor?: string;
+  disabled?: boolean;
+  onPress?: () => void;
 };
 
 /**
@@ -18,7 +22,14 @@ type BackButtonProps = {
  * En web o cuando no hay historial confiable, usa `router.replace(fallbackHref)`
  * para enviar al usuario a una ruta segura.
  */
-export function BackButton({ color, fallbackHref }: BackButtonProps) {
+export function BackButton({
+  accessibilityLabel = "Cerrar",
+  backgroundColor,
+  color,
+  disabled = false,
+  fallbackHref,
+  onPress,
+}: BackButtonProps) {
   const router = useRouter();
   const palette = useAuthPalette();
 
@@ -27,6 +38,11 @@ export function BackButton({ color, fallbackHref }: BackButtonProps) {
    * Esta proteccion evita pantallas sin salida cuando el usuario entra directo por URL.
    */
   function handlePress() {
+    if (onPress) {
+      onPress();
+      return;
+    }
+
     if (Platform.OS !== "web" && router.canGoBack()) {
       router.back();
       return;
@@ -38,12 +54,15 @@ export function BackButton({ color, fallbackHref }: BackButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Cerrar"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       hitSlop={8}
       onPress={handlePress}
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: palette.primarySoft },
+        { backgroundColor: backgroundColor ?? palette.primarySoft },
+        disabled && styles.disabled,
         pressed && styles.buttonPressed,
       ]}
     >
@@ -62,5 +81,8 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.65,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

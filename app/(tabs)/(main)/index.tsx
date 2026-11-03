@@ -1,122 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, Text, View } from "react-native";
+import { AccessibilityInfo, Animated, Easing, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
+import { NavigationRow } from "@/components/dashboard/NavigationRow";
+import { SummaryTile } from "@/components/dashboard/SummaryTile";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { styles } from "../../../styles/(tabs)/(main)/index.styles";
 
-
-type Theme = ReturnType<typeof useAppTheme>;
-type IconName = React.ComponentProps<typeof Ionicons>["name"];
-
-type SummaryTileProps = {
-  icon: IconName;
-  label: string;
-  value: string;
-  onPress: () => void;
-  theme: Theme;
-};
-
-function SummaryTile({
-  icon,
-  label,
-  value,
-  onPress,
-  theme,
-}: SummaryTileProps) {
-  const accent = theme.decorativeAccent;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${label}: ${value}. Abrir sección.`}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.summaryTile,
-        {
-          backgroundColor: theme.blueSurface,
-          borderColor: theme.dark ? theme.border : theme.blueSurface,
-        },
-        pressed && styles.pressed,
-      ]}
-    >
-      <View style={styles.summaryTop}>
-        <View
-          style={[
-            styles.summaryIcon,
-            { backgroundColor: theme.surfaceSecondary },
-          ]}
-        >
-          <Ionicons name={icon} size={24} color={accent} />
-        </View>
-        <Ionicons name="arrow-forward" size={17} color={accent} />
-      </View>
-      <Text style={[styles.summaryValue, { color: theme.text }]}>
-        {value}
-      </Text>
-      <Text style={[styles.summaryLabel, { color: theme.muted }]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-type NavigationRowProps = {
-  icon: IconName;
-  title: string;
-  subtitle: string;
-  onPress: () => void;
-  theme: Theme;
-};
-
-function NavigationRow({
-  icon,
-  title,
-  subtitle,
-  onPress,
-  theme,
-}: NavigationRowProps) {
-  const accent = theme.decorativeAccent;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${title}. ${subtitle}`}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.navigationRow,
-        {
-          backgroundColor: theme.card,
-          borderColor: theme.borderLight,
-        },
-        pressed && styles.pressed,
-      ]}
-    >
-      <View
-        style={[
-          styles.navigationIcon,
-          { backgroundColor: theme.surfaceSecondary },
-        ]}
-      >
-        <Ionicons name={icon} size={24} color={accent} />
-      </View>
-      <View style={styles.navigationCopy}>
-        <Text style={[styles.navigationTitle, { color: theme.text }]}>
-          {title}
-        </Text>
-        <Text style={[styles.navigationSubtitle, { color: theme.muted }]}>
-          {subtitle}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={theme.muted} />
-    </Pressable>
-  );
-}
 
 export default function DashboardScreen() {
   const router = useRouter();

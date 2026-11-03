@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Button } from "@/components/ui/Button";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import {
   returnToParent,
@@ -112,15 +113,16 @@ export default function HelpScreen() {
             })}
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Contactar soporte"
+          <Button
+            fullWidth
+            colorSource="solidAction"
+            icon={<Ionicons name="chatbubble-ellipses-outline" size={20} color={theme.onSolidAction} />}
+            label="Contactar soporte"
+            labelSize="helper"
             onPress={contactSupport}
-            style={({ pressed }) => [styles.supportButton, { backgroundColor: theme.solidActionBackground }, pressed && styles.pressed]}
-          >
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color={theme.onSolidAction} />
-            <Text style={[styles.supportText, { color: theme.onSolidAction }]}>Contactar soporte</Text>
-          </Pressable>
+            variant="primary"
+            style={styles.supportButton}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

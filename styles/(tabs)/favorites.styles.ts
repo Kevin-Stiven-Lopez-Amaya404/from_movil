@@ -171,7 +171,6 @@ export const styles = StyleSheet.create({
     gap: 8,
     justifyContent: "center",
     marginTop: 15,
-    minHeight: 42,
     paddingHorizontal: 14,
   },
 

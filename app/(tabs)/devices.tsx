@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Button } from "@/components/ui/Button";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { canControlHome } from "@/lib/domain/home";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
@@ -131,38 +133,14 @@ export default function DevicesScreen() {
         >
           {/* HEADER */}
           <View style={styles.header}>
-            <Pressable
-              accessibilityRole="button"
+            <ScreenHeader
               accessibilityLabel="Cerrar dispositivos"
-              hitSlop={8}
-              onPress={() => {
-                if (router.canGoBack()) {
-                  router.back();
-                } else {
-                  router.replace("/(tabs)/(main)/index");
-                }
-              }}
-              style={({ pressed }) => [
-                styles.backButton,
-                {
-                  backgroundColor: theme.card,
-                  borderColor: theme.borderLight,
-                },
-                pressed && styles.pressed,
-              ]}
-            >
-              <Ionicons name="close" size={21} color={theme.text} />
-            </Pressable>
-
-            <View style={styles.headerCopy}>
-              <Text style={[styles.title, { color: theme.text }]}>
-                Dispositivos
-              </Text>
-
-              <Text style={[styles.subtitle, { color: theme.muted }]}>
-                Todos tus dispositivos Smart Home
-              </Text>
-            </View>
+              backBackgroundColor={theme.card}
+              fallbackHref="/(tabs)/(main)/index"
+              subtitle="Todos tus dispositivos Smart Home"
+              title="Dispositivos"
+              titleSize="title"
+            />
           </View>
 
           {/* SUMMARY */}
@@ -294,16 +272,14 @@ export default function DevicesScreen() {
                 <Text style={[styles.statePanelCopy, { color: theme.muted }]}>
                   Agrega o acepta un hogar para ver sus dispositivos.
                 </Text>
-                <Pressable
-                  accessibilityRole="button"
+                <Button
+                  variant="text"
+                  icon={<Ionicons name="arrow-forward" size={16} color={theme.blue} />}
+                  label="Ver mis hogares"
+                  labelSize="helper"
                   onPress={() => router.push("/(tabs)/(main)/homes")}
-                  style={({ pressed }) => [styles.stateAction, pressed && styles.pressed]}
-                >
-                  <Text style={[styles.stateActionText, { color: theme.blue }]}>
-                    Ver mis hogares
-                  </Text>
-                  <Ionicons name="arrow-forward" size={16} color={theme.blue} />
-                </Pressable>
+                  style={styles.stateAction}
+                />
               </View>
             ) : null}
 
@@ -327,16 +303,14 @@ export default function DevicesScreen() {
                 <Text style={[styles.statePanelCopy, { color: theme.muted }]}>
                   Añade un dispositivo a uno de tus hogares para empezar.
                 </Text>
-                <Pressable
-                  accessibilityRole="button"
+                <Button
+                  variant="text"
+                  icon={<Ionicons name="arrow-forward" size={16} color={theme.blue} />}
+                  label="Agregar dispositivo"
+                  labelSize="helper"
                   onPress={() => router.push("/(tabs)/add-device")}
-                  style={({ pressed }) => [styles.stateAction, pressed && styles.pressed]}
-                >
-                  <Text style={[styles.stateActionText, { color: theme.blue }]}>
-                    Agregar dispositivo
-                  </Text>
-                  <Ionicons name="arrow-forward" size={16} color={theme.blue} />
-                </Pressable>
+                  style={styles.stateAction}
+                />
               </View>
             ) : null}
 

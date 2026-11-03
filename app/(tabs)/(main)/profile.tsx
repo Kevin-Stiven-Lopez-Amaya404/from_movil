@@ -12,93 +12,10 @@ import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
+import { ProfileMenuItem } from "@/components/profile/ProfileMenuItem";
+import { SettingsSectionCard } from "@/components/settings/SettingsSectionCard";
 import { styles } from "../../../styles/(tabs)/(main)/profile.styles";
 
-
-type ThemeLike = ReturnType<typeof useAppTheme>;
-
-type RowProps = {
-  danger?: boolean;
-  description?: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  onPress: () => void;
-  theme: ThemeLike;
-  title: string;
-};
-
-function Row({
-  danger = false,
-  description,
-  icon,
-  onPress,
-  theme,
-  title,
-}: RowProps) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { borderTopColor: theme.profileDivider },
-        pressed && styles.pressed,
-      ]}
-    >
-      <View style={[styles.rowIcon, { backgroundColor: theme.rowAlt }]}>
-        <Ionicons
-          name={icon}
-          size={20}
-          color={danger ? theme.danger : theme.blue}
-        />
-      </View>
-      <View style={styles.rowCopy}>
-        <Text
-          style={[
-            styles.rowTitle,
-            { color: danger ? theme.danger : theme.text },
-          ]}
-        >
-          {title}
-        </Text>
-        {!!description && (
-          <Text style={[styles.rowDescription, { color: theme.muted }]}>
-            {description}
-          </Text>
-        )}
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={theme.muted} />
-    </Pressable>
-  );
-}
-
-type SectionProps = {
-  children: React.ReactNode;
-  icon: keyof typeof Ionicons.glyphMap;
-  theme: ThemeLike;
-  title: string;
-};
-
-function Section({ children, icon, theme, title }: SectionProps) {
-  return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeading}>
-        <Ionicons name={icon} size={17} color={theme.blue} />
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-          {title}
-        </Text>
-      </View>
-      <View
-        style={[
-          styles.rows,
-          { backgroundColor: theme.card, borderColor: theme.borderLight },
-        ]}
-      >
-        {children}
-      </View>
-    </View>
-  );
-}
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -258,8 +175,9 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={theme.muted} />
           </Pressable>
 
-          <Section icon="lock-closed-outline" title="Seguridad" theme={theme}>
-            <Row
+          <SettingsSectionCard iconName="lock-closed-outline" title="Seguridad">
+            <ProfileMenuItem
+              variant="menu"
               icon="lock-closed-outline"
               title="Cambiar contraseña"
               onPress={() =>
@@ -268,9 +186,9 @@ export default function ProfileScreen() {
                   params: { from: "profile" },
                 })
               }
-              theme={theme}
             />
-            <Row
+            <ProfileMenuItem
+              variant="menu"
               icon="shield-checkmark-outline"
               title="Seguridad de la cuenta"
               description={
@@ -284,11 +202,10 @@ export default function ProfileScreen() {
                   params: { from: "profile" },
                 })
               }
-              theme={theme}
             />
-          </Section>
+          </SettingsSectionCard>
 
-          <Section icon="options-outline" title="Preferencias" theme={theme}>
+          <SettingsSectionCard iconName="options-outline" title="Preferencias">
             <View style={[styles.preferenceCard, { borderBottomColor: theme.divider }]}>
               <View style={styles.preferenceHeader}>
                 <View
@@ -340,7 +257,8 @@ export default function ProfileScreen() {
               />
             </View>
 
-            <Row
+            <ProfileMenuItem
+              variant="menu"
               icon="language-outline"
               title="Idioma"
               description={languageLabel}
@@ -350,12 +268,12 @@ export default function ProfileScreen() {
                   params: { from: "profile" },
                 })
               }
-              theme={theme}
             />
-          </Section>
+          </SettingsSectionCard>
 
-          <Section icon="help-circle-outline" title="Ayuda" theme={theme}>
-            <Row
+          <SettingsSectionCard iconName="help-circle-outline" title="Ayuda">
+            <ProfileMenuItem
+              variant="menu"
               icon="help-circle-outline"
               title="Centro de ayuda"
               onPress={() =>
@@ -364,15 +282,15 @@ export default function ProfileScreen() {
                   params: { from: "profile" },
                 })
               }
-              theme={theme}
             />
-            <Row
+            <ProfileMenuItem
+              variant="menu"
               icon="alert-circle-outline"
               title={t("profile.reportProblem")}
               onPress={() => showPending(t("profile.reportProblem"))}
-              theme={theme}
             />
-            <Row
+            <ProfileMenuItem
+              variant="menu"
               icon="information-circle-outline"
               title="Acerca de Smart Home"
               onPress={() =>
@@ -381,9 +299,8 @@ export default function ProfileScreen() {
                   params: { from: "profile" },
                 })
               }
-              theme={theme}
             />
-          </Section>
+          </SettingsSectionCard>
 
           <Pressable
             accessibilityRole="button"
@@ -404,16 +321,16 @@ export default function ProfileScreen() {
             </Text>
           </Pressable>
 
-          <Section icon="warning-outline" title="Zona de peligro" theme={theme}>
-            <Row
-              danger
+          <SettingsSectionCard iconName="warning-outline" title="Zona de peligro">
+            <ProfileMenuItem
+              variant="menu"
+              intent="danger"
               icon="person-remove-outline"
               title={t("profile.deactivateAccount")}
               description={t("profile.deactivateDescription")}
               onPress={confirmDeactivation}
-              theme={theme}
             />
-          </Section>
+          </SettingsSectionCard>
         </View>
       </ScrollView>
     </SafeAreaView>

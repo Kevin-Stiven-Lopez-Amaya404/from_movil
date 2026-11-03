@@ -5,15 +5,15 @@ export const appFont = typography.fontFamily.emphasis;
 
 export const styles = StyleSheet.create({
   section: {
-    marginTop: 24,
+    marginBottom: 15,
     width: "100%",
   },
 
   sectionHeader: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 10,
-    marginBottom: 9,
+    gap: 6,
+    marginBottom: 6,
     paddingHorizontal: 2,
   },
 
@@ -32,7 +32,7 @@ export const styles = StyleSheet.create({
 
   sectionTitle: {
     fontFamily: appFont,
-    fontSize: typography.size.body,
+    fontSize: typography.size.helper,
     fontWeight: "900",
   },
 
@@ -45,8 +45,9 @@ export const styles = StyleSheet.create({
   },
 
   menu: {
-    borderRadius: 16,
-    gap: 7,
-    padding: 4,
+    borderRadius: 15,
+    borderWidth: 1,
+    overflow: "hidden",
+    paddingHorizontal: 9,
   },
 });

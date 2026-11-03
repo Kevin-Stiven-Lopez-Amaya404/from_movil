@@ -31,6 +31,20 @@ export const styles = StyleSheet.create({
     minHeight: 54,
     paddingHorizontal: 10,
   },
+  menuRow: {
+    alignItems: "center",
+    borderTopWidth: 1,
+    flexDirection: "row",
+    minHeight: 56,
+    paddingVertical: 8,
+  },
+  menuIcon: {
+    alignItems: "center",
+    borderRadius: 10,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
   pressed: {
     opacity: 0.72,
   },

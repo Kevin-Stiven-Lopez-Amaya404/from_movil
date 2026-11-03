@@ -17,7 +17,6 @@ import {
   Alert,
   BackHandler,
   Platform,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -27,6 +26,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ShellyLanTelemetry } from "@/components/shelly/shelly-lan-telemetry";
 import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
+import { Button } from "@/components/ui/Button";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { ApiError } from "@/lib/api/api-error";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { PairingSession } from "@/lib/pairing/pairing-types";
@@ -1017,32 +1018,14 @@ export default function PrepareShellyScreen() {
         >
           {/* Encabezado */}
           <View style={styles.header}>
-            <Pressable
-              accessibilityRole="button"
+            <ScreenHeader
               accessibilityLabel="Cerrar preparación del dispositivo"
               disabled={pairingLoading}
-              onPress={() => void backToSearch()}
-              style={[
-                styles.backButton,
-                { backgroundColor: theme.rowAlt },
-                pairingLoading && styles.disabled,
-              ]}
-            >
-              <Ionicons
-                name="close"
-                size={21}
-                color={theme.text}
-              />
-            </Pressable>
-
-            <Text
-              style={[
-                styles.title,
-                { color: theme.text },
-              ]}
-            >
-              Preparar dispositivo
-            </Text>
+              fallbackHref="/(tabs)/devices"
+              onBack={() => void backToSearch()}
+              title="Preparar dispositivo"
+              titleSize="section"
+            />
           </View>
 
           {/* Dispositivo seleccionado */}
@@ -1116,22 +1099,12 @@ export default function PrepareShellyScreen() {
                 {verificationError}
               </Text>
 
-              <Pressable
-                accessibilityRole="button"
-                onPress={() =>
-                  void verifySelectedDevice()
-                }
+              <Button
+                label="Reintentar verificación"
+                onPress={() => void verifySelectedDevice()}
                 style={styles.retryButton}
-              >
-                <Text
-                  style={{
-                    color: theme.blue,
-                    fontWeight: "700",
-                  }}
-                >
-                  Reintentar verificación
-                </Text>
-              </Pressable>
+                variant="text"
+              />
             </View>
           ) : null}
 
@@ -1219,26 +1192,18 @@ export default function PrepareShellyScreen() {
           </Text>
 
           {/* Confirmación local */}
-          <Pressable
-            accessibilityRole="button"
+          <Button
             accessibilityLabel="Confirmar nombre del dispositivo"
             disabled={!canConfirm}
+            label="Confirmar nombre"
             onPress={() => {
-              if (canConfirm) {
-                setConfirmedName(trimmedName);
-              }
+              if (canConfirm) setConfirmedName(trimmedName);
             }}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              { backgroundColor: theme.solidActionBackground },
-              !canConfirm && styles.disabled,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
-              Confirmar nombre
-            </Text>
-          </Pressable>
+            style={styles.primaryButton}
+            colorSource="solidAction"
+            labelSize="helper"
+            variant="primary"
+          />
 
           {isConfirmed ? (
             <View style={styles.confirmation}>
@@ -1273,25 +1238,17 @@ export default function PrepareShellyScreen() {
           ) : null}
 
           {isConfirmed && !pairingSession ? (
-            <Pressable
-              accessibilityRole="button"
+            <Button
               accessibilityLabel="Iniciar vinculación del Shelly"
               disabled={pairingLoading}
+              label="Iniciar vinculación"
+              loading={pairingLoading}
               onPress={() => void startPairing()}
-              style={[
-                styles.primaryButton,
-                { backgroundColor: theme.solidActionBackground },
-                pairingLoading && styles.disabled,
-              ]}
-            >
-              {pairingLoading ? (
-                <ActivityIndicator color={theme.onSolidAction} />
-              ) : (
-                <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
-                  Iniciar vinculación
-                </Text>
-              )}
-            </Pressable>
+              style={styles.primaryButton}
+              colorSource="solidAction"
+              labelSize="helper"
+              variant="primary"
+            />
           ) : null}
 
           {pairingSession ? (
@@ -1321,33 +1278,31 @@ export default function PrepareShellyScreen() {
           {pairingSession &&
             ["DEVICE_IDENTIFIED", "WAITING_FOR_MQTT", "CONNECTED"].includes(pairingSession.status) &&
             !pairingExpired ? (
-            <Pressable
-              accessibilityRole="button"
+            <Button
               accessibilityLabel="Consultar estado MQTT con el backend"
               disabled={pairingLoading}
+              label={pairingLoading ? "Consultando..." : "Consultar conexión MQTT"}
               onPress={() => void refreshMqttStatus()}
-              style={[styles.retryButton, pairingLoading && styles.disabled]}
-            >
-              <Text style={{ color: theme.blue, fontWeight: "700" }}>
-                {pairingLoading ? "Consultando..." : "Consultar conexión MQTT"}
-              </Text>
-            </Pressable>
+              style={styles.retryButton}
+              variant="text"
+            />
           ) : null}
 
 
           {__DEV__ && pairingSession &&
             ['DEVICE_IDENTIFIED', 'WAITING_FOR_MQTT'].includes(pairingSession.status) &&
             !pairingExpired && !mqttSetupAttemptedForRender ? (
-            <Pressable
-              accessibilityRole="button"
+            <Button
               accessibilityLabel="Configurar MQTT Shelly en laboratorio aislado"
               disabled={pairingLoading}
+              label="Configurar MQTT (laboratorio)"
+              loading={pairingLoading}
               onPress={confirmTrustedLabSetup}
-              style={[styles.primaryButton, {backgroundColor: theme.solidActionBackground},
-                pairingLoading && styles.disabled]}
-            >
-              <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>Configurar MQTT (laboratorio)</Text>
-            </Pressable>
+              style={styles.primaryButton}
+              colorSource="solidAction"
+              labelSize="helper"
+              variant="primary"
+            />
           ) : null}
 
           {mqttSetupNotice ? (
@@ -1364,88 +1319,53 @@ export default function PrepareShellyScreen() {
 
           {__DEV__ && pairingSession?.status === "WAITING_FOR_MQTT" &&
             mqttOperationReady && !pairingExpired ? (
-            <Pressable
-              accessibilityRole="button"
+            <Button
               accessibilityLabel="Verificar autenticación MQTT con el backend y finalizar"
               disabled={pairingLoading}
+              label="Verificar MQTT y finalizar"
+              loading={pairingLoading}
               onPress={() => void verifyMqttAuthenticationAndComplete()}
-              style={[styles.primaryButton, { backgroundColor: theme.solidActionBackground },
-                pairingLoading && styles.disabled]}
-            >
-              {pairingLoading ? (
-                <ActivityIndicator color={theme.onSolidAction} />
-              ) : (
-                <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
-                  Verificar MQTT y finalizar
-                </Text>
-              )}
-            </Pressable>
+              style={styles.primaryButton}
+              colorSource="solidAction"
+              labelSize="helper"
+              variant="primary"
+            />
           ) : null}
 
           {pairingSession?.status === "CONNECTED" && !pairingExpired ? (
-            <Pressable
-              accessibilityRole="button"
+            <Button
               accessibilityLabel="Finalizar vinculación del Shelly en el hogar"
               disabled={pairingLoading}
+              label="Finalizar vinculación"
+              loading={pairingLoading}
               onPress={() => void completeVerifiedPairing()}
-              style={[
-                styles.primaryButton,
-                { backgroundColor: theme.solidActionBackground },
-                pairingLoading && styles.disabled,
-              ]}
-            >
-              {pairingLoading ? (
-                <ActivityIndicator color={theme.onSolidAction} />
-              ) : (
-                <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
-                  Finalizar vinculación
-                </Text>
-              )}
-            </Pressable>
+              style={styles.primaryButton}
+              colorSource="solidAction"
+              labelSize="helper"
+              variant="primary"
+            />
           ) : null}
 
           {pairingSession?.status === "PENDING" && !pairingExpired ? (
-            <Pressable
-              accessibilityRole="button"
+            <Button
               accessibilityLabel="Reintentar identificación del Shelly"
               disabled={pairingLoading}
+              label="Reintentar identificación"
               onPress={() => void retryPairingIdentification()}
-              style={[
-                styles.retryButton,
-                pairingLoading && styles.disabled,
-              ]}
-            >
-              <Text
-                style={{
-                  color: theme.blue,
-                  fontWeight: "700",
-                }}
-              >
-                Reintentar identificación
-              </Text>
-            </Pressable>
+              style={styles.retryButton}
+              variant="text"
+            />
           ) : null}
 
           {pairingSession && !["COMPLETED", "CANCELLED", "EXPIRED", "FAILED"].includes(pairingSession.status) && !pairingExpired ? (
-            <Pressable
-              accessibilityRole="button"
+            <Button
               accessibilityLabel="Cancelar vinculación del Shelly"
               disabled={pairingLoading}
+              label="Cancelar vinculación"
               onPress={() => void cancelPairing()}
-              style={[
-                styles.retryButton,
-                pairingLoading && styles.disabled,
-              ]}
-            >
-              <Text
-                style={{
-                  color: theme.danger,
-                  fontWeight: "700",
-                }}
-              >
-                Cancelar vinculación
-              </Text>
-            </Pressable>
+              style={styles.retryButton}
+              variant="danger"
+            />
           ) : null}
 
           {pairingExpired ? (
@@ -1460,21 +1380,13 @@ export default function PrepareShellyScreen() {
                 Debes iniciar una nueva sesión para continuar.
               </Text>
 
-              <Pressable
-                accessibilityRole="button"
+              <Button
                 accessibilityLabel="Preparar nueva sesión de vinculación"
+                label="Preparar nueva vinculación"
                 onPress={resetExpiredPairing}
                 style={styles.retryButton}
-              >
-                <Text
-                  style={{
-                    color: theme.blue,
-                    fontWeight: "700",
-                  }}
-                >
-                  Preparar nueva vinculación
-                </Text>
-              </Pressable>
+                variant="text"
+              />
             </View>
           ) : null}
 

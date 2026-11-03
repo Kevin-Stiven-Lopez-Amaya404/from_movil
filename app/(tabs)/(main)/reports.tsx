@@ -21,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { DeviceConsumptionRankingCard } from "@/components/energy/DeviceConsumptionRankingCard";
 import { EnergyCostSummaryCard } from "@/components/energy/EnergyCostSummaryCard";
 import { EnergyExportCard } from "@/components/energy/EnergyExportCard";
+import { Button } from "@/components/ui/Button";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import {
@@ -638,10 +639,13 @@ export default function ReportsScreen() {
                       : "Todo";
 
                 return (
-                  <Pressable
+                  <Button
                     key={period}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
+                    selected={selected}
+                    variant={selected ? "primary" : "secondary"}
+                    colorSource="solidAction"
+                    labelSize="helper"
+                    label={label}
                     onPress={() => {
                       if (selected) return;
 
@@ -649,28 +653,8 @@ export default function ReportsScreen() {
                       setRankingQueryState(null);
                       setHistoryPeriod(period);
                     }}
-                    style={[
-                      styles.periodButton,
-                      {
-                        backgroundColor: selected
-                          ? theme.solidActionBackground
-                          : theme.card,
-                        borderColor: selected
-                          ? theme.solidActionBackground
-                          : theme.borderLight,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        color: selected ? theme.onSolidAction : theme.text,
-                        fontSize: typography.size.helper,
-                        fontWeight: "800",
-                      }}
-                    >
-                      {label}
-                    </Text>
-                  </Pressable>
+                    style={styles.periodButton}
+                  />
                 );
               })}
             </View>
