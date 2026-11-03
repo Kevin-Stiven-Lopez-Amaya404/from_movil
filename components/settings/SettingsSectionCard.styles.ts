@@ -32,13 +32,13 @@ export const styles = StyleSheet.create({
 
   sectionTitle: {
     fontFamily: appFont,
-    fontSize: 16,
+    fontSize: typography.size.body,
     fontWeight: "900",
   },
 
   sectionDescription: {
     fontFamily: appFont,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "600",
     lineHeight: 15,
     marginTop: 2,

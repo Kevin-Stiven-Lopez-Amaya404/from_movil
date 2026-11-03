@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   },
   themeText: {
     fontFamily: appFont,
-    fontSize: 12,
+    fontSize: typography.size.caption,
     fontWeight: "900",
   },
 });

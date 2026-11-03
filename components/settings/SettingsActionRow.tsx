@@ -127,13 +127,13 @@ const styles = StyleSheet.create({
 
   rowText: {
     fontFamily: appFont,
-    fontSize: 14,
+    fontSize: typography.size.helper,
     fontWeight: "900",
   },
 
   rowDescription: {
     fontFamily: appFont,
-    fontSize: 11,
+    fontSize: typography.size.caption,
     fontWeight: "600",
     lineHeight: 15,
     marginTop: 2,
