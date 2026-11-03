@@ -42,7 +42,6 @@ export const styles = StyleSheet.create({
     overflow: "hidden",
   },
   heroMedia: {
-    height: 152,
     overflow: "hidden",
   },
   heroImage: {
@@ -62,5 +61,27 @@ export const styles = StyleSheet.create({
     marginBottom: 13,
   },
   navigationList: { gap: 11 },
-  stateNote: { fontSize: typography.size.caption, lineHeight: 17, marginTop: 10 },
+  notice: {
+    alignItems: "flex-start",
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 12,
+    padding: 14,
+  },
+  noticeIcon: {
+    alignItems: "center",
+    borderRadius: 12,
+    height: 38,
+    justifyContent: "center",
+    width: 38,
+  },
+  noticeCopy: { flex: 1, minWidth: 0 },
+  noticeMessage: {
+    fontSize: typography.size.helper,
+    fontWeight: "600",
+    lineHeight: 19,
+  },
+  noticeAction: { marginTop: 4 },
 });

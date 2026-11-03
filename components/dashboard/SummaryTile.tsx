@@ -10,16 +10,25 @@ type Props = {
   value: string;
   onPress: () => void;
   theme: AppTheme;
+  busy?: boolean;
 };
 
 /** Resumen compacto de una métrica del hogar en el dashboard. */
-export function SummaryTile({ icon, label, value, onPress, theme }: Props) {
+export function SummaryTile({
+  icon,
+  label,
+  value,
+  onPress,
+  theme,
+  busy = false,
+}: Props) {
   const accent = theme.decorativeAccent;
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${label}: ${value}. Abrir sección.`}
+      accessibilityLabel={`${label}: ${busy ? "cargando" : value}. Abrir sección.`}
+      accessibilityState={{ busy }}
       onPress={onPress}
       style={({ pressed }) => [
         styles.tile,
