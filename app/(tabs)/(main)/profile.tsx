@@ -20,7 +20,7 @@ export default function ProfileScreen() {
   const theme = useAppTheme();
   const { t } = useTranslation();
   const { logout } = useAuthSession();
-  const { sessionEmail, sessionName } = useSmartHome();
+  const { sessionEmail, sessionName, sessionRole } = useSmartHome();
   const logoutLock = useRef(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -35,6 +35,12 @@ export default function ProfileScreen() {
     .toUpperCase();
   const nameValue = displayName || t("profile.dataUnavailable");
   const emailValue = displayEmail || t("profile.dataUnavailable");
+  const roleValue =
+    sessionRole === "admin"
+      ? t("profile.roleAdmin")
+      : sessionRole === "miembro"
+        ? t("profile.roleMember")
+        : t("profile.roleGuest");
 
   function confirmLogout() {
     if (logoutLock.current) return;
@@ -111,37 +117,24 @@ export default function ProfileScreen() {
             <Text style={[styles.identityEmail, { color: theme.muted }]}>
               {emailValue}
             </Text>
+            <Text style={[styles.identityRole, { color: theme.blue }]}>
+              {t("profile.accountRole")}: {roleValue}
+            </Text>
           </View>
 
-          <SettingsSectionCard
-            iconName="person-outline"
+          <ProfileMenuItem
+            accessibilityHint={t("profile.openPersonalInfoHint")}
+            icon="person-outline"
+            onPress={() =>
+              router.push({
+                pathname: "/(tabs)/personal-info",
+                params: { from: "profile" },
+              })
+            }
+            showChevron
             title={t("profile.personalInfo")}
-          >
-            <View style={styles.accountDetails}>
-              <View style={styles.accountField}>
-                <Text style={[styles.accountLabel, { color: theme.muted }]}>
-                  {t("profile.registeredName")}
-                </Text>
-                <Text style={[styles.accountValue, { color: theme.text }]}>
-                  {nameValue}
-                </Text>
-              </View>
-              <View
-                style={[
-                  styles.accountDivider,
-                  { backgroundColor: theme.divider },
-                ]}
-              />
-              <View style={styles.accountField}>
-                <Text style={[styles.accountLabel, { color: theme.muted }]}>
-                  {t("profile.registeredEmail")}
-                </Text>
-                <Text style={[styles.accountValue, { color: theme.text }]}>
-                  {emailValue}
-                </Text>
-              </View>
-            </View>
-          </SettingsSectionCard>
+            variant="menu"
+          />
 
           <SettingsSectionCard
             iconName="shield-checkmark-outline"
