@@ -4,7 +4,7 @@ import { typography } from "@/lib/theme/typography";
 export const styles = StyleSheet.create({
   screenContent: {
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
   header: {
     alignItems: "center",

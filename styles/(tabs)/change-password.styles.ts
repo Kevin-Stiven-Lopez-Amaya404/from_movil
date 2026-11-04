@@ -5,15 +5,6 @@ import { profileFont } from "@/components/profile/profileTheme";
 export const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   content: { alignSelf: "center", width: "100%" },
-  closeButton: {
-    alignItems: "center",
-    alignSelf: "flex-end",
-    borderRadius: 20,
-    height: 40,
-    justifyContent: "center",
-    marginBottom: 18,
-    width: 40,
-  },
   header: {
     alignItems: "center",
     flexDirection: "row",
@@ -73,5 +64,4 @@ export const styles = StyleSheet.create({
   button: {
     marginTop: 8,
   },
-  pressed: { opacity: 0.72 },
 });
