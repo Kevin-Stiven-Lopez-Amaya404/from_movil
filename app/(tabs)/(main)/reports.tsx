@@ -60,12 +60,11 @@ const ENERGY_SECTIONS: { label: string; value: EnergySection }[] = [
   { label: "Planificación", value: "planning" },
 ];
 
-function getConsumptionRange(period: HistoryPeriod) {
+function getConsumptionRange(period: HistoryPeriod, now = new Date()) {
   if (period === "Todo el historial") {
     return undefined;
   }
 
-  const now = new Date();
   const days = period === "Últimos 7 días" ? 7 : 30;
 
   const from = new Date(
@@ -95,14 +94,13 @@ export default function ReportsScreen() {
   const canRequestDetails =
     selectedHome?.homeRole === "OWNER" ||
     selectedHome?.homeRole === "MEMBER";
-  const [focusRefreshVersion, setFocusRefreshVersion] =
-    useState(0);
+  const [focusRefreshAt, setFocusRefreshAt] = useState(() => new Date());
   const hasFocusedBefore = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
       if (hasFocusedBefore.current) {
-        setFocusRefreshVersion((value) => value + 1);
+        setFocusRefreshAt(new Date());
       } else {
         hasFocusedBefore.current = true;
       }
@@ -148,22 +146,22 @@ export default function ReportsScreen() {
     () =>
       activeHomeId && selectedHomeRole
         ? Symbol(
-            `consumption-query:${activeHomeId}:${selectedHomeRole}:${historyPeriod}:${focusRefreshVersion}`,
+            `consumption-query:${activeHomeId}:${selectedHomeRole}:${historyPeriod}:${focusRefreshAt.getTime()}`,
           )
         : null,
     [
       activeHomeId,
       selectedHomeRole,
       historyPeriod,
-      focusRefreshVersion,
+      focusRefreshAt,
     ],
   );
   const consumptionRange = useMemo(
     () =>
       activeHomeId
-        ? getConsumptionRange(historyPeriod)
+        ? getConsumptionRange(historyPeriod, focusRefreshAt)
         : undefined,
-    [activeHomeId, historyPeriod],
+    [activeHomeId, historyPeriod, focusRefreshAt],
   );
 
   const visibleRankingState =

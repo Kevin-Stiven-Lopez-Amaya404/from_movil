@@ -4,6 +4,7 @@
  */
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useRef } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
   Pressable,
@@ -41,7 +42,7 @@ export default function EnergyTariffsScreen() {
   const hasFocusedBefore = useRef(false);
 
   const query = useEnergyQuery(
-    home && access.canRequest ? home.id : null,
+    home && access.canRequest ? `${home.id}:${home.homeRole}` : null,
     () =>
       Promise.all([
         energyService.listTariffs(home!.id),
@@ -63,7 +64,8 @@ export default function EnergyTariffsScreen() {
   const tariffs = [...(query.data?.[0]?.tariffs ?? [])].sort((a, b) =>
     b.effectiveFrom.localeCompare(a.effectiveFrom),
   );
-  const currentId = query.data?.[1]?.tariff?.id ?? null;
+  const currentTariff = query.data?.[1]?.tariff ?? null;
+  const currentId = currentTariff?.id ?? null;
   const blocked = !home || !access.canRequest || isForbiddenError(query.error);
 
   function goToNewTariff() {
@@ -87,7 +89,10 @@ export default function EnergyTariffsScreen() {
           <View style={styles.header}>
             <BackButton color={theme.text} fallbackHref="/(tabs)/(main)/reports" />
             <View style={styles.headerTexts}>
-              <Text style={[styles.title, { color: theme.text }]}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.title, { color: theme.text }]}
+              >
                 Historial de tarifas
               </Text>
               {home ? (
@@ -126,18 +131,85 @@ export default function EnergyTariffsScreen() {
             </View>
           ) : (
             <View>
+              {currentTariff ? (
+                <View
+                  accessible
+                  accessibilityRole="summary"
+                  accessibilityLabel={`Tarifa vigente: ${formatTariff(
+                    currentTariff.unitPriceCopKwh,
+                  )}, desde el ${formatLocalDate(currentTariff.effectiveFrom)}.`}
+                  style={[
+                    styles.listItem,
+                    {
+                      backgroundColor: theme.successSoft,
+                      borderColor: theme.borderLight,
+                    },
+                  ]}
+                >
+                  <View style={styles.rowBetween}>
+                    <Text style={[styles.label, { color: theme.text, marginTop: 0 }]}>
+                      Tarifa vigente
+                    </Text>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={theme.success}
+                      accessible={false}
+                    />
+                  </View>
+                  <Text style={[styles.value, { color: theme.text }]}>
+                    {formatTariff(currentTariff.unitPriceCopKwh)}
+                  </Text>
+                  <Text style={[styles.note, { color: theme.muted }]}>
+                    Desde el {formatLocalDate(currentTariff.effectiveFrom)}
+                  </Text>
+                </View>
+              ) : tariffs.length > 0 ? (
+                <View
+                  accessibilityLiveRegion="polite"
+                  style={[
+                    styles.warningBox,
+                    { backgroundColor: theme.rowAlt, marginBottom: 12 },
+                  ]}
+                >
+                  <Text style={[styles.note, { color: theme.text, marginTop: 0 }]}>
+                    No hay una tarifa vigente para hoy. Revisa las fechas del historial.
+                  </Text>
+                </View>
+              ) : null}
+
               <Text style={[styles.note, { color: theme.muted, marginBottom: 12 }]}>
                 Las tarifas no se editan ni se eliminan. Para cambiar el precio,
                 registra una nueva tarifa con la fecha desde la que aplica.
               </Text>
 
               {tariffs.length === 0 ? (
-                <View style={styles.centerBox}>
+                <View
+                  style={[
+                    styles.centerBox,
+                    {
+                      backgroundColor: theme.rowAlt,
+                      borderRadius: 16,
+                      paddingHorizontal: 18,
+                      paddingVertical: 22,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="receipt-outline"
+                    size={30}
+                    color={theme.blue}
+                    accessible={false}
+                  />
                   <Text style={{ color: theme.text, fontWeight: "700" }}>
                     Aún no hay tarifas registradas
                   </Text>
+                  <Text style={[styles.note, { color: theme.muted, textAlign: "center" }]}>
+                    Registra el precio por kWh y la fecha desde la que debe aplicarse.
+                  </Text>
                   {access.canManage ? (
                     <Pressable
+                      accessibilityLabel="Registrar primera tarifa"
                       accessibilityRole="button"
                       onPress={goToNewTariff}
                       style={[styles.primaryButton, { backgroundColor: theme.blue }]}
@@ -145,7 +217,7 @@ export default function EnergyTariffsScreen() {
                       <Text
                         style={[styles.primaryButtonText, { color: theme.onPrimary }]}
                       >
-                        Agregar primera tarifa
+                        Registrar primera tarifa
                       </Text>
                     </Pressable>
                   ) : null}

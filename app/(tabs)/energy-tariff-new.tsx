@@ -48,21 +48,18 @@ export default function EnergyTariffNewScreen() {
   const [effectiveFrom, setEffectiveFrom] = useState(initialDate);
   const [touched, setTouched] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const savingRef = useRef(false);
-  const allowRemoveRef = useRef(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const priceResult = normalizeDecimalInput(price, "tariff");
   const dateValid = isValidLocalDate(effectiveFrom);
   const canSubmit = priceResult.ok && dateValid && !saving;
-  const hasUnsavedChanges = price.trim().length > 0 || effectiveFrom !== initialDate;
+  const hasUnsavedChanges =
+    !saved && (price.trim().length > 0 || effectiveFrom !== initialDate);
 
   usePreventRemove(hasUnsavedChanges || saving, ({ data }) => {
-    if (allowRemoveRef.current) {
-      allowRemoveRef.current = false;
-      return;
-    }
-    if (saving) return;
+    if (saving || savingRef.current) return;
 
     Alert.alert("¿Descartar la nueva tarifa?", "Los datos escritos no se guardarán.", [
       { text: "Seguir editando", style: "cancel" },
@@ -86,7 +83,15 @@ export default function EnergyTariffNewScreen() {
 
   function handleSubmit() {
     setTouched(true);
-    if (!home || !priceResult.ok || !dateValid || saving) return;
+    if (
+      !home ||
+      !priceResult.ok ||
+      !dateValid ||
+      saving ||
+      savingRef.current
+    ) {
+      return;
+    }
     const unitPriceCopKwh = priceResult.value;
 
     Alert.alert(
@@ -108,9 +113,13 @@ export default function EnergyTariffNewScreen() {
                 unitPriceCopKwh,
                 effectiveFrom,
               });
-              Alert.alert("Tarifa registrada", "La nueva tarifa quedó guardada.");
-              allowRemoveRef.current = true;
-              navigateBack();
+              setSaved(true);
+              Alert.alert(
+                "Tarifa registrada",
+                "La nueva tarifa quedó guardada.",
+                [{ text: "Aceptar", onPress: navigateBack }],
+                { cancelable: false },
+              );
             } catch (error) {
               // Se conservan los valores escritos para corregir y reintentar.
               setServerError(energyErrorMessage(error));
@@ -142,11 +151,18 @@ export default function EnergyTariffNewScreen() {
           <View style={styles.header}>
             <BackButton
               color={theme.text}
-              fallbackHref="/(tabs)/energy-tariffs"
+              fallbackHref={
+                homeId
+                  ? { pathname: "/(tabs)/energy-tariffs", params: { homeId } }
+                  : "/(tabs)/(main)/reports"
+              }
               accessibilityLabel="Volver al historial de tarifas"
             />
             <View style={styles.headerTexts}>
-              <Text style={[styles.title, { color: theme.text }]}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.title, { color: theme.text }]}
+              >
                 Nueva tarifa
               </Text>
               {home ? (

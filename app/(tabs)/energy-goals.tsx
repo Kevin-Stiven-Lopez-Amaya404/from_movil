@@ -6,7 +6,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { usePreventRemove, useNavigation } from "expo-router/react-navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -62,14 +62,15 @@ export default function EnergyGoalsScreen() {
   const [targetText, setTargetText] = useState("");
   const [touched, setTouched] = useState(false);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const query = useEnergyQuery(
-    home && access.canRequest ? `${home.id}:${month}` : null,
+    home && access.canRequest ? `${home.id}:${home.homeRole}:${month}` : null,
     () => energyService.getGoal(home!.id, month),
   );
   const summaryQuery = useEnergyQuery(
-    home && access.canRequest ? `${home.id}:${month}` : null,
+    home && access.canRequest ? `${home.id}:${home.homeRole}:${month}` : null,
     () => energyService.getSummary(home!.id, month),
   );
   const goal: Goal | null = query.data?.goal ?? null;
@@ -89,7 +90,7 @@ export default function EnergyGoalsScreen() {
       targetText !== trimDecimalZeros(goal?.targetKwh));
 
   usePreventRemove(hasUnsavedChanges || saving, ({ data }) => {
-    if (saving) return;
+    if (saving || savingRef.current) return;
 
     Alert.alert("¿Descartar los cambios?", "Los valores editados no se guardarán.", [
       { text: "Seguir editando", style: "cancel" },
@@ -113,7 +114,7 @@ export default function EnergyGoalsScreen() {
   const hasMeasurements = (summaryQuery.data?.readingsCount ?? 0) > 0;
 
   function closeEditor() {
-    if (saving || !editing) return;
+    if (saving || savingRef.current || !editing) return;
 
     if (hasUnsavedChanges) {
       Alert.alert("¿Descartar los cambios?", "Los valores editados no se guardarán.", [
@@ -131,7 +132,7 @@ export default function EnergyGoalsScreen() {
   }
 
   function changeMonth(delta: number) {
-    if (saving) return;
+    if (saving || savingRef.current) return;
 
     const applyMonthChange = () => {
       setEditing(false);
@@ -164,7 +165,14 @@ export default function EnergyGoalsScreen() {
 
   function handleSave() {
     setTouched(true);
-    if (!home || !budgetResult.ok || !targetResult.ok || bothEmpty || saving) {
+    if (
+      !home ||
+      !budgetResult.ok ||
+      !targetResult.ok ||
+      bothEmpty ||
+      saving ||
+      savingRef.current
+    ) {
       return;
     }
     const body = {
@@ -182,6 +190,8 @@ export default function EnergyGoalsScreen() {
         {
           text: "Guardar",
           onPress: async () => {
+            if (savingRef.current) return;
+            savingRef.current = true;
             setSaving(true);
             setServerError(null);
             try {
@@ -198,6 +208,7 @@ export default function EnergyGoalsScreen() {
                 summaryQuery.reload();
               }
             } finally {
+              savingRef.current = false;
               setSaving(false);
             }
           },
@@ -227,7 +238,10 @@ export default function EnergyGoalsScreen() {
               fallbackHref="/(tabs)/(main)/reports"
             />
             <View style={styles.headerTexts}>
-              <Text style={[styles.title, { color: theme.text }]}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.title, { color: theme.text }]}
+              >
                 Presupuesto y meta
               </Text>
               {home ? (
@@ -392,20 +406,58 @@ export default function EnergyGoalsScreen() {
                     </Text>
                   </Pressable>
                 </View>
+              ) : goal === null ? (
+                <View
+                  style={[
+                    styles.centerBox,
+                    {
+                      backgroundColor: theme.rowAlt,
+                      borderRadius: 16,
+                      marginTop: 12,
+                      paddingHorizontal: 18,
+                      paddingVertical: 22,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="flag-outline"
+                    size={30}
+                    color={theme.blue}
+                    accessible={false}
+                  />
+                  <Text
+                    accessibilityRole="header"
+                    style={[styles.value, { color: theme.text, marginTop: 0 }]}
+                  >
+                    Este mes no tiene presupuesto ni meta
+                  </Text>
+                  <Text style={[styles.note, { color: theme.muted, textAlign: "center" }]}>
+                    Configura un límite mensual para consultar el avance cuando haya mediciones.
+                  </Text>
+                  {access.canManage ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={startEditing}
+                      style={[styles.primaryButton, { backgroundColor: theme.blue, width: "100%" }]}
+                    >
+                      <Text style={[styles.primaryButtonText, { color: theme.onPrimary }]}>
+                        Configurar presupuesto y meta
+                      </Text>
+                    </Pressable>
+                  ) : (
+                    <Text style={[styles.note, { color: theme.muted, textAlign: "center" }]}>
+                      Pídele al propietario del hogar que configure estos límites.
+                    </Text>
+                  )}
+                </View>
               ) : (
                 /* ---------------- Vista ---------------- */
                 <View>
-                  {goal === null ? (
-                    <Text style={[styles.value, { color: theme.text, marginTop: 10 }]}>
-                      Este mes aún no tiene presupuesto ni meta
-                    </Text>
-                  ) : null}
-
                   <Text style={[styles.label, { color: theme.muted }]}>
                     Presupuesto mensual
                   </Text>
                   <Text style={[styles.value, { color: theme.text }]}>
-                    {goal?.monthlyBudgetCop !== null && goal?.monthlyBudgetCop !== undefined
+                    {goal.monthlyBudgetCop !== null
                       ? formatCop(goal.monthlyBudgetCop)
                       : "No configurado"}
                   </Text>
@@ -414,13 +466,12 @@ export default function EnergyGoalsScreen() {
                     Meta de consumo
                   </Text>
                   <Text style={[styles.value, { color: theme.text }]}>
-                    {goal?.targetKwh !== null && goal?.targetKwh !== undefined
+                    {goal.targetKwh !== null
                       ? formatKwh(goal.targetKwh)
                       : "No configurada"}
                   </Text>
 
-                  {goal?.monthlyBudgetCop !== null &&
-                  goal?.monthlyBudgetCop !== undefined ? (
+                  {goal.monthlyBudgetCop !== null ? (
                     <EnergyGoalProgressRow
                       title="Presupuesto usado"
                       limitLabel={formatCop(goal.monthlyBudgetCop)}
@@ -432,7 +483,7 @@ export default function EnergyGoalsScreen() {
                       unavailableText={progressUnavailableText}
                     />
                   ) : null}
-                  {goal?.targetKwh !== null && goal?.targetKwh !== undefined ? (
+                  {goal.targetKwh !== null ? (
                     <EnergyGoalProgressRow
                       title="Meta de consumo usada"
                       limitLabel={formatKwh(goal.targetKwh)}
@@ -445,15 +496,14 @@ export default function EnergyGoalsScreen() {
                     />
                   ) : null}
 
-                  {goal ? (
-                    <Text style={[styles.note, { color: theme.muted }]}>
-                      Última actualización: {formatIsoDateBogota(goal.updatedAt)}
-                    </Text>
-                  ) : null}
+                  <Text style={[styles.note, { color: theme.muted }]}>
+                    Última actualización: {formatIsoDateBogota(goal.updatedAt)}
+                  </Text>
 
                   {access.canManage ? (
                     <Pressable
                       accessibilityRole="button"
+                      accessibilityLabel="Editar presupuesto y meta"
                       onPress={startEditing}
                       style={[styles.primaryButton, { backgroundColor: theme.blue }]}
                     >

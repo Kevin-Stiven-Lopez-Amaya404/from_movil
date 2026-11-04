@@ -3,6 +3,7 @@ import { Text, View } from "react-native";
 import {
   barWidthPercent,
   formatPercent,
+  isValidUsagePercent,
   overLimitPercent,
 } from "@/lib/features/energy-sql034/energy-rules";
 import { useAppTheme } from "@/lib/theme/app-theme";
@@ -23,8 +24,7 @@ export function EnergyGoalProgressRow({
   unavailableText,
 }: Props) {
   const theme = useAppTheme();
-  const hasValidPercent =
-    percent !== null && /^\d+(?:\.\d+)?$/.test(percent);
+  const hasValidPercent = isValidUsagePercent(percent);
 
   if (!hasValidPercent) {
     return (
@@ -59,7 +59,7 @@ export function EnergyGoalProgressRow({
           style={[
             styles.progressFill,
             {
-            width: `${over ? 100 : barWidthPercent(percent)}%`,
+              width: `${over ? 100 : barWidthPercent(percent)}%`,
               backgroundColor: progressColor,
             },
           ]}

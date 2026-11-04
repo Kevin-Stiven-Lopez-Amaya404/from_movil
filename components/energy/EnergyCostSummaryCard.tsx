@@ -27,11 +27,11 @@ export function EnergyCostSummaryCard({ homeId, homeRole }: Props) {
   const theme = useAppTheme();
   const router = useRouter();
   const access = getEnergyAccess(homeRole);
-  const [month] = useState(() => currentMonthBogota());
+  const [month, setMonth] = useState(() => currentMonthBogota());
   const hasFocusedBefore = useRef(false);
 
   const query = useEnergyQuery(
-    access.canRequest ? `${homeId}:${month}` : null,
+    access.canRequest ? `${homeId}:${homeRole}:${month}` : null,
     () => energyService.getSummary(homeId, month),
   );
   const { reload } = query;
@@ -39,6 +39,7 @@ export function EnergyCostSummaryCard({ homeId, homeRole }: Props) {
   useFocusEffect(
     useCallback(() => {
       if (hasFocusedBefore.current) {
+        setMonth(currentMonthBogota());
         reload();
       } else {
         hasFocusedBefore.current = true;
