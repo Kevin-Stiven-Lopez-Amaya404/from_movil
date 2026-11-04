@@ -39,6 +39,7 @@ async function testReadOnlyDeviceInfo() {
   let responseBytes = new Uint8Array();
   let responseOffset = 0;
   let disconnected = false;
+  let disconnectListenerRemoved = false;
   const ble = {
     async connectToDevice(id) {
       assert.equal(id, "test-shelly");
@@ -60,6 +61,19 @@ async function testReadOnlyDeviceInfo() {
     async cancelDeviceConnection() {
       disconnected = true;
       return { id: "test-shelly" };
+    },
+    async isDeviceConnected(id) {
+      assert.equal(id, "test-shelly");
+      return true;
+    },
+    onDeviceDisconnected(id, listener) {
+      assert.equal(id, "test-shelly");
+      assert.equal(typeof listener, "function");
+      return {
+        remove() {
+          disconnectListenerRemoved = true;
+        },
+      };
     },
     async requestMTUForDevice(_id, requested) {
       assert.equal(requested, 247);
@@ -111,6 +125,11 @@ async function testReadOnlyDeviceInfo() {
   assert.equal(result.provision, "pending");
   assert.ok(requestBytes.length > 20, "request should be chunked using default MTU");
   assert.equal(disconnected, true, "connection must be closed after inspection");
+  assert.equal(
+    disconnectListenerRemoved,
+    true,
+    "disconnect listener must be removed after inspection",
+  );
 }
 
 async function main() {

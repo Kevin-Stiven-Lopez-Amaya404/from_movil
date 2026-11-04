@@ -22,7 +22,11 @@ import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScre
 import { EnergyRealtimeCard } from "@/components/homes/EnergyRealtimeCard";
 import { ShellyDeviceCard } from "@/components/homes/ShellyDeviceCard";
 import { useSmartHome } from "@/lib/context/smart-home-context";
-import type { SmartDevice } from "@/lib/domain/device";
+import {
+  getDeviceConnectivityState,
+  isDeviceConfirmedOnline,
+  type SmartDevice,
+} from "@/lib/domain/device";
 import { canControlHome } from "@/lib/domain/home";
 import { useAndroidBackFallback } from "@/lib/navigation/use-android-back-fallback";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
@@ -68,8 +72,21 @@ export default function HomeDetailScreen() {
     [activeHome, devices],
   );
   const activePower = homeDevices
-    .filter((device) => device.online && device.state === "on")
+    .filter((device) => isDeviceConfirmedOnline(device) && device.state === "on")
     .reduce((total, device) => total + device.power, 0);
+  const confirmedOnlineDeviceCount = homeDevices.filter(
+    isDeviceConfirmedOnline,
+  ).length;
+  const realtimeStatus =
+    confirmedOnlineDeviceCount > 0
+      ? confirmedOnlineDeviceCount === homeDevices.length
+        ? "online"
+        : "partial"
+      : homeDevices.some(
+            (device) => getDeviceConnectivityState(device) === "UNKNOWN",
+          )
+        ? "unknown"
+        : "offline";
 
   useAndroidBackFallback(!from, "/(tabs)/(main)/homes");
 
@@ -94,6 +111,7 @@ export default function HomeDetailScreen() {
   const [deviceDraftName, setDeviceDraftName] = useState("");
   const [operationLoading, setOperationLoading] = useState(false);
   const [pendingDeviceId, setPendingDeviceId] = useState<string | null>(null);
+  const pendingDeviceLock = useRef<string | null>(null);
   const lastOpenedDeviceRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -243,7 +261,14 @@ export default function HomeDetailScreen() {
   }
 
   async function toggleDevice(device: SmartDevice) {
-    if (!canControl || !device.online || pendingDeviceId) return;
+    if (
+      !canControl ||
+      !isDeviceConfirmedOnline(device) ||
+      pendingDeviceLock.current !== null
+    ) {
+      return;
+    }
+    pendingDeviceLock.current = device.id;
     setPendingDeviceId(device.id);
     try {
       await setHomeDeviceState(device.id, device.state === "on" ? "off" : "on");
@@ -253,13 +278,22 @@ export default function HomeDetailScreen() {
         getDeviceControlErrorMessage(error),
       );
     } finally {
+      pendingDeviceLock.current = null;
       setPendingDeviceId(null);
     }
   }
 
   async function toggleTelemetryDevice() {
-    if (!telemetryDevice || !canControl || !telemetryDevice.online || pendingDeviceId) return;
+    if (
+      !telemetryDevice ||
+      !canControl ||
+      !isDeviceConfirmedOnline(telemetryDevice) ||
+      pendingDeviceLock.current !== null
+    ) {
+      return;
+    }
     const nextState = telemetryDevice.state === "on" ? "off" : "on";
+    pendingDeviceLock.current = telemetryDevice.id;
     setPendingDeviceId(telemetryDevice.id);
     try {
       await setHomeDeviceState(telemetryDevice.id, nextState);
@@ -271,6 +305,7 @@ export default function HomeDetailScreen() {
         getDeviceControlErrorMessage(error),
       );
     } finally {
+      pendingDeviceLock.current = null;
       setPendingDeviceId(null);
     }
   }
@@ -363,11 +398,17 @@ export default function HomeDetailScreen() {
               </View>
 
               {devicesLoaded ? (
-                <EnergyRealtimeCard
-                  isOnline={homeDevices.some((device) => device.online)}
-                  power={activePower}
-                  theme={theme}
-                />
+                homeDevices.length > 0 ? (
+                  <EnergyRealtimeCard
+                    status={realtimeStatus}
+                    power={
+                      confirmedOnlineDeviceCount === homeDevices.length
+                        ? activePower
+                        : null
+                    }
+                    theme={theme}
+                  />
+                ) : null
               ) : null}
 
               <View
@@ -626,7 +667,11 @@ export default function HomeDetailScreen() {
                   ["Frecuencia", `${telemetryDevice.frequency} Hz`],
                   [
                     "Conectividad",
-                    telemetryDevice.online ? "Conectado" : "Fuera de línea",
+                    getDeviceConnectivityState(telemetryDevice) === "ONLINE"
+                      ? "Conectado"
+                      : getDeviceConnectivityState(telemetryDevice) === "OFFLINE"
+                        ? "Fuera de línea"
+                        : "Estado desconocido",
                   ],
                 ].map(([label, value]) => (
                   <View
@@ -659,9 +704,14 @@ export default function HomeDetailScreen() {
                     ? `Apagar ${telemetryDevice.name}`
                     : `Encender ${telemetryDevice.name}`
                 }
-                disabled={pendingDeviceId !== null || !telemetryDevice.online}
+                disabled={
+                  pendingDeviceId !== null ||
+                  !isDeviceConfirmedOnline(telemetryDevice)
+                }
                 accessibilityState={{
-                  disabled: pendingDeviceId !== null || !telemetryDevice.online,
+                  disabled:
+                    pendingDeviceId !== null ||
+                    !isDeviceConfirmedOnline(telemetryDevice),
                 }}
                 onPress={() => void toggleTelemetryDevice()}
                 style={[

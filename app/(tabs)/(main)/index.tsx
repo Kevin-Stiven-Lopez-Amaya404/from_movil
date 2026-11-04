@@ -9,6 +9,7 @@ import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
 import { NavigationRow } from "@/components/dashboard/NavigationRow";
 import { SummaryTile } from "@/components/dashboard/SummaryTile";
 import { useSmartHome } from "@/lib/context/smart-home-context";
+import { isDeviceConfirmedOnline } from "@/lib/domain/device";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme, type AppTheme } from "@/lib/theme/app-theme";
 import { styles } from "../../../styles/(tabs)/(main)/index.styles";
@@ -125,7 +126,7 @@ export default function DashboardScreen() {
   const poweredOnCount = useMemo(
     () =>
       homeDevices.filter(
-        (device) => device.online && device.state === "on",
+        (device) => isDeviceConfirmedOnline(device) && device.state === "on",
       ).length,
     [homeDevices],
   );

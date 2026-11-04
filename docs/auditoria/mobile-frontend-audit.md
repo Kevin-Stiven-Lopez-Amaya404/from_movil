@@ -49,7 +49,7 @@ PRs #27–#29 are merged into `dev`. PR #1 from `03-dev` is the only open PR fou
 | `app/(tabs)/access.tsx` | Manages home access/members. | Long form already uses keyboard avoidance; verify role permissions and return navigation. |
 | `app/(tabs)/invitations.tsx` | Shows and responds to home invitations. | Secondary screen reached from notifications; verify empty and error states. |
 | `app/(tabs)/favorites.tsx` | Displays favorite devices/homes and navigation to their homes. | Uses the shared `ScreenHeader`; verify an empty state and route parameters. |
-| `app/(tabs)/add-device.tsx` | Discovers local Shelly devices and starts commissioning. | The primary action starts LAN and BLE scans, while a second BLE scan control is also visible. Separate LAN discovery from the explicitly read-only BLE inspection action in the Devices phase. |
+| `app/(tabs)/add-device.tsx` | Discovers local Shelly devices and starts commissioning. | The primary action now searches LAN only; BLE discovery and GATT inspection remain explicit, experimental, and read-only. |
 | `app/(tabs)/shelly-setup.tsx` | Guides a user through the Shelly access-point/Wi-Fi setup path. | Keep instructions aligned with the actual device/AP flow; do not persist Wi-Fi credentials. |
 | `app/(tabs)/prepare-shelly.tsx` | Multi-stage Shelly preparation and MQTT/backend verification. | Existing flow requires backend confirmation before final registration. Treat it as integration-sensitive and limit changes to presentation/copy. |
 | `app/(tabs)/energy-tariffs.tsx` | Displays the tariff history and current/future status. | Creation is a separate full screen; the empty state lacks the proposed first-tariff visual/action treatment. |
@@ -85,7 +85,7 @@ Contrast was calculated for primary text, muted text, primary/auth buttons, warn
 | --- | --- | --- |
 | P1 | Login's flexible spacer pins register/reactivation links to the bottom. | Auth |
 | P1 | Password and confirmation reveal toggles are coupled on registration, reset, and change-password forms. | Auth |
-| P1 blocker | Registration cannot link to approved Terms/Privacy documents because no document or approved URL exists in the repository. Do not invent legal text or URLs. | Waiting for approved document URLs; continue other work. |
+| P1 blocker | Registration cannot link to approved Terms/Privacy documents because no document or approved URL exists in the repository. Do not invent legal text or URLs. | Final QA; user requested deferring this until the last phase. |
 | P1 | Add Device starts LAN and BLE together and also exposes a separate BLE action. BLE itself is experimental and read-only. | Devices |
 | P1 | Tariff history and creation are separate; unify the experience while preserving the legacy route and SQL034. | Energy |
 | P1 | Profile no longer displays the real role; Help/About/Personal Info routes are not linked from the current UI. | Profile/Settings and Secondary screens |
@@ -95,9 +95,23 @@ Contrast was calculated for primary text, muted text, primary/auth buttons, warn
 
 The implementation sequence is: (1) design system, (2) authentication, (3) devices, (4) energy, (5) Profile/Settings, (6) secondary screens, and (7) regression/accessibility/build verification. Each phase should use an English branch/commit and an independent, reviewable PR. Phase dependencies may be stacked; none will be merged automatically.
 
-## Current phase changes
+## Implementation status
 
-Phase 1 sets Emerald as the default brand palette, updates the app-theme/auth-theme fallbacks to the same default, and aligns the native/animated splash background. Classic remains available and saved palette choices continue to load normally. No backend or pairing behavior changes are included.
+### Phase 1 — Design system
+
+Sets Emerald as the default brand palette, updates the app-theme/auth-theme fallbacks to the same default, and aligns the native/animated splash background. Classic remains available and saved palette choices continue to load normally. PR #30 is open against `dev`; no merge has been performed.
+
+### Phase 2 — Authentication
+
+The login layout, independent password visibility controls, activation recovery, and generic account-conflict messaging are implemented on `feature/mobile-auth-ui`. PR #31 is open against `feature/mobile-design-system`; no merge has been performed. Registration's Terms/Privacy links remain deliberately deferred until the final phase because the approved documents and URLs do not exist yet.
+
+### Phase 3 — Devices (current working branch)
+
+Requires explicit `ONLINE` status and the online flag before showing a device as connected or allowing a control command. `OFFLINE` and `UNKNOWN` remain distinct. Realtime home power is withheld unless every listed device has confirmed connectivity, preventing a partial sum from appearing as the household total. The device-list switch stays outside the detail-navigation press target, duplicate commands are guarded before React rerenders, and existing OWNER/MEMBER/GUEST visibility and control rules remain in place.
+
+LAN discovery now runs only from the LAN action. BLE discovery and GATT inspection require their separate explicit actions and remain experimental and read-only; no pairing or service implementation was changed. BLE action locks prevent repeated scan/inspection requests, touch targets are at least 44 dp, and shared screen headers expose a heading role. The BLE RPC test fixture now provides the disconnect listener and connection-state methods required by the existing GATT contract.
+
+The device-presentation suite is now exposed as `npm run test:device-presentation` and runs in the existing Mobile CI workflow.
 
 ## Outstanding verification
 
@@ -117,6 +131,19 @@ Phase 1 sets Emerald as the default brand palette, updates the app-theme/auth-th
 - `git diff --check`: passed.
 - **Total: 68 tests passed.**
 
-`npm.cmd run test:shelly-ble-rpc` currently fails because its test double omits the `onDeviceDisconnected` callback that `shelly-gatt-rpc.ts` registers. The product BLE adapter is unchanged in Phase 1. Correct the fixture and rerun it during the Devices phase; do not weaken the production BLE behavior to satisfy the incomplete mock.
+### Phase 3 validation
 
-Android/iOS export or build, visual device checks, approved legal-document URLs, and final per-phase PR links remain pending. Do not describe the application as production-certified before the real integration, security, and device checks pass.
+- `npm.cmd run lint`: passed.
+- `npm.cmd run typecheck`: passed.
+- `npm.cmd run test:mobile-config`: 6 passed.
+- `npm.cmd run test:navigation-auth`: 6 passed.
+- `npm.cmd run test:alerts`: 10 passed.
+- `npm.cmd run test:realtime-device-status`: 9 passed.
+- `npm.cmd run test:energy-sql034`: 11 passed.
+- `npm.cmd run test:shelly-mqtt-pairing`: 18 passed.
+- `npm.cmd run test:shelly-ble-rpc`: passed; GATT fixture includes disconnect and connection-state methods.
+- `node scripts/device-presentation.test.js`: 4 passed.
+- `git diff --check`: passed.
+- **Total: 65 automated tests passed.**
+
+Android/iOS export or build and physical visual checks for device states, responsive layouts, and touch targets remain pending. Approved legal-document URLs are deferred to the final phase at the user's direction. Final PR links and CI results remain to be recorded after the current phase is published. Do not describe the application as production-certified before the real integration, security, and device checks pass.

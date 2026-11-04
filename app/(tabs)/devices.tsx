@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,11 @@ import { Button } from "@/components/ui/Button";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { canControlHome } from "@/lib/domain/home";
+import {
+  getDeviceConnectivityState,
+  isDeviceConfirmedOnline,
+  type SmartDevice,
+} from "@/lib/domain/device";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { getDeviceControlErrorMessage } from "@/lib/utils/control-error-message";
@@ -47,6 +52,7 @@ export default function DevicesScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const [pendingDeviceId, setPendingDeviceId] = useState<string | null>(null);
+  const pendingDeviceLock = useRef<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
 
@@ -85,8 +91,7 @@ export default function DevicesScreen() {
   );
 
   const onlineCount = accessibleDevices.filter(
-    (device) =>
-      device.connectivityStatus === "ONLINE" && device.online,
+    isDeviceConfirmedOnline,
   ).length;
   const isDeviceListLoading =
     homesLoadStatus === "loading" ||
@@ -107,7 +112,7 @@ export default function DevicesScreen() {
 
   const alertCount = accessibleDevices.filter(
     (device) =>
-      (device.critical || device.connectivityStatus === "OFFLINE") &&
+      (device.critical || getDeviceConnectivityState(device) === "OFFLINE") &&
       !resolvedSmartAlertIds.has(device.id),
   ).length;
   const areFiltersActive =
@@ -127,19 +132,29 @@ export default function DevicesScreen() {
     });
   }
 
-  async function handleToggleDevice(deviceId: string) {
-    if (pendingDeviceId) return;
+  async function handleToggleDevice(device: SmartDevice) {
+    const home = accessibleHomesById.get(device.homeId);
+    if (
+      !home ||
+      !canControlHome(home.homeRole) ||
+      !isDeviceConfirmedOnline(device) ||
+      pendingDeviceLock.current !== null
+    ) {
+      return;
+    }
 
-    setPendingDeviceId(deviceId);
+    pendingDeviceLock.current = device.id;
+    setPendingDeviceId(device.id);
 
     try {
-      await toggleDevice(deviceId);
+      await toggleDevice(device.id);
     } catch (error) {
       Alert.alert(
         "No se pudo cambiar el estado",
         getDeviceControlErrorMessage(error),
       );
     } finally {
+      pendingDeviceLock.current = null;
       setPendingDeviceId(null);
     }
   }
@@ -540,9 +555,9 @@ export default function DevicesScreen() {
         renderItem={({ item: device }) => {
           const home = accessibleHomesById.get(device.homeId);
           const canControlDevice = canControlHome(home?.homeRole);
-          const confirmedOnline =
-            device.connectivityStatus === "ONLINE" && device.online;
-          const confirmedOffline = device.connectivityStatus === "OFFLINE";
+          const confirmedOnline = isDeviceConfirmedOnline(device);
+          const connectivityState = getDeviceConnectivityState(device);
+          const confirmedOffline = connectivityState === "OFFLINE";
           const isRelayOn = device.state === "on";
           const isPending = pendingDeviceId === device.id;
           const hasAlert =
@@ -686,7 +701,7 @@ export default function DevicesScreen() {
                   value={isRelayOn}
                   disabled={switchDisabled}
                   onValueChange={() => {
-                    void handleToggleDevice(device.id);
+                    void handleToggleDevice(device);
                   }}
                   accessibilityRole="switch"
                   accessibilityLabel={`Relé de ${device.name}`}

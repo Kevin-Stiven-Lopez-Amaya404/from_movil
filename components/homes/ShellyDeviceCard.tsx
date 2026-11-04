@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Switch, Text, View } from "react-native";
 import Svg, { Rect, Text as SvgText } from "react-native-svg";
 
+import { getDeviceConnectivityState } from "@/lib/domain/device";
 import type { SmartDevice } from "@/lib/domain/device";
 import type { AppTheme } from "@/lib/theme/app-theme";
 import { styles } from "./ShellyDeviceCard.styles";
@@ -28,10 +29,9 @@ export function ShellyDeviceCard({
   onMenu,
   onToggleState,
 }: ShellyDeviceCardProps) {
-  const isOnline = device.online;
-  const isConfirmedOnline =
-    device.connectivityStatus === "ONLINE" && device.online;
-  const isConfirmedOffline = device.connectivityStatus === "OFFLINE";
+  const connectivityState = getDeviceConnectivityState(device);
+  const isConfirmedOnline = connectivityState === "ONLINE";
+  const isConfirmedOffline = connectivityState === "OFFLINE";
   const isOn = device.state === "on";
   const connectionLabel = isConfirmedOnline
     ? "Conectado"
@@ -207,10 +207,10 @@ export function ShellyDeviceCard({
             onValueChange={onToggleState}
             accessibilityLabel={`Control de ${device.name}`}
             accessibilityHint={
-              !isOnline
+              !isConfirmedOnline
                 ? isConfirmedOffline
                   ? "El dispositivo está sin conexión."
-                  : "El estado de conexión no está confirmado."
+                  : "La conexión del dispositivo no está confirmada."
                 : !canControl
                   ? "Tu rol no permite controlar este dispositivo"
                   : isPending
@@ -219,14 +219,14 @@ export function ShellyDeviceCard({
             }
             accessibilityState={{
               checked: isOn,
-              disabled: !canControl || !isOnline || isPending,
+              disabled: !canControl || !isConfirmedOnline || isPending,
             }}
-            disabled={!canControl || !isOnline || isPending}
+            disabled={!canControl || !isConfirmedOnline || isPending}
             trackColor={{
               false: theme.switchTrackInactive,
               true: theme.switchTrackActive,
             }}
-            thumbColor={isOnline && isOn ? theme.onPrimary : theme.surfaceSecondary}
+            thumbColor={isConfirmedOnline && isOn ? theme.onPrimary : theme.surfaceSecondary}
           />
           <Ionicons name="chevron-forward" size={20} color={theme.muted} accessible={false} />
         </View>

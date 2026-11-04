@@ -9,26 +9,6 @@ export const styles = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 13,
-    minHeight: 44,
-  },
-  title: {
-    flex: 1,
-    fontSize: typography.size.section,
-    fontWeight: "900",
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 12,
-  },
   homeLabel: {
     fontSize: typography.size.helper,
     fontWeight: "700",
