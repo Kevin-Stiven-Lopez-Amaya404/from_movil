@@ -17,7 +17,9 @@ export default function AboutSmartHomeScreen() {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
+  const parentRoute = from === "settings" ? "/(tabs)/settings" : "/(tabs)/(main)/profile";
+  const parentSource = from === "settings" ? "settings" : "profile";
+  useAndroidBackFallback(from !== parentSource, parentRoute);
 
   return (
     <SafeAreaView
@@ -37,8 +39,8 @@ export default function AboutSmartHomeScreen() {
               returnToParent(
                 router,
                 from,
-                "profile",
-                "/(tabs)/(main)/profile",
+                parentSource,
+                parentRoute,
               )
             }
             style={({ pressed }) => [

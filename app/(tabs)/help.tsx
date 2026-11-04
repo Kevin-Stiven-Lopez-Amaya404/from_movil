@@ -38,7 +38,9 @@ export default function HelpScreen() {
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
+  const parentRoute = from === "settings" ? "/(tabs)/settings" : "/(tabs)/(main)/profile";
+  const parentSource = from === "settings" ? "settings" : "profile";
+  useAndroidBackFallback(from !== parentSource, parentRoute);
 
   function contactSupport() {
     Alert.alert(
@@ -69,8 +71,8 @@ export default function HelpScreen() {
               returnToParent(
                 router,
                 from,
-                "profile",
-                "/(tabs)/(main)/profile",
+                parentSource,
+                parentRoute,
               )
             }
             style={({ pressed }) => [

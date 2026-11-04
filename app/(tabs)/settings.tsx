@@ -227,25 +227,40 @@ export default function SettingsScreen() {
           </View>
 
           <SettingsSectionCard
-            iconName="lock-closed-outline"
-            title={t("profile.securityData")}
+            iconName="help-buoy-outline"
+            title={t("settings.resources")}
           >
             <SettingsActionRow
-              accessibilityHint={t("settings.openPasswordHint")}
               backgroundColor={theme.card}
               borderColor={theme.borderLight}
-              description={t("settings.changePasswordDescription")}
-              iconName="key-outline"
+              description={t("profile.helpSubtitle")}
+              iconName="help-circle-outline"
               iconColor={theme.blue}
               mutedColor={theme.muted}
               onPress={() =>
                 router.push({
-                  pathname: "/(tabs)/change-password",
+                  pathname: "/(tabs)/help",
                   params: { from: "settings" },
                 })
               }
               textColor={theme.text}
-              title={t("settings.changePassword")}
+              title={t("settings.helpSupport")}
+            />
+            <SettingsActionRow
+              backgroundColor={theme.card}
+              borderColor={theme.borderLight}
+              description={t("settings.aboutDescription")}
+              iconName="information-circle-outline"
+              iconColor={theme.blue}
+              mutedColor={theme.muted}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/about-smart-home",
+                  params: { from: "settings" },
+                })
+              }
+              textColor={theme.text}
+              title={t("settings.about")}
             />
           </SettingsSectionCard>
 

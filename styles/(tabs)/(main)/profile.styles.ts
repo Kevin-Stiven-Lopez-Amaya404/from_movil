@@ -44,27 +44,11 @@ export const styles = StyleSheet.create({
     maxWidth: "100%",
     textAlign: "center",
   },
-  accountDetails: {
-    paddingHorizontal: 4,
-  },
-  accountField: {
-    gap: 3,
-    paddingHorizontal: 2,
-    paddingVertical: 10,
-  },
-  accountLabel: {
+  identityRole: {
     fontFamily: appFont,
     fontSize: typography.size.caption,
     fontWeight: "700",
-  },
-  accountValue: {
-    fontFamily: appFont,
-    fontSize: typography.size.body,
-    fontWeight: "700",
-  },
-  accountDivider: {
-    height: StyleSheet.hairlineWidth,
-    marginHorizontal: 2,
+    marginTop: 6,
   },
   logoutArea: {
     borderTopWidth: StyleSheet.hairlineWidth,

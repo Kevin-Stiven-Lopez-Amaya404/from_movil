@@ -81,6 +81,7 @@ const dictionaries = {
     "profile.settingsDescription": "Apariencia, idioma y preferencias",
     "profile.dataUnavailable": "No disponible",
     "profile.openPersonalInfoHint": "Abre la información de tu cuenta.",
+    "profile.accountRole": "Rol de la cuenta",
     "profile.roleAdmin": "Administrador",
     "profile.roleMember": "Miembro",
     "profile.roleGuest": "Invitado",
@@ -145,6 +146,7 @@ const dictionaries = {
       "Pausa el acceso y la sincronización de la cuenta.",
 
     "settings.helpSupport": "Ayuda y soporte",
+    "settings.resources": "Ayuda e información",
 
     "settings.light": "Claro",
 
@@ -157,7 +159,7 @@ const dictionaries = {
     "settings.reportProblemDescription":
       "Informa errores o problemas de la aplicación.",
 
-    "settings.subtitle": "Cuenta, preferencias y seguridad.",
+    "settings.subtitle": "Preferencias, ayuda y opciones de cuenta.",
     "settings.openLanguageHint": "Abre la selección de idioma.",
     "settings.openPasswordHint": "Abre el formulario para cambiar la contraseña.",
     "settings.sync": "Sincronización automática",
@@ -248,6 +250,7 @@ const dictionaries = {
     "profile.settingsDescription": "Appearance, language and preferences",
     "profile.dataUnavailable": "Not available",
     "profile.openPersonalInfoHint": "Opens your account information.",
+    "profile.accountRole": "Account role",
     "profile.roleAdmin": "Administrator",
     "profile.roleMember": "Member",
     "profile.roleGuest": "Guest",
@@ -310,6 +313,7 @@ const dictionaries = {
       "Pause account access and synchronization.",
 
     "settings.helpSupport": "Help and support",
+    "settings.resources": "Help and information",
 
     "settings.light": "Light",
 
@@ -322,7 +326,7 @@ const dictionaries = {
     "settings.reportProblemDescription":
       "Report errors or application problems.",
 
-    "settings.subtitle": "Account, preferences and security.",
+    "settings.subtitle": "Preferences, help and account options.",
     "settings.openLanguageHint": "Opens language selection.",
     "settings.openPasswordHint": "Opens the password change form.",
     "settings.sync": "Automatic synchronization",
@@ -414,6 +418,7 @@ const dictionaries = {
     "profile.settingsDescription": "Aparência, idioma e preferências",
     "profile.dataUnavailable": "Não disponível",
     "profile.openPersonalInfoHint": "Abre as informações da sua conta.",
+    "profile.accountRole": "Papel da conta",
     "profile.roleAdmin": "Administrador",
     "profile.roleMember": "Membro",
     "profile.roleGuest": "Convidado",
@@ -478,6 +483,7 @@ const dictionaries = {
       "Pause o acesso e a sincronização da conta.",
 
     "settings.helpSupport": "Ajuda e suporte",
+    "settings.resources": "Ajuda e informações",
 
     "settings.light": "Claro",
 
@@ -490,7 +496,7 @@ const dictionaries = {
     "settings.reportProblemDescription":
       "Informe erros ou problemas do aplicativo.",
 
-    "settings.subtitle": "Conta, preferências e segurança.",
+    "settings.subtitle": "Preferências, ajuda e opções da conta.",
     "settings.openLanguageHint": "Abre a seleção de idioma.",
     "settings.openPasswordHint": "Abre o formulário para alterar a senha.",
     "settings.sync": "Sincronização automática",
