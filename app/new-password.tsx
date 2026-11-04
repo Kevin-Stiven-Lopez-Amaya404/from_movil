@@ -34,6 +34,7 @@ export default function NewPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -135,7 +136,10 @@ export default function NewPasswordScreen() {
       {/* TÍTULO                                 */}
       {/* ====================================== */}
 
-      <Text style={[styles.sectionTitle, { color: palette.text }]}>
+      <Text
+        accessibilityRole="header"
+        style={[styles.sectionTitle, { color: palette.text }]}
+      >
         Establecer contraseña
       </Text>
 
@@ -194,9 +198,9 @@ export default function NewPasswordScreen() {
           error={submitted ? confirmPasswordError : ""}
           inputStyle={styles.input}
           onChangeText={setConfirmPassword}
-          onToggleVisibility={() => setShowPassword((value) => !value)}
+          onToggleVisibility={() => setShowConfirmPassword((value) => !value)}
           placeholder="Confirmar contraseña"
-          showPassword={showPassword}
+          showPassword={showConfirmPassword}
           value={confirmPassword}
         />
 

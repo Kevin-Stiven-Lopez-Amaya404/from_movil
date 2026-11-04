@@ -45,6 +45,8 @@ export default function ForgotPasswordScreen() {
   async function handleSendCode() {
     setSubmitted(true);
 
+    if (submitting) return;
+
     if (!cleanEmail) {
       Alert.alert("Correo requerido", "Ingresa tu correo electrónico.");
 
@@ -86,8 +88,15 @@ export default function ForgotPasswordScreen() {
       {/* TÍTULO                                 */}
       {/* ====================================== */}
 
-      <Text style={[styles.sectionTitle, { color: palette.text }]}>
+      <Text
+        accessibilityRole="header"
+        style={[styles.sectionTitle, { color: palette.text }]}
+      >
         Recuperar contraseña
+      </Text>
+      <Text style={[styles.description, { color: palette.muted }]}>
+        Si existe una cuenta con ese correo, recibirás un enlace para recuperar
+        el acceso.
       </Text>
 
       {/* ====================================== */}
@@ -99,6 +108,7 @@ export default function ForgotPasswordScreen() {
           error={submitted ? emailError : ""}
           inputStyle={styles.input}
           keyboardType="email-address"
+          label="Correo electrónico"
           onChangeText={setEmail}
           placeholder="Correo electrónico"
           autoCapitalize="none"

@@ -84,7 +84,10 @@ export default function ReactivateAccountScreen() {
       <View style={styles.content}>
         {isLoading && <ActivityIndicator color={theme.blue} size="large" />}
 
-        <Text style={[styles.title, { color: theme.text }]}>
+        <Text
+          accessibilityRole="header"
+          style={[styles.title, { color: theme.text }]}
+        >
           {isLoading
             ? "Reactivando cuenta"
             : isSuccess

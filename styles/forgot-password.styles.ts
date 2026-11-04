@@ -19,6 +19,12 @@ export const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 20,
   },
+  description: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.size.body,
+    lineHeight: 22,
+    marginBottom: 20,
+  },
 
   formContainer: {
     gap: 16,

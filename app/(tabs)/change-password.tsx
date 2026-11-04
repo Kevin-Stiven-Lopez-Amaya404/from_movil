@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BackButton } from "@/components/common/BackButton";
 import { KeyboardAvoidingScreen } from "@/components/common/KeyboardAvoidingScreen";
 import { AuthPasswordField } from "@/components/auth/AuthTextField";
 import { PrimaryButton } from "@/components/auth/PrimaryButton";
@@ -36,6 +37,7 @@ export default function ChangePasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const passwordChangeLock = useRef(false);
 
@@ -122,23 +124,17 @@ export default function ChangePasswordScreen() {
         }}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <Pressable
-            onPress={() => {
-              returnToParent(
-                router,
-                from,
-                parentKey,
-                parentHref,
-              );
-            }}
-            style={({ pressed }) => [
-              styles.closeButton,
-              { backgroundColor: theme.rowAlt },
-              pressed && styles.pressed,
-            ]}
-          >
-            <Ionicons name="close" size={21} color={theme.text} />
-          </Pressable>
+          <BackButton
+            accessibilityLabel={
+              from === "settings" ? "Volver a configuración" : "Volver al perfil"
+            }
+            backgroundColor={theme.rowAlt}
+            color={theme.text}
+            fallbackHref={parentHref}
+            onPress={() =>
+              returnToParent(router, from, parentKey, parentHref)
+            }
+          />
 
           <View style={styles.header}>
             <View
@@ -157,7 +153,10 @@ export default function ChangePasswordScreen() {
               />
             </View>
             <View style={styles.headerCopy}>
-              <Text style={[styles.title, { color: theme.text }]}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.title, { color: theme.text }]}
+              >
                 Cambiar contraseña
               </Text>
               <Text style={[styles.subtitle, { color: theme.muted }]}>
@@ -218,9 +217,9 @@ export default function ChangePasswordScreen() {
             <AuthPasswordField
               inputStyle={styles.input}
               onChangeText={setConfirmPassword}
-              onToggleVisibility={() => setShowNew((value) => !value)}
+              onToggleVisibility={() => setShowConfirm((value) => !value)}
               placeholder="Confirmar contraseña"
-              showPassword={showNew}
+              showPassword={showConfirm}
               value={confirmPassword}
             />
 

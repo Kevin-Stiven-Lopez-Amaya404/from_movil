@@ -120,3 +120,16 @@ Phase 1 sets Emerald as the default brand palette, updates the app-theme/auth-th
 `npm.cmd run test:shelly-ble-rpc` currently fails because its test double omits the `onDeviceDisconnected` callback that `shelly-gatt-rpc.ts` registers. The product BLE adapter is unchanged in Phase 1. Correct the fixture and rerun it during the Devices phase; do not weaken the production BLE behavior to satisfy the incomplete mock.
 
 Android/iOS export or build, visual device checks, approved legal-document URLs, and final per-phase PR links remain pending. Do not describe the application as production-certified before the real integration, security, and device checks pass.
+
+### Phase 2 — Authentication UI and recovery
+
+- Removed the flexible spacer from Login so registration and account-reactivation links follow the primary action. Removed the hidden, nonfunctional “Remember me” control.
+- Registration, password reset, and password change now keep the visibility control for the confirmation field independent from the new-password field.
+- The registration email-conflict message no longer confirms whether an address is registered and provides direct Login and password-recovery actions.
+- Invalid or expired activation links now offer a keyboard-safe form to request a replacement using the existing `resendActivation` auth-service method. The confirmation stays generic, and duplicate requests are locked while in flight and after success.
+- Standardized the password-change return control on the shared 44 dp `BackButton`; added screen-reader headings, an accessible checkbox state, and explicit email field labels on recovery forms.
+- `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test:mobile-config` (6), `npm.cmd run test:navigation-auth` (6), and `git diff --check`: passed after these changes.
+- No auth-service endpoint implementation or request/response contract changed. Physical Android visual validation remains pending.
+- Registration Terms and Privacy links remain blocked until approved document URLs are supplied. The requested URLs were asked for and have not yet been recorded here; no legal destination was fabricated.
+
+Phase 1 PR: [#30 — establish emerald design defaults](https://github.com/Kevin-Stiven-Lopez-Amaya404/from_movil/pull/30), open against `dev`; Mobile CI was in progress at the last check. Phase 2 is based on that branch and will be proposed as a stacked PR.

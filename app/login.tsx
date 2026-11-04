@@ -1,4 +1,3 @@
-import { AuthCheckboxRow } from "@/components/auth/AuthCheckboxRow";
 import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
 import {
   AuthPasswordField,
@@ -19,13 +18,6 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { styles } from "../styles/login.styles";
-
-/**
- * "Recordarme" todavía no tiene efecto en el inicio de sesión.
- * Se oculta para no mostrar un control que no hace nada; cuando se
- * implemente, basta con cambiar este valor a `true`.
- */
-const SHOW_REMEMBER_ME = false;
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -51,7 +43,6 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
 
   const [touched, setTouched] = useState({
     email: false,
@@ -201,22 +192,7 @@ export default function LoginScreen() {
             variant="outlined"
           />
 
-          <View
-            style={[
-              styles.optionsRow,
-              !SHOW_REMEMBER_ME && styles.optionsRowEnd,
-            ]}
-          >
-            {SHOW_REMEMBER_ME ? (
-              <View style={styles.rememberContainer}>
-                <AuthCheckboxRow
-                  checked={rememberMe}
-                  label="Recordarme"
-                  onToggle={() => setRememberMe((prev) => !prev)}
-                />
-              </View>
-            ) : null}
-
+          <View style={styles.optionsRow}>
             <Pressable
               accessibilityRole="link"
               hitSlop={8}
@@ -257,9 +233,6 @@ export default function LoginScreen() {
         />
       </View>
 
-      {/* Espacio flexible: los enlaces secundarios quedan al final */}
-      <View style={styles.spacer} />
-
       <View style={styles.footer}>
         <View style={styles.registerRow}>
           <Text style={[styles.footerText, { color: palette.muted }]}>
@@ -267,8 +240,10 @@ export default function LoginScreen() {
           </Text>
           <Pressable
             accessibilityRole="link"
+            accessibilityLabel="Crear una cuenta"
             hitSlop={8}
             onPress={() => router.push("/register")}
+            style={styles.footerLink}
           >
             <Text style={[styles.linkText, { color: palette.link }]}>
               Regístrate
@@ -278,6 +253,7 @@ export default function LoginScreen() {
 
         <Pressable
           accessibilityRole="link"
+          accessibilityLabel="Solicitar reactivación de cuenta"
           hitSlop={8}
           onPress={() =>
             router.push({
@@ -285,6 +261,7 @@ export default function LoginScreen() {
               params: { email: cleanEmail },
             })
           }
+          style={styles.footerLink}
         >
           <Text style={[styles.footerText, { color: palette.muted }]}>
             ¿Cuenta desactivada?{" "}

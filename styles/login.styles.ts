@@ -46,16 +46,12 @@ export const styles = StyleSheet.create({
   optionsRow: {
     alignItems: "center",
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     marginTop: 12,
   },
-  optionsRowEnd: {
-    justifyContent: "flex-end",
-  },
-  rememberContainer: {
-    flex: 1,
-  },
   forgotButton: {
+    minHeight: 44,
+    justifyContent: "center",
     paddingVertical: 4,
   },
   linkText: {
@@ -81,14 +77,15 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     minHeight: 52,
   },
-  spacer: {
-    flexGrow: 1,
-    minHeight: 32,
-  },
   footer: {
     alignItems: "center",
-    gap: 12,
-    paddingTop: 8,
+    gap: 4,
+    marginTop: 16,
+  },
+  footerLink: {
+    justifyContent: "center",
+    minHeight: 44,
+    paddingHorizontal: 8,
   },
   registerRow: {
     alignItems: "center",
