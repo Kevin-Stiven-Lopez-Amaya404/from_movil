@@ -21,6 +21,24 @@ vm.runInNewContext(outputText, sandbox, {
 });
 
 const { getDevicePresentationList } = sandbox.exports;
+const deviceDomainSource = readFileSync(
+  path.join(__dirname, "../lib/domain/device.ts"),
+  "utf8",
+);
+const deviceDomainCompiled = ts.transpileModule(deviceDomainSource, {
+  compilerOptions: {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2022,
+  },
+}).outputText;
+const deviceDomainSandbox = { exports: {} };
+vm.runInNewContext(deviceDomainCompiled, deviceDomainSandbox, {
+  filename: "device.js",
+});
+const {
+  getDeviceConnectivityState,
+  isDeviceConfirmedOnline,
+} = deviceDomainSandbox.exports;
 const homes = [
   { id: "home-1", name: "Casa Jardín" },
   { id: "home-2", name: "Apartamento Norte" },
@@ -84,5 +102,32 @@ test("combines the selected home and query without changing the source list", ()
   assert.deepEqual(
     devices.map((device) => device.id),
     originalIds,
+  );
+});
+
+test("requires confirmed connectivity before treating a device as online", () => {
+  assert.equal(
+    isDeviceConfirmedOnline({ online: true, connectivityStatus: "ONLINE" }),
+    true,
+  );
+  assert.equal(
+    isDeviceConfirmedOnline({ online: true, connectivityStatus: "UNKNOWN" }),
+    false,
+  );
+  assert.equal(
+    isDeviceConfirmedOnline({ online: true, connectivityStatus: "OFFLINE" }),
+    false,
+  );
+  assert.equal(
+    isDeviceConfirmedOnline({ online: true }),
+    false,
+  );
+  assert.equal(
+    getDeviceConnectivityState({ online: false, connectivityStatus: "ONLINE" }),
+    "UNKNOWN",
+  );
+  assert.equal(
+    getDeviceConnectivityState({ online: false, connectivityStatus: "UNKNOWN" }),
+    "UNKNOWN",
   );
 });

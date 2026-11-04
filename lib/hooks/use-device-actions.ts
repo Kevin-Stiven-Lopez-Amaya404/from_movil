@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
-import type { SmartDevice } from "@/lib/domain/device";
+import {
+  isDeviceConfirmedOnline,
+  type SmartDevice,
+} from "@/lib/domain/device";
 import { canControlHome } from "@/lib/domain/home";
 import type { SmartHomePlace } from "@/lib/domain/home";
 import { smartHomeService } from "@/lib/services/smart-home-service";
@@ -37,7 +40,7 @@ export function useDeviceActions({
     async (id: string, state: DeviceState) => {
       const device = devicesRef.current.find((item) => item.id === id);
 
-      if (!device || !device.online) return;
+      if (!device || !isDeviceConfirmedOnline(device)) return;
 
       const home = homes.find((item) => item.id === device.homeId);
 
@@ -76,6 +79,9 @@ export function useDeviceActions({
               ...item,
               state: refreshedDevice.state,
               online: refreshedDevice.online,
+              connectivityStatus:
+                refreshedDevice.connectivityStatus ??
+                item.connectivityStatus,
               lastStateChange:
                 refreshedDevice.lastStateChange ?? item.lastStateChange,
             };
@@ -92,7 +98,7 @@ export function useDeviceActions({
     async (id: string) => {
       const device = devices.find((item) => item.id === id);
 
-      if (!device || !device.online) return;
+      if (!device || !isDeviceConfirmedOnline(device)) return;
 
       await setHomeDeviceState(
         id,

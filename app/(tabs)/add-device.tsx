@@ -10,6 +10,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ShellyBleScanner } from "@/components/devices/ShellyBleScanner";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import { useAndroidBackFallback } from "@/lib/navigation/use-android-back-fallback";
 import {
@@ -71,7 +72,6 @@ export default function AddDeviceScreen() {
   }, [homeId, homesLoadStatus, router, selectedHome]);
 
   const [wifiSearching, setWifiSearching] = useState(false);
-  const [bleScanRequestId, setBleScanRequestId] = useState(0);
   const [wifiSearched, setWifiSearched] = useState(false);
 
   const [wifiCandidates, setWifiCandidates] =
@@ -85,6 +85,8 @@ export default function AddDeviceScreen() {
   >({});
 
   const scanRun = useRef(0);
+  const wifiSearchLock = useRef(false);
+  const pendingVerificationIps = useRef(new Set<string>());
   const pendingRequests = useRef(new Set<AbortController>());
 
   function cancelIdentityRequests() {
@@ -100,7 +102,10 @@ export default function AddDeviceScreen() {
     run: number,
   ) {
     if (run !== scanRun.current) return;
+    const verificationKey = `${run}:${device.ip}`;
+    if (pendingVerificationIps.current.has(verificationKey)) return;
 
+    pendingVerificationIps.current.add(verificationKey);
     const controller = new AbortController();
     pendingRequests.current.add(controller);
 
@@ -148,6 +153,7 @@ export default function AddDeviceScreen() {
     } finally {
       clearTimeout(timer);
       pendingRequests.current.delete(controller);
+      pendingVerificationIps.current.delete(verificationKey);
     }
   }
 
@@ -171,8 +177,9 @@ export default function AddDeviceScreen() {
   }
 
   async function searchLocalWifi() {
-    if (!canAddDevice || wifiSearching) return;
+    if (!canAddDevice || wifiSearchLock.current) return;
 
+    wifiSearchLock.current = true;
     const run = ++scanRun.current;
 
     cancelIdentityRequests();
@@ -182,7 +189,6 @@ export default function AddDeviceScreen() {
     setWifiCandidates([]);
     setIdentityByIp({});
     setWifiError(null);
-    setBleScanRequestId((value) => value + 1);
 
     try {
       const results = await discoverLocalShelly(12000);
@@ -207,6 +213,7 @@ export default function AddDeviceScreen() {
       setWifiSearched(true);
     } finally {
       if (run === scanRun.current) {
+        wifiSearchLock.current = false;
         setWifiSearching(false);
       }
     }
@@ -267,6 +274,8 @@ export default function AddDeviceScreen() {
         }
 
         pendingRequests.current.clear();
+        pendingVerificationIps.current.clear();
+        wifiSearchLock.current = false;
         setWifiSearching(false);
 
         setIdentityByIp((previous) => {
@@ -310,34 +319,22 @@ export default function AddDeviceScreen() {
             { maxWidth: layout.contentWidth },
           ]}
         >
-          {/* Encabezado */}
-          <View style={styles.header}>
-            <Text
-              style={[
-                styles.title,
-                { color: theme.text },
-              ]}
-            >
-              Agregar dispositivo
-            </Text>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Cerrar agregar dispositivo"
-              onPress={closeScreen}
-              style={({ pressed }) => [
-                styles.closeButton,
-                { backgroundColor: theme.rowAlt },
-                pressed && styles.pressed,
-              ]}
-            >
-              <Ionicons
-                name="close"
-                size={21}
-                color={theme.text}
-              />
-            </Pressable>
-          </View>
+            <ScreenHeader
+              accessibilityLabel={
+                returnTo === "home-detail"
+                  ? "Volver al detalle del hogar"
+                  : "Volver a dispositivos"
+              }
+              backBackgroundColor={theme.rowAlt}
+              fallbackHref={
+                homeId
+                  ? { pathname: "/(tabs)/home-detail", params: { homeId } }
+                  : "/(tabs)/devices"
+              }
+              onBack={closeScreen}
+              title="Agregar dispositivo"
+              titleSize="section"
+            />
 
           {/* Hogar seleccionado */}
           <Text
@@ -357,8 +354,9 @@ export default function AddDeviceScreen() {
               { color: theme.muted },
             ]}
           >
-            Busca dispositivos Shelly compatibles por red local (LAN)
-            y Bluetooth (BLE) con una sola búsqueda, sin ingresar direcciones IP.
+            Busca por LAN los Shelly conectados a la red Wi-Fi del hogar. La
+            detección BLE es experimental y solo permite consultar información;
+            no vincula dispositivos.
           </Text>
 
           {/* Búsqueda principal */}
@@ -388,7 +386,7 @@ export default function AddDeviceScreen() {
             <Text style={[styles.primaryButtonText, { color: theme.onSolidAction }]}>
               {wifiSearching
                 ? "Buscando en la red..."
-                : "Buscar dispositivos"}
+                : "Buscar en la red local"}
             </Text>
           </Pressable>
 
@@ -436,7 +434,8 @@ export default function AddDeviceScreen() {
                   ]}
                 >
                   No encontramos Shelly mediante la búsqueda LAN.
-                  También puedes intentar detectarlos automáticamente por Bluetooth.
+                  Comprueba que estén conectados al Wi-Fi del hogar o usa la
+                  detección BLE experimental.
                 </Text>
               ) : null}
 
@@ -595,9 +594,9 @@ export default function AddDeviceScreen() {
 
           <View style={styles.resultsSection}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Detección por Bluetooth (BLE)
+              Detección experimental por Bluetooth (BLE)
             </Text>
-            <ShellyBleScanner canScan={Boolean(canAddDevice)} scanRequestId={bleScanRequestId} />
+            <ShellyBleScanner canScan={Boolean(canAddDevice)} />
           </View>
         </View>
       </ScrollView>

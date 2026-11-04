@@ -11,6 +11,7 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
     borderRadius: 12,
+    minHeight: 48,
     paddingVertical: 13,
     marginTop: 16,
   },
@@ -21,6 +22,8 @@ export const styles = StyleSheet.create({
   },
   cancelButton: {
     alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
     padding: 12,
   },
   message: {
@@ -52,7 +55,7 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 10,
-    minHeight: 40,
+    minHeight: 44,
     justifyContent: "center",
   },
   disabled: {

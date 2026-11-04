@@ -1,7 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 
-import type { SmartDevice } from "@/lib/domain/device";
+import {
+  isDeviceConfirmedOnline,
+  type SmartDevice,
+} from "@/lib/domain/device";
 import { useAppTheme } from "@/lib/theme/app-theme";
 
 import { formatWatts } from "@/lib/utils/formatters";
@@ -42,7 +45,10 @@ export function ActiveDevicesCard({
 
   const active = devices
     .filter(
-      (device) => device.online && device.state === "on" && device.power > 0,
+      (device) =>
+        isDeviceConfirmedOnline(device) &&
+        device.state === "on" &&
+        device.power > 0,
     )
     .slice(0, 4);
 
@@ -184,7 +190,7 @@ export function ActiveDevicesCard({
                       },
                     ]}
                   >
-                    {device.online ? "Conectado" : "Sin conexión"}
+                    Conectado
                   </Text>
                 </View>
 

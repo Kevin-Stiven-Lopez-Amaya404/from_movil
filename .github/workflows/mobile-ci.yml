@@ -29,6 +29,9 @@ jobs:
       - name: Test native mobile configuration
         run: npm run test:mobile-config
 
+      - name: Test device presentation
+        run: npm run test:device-presentation
+
       - name: Test Shelly MQTT pairing
         run: npm run test:shelly-mqtt-pairing
 

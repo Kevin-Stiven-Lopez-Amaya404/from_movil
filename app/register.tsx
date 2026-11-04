@@ -33,6 +33,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
 
   const [submitted, setSubmitted] = useState(false);
@@ -129,8 +130,19 @@ export default function RegisterScreen() {
 
       if (!result.ok) {
         Alert.alert(
-          "Correo ya registrado",
-          "Ya existe una cuenta asociada a este correo.",
+          "No pudimos completar el registro",
+          "Verifica el correo. Si ya tienes una cuenta, inicia sesión o recupera tu contraseña.",
+          [
+            { text: "Cerrar", style: "cancel" },
+            {
+              text: "Recuperar contraseña",
+              onPress: () => router.push("/forgot-password"),
+            },
+            {
+              text: "Iniciar sesión",
+              onPress: () => router.replace("/login"),
+            },
+          ],
         );
 
         return;
@@ -178,6 +190,7 @@ export default function RegisterScreen() {
 
       <View style={styles.introSection}>
         <Text
+          accessibilityRole="header"
           style={[
             styles.title,
             layout.tiny && styles.titleTiny,
@@ -311,9 +324,9 @@ export default function RegisterScreen() {
           inputStyle={styles.input}
           label="Confirmar contraseña"
           onChangeText={setConfirmPassword}
-          onToggleVisibility={() => setShowPassword((prev) => !prev)}
+          onToggleVisibility={() => setShowConfirmPassword((prev) => !prev)}
           placeholder="Repite tu contraseña"
-          showPassword={showPassword}
+          showPassword={showConfirmPassword}
           value={confirmPassword}
           variant="outlined"
         />

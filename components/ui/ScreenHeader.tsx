@@ -42,7 +42,12 @@ export function ScreenHeader({
         onPress={onBack}
       />
       <View style={styles.copy}>
-        <Text style={[styles.title, { color: theme.text, fontSize: typography.size[titleSize] }]}>{title}</Text>
+        <Text
+          accessibilityRole="header"
+          style={[styles.title, { color: theme.text, fontSize: typography.size[titleSize] }]}
+        >
+          {title}
+        </Text>
         {subtitle ? (
           <Text style={[styles.subtitle, { color: theme.muted }]}>
             {subtitle}

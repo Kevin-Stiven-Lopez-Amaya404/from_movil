@@ -15,7 +15,13 @@ export function AuthCheckboxRow({ checked, disabled = false, label, labelStyle, 
   const palette = useAuthPalette();
 
   return (
-    <Pressable disabled={disabled} onPress={onToggle} style={styles.row}>
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked, disabled }}
+      disabled={disabled}
+      onPress={onToggle}
+      style={styles.row}
+    >
       <View
         style={[
           styles.checkbox,
@@ -36,6 +42,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 10,
+    minHeight: 44,
     marginTop: 8,
     width: '100%',
   },
