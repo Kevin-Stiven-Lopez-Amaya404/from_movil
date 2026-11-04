@@ -8,11 +8,11 @@ export const styles = StyleSheet.create({
   closeButton: {
     alignItems: "center",
     alignSelf: "flex-end",
-    borderRadius: 20,
-    height: 40,
+    borderRadius: 22,
+    height: 44,
     justifyContent: "center",
     marginBottom: 18,
-    width: 40,
+    width: 44,
   },
   header: {
     alignItems: "center",

@@ -2,7 +2,7 @@ import { typography } from "@/lib/theme/typography";
 
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { HomeInvitation } from "@/lib/domain/home";
+import { useTranslation } from "@/lib/i18n/i18n";
 import { useAndroidBackFallback } from "@/lib/navigation/use-android-back-fallback";
 import { smartHomeService } from "@/lib/services/smart-home-service";
 import { useAppTheme } from "@/lib/theme/app-theme";
@@ -23,6 +24,7 @@ import { useAppTheme } from "@/lib/theme/app-theme";
 export default function InvitationsScreen() {
   const router = useRouter();
   const theme = useAppTheme();
+  const { t } = useTranslation();
 
   useAndroidBackFallback(true, "/(tabs)/(main)/homes");
 
@@ -32,30 +34,37 @@ export default function InvitationsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const processingLock = useRef(false);
+  const loadVersion = useRef(0);
 
   const loadInvitations = useCallback(async () => {
+    const requestVersion = ++loadVersion.current;
     setLoading(true);
     setError(null);
 
     try {
       const result = await smartHomeService.listIncomingInvitations();
-      setInvitations(result);
+      if (requestVersion === loadVersion.current) setInvitations(result);
     } catch (cause) {
-      setError(getApiErrorMessage(cause));
+      if (requestVersion === loadVersion.current) setError(getApiErrorMessage(cause));
     } finally {
-      setLoading(false);
+      if (requestVersion === loadVersion.current) setLoading(false);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       void loadInvitations();
+      return () => {
+        loadVersion.current += 1;
+      };
     }, [loadInvitations]),
   );
 
   async function respond(id: string, action: "accept" | "reject") {
-    if (processingId) return;
+    if (processingLock.current) return;
 
+    processingLock.current = true;
     setProcessingId(id);
 
     try {
@@ -71,18 +80,19 @@ export default function InvitationsScreen() {
 
       Alert.alert(
         action === "accept"
-          ? "Invitación aceptada"
-          : "Invitación rechazada",
+          ? t("invitations.acceptedTitle")
+          : t("invitations.rejectedTitle"),
         action === "accept"
-          ? "Aceptaste la invitación. Actualizaremos tus hogares para mostrar el nuevo acceso."
-          : "La invitación fue rechazada.",
+          ? t("invitations.acceptedBody")
+          : t("invitations.rejectedBody"),
       );
     } catch (cause) {
       Alert.alert(
-        "No se pudo procesar la invitación",
+        t("invitations.errorTitle"),
         getApiErrorMessage(cause),
       );
     } finally {
+      processingLock.current = false;
       setProcessingId(null);
     }
   }
@@ -95,38 +105,41 @@ export default function InvitationsScreen() {
         <Pressable
           onPress={() => router.replace("/(tabs)/(main)/homes")}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar invitaciones"
+          accessibilityLabel={t("action.close")}
           style={({ pressed }) => ({
             alignItems: "center",
             alignSelf: "flex-end",
             backgroundColor: theme.rowAlt,
-            borderRadius: 20,
-            height: 40,
+            borderRadius: 22,
+            height: 44,
             justifyContent: "center",
             opacity: pressed ? 0.65 : 1,
-            width: 40,
+            width: 44,
           })}
         >
           <Ionicons name="close" size={21} color={theme.text} />
         </Pressable>
 
         <Text
+          accessibilityRole="header"
           style={{
             fontSize: typography.size.title,
             fontWeight: "700",
             color: theme.text,
           }}
         >
-          Mis invitaciones
+          {t("invitations.title")}
         </Text>
 
         <Text style={{ color: theme.muted }}>
-          Consulta las invitaciones que has recibido para unirte a
-          otros hogares.
+          {t("invitations.subtitle")}
         </Text>
 
         {loading ? (
-          <ActivityIndicator size="large" color={theme.blue} />
+          <View accessibilityLiveRegion="polite" style={{ alignItems: "center", gap: 8 }}>
+            <ActivityIndicator size="large" color={theme.blue} />
+            <Text style={{ color: theme.muted }}>{t("invitations.loading")}</Text>
+          </View>
         ) : error ? (
           <View style={{ gap: 12 }}>
             <Text style={{ color: theme.text }}>{error}</Text>
@@ -136,7 +149,7 @@ export default function InvitationsScreen() {
               style={{ padding: 14, backgroundColor: theme.solidActionBackground, borderRadius: 12 }}
             >
               <Text style={{ color: theme.onSolidAction, textAlign: "center" }}>
-                Reintentar
+                {t("common.retry")}
               </Text>
             </Pressable>
           </View>
@@ -158,10 +171,10 @@ export default function InvitationsScreen() {
               color={theme.blue}
             />
             <Text style={{ color: theme.text, fontWeight: "600" }}>
-              No tienes invitaciones pendientes
+              {t("invitations.emptyTitle")}
             </Text>
             <Text style={{ color: theme.muted, textAlign: "center" }}>
-              Cuando alguien te invite a un hogar, aparecerá aquí.
+              {t("invitations.emptyBody")}
             </Text>
           </View>
         ) : (
@@ -178,25 +191,26 @@ export default function InvitationsScreen() {
               }}
             >
               <Text
+                accessibilityRole="header"
                 style={{
                   fontSize: typography.size.bodyLarge,
                   fontWeight: "700",
                   color: theme.text,
                 }}
               >
-                Invitación a un hogar
+                {t("invitations.cardTitle")}
               </Text>
 
               <Text style={{ color: theme.muted }}>
-                Rol: {invitation.role === "MEMBER"
-                  ? "Miembro"
-                  : invitation.role === "GUEST"
-                    ? "Invitado"
-                    : invitation.role}
+                {t("personal.role")}: {invitation.role === "OWNER"
+                  ? t("home.roleOwner")
+                  : invitation.role === "MEMBER"
+                    ? t("profile.roleMember")
+                    : t("profile.roleGuest")}
               </Text>
 
               <Text style={{ color: theme.muted, fontSize: typography.size.caption }}>
-                Hogar: {invitation.homeId ?? "Sin identificador"}
+                {t("invitations.homeLabel")}: {invitation.homeName?.trim() || t("invitations.homeUnavailable")}
               </Text>
 
               <View style={{ flexDirection: "row", gap: 10 }}>
@@ -216,7 +230,7 @@ export default function InvitationsScreen() {
                   <Text
                     style={{ textAlign: "center", color: theme.text }}
                   >
-                    Rechazar
+                    {t("action.reject")}
                   </Text>
                 </Pressable>
 
@@ -242,7 +256,7 @@ export default function InvitationsScreen() {
                         fontWeight: "600",
                       }}
                     >
-                      Aceptar
+                      {t("action.accept")}
                     </Text>
                   )}
                 </Pressable>

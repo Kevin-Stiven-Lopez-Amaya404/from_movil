@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 import { useSmartHome } from "@/lib/context/smart-home-context";
+import { useTranslation } from "@/lib/i18n/i18n";
 import {
   returnToParent,
   useAndroidBackFallback,
@@ -18,15 +19,18 @@ export default function PersonalInfoScreen() {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
+  const { t } = useTranslation();
   const { sessionEmail, sessionName, sessionRole } = useSmartHome();
   useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
 
   const roleLabel =
     sessionRole === "admin"
-      ? "Administrador"
+      ? t("profile.roleAdmin")
       : sessionRole === "miembro"
-        ? "Miembro"
-        : "Invitado";
+        ? t("profile.roleMember")
+        : t("profile.roleGuest");
+  const name = sessionName.trim() || t("profile.dataUnavailable");
+  const email = sessionEmail.trim() || t("profile.dataUnavailable");
 
   return (
     <SafeAreaView
@@ -42,6 +46,8 @@ export default function PersonalInfoScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("action.close")}
             onPress={() =>
               returnToParent(
                 router,
@@ -70,15 +76,15 @@ export default function PersonalInfoScreen() {
               ]}
             >
               <Text style={[styles.avatarText, { color: theme.blue }]}>
-                {sessionName.trim().charAt(0).toUpperCase() || "U"}
+                {Array.from(name)[0]?.toUpperCase() ?? "?"}
               </Text>
             </View>
             <View style={styles.headerCopy}>
-              <Text style={[styles.title, { color: theme.text }]}>
-                {sessionName}
+              <Text accessibilityRole="header" style={[styles.title, { color: theme.text }]}>
+                {name}
               </Text>
               <Text style={[styles.subtitle, { color: theme.muted }]}>
-                Información personal
+                {t("personal.subtitle")}
               </Text>
             </View>
           </View>
@@ -95,10 +101,10 @@ export default function PersonalInfoScreen() {
               </View>
               <View style={styles.rowContent}>
                 <Text style={[styles.label, { color: theme.muted }]}>
-                  Nombre
+                  {t("personal.name")}
                 </Text>
                 <Text style={[styles.value, { color: theme.text }]}>
-                  {sessionName}
+                  {name}
                 </Text>
               </View>
             </View>
@@ -109,10 +115,10 @@ export default function PersonalInfoScreen() {
               </View>
               <View style={styles.rowContent}>
                 <Text style={[styles.label, { color: theme.muted }]}>
-                  Correo
+                  {t("personal.email")}
                 </Text>
                 <Text style={[styles.value, { color: theme.text }]}>
-                  {sessionEmail}
+                  {email}
                 </Text>
               </View>
             </View>
@@ -126,7 +132,9 @@ export default function PersonalInfoScreen() {
                 />
               </View>
               <View style={styles.rowContent}>
-                <Text style={[styles.label, { color: theme.muted }]}>Rol</Text>
+                <Text style={[styles.label, { color: theme.muted }]}>
+                  {t("personal.role")}
+                </Text>
                 <Text style={[styles.value, { color: theme.text }]}>
                   {roleLabel}
                 </Text>

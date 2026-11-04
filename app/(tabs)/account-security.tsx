@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 import { useActiveDeviceAlerts } from "@/lib/alerts/use-active-device-alerts";
+import { useTranslation } from "@/lib/i18n/i18n";
 import {
   returnToParent,
   useAndroidBackFallback,
@@ -18,6 +19,7 @@ export default function AccountSecurityScreen() {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
+  const { t } = useTranslation();
   const {
     count: pendingAlerts,
     isLoading,
@@ -26,12 +28,14 @@ export default function AccountSecurityScreen() {
   useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
 
   const status = isLoading
-    ? "Verificando dispositivos..."
+    ? t("security.verifying")
     : hasError
-      ? "Información parcialmente disponible"
+      ? t("security.partial")
       : pendingAlerts > 0
-        ? `${pendingAlerts} dispositivo(s) desconectado(s)`
-        : "Sin desconexiones confirmadas";
+        ? pendingAlerts === 1
+          ? t("security.disconnectedDevice")
+          : t("security.disconnectedDevices", { count: pendingAlerts })
+        : t("security.noDisconnections");
 
   const statusColor =
     pendingAlerts > 0
@@ -54,6 +58,8 @@ export default function AccountSecurityScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("action.close")}
             onPress={() =>
               returnToParent(
                 router,
@@ -88,12 +94,11 @@ export default function AccountSecurityScreen() {
               />
             </View>
             <View style={styles.headerCopy}>
-              <Text style={[styles.title, { color: theme.text }]}>
-                Controles de seguridad
+              <Text accessibilityRole="header" style={[styles.title, { color: theme.text }]}>
+                {t("security.title")}
               </Text>
               <Text style={[styles.subtitle, { color: theme.muted }]}>
-                Revisa los problemas de seguridad mediante comprobaciones en la
-                cuenta y tus dispositivos.
+                {t("security.subtitle")}
               </Text>
             </View>
           </View>
@@ -106,6 +111,8 @@ export default function AccountSecurityScreen() {
           >
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={t("security.sessions")}
+              accessibilityHint={t("security.sessionsDescription")}
               onPress={() =>
                 router.push({
                   pathname: "/(tabs)/close-sessions",
@@ -123,12 +130,12 @@ export default function AccountSecurityScreen() {
               </View>
               <View style={styles.rowContent}>
                 <Text style={[styles.controlTitle, { color: theme.text }]}>
-                  Sesiones de la cuenta
+                  {t("security.sessions")}
                 </Text>
                 <Text
                   style={[styles.controlDescription, { color: theme.muted }]}
                 >
-                  Cerrar todas las sesiones de la cuenta
+                  {t("security.sessionsDescription")}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={21} color={theme.muted} />
@@ -149,7 +156,7 @@ export default function AccountSecurityScreen() {
               </View>
               <View style={styles.statusCopy}>
                 <Text style={[styles.statusLabel, { color: theme.muted }]}>
-                  Estado de dispositivos
+                  {t("security.deviceStatus")}
                 </Text>
                 <Text style={[styles.statusValue, { color: statusColor }]}>
                   {status}
