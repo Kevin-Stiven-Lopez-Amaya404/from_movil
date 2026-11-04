@@ -122,17 +122,10 @@ export const styles = StyleSheet.create({
 
   starButton: {
     alignItems: "center",
-    borderRadius: 12,
-    height: 38,
-    justifyContent: "center",
-    width: 38,
-  },
-
-  chevronButton: {
-    alignItems: "center",
+    borderRadius: 14,
     height: 44,
     justifyContent: "center",
-    width: 32,
+    width: 44,
   },
 
   emptyCard: {

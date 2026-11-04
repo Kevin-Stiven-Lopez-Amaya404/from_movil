@@ -178,6 +178,103 @@ const dictionaries = {
     "settings.voiceAlexaDescription":
       "Preparado para vincular Alexa cuando exista backend OAuth.",
 
+    "action.accept": "Aceptar",
+    "action.close": "Cerrar",
+    "action.confirm": "Confirmar",
+    "action.reject": "Rechazar",
+    "common.retry": "Reintentar",
+
+    "about.android": "Android",
+    "about.description":
+      "Smart Home reúne la administración de hogares, dispositivos y consumo energético en una sola aplicación.",
+    "about.ios": "iOS",
+    "about.otherPlatform": "No disponible",
+    "about.platform": "Plataforma",
+    "about.sectionTitle": "Información de la aplicación",
+    "about.subtitle": "Información técnica de Smart Home.",
+    "about.title": "Smart Home",
+    "about.version": "Versión",
+
+    "favorites.emptyDescription":
+      "Marca un hogar con la estrella para tenerlo disponible aquí.",
+    "favorites.emptyTitle": "Aún no tienes favoritos",
+    "favorites.openHome": "Abrir {name}",
+    "favorites.removeError": "No se pudo quitar el favorito. Vuelve a intentarlo.",
+    "favorites.removeErrorTitle": "No se pudo quitar el favorito",
+    "favorites.removeFavorite": "Quitar {name} de favoritos",
+    "favorites.section": "Mis hogares favoritos",
+    "favorites.subtitle": "Tus hogares guardados para acceder rápidamente.",
+    "favorites.title": "Favoritos",
+    "favorites.viewHomes": "Ver mis hogares",
+
+    "help.contactUnavailable":
+      "Todavía no hay un canal de contacto conectado en la aplicación. Las preguntas frecuentes son la ayuda disponible.",
+    "help.faqAlertsAnswer":
+      "Una alerta puede indicar que un dispositivo perdió conexión. Revisa el hogar y el estado del dispositivo antes de tomar medidas.",
+    "help.faqAlertsQuestion": "¿Qué significa una alerta de dispositivo?",
+    "help.faqAppearanceAnswer":
+      "Abre Configuración > Apariencia para elegir el modo claro, oscuro o del sistema y seleccionar una paleta.",
+    "help.faqAppearanceQuestion": "¿Cómo cambio la apariencia?",
+    "help.faqDevicesAnswer":
+      "En Dispositivos, elige un hogar y busca en la red local los Shelly conectados a su Wi-Fi. La detección BLE es experimental, solo consulta información y no vincula equipos.",
+    "help.faqDevicesQuestion": "¿Cómo busco un dispositivo Shelly?",
+    "help.faqHomesAnswer":
+      "Abre Hogares y usa la acción para crear uno. Después selecciónalo para consultar y gestionar sus dispositivos según tu rol.",
+    "help.faqHomesQuestion": "¿Cómo creo o abro un hogar?",
+    "help.faqTitle": "Preguntas frecuentes",
+    "help.faqToggleHint": "Muestra u oculta la respuesta.",
+    "help.subtitle": "Resuelve dudas sobre el uso de la aplicación.",
+    "help.title": "Centro de ayuda",
+
+    "home.roleOwner": "Propietario",
+
+    "invitations.acceptedBody":
+      "Aceptaste la invitación. Actualizaremos tus hogares para mostrar el nuevo acceso.",
+    "invitations.acceptedTitle": "Invitación aceptada",
+    "invitations.emptyBody": "Cuando alguien te invite a un hogar, aparecerá aquí.",
+    "invitations.emptyTitle": "No tienes invitaciones pendientes",
+    "invitations.errorTitle": "No se pudo procesar la invitación",
+    "invitations.homeLabel": "Hogar",
+    "invitations.homeUnavailable": "Nombre no disponible",
+    "invitations.loading": "Cargando invitaciones...",
+    "invitations.cardTitle": "Invitación recibida",
+    "invitations.rejectedBody": "La invitación fue rechazada.",
+    "invitations.rejectedTitle": "Invitación rechazada",
+    "invitations.subtitle": "Consulta las invitaciones que recibiste para unirte a otros hogares.",
+    "invitations.title": "Mis invitaciones",
+
+    "personal.name": "Nombre",
+    "personal.email": "Correo electrónico",
+    "personal.role": "Rol",
+    "personal.subtitle": "Datos asociados a tu cuenta.",
+
+    "route.home": "Ir al inicio",
+    "route.notFoundBody": "No pudimos encontrar la ruta solicitada.",
+    "route.notFoundTitle": "Pantalla no encontrada",
+
+    "security.deviceStatus": "Estado de dispositivos",
+    "security.disconnectedDevices": "{count} dispositivos desconectados",
+    "security.disconnectedDevice": "1 dispositivo desconectado",
+    "security.noDisconnections": "Sin desconexiones confirmadas",
+    "security.partial": "Información parcialmente disponible",
+    "security.sessions": "Sesiones de la cuenta",
+    "security.sessionsDescription": "Solicitar el cierre de todas las sesiones de la cuenta.",
+    "security.subtitle": "Revisa el estado de los dispositivos y las sesiones de la cuenta.",
+    "security.title": "Controles de seguridad",
+    "security.verifying": "Verificando dispositivos...",
+
+    "closeSessions.confirmPrompt":
+      "Se solicitará al servidor cerrar todas las sesiones de tu cuenta. ¿Deseas continuar?",
+    "closeSessions.description":
+      "Esta acción enviará al servidor una solicitud para cerrar todas las sesiones activas de tu cuenta. No se seleccionan dispositivos ni se verifica una contraseña localmente.",
+    "closeSessions.failureBody":
+      "No se pudo confirmar el cierre global de sesiones. Intenta nuevamente.",
+    "closeSessions.failureTitle": "Cierre no confirmado",
+    "closeSessions.info": "El resultado depende de la confirmación del servicio de autenticación.",
+    "closeSessions.successBody": "La solicitud de cierre global de sesiones fue procesada.",
+    "closeSessions.successTitle": "Solicitud confirmada",
+    "closeSessions.title": "Cerrar todas las sesiones",
+
     "tab.dashboard": "Dashboard",
     "tab.homes": "Hogares",
     "tab.profile": "Perfil",
@@ -344,6 +441,103 @@ const dictionaries = {
       "Control homes and devices with voice commands.",
     "settings.voiceAlexaDescription":
       "Ready to link Alexa when OAuth backend exists.",
+
+    "action.accept": "Accept",
+    "action.close": "Close",
+    "action.confirm": "Confirm",
+    "action.reject": "Decline",
+    "common.retry": "Try again",
+
+    "about.android": "Android",
+    "about.description":
+      "Smart Home brings together home, device, and energy consumption management in one app.",
+    "about.ios": "iOS",
+    "about.otherPlatform": "Unavailable",
+    "about.platform": "Platform",
+    "about.sectionTitle": "Application information",
+    "about.subtitle": "Technical information about Smart Home.",
+    "about.title": "Smart Home",
+    "about.version": "Version",
+
+    "favorites.emptyDescription":
+      "Tap the star on a home to make it available here.",
+    "favorites.emptyTitle": "No favorites yet",
+    "favorites.openHome": "Open {name}",
+    "favorites.removeError": "Could not remove the favorite. Try again.",
+    "favorites.removeErrorTitle": "Could not remove favorite",
+    "favorites.removeFavorite": "Remove {name} from favorites",
+    "favorites.section": "Favorite homes",
+    "favorites.subtitle": "Saved homes for quick access.",
+    "favorites.title": "Favorites",
+    "favorites.viewHomes": "View my homes",
+
+    "help.contactUnavailable":
+      "There is no support contact channel connected to the app yet. The FAQs are the available help.",
+    "help.faqAlertsAnswer":
+      "An alert can mean that a device lost connectivity. Check the home and device status before taking action.",
+    "help.faqAlertsQuestion": "What does a device alert mean?",
+    "help.faqAppearanceAnswer":
+      "Open Settings > Appearance to choose light, dark, or system mode and select a palette.",
+    "help.faqAppearanceQuestion": "How do I change the appearance?",
+    "help.faqDevicesAnswer":
+      "In Devices, select a home and search the local network for Shelly devices connected to its Wi-Fi. BLE discovery is experimental, read-only, and does not pair devices.",
+    "help.faqDevicesQuestion": "How do I find a Shelly device?",
+    "help.faqHomesAnswer":
+      "Open Homes and use the create action. Then select a home to view and manage its devices according to your role.",
+    "help.faqHomesQuestion": "How do I create or open a home?",
+    "help.faqTitle": "Frequently asked questions",
+    "help.faqToggleHint": "Shows or hides the answer.",
+    "help.subtitle": "Answers to common questions about the app.",
+    "help.title": "Help center",
+
+    "home.roleOwner": "Owner",
+
+    "invitations.acceptedBody":
+      "You accepted the invitation. Your homes will refresh to show the new access.",
+    "invitations.acceptedTitle": "Invitation accepted",
+    "invitations.emptyBody": "Invitations to join homes will appear here.",
+    "invitations.emptyTitle": "No pending invitations",
+    "invitations.errorTitle": "Could not process the invitation",
+    "invitations.homeLabel": "Home",
+    "invitations.homeUnavailable": "Name unavailable",
+    "invitations.loading": "Loading invitations...",
+    "invitations.cardTitle": "Home invitation",
+    "invitations.rejectedBody": "The invitation was declined.",
+    "invitations.rejectedTitle": "Invitation declined",
+    "invitations.subtitle": "Review invitations to join other homes.",
+    "invitations.title": "My invitations",
+
+    "personal.name": "Name",
+    "personal.email": "Email address",
+    "personal.role": "Role",
+    "personal.subtitle": "Details associated with your account.",
+
+    "route.home": "Go to home",
+    "route.notFoundBody": "We could not find the requested route.",
+    "route.notFoundTitle": "Screen not found",
+
+    "security.deviceStatus": "Device status",
+    "security.disconnectedDevices": "{count} disconnected devices",
+    "security.disconnectedDevice": "1 disconnected device",
+    "security.noDisconnections": "No confirmed disconnections",
+    "security.partial": "Some information is unavailable",
+    "security.sessions": "Account sessions",
+    "security.sessionsDescription": "Request that all account sessions be closed.",
+    "security.subtitle": "Review device status and account sessions.",
+    "security.title": "Security controls",
+    "security.verifying": "Checking devices...",
+
+    "closeSessions.confirmPrompt":
+      "The server will be asked to close every session on your account. Do you want to continue?",
+    "closeSessions.description":
+      "This sends the server a request to close all active sessions on your account. It does not select individual devices or verify a password locally.",
+    "closeSessions.failureBody":
+      "The global session closure could not be confirmed. Try again.",
+    "closeSessions.failureTitle": "Closure not confirmed",
+    "closeSessions.info": "The result depends on confirmation from the authentication service.",
+    "closeSessions.successBody": "The request to close all sessions was processed.",
+    "closeSessions.successTitle": "Request confirmed",
+    "closeSessions.title": "Close all sessions",
 
     "tab.dashboard": "Dashboard",
     "tab.homes": "Homes",
@@ -514,6 +708,103 @@ const dictionaries = {
       "Controle lares e dispositivos por comandos de voz.",
     "settings.voiceAlexaDescription":
       "Pronto para vincular Alexa quando existir backend OAuth.",
+
+    "action.accept": "Aceitar",
+    "action.close": "Fechar",
+    "action.confirm": "Confirmar",
+    "action.reject": "Recusar",
+    "common.retry": "Tentar novamente",
+
+    "about.android": "Android",
+    "about.description":
+      "O Smart Home reúne o gerenciamento de lares, dispositivos e consumo de energia em um só aplicativo.",
+    "about.ios": "iOS",
+    "about.otherPlatform": "Indisponível",
+    "about.platform": "Plataforma",
+    "about.sectionTitle": "Informações do aplicativo",
+    "about.subtitle": "Informações técnicas do Smart Home.",
+    "about.title": "Smart Home",
+    "about.version": "Versão",
+
+    "favorites.emptyDescription":
+      "Marque um lar com a estrela para deixá-lo disponível aqui.",
+    "favorites.emptyTitle": "Você ainda não tem favoritos",
+    "favorites.openHome": "Abrir {name}",
+    "favorites.removeError": "Não foi possível remover o favorito. Tente novamente.",
+    "favorites.removeErrorTitle": "Não foi possível remover favorito",
+    "favorites.removeFavorite": "Remover {name} dos favoritos",
+    "favorites.section": "Lares favoritos",
+    "favorites.subtitle": "Seus lares salvos para acesso rápido.",
+    "favorites.title": "Favoritos",
+    "favorites.viewHomes": "Ver meus lares",
+
+    "help.contactUnavailable":
+      "Ainda não há um canal de contato conectado ao aplicativo. As perguntas frequentes são a ajuda disponível.",
+    "help.faqAlertsAnswer":
+      "Um alerta pode indicar que um dispositivo perdeu a conexão. Confira o lar e o estado do dispositivo antes de agir.",
+    "help.faqAlertsQuestion": "O que significa um alerta do dispositivo?",
+    "help.faqAppearanceAnswer":
+      "Abra Configurações > Aparência para escolher o modo claro, escuro ou do sistema e selecionar uma paleta.",
+    "help.faqAppearanceQuestion": "Como altero a aparência?",
+    "help.faqDevicesAnswer":
+      "Em Dispositivos, escolha um lar e busque na rede local Shelly conectados ao Wi-Fi dele. A detecção BLE é experimental, apenas consulta informações e não vincula dispositivos.",
+    "help.faqDevicesQuestion": "Como encontro um dispositivo Shelly?",
+    "help.faqHomesAnswer":
+      "Abra Lares e use a ação para criar um. Depois selecione-o para consultar e gerenciar os dispositivos de acordo com seu papel.",
+    "help.faqHomesQuestion": "Como crio ou abro um lar?",
+    "help.faqTitle": "Perguntas frequentes",
+    "help.faqToggleHint": "Mostra ou oculta a resposta.",
+    "help.subtitle": "Respostas para dúvidas comuns sobre o aplicativo.",
+    "help.title": "Central de ajuda",
+
+    "home.roleOwner": "Proprietário",
+
+    "invitations.acceptedBody":
+      "Você aceitou o convite. Seus lares serão atualizados para mostrar o novo acesso.",
+    "invitations.acceptedTitle": "Convite aceito",
+    "invitations.emptyBody": "Convites para participar de lares aparecerão aqui.",
+    "invitations.emptyTitle": "Nenhum convite pendente",
+    "invitations.errorTitle": "Não foi possível processar o convite",
+    "invitations.homeLabel": "Lar",
+    "invitations.homeUnavailable": "Nome indisponível",
+    "invitations.loading": "Carregando convites...",
+    "invitations.cardTitle": "Convite para um lar",
+    "invitations.rejectedBody": "O convite foi recusado.",
+    "invitations.rejectedTitle": "Convite recusado",
+    "invitations.subtitle": "Consulte os convites recebidos para participar de outros lares.",
+    "invitations.title": "Meus convites",
+
+    "personal.name": "Nome",
+    "personal.email": "E-mail",
+    "personal.role": "Papel",
+    "personal.subtitle": "Dados associados à sua conta.",
+
+    "route.home": "Ir para o início",
+    "route.notFoundBody": "Não foi possível encontrar a rota solicitada.",
+    "route.notFoundTitle": "Tela não encontrada",
+
+    "security.deviceStatus": "Estado dos dispositivos",
+    "security.disconnectedDevices": "{count} dispositivos desconectados",
+    "security.disconnectedDevice": "1 dispositivo desconectado",
+    "security.noDisconnections": "Sem desconexões confirmadas",
+    "security.partial": "Algumas informações estão indisponíveis",
+    "security.sessions": "Sessões da conta",
+    "security.sessionsDescription": "Solicite o encerramento de todas as sessões da conta.",
+    "security.subtitle": "Confira o estado dos dispositivos e as sessões da conta.",
+    "security.title": "Controles de segurança",
+    "security.verifying": "Verificando dispositivos...",
+
+    "closeSessions.confirmPrompt":
+      "O servidor receberá uma solicitação para encerrar todas as sessões da sua conta. Deseja continuar?",
+    "closeSessions.description":
+      "Esta ação solicitará ao servidor o encerramento de todas as sessões ativas da conta. Não seleciona dispositivos nem verifica uma senha localmente.",
+    "closeSessions.failureBody":
+      "Não foi possível confirmar o encerramento global das sessões. Tente novamente.",
+    "closeSessions.failureTitle": "Encerramento não confirmado",
+    "closeSessions.info": "O resultado depende da confirmação do serviço de autenticação.",
+    "closeSessions.successBody": "A solicitação para encerrar todas as sessões foi processada.",
+    "closeSessions.successTitle": "Solicitação confirmada",
+    "closeSessions.title": "Encerrar todas as sessões",
 
     "tab.dashboard": "Dashboard",
     "tab.homes": "Lares",

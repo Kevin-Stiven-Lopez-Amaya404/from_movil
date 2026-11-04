@@ -7,9 +7,13 @@ export const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { alignSelf: "center", width: "100%" },
   closeButton: {
+    alignItems: "center",
+    borderRadius: 22,
+    height: 44,
     alignSelf: "flex-start",
     marginBottom: 38,
-    paddingVertical: 3,
+    justifyContent: "center",
+    width: 44,
   },
   title: {
     fontFamily: profileFont,

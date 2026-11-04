@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 import { authService } from "@/lib/services/auth-service";
+import { useTranslation } from "@/lib/i18n/i18n";
 import { clearSession } from "@/lib/session/session-store";
 import { runSingleFlight } from "@/lib/utils/async-action-lock";
 import {
@@ -21,6 +22,7 @@ export default function CloseSessionsScreen() {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
+  const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
   const closeSessionsLock = useRef(false);
   useAndroidBackFallback(
@@ -32,12 +34,12 @@ export default function CloseSessionsScreen() {
     if (submitting || closeSessionsLock.current) return;
 
     Alert.alert(
-      "Cerrar todas las sesiones",
-      "Se solicitará al servidor cerrar todas las sesiones de tu cuenta. ¿Deseas continuar?",
+      t("closeSessions.title"),
+      t("closeSessions.confirmPrompt"),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("action.cancel"), style: "cancel" },
         {
-          text: "Confirmar",
+          text: t("action.confirm"),
           style: "destructive",
           onPress: () => void closeAllSessions(),
         },
@@ -53,14 +55,14 @@ export default function CloseSessionsScreen() {
         await authService.logout(true);
         await clearSession();
         Alert.alert(
-          "Solicitud confirmada",
-          "La solicitud de cierre global de sesiones fue procesada.",
-          [{ text: "Aceptar", onPress: () => router.replace("/login") }],
+          t("closeSessions.successTitle"),
+          t("closeSessions.successBody"),
+          [{ text: t("action.accept"), onPress: () => router.replace("/login") }],
         );
       } catch {
         Alert.alert(
-          "Cierre no confirmado",
-          "No se pudo confirmar el cierre global de sesiones. Intenta nuevamente.",
+          t("closeSessions.failureTitle"),
+          t("closeSessions.failureBody"),
         );
       } finally {
         setSubmitting(false);
@@ -84,7 +86,7 @@ export default function CloseSessionsScreen() {
           <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Volver a seguridad de la cuenta"
+              accessibilityLabel={t("action.back")}
               onPress={() =>
                 returnToParent(
                   router,
@@ -95,24 +97,23 @@ export default function CloseSessionsScreen() {
               }
               style={({ pressed }) => [
                 styles.closeButton,
+                { backgroundColor: theme.rowAlt },
                 pressed && styles.pressed,
               ]}
             >
               <Ionicons
                 accessible={false}
                 name="close"
-                size={34}
+                size={22}
                 color={theme.text}
               />
             </Pressable>
 
-            <Text style={[styles.title, { color: theme.text }]}>
-              Cerrar todas las sesiones
+            <Text accessibilityRole="header" style={[styles.title, { color: theme.text }]}>
+              {t("closeSessions.title")}
             </Text>
             <Text style={[styles.description, { color: theme.text }]}>
-              Esta acción enviará al servidor una solicitud para cerrar todas
-              las sesiones activas de tu cuenta. No se seleccionan dispositivos
-              ni se verifica una contraseña localmente.
+              {t("closeSessions.description")}
             </Text>
 
             <View
@@ -130,8 +131,7 @@ export default function CloseSessionsScreen() {
                 color={theme.blue}
               />
               <Text style={[styles.infoText, { color: theme.muted }]}>
-                El resultado depende de la confirmación del servicio de
-                autenticación.
+                {t("closeSessions.info")}
               </Text>
             </View>
           </View>
@@ -148,7 +148,7 @@ export default function CloseSessionsScreen() {
         >
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Cerrar todas las sesiones"
+            accessibilityLabel={t("closeSessions.title")}
             accessibilityState={{ disabled: submitting, busy: submitting }}
             disabled={submitting}
             onPress={requestCloseSessions}
@@ -161,7 +161,9 @@ export default function CloseSessionsScreen() {
             {submitting ? (
               <ActivityIndicator color={theme.onSolidAction} />
             ) : (
-              <Text style={[styles.submitText, { color: theme.onSolidAction }]}>Cerrar todas las sesiones</Text>
+              <Text style={[styles.submitText, { color: theme.onSolidAction }]}>
+                {t("closeSessions.title")}
+              </Text>
             )}
           </Pressable>
         </View>

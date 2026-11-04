@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-
+import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import {
   returnToParent,
@@ -17,9 +18,19 @@ export default function AboutSmartHomeScreen() {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
-  const parentRoute = from === "settings" ? "/(tabs)/settings" : "/(tabs)/(main)/profile";
+  const { t } = useTranslation();
+  const parentRoute =
+    from === "settings" ? "/(tabs)/settings" : "/(tabs)/(main)/profile";
   const parentSource = from === "settings" ? "settings" : "profile";
   useAndroidBackFallback(from !== parentSource, parentRoute);
+  const version =
+    Constants.expoConfig?.version ?? t("profile.dataUnavailable");
+  const platform =
+    Platform.OS === "android"
+      ? t("about.android")
+      : Platform.OS === "ios"
+        ? t("about.ios")
+        : t("about.otherPlatform");
 
   return (
     <SafeAreaView
@@ -35,6 +46,8 @@ export default function AboutSmartHomeScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("action.back")}
             onPress={() =>
               returnToParent(
                 router,
@@ -70,10 +83,10 @@ export default function AboutSmartHomeScreen() {
             </View>
             <View style={styles.headerCopy}>
               <Text style={[styles.title, { color: theme.text }]}>
-                Smart Home
+                {t("about.title")}
               </Text>
               <Text style={[styles.subtitle, { color: theme.muted }]}>
-                Tu hogar inteligente en un solo lugar
+                {t("about.subtitle")}
               </Text>
             </View>
           </View>
@@ -84,34 +97,32 @@ export default function AboutSmartHomeScreen() {
               { backgroundColor: theme.card, borderColor: theme.borderLight },
             ]}
           >
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Acerca de la app
+            <Text
+              accessibilityRole="header"
+              style={[styles.sectionTitle, { color: theme.text }]}
+            >
+              {t("about.sectionTitle")}
             </Text>
             <Text style={[styles.description, { color: theme.muted }]}>
-              Smart Home te ayuda a controlar dispositivos, revisar consumos,
-              gestionar hogares y mantener tus espacios conectados con mayor
-              claridad y rapidez.
+              {t("about.description")}
             </Text>
 
             <View style={[styles.infoRow, { borderTopColor: theme.divider }]}>
               <Text style={[styles.label, { color: theme.muted }]}>
-                Versión
+                {t("about.version")}
               </Text>
-              <Text style={[styles.value, { color: theme.text }]}>1.0.0</Text>
+              <Text style={[styles.value, { color: theme.text }]}>
+                {version}
+              </Text>
             </View>
 
             <View style={[styles.infoRow, { borderTopColor: theme.divider }]}>
               <Text style={[styles.label, { color: theme.muted }]}>
-                Plataforma
+                {t("about.platform")}
               </Text>
               <Text style={[styles.value, { color: theme.text }]}>
-                Expo / React Native
+                {platform}
               </Text>
-            </View>
-
-            <View style={[styles.infoRow, { borderTopColor: theme.divider }]}>
-              <Text style={[styles.label, { color: theme.muted }]}>Estado</Text>
-              <Text style={[styles.value, { color: theme.text }]}>Beta</Text>
             </View>
           </View>
         </View>

@@ -1,22 +1,35 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { useSmartHome } from "@/lib/context/smart-home-context";
+import { useTranslation } from "@/lib/i18n/i18n";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
+import { runSingleFlight } from "@/lib/utils/async-action-lock";
 import { styles } from "../../styles/(tabs)/favorites.styles";
 
 export default function FavoritesScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
   const theme = useAppTheme();
+  const { t } = useTranslation();
 
   const { accessibleHomes, setActiveHomeId, toggleHomeFavorite } =
     useSmartHome();
+  const favoriteActionLock = useRef(false);
+  const [removingFavoriteId, setRemovingFavoriteId] = useState<string | null>(null);
 
   const favoriteHomes = accessibleHomes.filter((home) => home.favorite);
 
@@ -30,14 +43,16 @@ export default function FavoritesScreen() {
   }
 
   async function removeFavorite(homeId: string) {
-    try {
-      await toggleHomeFavorite(homeId);
-    } catch (error) {
-      Alert.alert(
-        "No se pudo quitar el favorito",
-        error instanceof Error ? error.message : "Vuelve a intentarlo.",
-      );
-    }
+    await runSingleFlight(favoriteActionLock, async () => {
+      setRemovingFavoriteId(homeId);
+      try {
+        await toggleHomeFavorite(homeId);
+      } catch {
+        Alert.alert(t("favorites.removeErrorTitle"), t("favorites.removeError"));
+      } finally {
+        setRemovingFavoriteId(null);
+      }
+    });
   }
 
   return (
@@ -59,11 +74,11 @@ export default function FavoritesScreen() {
           {/* HEADER */}
           <View style={styles.header}>
             <ScreenHeader
-              accessibilityLabel="Cerrar favoritos"
+              accessibilityLabel={t("favorites.title")}
               backBackgroundColor={theme.card}
               fallbackHref="/(tabs)/(main)/index"
-              subtitle="Tus hogares guardados para acceder rápidamente"
-              title="Favoritos"
+              subtitle={t("favorites.subtitle")}
+              title={t("favorites.title")}
               titleSize="title"
             />
           </View>
@@ -72,7 +87,7 @@ export default function FavoritesScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                Mis hogares favoritos
+                {t("favorites.section")}
               </Text>
               {favoriteHomes.length > 0 ? (
                 <View style={[styles.countBadge, { backgroundColor: theme.rowAlt }]}>
@@ -103,17 +118,17 @@ export default function FavoritesScreen() {
                 </View>
 
                 <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                  Aún no tienes favoritos
+                  {t("favorites.emptyTitle")}
                 </Text>
 
                 <Text style={[styles.emptyDescription, { color: theme.muted }]}>
-                  Marca un hogar con la estrella para tenerlo disponible aquí.
+                  {t("favorites.emptyDescription")}
                 </Text>
 
                 <Button
                   colorSource="solidAction"
                   icon={<Ionicons name="arrow-forward" size={16} color={theme.onSolidAction} />}
-                  label="Ver mis hogares"
+                  label={t("favorites.viewHomes")}
                   labelSize="helper"
                   onPress={() => router.push("/(tabs)/(main)/homes")}
                   style={styles.emptyAction}
@@ -136,7 +151,7 @@ export default function FavoritesScreen() {
                   <Pressable
                     onPress={() => openHome(home.id)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Abrir ${home.name}`}
+                    accessibilityLabel={t("favorites.openHome", { name: home.name })}
                     style={({ pressed }) => [
                       styles.homeContent,
                       pressed && styles.pressed,
@@ -167,7 +182,7 @@ export default function FavoritesScreen() {
                         numberOfLines={1}
                         style={[styles.cardSubtitle, { color: theme.muted }]}
                       >
-                        {home.location}
+                        {home.location || t("profile.dataUnavailable")}
                       </Text>
                     </View>
                   </Pressable>
@@ -176,34 +191,26 @@ export default function FavoritesScreen() {
                   <Pressable
                     onPress={() => removeFavorite(home.id)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Quitar ${home.name} de favoritos`}
-                    hitSlop={6}
+                    accessibilityLabel={t("favorites.removeFavorite", { name: home.name })}
+                    accessibilityState={{
+                      selected: true,
+                      disabled: removingFavoriteId !== null,
+                      busy: removingFavoriteId === home.id,
+                    }}
+                    disabled={removingFavoriteId !== null}
                     style={({ pressed }) => [
                       styles.starButton,
                       { backgroundColor: theme.rowAlt },
-                      pressed && styles.pressed,
+                      (pressed || removingFavoriteId !== null) && styles.pressed,
                     ]}
                   >
-                    <Ionicons name="star" size={23} color={theme.blue} />
+                    {removingFavoriteId === home.id ? (
+                      <ActivityIndicator size="small" color={theme.blue} />
+                    ) : (
+                      <Ionicons name="star" size={23} color={theme.blue} />
+                    )}
                   </Pressable>
 
-                  {/* NAVIGATION */}
-                  <Pressable
-                    onPress={() => openHome(home.id)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Abrir ${home.name}`}
-                    hitSlop={6}
-                    style={({ pressed }) => [
-                      styles.chevronButton,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Ionicons
-                      name="chevron-forward"
-                      size={20}
-                      color={theme.muted}
-                    />
-                  </Pressable>
                 </View>
               ))
             )}
