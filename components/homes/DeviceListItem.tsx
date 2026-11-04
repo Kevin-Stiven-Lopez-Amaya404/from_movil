@@ -1,6 +1,10 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, Switch, Text, View } from "react-native";
 
+import {
+  getDeviceConnectivityState,
+  isDeviceConfirmedOnline,
+} from "@/lib/domain/device";
 import type { SmartDevice } from "@/lib/domain/device";
 import type { AppTheme } from "@/lib/theme/app-theme";
 import { styles } from "./DeviceListItem.styles";
@@ -25,6 +29,9 @@ export function DeviceListItem({
   onSelect,
   onToggleState,
 }: DeviceListItemProps) {
+  const isConfirmedOnline = isDeviceConfirmedOnline(device);
+  const connectivityState = getDeviceConnectivityState(device);
+
   return (
     <View
       style={[
@@ -51,13 +58,13 @@ export function DeviceListItem({
           style={[
             styles.itemIcon,
             { backgroundColor: theme.rowAlt },
-            !device.online && styles.itemIconOff,
+            !isConfirmedOnline && styles.itemIconOff,
           ]}
         >
           <MaterialCommunityIcons
             name={device.icon as never}
             size={35}
-            color={device.online ? theme.blue : theme.muted}
+            color={isConfirmedOnline ? theme.blue : theme.muted}
           />
         </View>
 
@@ -76,9 +83,11 @@ export function DeviceListItem({
           </View>
 
           <Text style={[styles.itemSubtitle, { color: theme.muted }]}>
-            {device.online
+            {connectivityState === "ONLINE"
               ? `${(device.energy / 1000).toFixed(2)} kWh acumulados`
-              : "Sin conexión"}
+              : connectivityState === "OFFLINE"
+                ? "Sin conexión"
+                : "Estado desconocido"}
           </Text>
 
           {hasAlert && (
@@ -92,13 +101,26 @@ export function DeviceListItem({
       <Switch
         value={device.state === "on"}
         onValueChange={onToggleState}
-        disabled={!canControl || !device.online}
+        disabled={!canControl || !isConfirmedOnline}
         accessibilityLabel={`Encender o apagar ${device.name}`}
+        accessibilityHint={
+          !isConfirmedOnline
+            ? connectivityState === "OFFLINE"
+              ? "El dispositivo está sin conexión."
+              : "La conexión del dispositivo no está confirmada."
+            : !canControl
+              ? "Tu rol no permite controlar este dispositivo."
+              : "Cambia el estado del relé."
+        }
+        accessibilityState={{
+          checked: device.state === "on",
+          disabled: !canControl || !isConfirmedOnline,
+        }}
         trackColor={{
           false: theme.deviceSwitchTrackInactive,
           true: theme.deviceSwitchTrackActive,
         }}
-        thumbColor={device.online ? theme.deviceSwitchThumbActive : theme.surface}
+        thumbColor={isConfirmedOnline ? theme.deviceSwitchThumbActive : theme.surface}
       />
     </View>
   );

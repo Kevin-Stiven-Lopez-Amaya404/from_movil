@@ -12,10 +12,9 @@ import { styles } from "./ShellyBleScanner.styles";
 
 type Props = {
   canScan: boolean;
-  scanRequestId?: number;
 };
 
-export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
+export function ShellyBleScanner({ canScan }: Props) {
   const theme = useAppTheme();
 
   const [isScanning, setIsScanning] = useState(false);
@@ -27,7 +26,8 @@ export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
   const [message, setMessage] = useState<string | null>(null);
 
   const scanRun = useRef(0);
-  const lastAutoScanRequest = useRef(0);
+  const discoveryLock = useRef(false);
+  const inspectionLock = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -37,8 +37,17 @@ export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
   }, []);
 
   const startDiscovery = useCallback(async () => {
-    if (!canScan || isScanning || inspectingId) return;
+    if (
+      !canScan ||
+      isScanning ||
+      inspectingId ||
+      discoveryLock.current ||
+      inspectionLock.current
+    ) {
+      return;
+    }
 
+    discoveryLock.current = true;
     const run = ++scanRun.current;
     setIsScanning(true);
     setDevices([]);
@@ -80,17 +89,12 @@ export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
           : "No se pudo buscar por Bluetooth.",
       );
     } finally {
+      discoveryLock.current = false;
       if (run === scanRun.current) {
         setIsScanning(false);
       }
     }
   }, [canScan, isScanning, inspectingId]);
-
-  useEffect(() => {
-    if (!canScan || scanRequestId <= lastAutoScanRequest.current) return;
-    lastAutoScanRequest.current = scanRequestId;
-    void startDiscovery();
-  }, [canScan, scanRequestId, startDiscovery]);
 
   async function cancelDiscovery() {
     scanRun.current += 1;
@@ -106,8 +110,17 @@ export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
   }
 
   async function inspectDevice(deviceId: string) {
-    if (!canScan || isScanning || inspectingId) return;
+    if (
+      !canScan ||
+      isScanning ||
+      inspectingId ||
+      inspectionLock.current ||
+      discoveryLock.current
+    ) {
+      return;
+    }
 
+    inspectionLock.current = true;
     setInspectingId(deviceId);
     setMessage(null);
 
@@ -130,6 +143,7 @@ export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
           : "No se pudo consultar el Shelly.",
       );
     } finally {
+      inspectionLock.current = false;
       setInspectingId(null);
     }
   }
@@ -172,6 +186,7 @@ export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
       {isScanning && (
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel="Cancelar búsqueda Bluetooth"
           onPress={() => void cancelDiscovery()}
           style={styles.cancelButton}
         >
@@ -188,7 +203,10 @@ export function ShellyBleScanner({ canScan, scanRequestId = 0 }: Props) {
       )}
 
       {message && (
-        <Text style={[styles.message, { color: theme.muted }]}>
+        <Text
+          accessibilityLiveRegion="polite"
+          style={[styles.message, { color: theme.muted }]}
+        >
           {message}
         </Text>
       )}

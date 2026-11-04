@@ -31,3 +31,18 @@ export type SmartDevice = {
   lastSeenAt?: string | null;
   lastStateChange?: string;
 };
+
+/** A device is controllable only when connectivity has been explicitly confirmed. */
+export function getDeviceConnectivityState(
+  device: Pick<SmartDevice, "online" | "connectivityStatus">,
+): DeviceConnectivityStatus {
+  if (device.connectivityStatus === "OFFLINE") return "OFFLINE";
+  if (device.connectivityStatus === "ONLINE" && device.online) return "ONLINE";
+  return "UNKNOWN";
+}
+
+export function isDeviceConfirmedOnline(
+  device: Pick<SmartDevice, "online" | "connectivityStatus">,
+): boolean {
+  return getDeviceConnectivityState(device) === "ONLINE";
+}

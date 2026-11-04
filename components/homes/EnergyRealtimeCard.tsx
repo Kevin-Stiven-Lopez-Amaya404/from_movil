@@ -7,23 +7,40 @@ import { styles } from "./EnergyRealtimeCard.styles";
 
 
 type EnergyRealtimeCardProps = {
-  isOnline: boolean;
-  power: number;
+  status: "online" | "partial" | "offline" | "unknown";
+  power: number | null;
   theme: AppTheme;
 };
 
+const statusLabels = {
+  online: "En línea",
+  partial: "Datos parciales",
+  offline: "Sin conexión",
+  unknown: "Estado desconocido",
+} as const;
+
 export function EnergyRealtimeCard({
-  isOnline,
+  status,
   power,
   theme,
 }: EnergyRealtimeCardProps) {
-  const powerInKw = (power / 1000).toFixed(2);
+  const powerInKw = power === null ? "—" : (power / 1000).toFixed(2);
+  const statusLabel = statusLabels[status];
+  const statusColor =
+    status === "online"
+      ? theme.success
+      : status === "partial" || status === "offline"
+        ? theme.warning
+        : theme.muted;
+  const accessibilitySummary = power === null
+    ? "Lectura actual de potencia no disponible."
+    : `Potencia actual del hogar: ${power} vatios.`;
 
   return (
     <View
       accessible
       accessibilityRole="summary"
-      accessibilityLabel={`Consumo en tiempo real. Potencia actual del hogar: ${power} vatios. ${isOnline ? "En línea" : "Sin conexión"}.`}
+      accessibilityLabel={`Consumo en tiempo real. ${accessibilitySummary} ${statusLabel}.`}
       style={[
         styles.card,
         {
@@ -39,28 +56,33 @@ export function EnergyRealtimeCard({
             Consumo en tiempo real
           </Text>
           <Text style={[styles.subtitle, { color: theme.muted }]}>
-            Potencia actual del hogar
+            {power === null
+              ? "Lectura disponible cuando se confirme la conexión"
+              : "Potencia actual del hogar"}
           </Text>
         </View>
         <View
           style={[
             styles.onlineBadge,
-            { backgroundColor: isOnline ? theme.successSoft : theme.rowAlt },
+            {
+              backgroundColor:
+                status === "online" ? theme.successSoft : theme.rowAlt,
+            },
           ]}
         >
           <View
             style={[
               styles.onlineDot,
-              { backgroundColor: isOnline ? theme.success : theme.muted },
+              { backgroundColor: statusColor },
             ]}
           />
           <Text
             style={[
               styles.onlineText,
-              { color: isOnline ? theme.success : theme.muted },
+              { color: statusColor },
             ]}
           >
-            {isOnline ? "En línea" : "Sin conexión"}
+            {statusLabel}
           </Text>
         </View>
       </View>
@@ -84,7 +106,7 @@ export function EnergyRealtimeCard({
             strokeWidth="12"
             strokeLinecap="round"
             strokeDasharray="528"
-            strokeDashoffset={power > 0 ? "210" : "528"}
+            strokeDashoffset={power !== null && power > 0 ? "210" : "528"}
             transform="rotate(-90 110 110)"
           />
         </Svg>
@@ -99,16 +121,16 @@ export function EnergyRealtimeCard({
         <View
           style={[
             styles.onlineDot,
-            { backgroundColor: isOnline ? theme.success : theme.muted },
+          { backgroundColor: statusColor },
           ]}
         />
         <Text
           style={[
             styles.statusText,
-            { color: isOnline ? theme.success : theme.muted },
+          { color: statusColor },
           ]}
         >
-          {isOnline ? "En línea" : "Sin conexión"}
+          {statusLabel}
         </Text>
       </View>
     </View>
