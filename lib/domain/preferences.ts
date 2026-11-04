@@ -9,3 +9,6 @@ export type ColorMode = "system" | "light" | "dark";
 export type EffectiveColorMode = Exclude<ColorMode, "system">;
 
 export type ColorPaletteName = "classic" | "emerald";
+
+/** Initial brand palette for installs without a saved user selection. */
+export const DEFAULT_COLOR_PALETTE: ColorPaletteName = "emerald";

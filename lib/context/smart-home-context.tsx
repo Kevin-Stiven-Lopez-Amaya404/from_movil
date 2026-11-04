@@ -17,6 +17,7 @@ import type {
   ColorMode,
   EffectiveColorMode,
 } from "@/lib/domain/preferences";
+import { DEFAULT_COLOR_PALETTE } from "@/lib/domain/preferences";
 import {
   loadLanguagePreference,
   saveLanguagePreference,
@@ -185,7 +186,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
   const [accountActive, setAccountActive] = useState(true);
   const [colorMode, setColorModeState] = useState<ColorMode>("system");
   const [colorPalette, setColorPaletteState] =
-    useState<ColorPaletteName>("classic");
+    useState<ColorPaletteName>(DEFAULT_COLOR_PALETTE);
   const systemColorScheme = useColorScheme();
   const effectiveColorMode =
     colorMode === "system"
