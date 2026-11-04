@@ -98,6 +98,17 @@ test("porcentajes por encima de 100 %: se muestra completo, la barra se limita",
   assert.equal(rules.overLimitPercent("29.20"), null);
   assert.equal(rules.barWidthPercent("135.50"), 100);
   assert.equal(rules.barWidthPercent("29.20"), 29.2);
+  assert.equal(rules.formatPercent("0"), "0 %");
+  assert.equal(rules.isValidUsagePercent("0"), true);
+  assert.equal(rules.isValidUsagePercent("100.00"), true);
+  assert.equal(rules.isValidUsagePercent(null), false);
+  assert.equal(rules.isValidUsagePercent("-1"), false);
+  assert.equal(rules.isValidUsagePercent("NaN"), false);
+  assert.equal(rules.isValidUsagePercent("Infinity"), false);
+  assert.equal(rules.barWidthPercent("0"), 0);
+  assert.equal(rules.barWidthPercent("-1"), 0);
+  assert.equal(rules.barWidthPercent("NaN"), 0);
+  assert.equal(rules.barWidthPercent("Infinity"), 0);
   assert.equal(rules.barWidthPercent(null), 0);
 });
 

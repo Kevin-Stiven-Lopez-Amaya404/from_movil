@@ -45,6 +45,7 @@ export function formatCop(value: string | null | undefined): string;
 export function formatKwh(value: string | null | undefined): string;
 export function formatTariff(value: string | null | undefined): string;
 export function formatPercent(value: string | null | undefined): string;
+export function isValidUsagePercent(value: string | null | undefined): boolean;
 export function overLimitPercent(value: string | null | undefined): string | null;
 export function barWidthPercent(value: string | null | undefined): number;
 export function getEnergyAccess(homeRole?: string): EnergyAccess;
