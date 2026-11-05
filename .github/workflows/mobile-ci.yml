@@ -56,6 +56,9 @@ jobs:
       - name: Test Shelly MQTT pairing
         run: npm run test:shelly-mqtt-pairing
 
+      - name: Verify production Shelly pairing is safely unavailable
+        run: node --test scripts/shelly-release-policy.test.js
+
       - name: Test Shelly BLE RPC
         run: npm run test:shelly-ble-rpc
 
