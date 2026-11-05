@@ -1,3 +1,5 @@
+> **HISTÓRICO / NO VIGENTE.** Este documento describe una etapa anterior y no debe utilizarse para configurar usuarios, credenciales o despliegues. Consultar el [índice de vigencia](README.md).
+
 # 🚀 FLUJO FINAL - Smart Home App
 
 ## ✅ FLUJO USUARIO PASO A PASO
@@ -61,8 +63,8 @@ PASO 2️⃣: LOGIN / CREDENCIALES
 │     (vuelve a REGISTER)                │
 └─────────────────────────────────────────┘
   ✅ Credenciales válidas:
-     Email: pepe@smarthome.com
-     Pass: Smart123!
+     Email: [CREDENCIAL_DEMO_RETIRADA]
+     Pass: [CREDENCIAL_DEMO_RETIRADA]
         ↓
    REDIRIGE A: /(tabs)
 
@@ -158,8 +160,8 @@ APP INICIA
 
 ## 🔑 CREDENCIALES TEST
 
-**Email**: `pepe@smarthome.com`  
-**Contraseña**: `Smart123!`  
+**Email**: `[CREDENCIAL_DEMO_RETIRADA]`  
+**Contraseña**: `[CREDENCIAL_DEMO_RETIRADA]`  
 **Código OTP** (si olvida): `222222`
 
 **Atajo**: Botón "Usar acceso demo" en Login
@@ -232,7 +234,7 @@ APP INICIA
 3. **Click "Registrarse"** → Se crea cuenta
 4. **Alerta** → "Cuenta creada"
 5. **Click "Iniciar sesión"** → Va al login
-6. **Ingresa credenciales** → pepe@smarthome.com / Smart123!
+6. **Ingresa credenciales** → [CREDENCIAL_DEMO_RETIRADA] / [CREDENCIAL_DEMO_RETIRADA]
 7. **Click "Inicia sesión"** → Entra al dashboard
 8. **Navega** → 4 tabs principales
 9. **Cierra sesión** → En Ajustes (⚙️)

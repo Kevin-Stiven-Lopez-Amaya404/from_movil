@@ -1,10 +1,12 @@
+> **HISTÓRICO / NO VIGENTE.** Este documento describe una etapa anterior y no debe utilizarse para configurar usuarios, credenciales o despliegues. Consultar el [índice de vigencia](README.md).
+
 # 🚀 GUÍA RÁPIDA - Smart Home App
 
 ## 🎯 En 30 segundos
 
 - **¿Qué es?** App mobile para controlar hogar inteligente
 - **¿Dónde empiezo?** En `welcome.tsx`
-- **¿Cómo entro?** Login con `pepe@smarthome.com` / `Smart123!`
+- **¿Cómo entro?** Login con `[CREDENCIAL_DEMO_RETIRADA]` / `[CREDENCIAL_DEMO_RETIRADA]`
 - **¿Qué puedo hacer?** Ver dispositivos, reportes, ajustes
 - **¿Cómo salgo?** Botón Cerrar Sesión en Ajustes (⚙️)
 
@@ -52,8 +54,8 @@ npm cache clean --force
 
 | Campo | Valor |
 |-------|-------|
-| Email | `pepe@smarthome.com` |
-| Pass | `Smart123!` |
+| Email | `[CREDENCIAL_DEMO_RETIRADA]` |
+| Pass | `[CREDENCIAL_DEMO_RETIRADA]` |
 | OTP | `222222` |
 
 ---

@@ -1,3 +1,5 @@
+> **HISTÓRICO / NO VIGENTE.** Este documento describe una etapa anterior y no debe utilizarse para configurar usuarios, credenciales o despliegues. Consultar el [índice de vigencia](README.md).
+
 # 📱 Smart Home - Guía de Flujo de Usuario
 
 ## 🎯 Resumen Ejecutivo
@@ -52,8 +54,8 @@ app/(tabs)/
 📲 Pantalla: login.tsx
 ├─ El usuario ingresa: correo + contraseña
 ├─ Botón demo: Llena automáticamente credenciales de prueba
-│  • Email: pepe@smarthome.com
-│  • Contraseña: Smart123!
+│  • Email: [CREDENCIAL_DEMO_RETIRADA]
+│  • Contraseña: [CREDENCIAL_DEMO_RETIRADA]
 ├─ Opciones:
 │  • ✅ Credenciales correctas → ENTRA a (tabs) dashboard
 │  • ❌ Credenciales incorrectas → Muestra error
@@ -238,8 +240,8 @@ Forgot Password
 
 ### **Credenciales para Login:**
 ```
-Email: pepe@smarthome.com
-Contraseña: Smart123!
+Email: [CREDENCIAL_DEMO_RETIRADA]
+Contraseña: [CREDENCIAL_DEMO_RETIRADA]
 Nombre: Pepe
 ```
 

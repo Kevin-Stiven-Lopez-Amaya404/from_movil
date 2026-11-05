@@ -1,59 +1,25 @@
-# Smart Home
+# Documentación del frontend móvil
 
-Aplicación móvil hecha con Expo Router y React Native para gestionar una experiencia básica de hogar inteligente: bienvenida, registro, inicio de sesión, recuperación de contraseña, dashboard, hogares, reportes, perfil y ajustes.
+Esta carpeta mezcla guías operativas con materiales históricos. **La rama `dev` y sus pruebas son la referencia del comportamiento implementado**; no interpretes las guías antiguas como contratos vigentes.
 
-## Requisitos
+## Guías operativas junto al código
 
-- Node.js LTS
-- npm
-- Expo CLI vía `npx expo`
+- [Conexión con backend](BACKEND_CONNECTION.md): variables, HTTP, deep links y servicios. El texto sobre Shelly debe contrastarse con los contratos actuales.
+- [POC BLE Android](BLE_POC_ANDROID.md): inspección GATT experimental de solo lectura.
+- [Auditoría de limpieza](auditoria/limpieza-repositorio-2026-11-04.md): alcance y pendientes.
 
-## Comandos
+## Documentos históricos / no canónicos
 
-Instalar dependencias:
+- **Proyecto y diseño:** [documentación de proyecto](DOCUMENTACION_PROYECTO_SMART_HOME.md), [código por pantallas](DOCUMENTACION_CODIGO_PANTALLAS_SMART_HOME.md), [identidad visual](ACTIVIDAD_IDENTIDAD_VISUAL_SMART_HOME.md), [mejoras del instructor](MEJORAS_INSTRUCTOR.md).
+- **Flujos anteriores:** [flujo final](FLUJO_FINAL.md), [flujo de usuario](FLUJO_USUARIO.md), [guía rápida](GUIA_RAPIDA.md), [resumen](RESUMEN.md), [project documentation](PROJECT_DOCUMENTATION.md), [project flow](PROJECT_FLOW.md).
+- **Auditorías de fases:** [auditoría de frontend](auditoria/mobile-frontend-audit.md), [pantallas secundarias](auditoria/secondary-screens-review.md), [inventario de colores](auditoria/inventario-colores.md), [componentes candidatos](auditoria/auditoria-componentes-fase-2.md).
+- **Inventario de componentes:** [docs/components](components/README.md).
+- **Notas históricas de pantallas:** [README de pantallas](historico/README_PANTALLAS.md).
 
-```bash
-npm install
-```
+Varias guías antiguas describen un flujo OTP, login simulado, credenciales de demostración o versión web que no coincide con el código actual.
 
-Iniciar el proyecto:
+## Migración documental
 
-```bash
-npm run start
-```
+El destino central correcto es [`smart-home-doc`](https://github.com/Kevin-Stiven-Lopez-Amaya404/smart-home-doc), **singular**. Los documentos históricos **permanecen aquí hasta confirmar su copia, manifiesto y enlaces en el repositorio central**. No se ha fusionado el PR documental.
 
-Ejecutar en web:
-
-```bash
-npm run web
-```
-
-Validar código:
-
-```bash
-npm run lint
-npx tsc --noEmit
-```
-
-## Estructura
-
-- `app/`: rutas y pantallas de Expo Router.
-- `app/(tabs)/`: navegación principal después del login.
-- `components/`: componentes reutilizables de UI.
-- `constants/`: tokens visuales compartidos.
-- `hooks/`: hooks multiplataforma.
-- `lib/`: lógica de dominio simple, como el store local de autenticación.
-
-## Flujo
-
-1. `welcome`: entrada inicial.
-2. `register` o `login`: autenticación.
-3. `(tabs)`: dashboard, hogares, reportes y perfil.
-4. `forgot-password` -> `otp-verification` -> `new-password`: recuperación.
-
-## Acceso demo
-
-- Correo: `pepe@smarthome.com`
-- Contraseña: `Smart123!`
-
-El store de usuarios es local y en memoria para facilitar la demo. Para producción, reemplazar `lib/auth/auth-store.ts` por una integración real con backend seguro.
+Los cambios en el Markdown actual no borran el historial Git; si hubo credenciales reales expuestas, es necesario revocarlas.

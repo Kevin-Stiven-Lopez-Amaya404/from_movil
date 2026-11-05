@@ -1,3 +1,5 @@
+> **HISTÓRICO / NO VIGENTE.** Este documento describe una etapa anterior y no debe utilizarse para configurar usuarios, credenciales o despliegues. Consultar el [índice de vigencia](README.md).
+
 # 🏠 Smart Home - Resumen de Implementación
 
 ## ✅ Estado del Proyecto: FUNCIONAL
@@ -86,8 +88,8 @@ Login → ¿Olvidó? → Forgot Password → OTP → New Password → Login
 
 | Campo | Valor |
 |-------|-------|
-| Email | `pepe@smarthome.com` |
-| Contraseña | `Smart123!` |
+| Email | `[CREDENCIAL_DEMO_RETIRADA]` |
+| Contraseña | `[CREDENCIAL_DEMO_RETIRADA]` |
 | Código OTP | `222222` |
 
 **Atajo**: Usar botón "Usar acceso demo" en login para auto-rellenar.

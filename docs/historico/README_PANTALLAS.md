@@ -1,3 +1,5 @@
+> **HISTÓRICO / NO VIGENTE.** Este documento se conservó íntegro y se retiró del directorio de rutas `app/(tabs)/`. Consultar `docs/README.md` para referencias vigentes.
+
 # Documentación de pantallas - Carpeta `app/(tabs)`
 
 Esta carpeta contiene las pantallas principales que el usuario ve después de iniciar sesión. Se manejan mediante una navegación inferior tipo tabs.

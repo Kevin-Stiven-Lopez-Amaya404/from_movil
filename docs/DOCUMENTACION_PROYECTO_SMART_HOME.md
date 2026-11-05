@@ -1,3 +1,5 @@
+> **HISTÓRICO / NO VIGENTE.** Este documento describe una etapa anterior y no debe utilizarse para configurar usuarios, credenciales o despliegues. Consultar el [índice de vigencia](README.md).
+
 # Documentación académica del proyecto Smart Home
 
 ## Diagnóstico inicial del proyecto
@@ -224,7 +226,7 @@ Archivo principal:
 Usuarios iniciales:
 
 - `admin@smarthome.com` / `1234`
-- `pepe@smarthome.com` / `Smart123!`
+- `[CREDENCIAL_DEMO_RETIRADA]` / `[CREDENCIAL_DEMO_RETIRADA]`
 
 ## Registro de hogares
 

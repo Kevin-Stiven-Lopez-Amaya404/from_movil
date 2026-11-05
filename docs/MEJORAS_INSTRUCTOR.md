@@ -1,3 +1,5 @@
+> **HISTÓRICO / NO VIGENTE.** Este documento describe una etapa anterior y no debe utilizarse para configurar usuarios, credenciales o despliegues. Consultar el [índice de vigencia](README.md).
+
 # Mejoras implementadas según retroalimentación del instructor
 
 ## Roles
@@ -31,6 +33,6 @@
 - Administrador: `admin@smarthome.com` / `1234`
 - Miembro: `miembro@smarthome.com` / `1234`
 - Invitado: `invitado@smarthome.com` / `1234`
-- Miembro alternativo: `pepe@smarthome.com` / `Smart123!`
+- Miembro alternativo: `[CREDENCIAL_DEMO_RETIRADA]` / `[CREDENCIAL_DEMO_RETIRADA]`
 
 > Estas asignaciones son de demostración local. En una versión conectada a backend deben persistirse en la base de datos y validarse en servidor, no solamente en el cliente.
