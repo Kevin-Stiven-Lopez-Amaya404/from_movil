@@ -70,3 +70,6 @@ jobs:
 
       - name: Verify guarded branch cleanup rules
         run: node --test scripts/branch-cleanup.test.mjs
+
+      - name: Test release promotion policy
+        run: node --test scripts/release-promotion-policy.test.mjs
