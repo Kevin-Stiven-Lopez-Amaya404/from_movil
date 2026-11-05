@@ -32,6 +32,7 @@ import { ApiError } from "@/lib/api/api-error";
 import { useSmartHome } from "@/lib/context/smart-home-context";
 import type { PairingSession } from "@/lib/pairing/pairing-types";
 import { readShellyLocalIdentity } from "@/lib/pairing/shelly-local-identity";
+import { shellyPairingAvailability } from "@/lib/pairing/shelly-release-policy";
 import {
   configureShellyMqttLocally,
   readShellyMqttStatus,
@@ -83,6 +84,7 @@ export default function PrepareShellyScreen() {
   );
 
   const canPrepare = home?.homeRole === "OWNER";
+  const pairingAvailability = shellyPairingAvailability(__DEV__);
 
   const searchRoute = useMemo(() => homeId
     ? {
@@ -150,6 +152,11 @@ export default function PrepareShellyScreen() {
     useRef<AbortController | null>(null);
 
   const verifySelectedDevice = useCallback(async () => {
+    if (!pairingAvailability.canPair) {
+      setVerification("error");
+      setVerificationError(pairingAvailability.reason);
+      return;
+    }
     const run = ++checkRun.current;
 
     requestController.current?.abort();
@@ -215,11 +222,12 @@ export default function PrepareShellyScreen() {
         requestController.current = null;
       }
     }
-  }, [ip, manufacturerDeviceId]);
+  }, [ip, manufacturerDeviceId, pairingAvailability.canPair, pairingAvailability.reason]);
 
   useEffect(() => {
     if (
       !canPrepare ||
+      !pairingAvailability.canPair ||
       homesLoadStatus !== "loaded"
     ) {
       return;
@@ -238,6 +246,7 @@ export default function PrepareShellyScreen() {
     };
   }, [
     canPrepare,
+    pairingAvailability.canPair,
     homesLoadStatus,
     verifySelectedDevice,
   ]);
@@ -338,6 +347,10 @@ export default function PrepareShellyScreen() {
 
 
   async function startPairing() {
+    if (!pairingAvailability.canPair) {
+      setPairingError(pairingAvailability.reason);
+      return;
+    }
     if (
       pairingInProgress.current ||
       !canPrepare ||
@@ -986,6 +999,7 @@ export default function PrepareShellyScreen() {
 
   const canConfirm =
     canPrepare &&
+    pairingAvailability.canPair &&
     verification === "verified" &&
     nameIsValid;
 
@@ -1118,6 +1132,11 @@ export default function PrepareShellyScreen() {
           {verification === "verified" && ip && manufacturerDeviceId ? (
             <ShellyLanTelemetry ip={ip} expectedId={manufacturerDeviceId} />
           ) : null}
+          {!pairingAvailability.canPair ? (
+            <Text style={[styles.helperText, { color: theme.danger }]}>
+              {pairingAvailability.reason}
+            </Text>
+          ) : null}
           {/* Hogar seleccionado */}
           <Text
             style={[
@@ -1170,7 +1189,7 @@ export default function PrepareShellyScreen() {
             maxLength={MAX_NAME_LENGTH}
             autoCapitalize="sentences"
             autoCorrect={false}
-            editable={Boolean(canPrepare)}
+            editable={Boolean(canPrepare && pairingAvailability.canPair)}
             style={[
               styles.nameInput,
               {
@@ -1240,7 +1259,7 @@ export default function PrepareShellyScreen() {
           {isConfirmed && !pairingSession ? (
             <Button
               accessibilityLabel="Iniciar vinculación del Shelly"
-              disabled={pairingLoading}
+              disabled={pairingLoading || !pairingAvailability.canPair}
               label="Iniciar vinculación"
               loading={pairingLoading}
               onPress={() => void startPairing()}
