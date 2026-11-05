@@ -1,0 +1,25 @@
+name: Release Promotion Policy
+
+on:
+  pull_request:
+    branches:
+      - qa
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  enforce-release-order:
+    name: Require dev to qa to main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release policy
+        uses: actions/checkout@v4
+      - name: Check promotion branch and repository
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/release-promotion-policy.mjs
