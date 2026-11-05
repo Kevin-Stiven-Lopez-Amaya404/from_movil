@@ -231,6 +231,20 @@ export default function SettingsScreen() {
             title={t("settings.resources")}
           >
             <SettingsActionRow
+              accessibilityHint="Abre los Términos y Condiciones de Smart Home"
+              backgroundColor={theme.card}
+              borderColor={theme.borderLight}
+              description="Consulta las condiciones de uso de la aplicación"
+              iconName="document-text-outline"
+              iconColor={theme.blue}
+              mutedColor={theme.muted}
+              onPress={() =>
+                router.push({ pathname: "/terms", params: { from: "settings" } })
+              }
+              textColor={theme.text}
+              title="Términos y condiciones"
+            />
+            <SettingsActionRow
               backgroundColor={theme.card}
               borderColor={theme.borderLight}
               description={t("profile.helpSubtitle")}

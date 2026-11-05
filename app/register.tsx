@@ -9,6 +9,14 @@ import { PrimaryButton } from "@/components/auth/PrimaryButton";
 import { BackButton } from "@/components/common/BackButton";
 import { getApiErrorMessage } from "@/lib/api/api-error";
 import { registerUser } from "@/lib/auth/auth-store";
+import {
+  TERMS_DATE,
+  TERMS_SECTIONS,
+  TERMS_STATUS,
+  TERMS_SUBTITLE,
+  TERMS_TITLE,
+  TERMS_VERSION,
+} from "@/lib/legal/terms-content";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAuthPalette } from "@/lib/theme/appearance";
 
@@ -17,6 +25,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { styles } from "../styles/register.styles";
+import { styles as termsStyles } from "../styles/terms.styles";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -35,6 +44,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(true);
 
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -336,14 +346,116 @@ export default function RegisterScreen() {
         {/* ==================================== */}
 
         <View>
+          <View style={styles.termsSectionHeading}>
+            <Text style={[styles.termsSectionTitle, { color: palette.text }]}>
+              Términos y Condiciones
+            </Text>
+            <Text style={[styles.termsSectionHint, { color: palette.muted }]}>
+              Lee el documento aquí antes de aceptar y crear tu cuenta.
+            </Text>
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              showTerms
+                ? "Ocultar Términos y Condiciones"
+                : "Leer Términos y Condiciones completos"
+            }
+            accessibilityHint={
+              showTerms
+                ? "Contrae el documento en el registro"
+                : "Despliega el documento completo en esta pantalla"
+            }
+            accessibilityState={{ expanded: showTerms }}
+            onPress={() => setShowTerms((previous) => !previous)}
+            style={({ pressed }) => [
+              styles.termsDocumentButton,
+              {
+                backgroundColor: palette.primarySoft,
+                borderColor: palette.link,
+              },
+              pressed && styles.termsDocumentPressed,
+            ]}
+          >
+            <Ionicons name="document-text-outline" size={22} color={palette.link} />
+            <View style={styles.termsDocumentCopy}>
+              <Text style={[styles.termsDocumentTitle, { color: palette.link }]}>
+                {showTerms ? "Ocultar el documento" : "Leer el documento completo"}
+              </Text>
+              <Text style={[styles.termsDocumentHint, { color: palette.muted }]}>
+                Términos y Condiciones · Versión {TERMS_VERSION}
+              </Text>
+            </View>
+            <Ionicons
+              name={showTerms ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={palette.link}
+            />
+          </Pressable>
+
+          {showTerms ? (
+            <View
+              style={[
+                styles.termsInlineContent,
+                { backgroundColor: palette.card, borderColor: palette.border },
+              ]}
+            >
+              <Text
+                accessibilityRole="header"
+                style={[termsStyles.documentTitle, { color: palette.text }]}
+              >
+                {TERMS_TITLE}
+              </Text>
+              <Text style={[termsStyles.documentSubtitle, { color: palette.muted }]}>
+                {TERMS_SUBTITLE}
+              </Text>
+              <Text style={[termsStyles.version, { color: palette.muted }]}>
+                Versión: {TERMS_VERSION} · {TERMS_DATE}
+              </Text>
+              <Text style={[termsStyles.status, { color: palette.text }]}>
+                Estado: {TERMS_STATUS}
+              </Text>
+
+              {TERMS_SECTIONS.map((section, index) => (
+                <View
+                  key={section.title}
+                  style={[
+                    termsStyles.section,
+                    index === TERMS_SECTIONS.length - 1 && {
+                      borderBottomWidth: 0,
+                    },
+                    { borderBottomColor: palette.divider },
+                  ]}
+                >
+                  <Text
+                    accessibilityRole="header"
+                    style={[termsStyles.sectionTitle, { color: palette.text }]}
+                  >
+                    {index + 1}. {section.title}
+                  </Text>
+                  {section.paragraphs.map((paragraph, paragraphIndex) => (
+                    <Text
+                      key={`${section.title}-${paragraphIndex}`}
+                      selectable
+                      style={[termsStyles.paragraph, { color: palette.text }]}
+                    >
+                      {paragraph}
+                    </Text>
+                  ))}
+                </View>
+              ))}
+            </View>
+          ) : null}
+
           <AuthCheckboxRow
             checked={acceptTerms}
             label={
               <Text style={[styles.termsText, { color: palette.text }]}>
-                Acepto términos y política de privacidad
+                Acepto los Términos y Condiciones
               </Text>
             }
-            onToggle={() => setAcceptTerms((prev) => !prev)}
+            onToggle={() => setAcceptTerms((previous) => !previous)}
           />
 
           {visibleError("terms") ? (
