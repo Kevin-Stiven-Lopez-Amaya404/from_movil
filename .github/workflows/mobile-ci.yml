@@ -73,3 +73,6 @@ jobs:
 
       - name: Test release promotion policy
         run: node --test scripts/release-promotion-policy.test.mjs
+
+      - name: Test production release acceptance gate
+        run: node --test scripts/release-readiness.test.mjs
