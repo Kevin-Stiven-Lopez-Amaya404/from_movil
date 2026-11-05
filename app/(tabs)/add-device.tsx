@@ -22,6 +22,7 @@ import {
   readShellyLocalIdentity,
   type ShellyLocalIdentity,
 } from "@/lib/pairing/shelly-local-identity";
+import { shellyPairingAvailability } from "@/lib/pairing/shelly-release-policy";
 import { useResponsiveLayout } from "@/lib/responsive/responsive";
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { styles } from "../../styles/(tabs)/add-device.styles";
@@ -51,6 +52,7 @@ export default function AddDeviceScreen() {
   );
 
   const canAddDevice = selectedHome?.homeRole === "OWNER";
+  const pairingAvailability = shellyPairingAvailability(__DEV__);
 
   useAndroidBackFallback(
     returnTo !== "home-detail",
@@ -177,7 +179,7 @@ export default function AddDeviceScreen() {
   }
 
   async function searchLocalWifi() {
-    if (!canAddDevice || wifiSearchLock.current) return;
+    if (!canAddDevice || !pairingAvailability.canPair || wifiSearchLock.current) return;
 
     wifiSearchLock.current = true;
     const run = ++scanRun.current;
@@ -224,6 +226,7 @@ export default function AddDeviceScreen() {
 
     if (
       !canAddDevice ||
+      !pairingAvailability.canPair ||
       !homeId ||
       result?.status !== "verified"
     ) {
@@ -359,16 +362,22 @@ export default function AddDeviceScreen() {
             no vincula dispositivos.
           </Text>
 
+          {!pairingAvailability.canPair ? (
+            <Text style={[styles.message, { color: theme.danger }]}>
+              {pairingAvailability.reason}
+            </Text>
+          ) : null}
+
           {/* Búsqueda principal */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Buscar dispositivos Shelly"
-            disabled={!canAddDevice || wifiSearching}
+            disabled={!canAddDevice || !pairingAvailability.canPair || wifiSearching}
             onPress={() => void searchLocalWifi()}
             style={({ pressed }) => [
               styles.primaryButton,
               { backgroundColor: theme.solidActionBackground },
-              (!canAddDevice || wifiSearching) &&
+              (!canAddDevice || !pairingAvailability.canPair || wifiSearching) &&
                 styles.disabled,
               pressed && styles.pressed,
             ]}
