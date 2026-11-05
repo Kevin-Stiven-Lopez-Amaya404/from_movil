@@ -93,6 +93,7 @@ function RootNavigator({
         <Stack.Screen name="reset-password" />
         <Stack.Screen name="activate-account" />
         <Stack.Screen name="reactivate-account" />
+        <Stack.Screen name="terms" />
       </Stack>
 
       {/* Animación de bienvenida: solo la primera vez por instalación */}
