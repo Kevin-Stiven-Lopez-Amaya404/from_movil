@@ -1,59 +1,22 @@
-# Smart Home
+# Documentación técnica del frontend móvil
 
-Aplicación móvil hecha con Expo Router y React Native para gestionar una experiencia básica de hogar inteligente: bienvenida, registro, inicio de sesión, recuperación de contraseña, dashboard, hogares, reportes, perfil y ajustes.
+Este repositorio mantiene **únicamente documentación operativa cercana al código**. La arquitectura, manuales de proyecto y auditorías históricas ya se preservaron en el [archivo central del móvil](https://github.com/Kevin-Stiven-Lopez-Amaya404/smart-home-doc/tree/main/docs/99-archivo/movil) de `smart-home-doc` (singular).
 
-## Requisitos
+## Documentos locales vigentes
 
-- Node.js LTS
-- npm
-- Expo CLI vía `npx expo`
+- [Conexión con backend y configuración EAS](BACKEND_CONNECTION.md): API HTTP, entorno y contratos que consume el frontend; el backend es la autoridad de los endpoints.
+- [POC BLE Android](BLE_POC_ANDROID.md): ensayo experimental de Shelly GATT de solo lectura. No equivale al pairing completo certificado.
+- [Auditoría de limpieza de repositorio](auditoria/limpieza-repositorio-2026-11-04.md): manifiesto de cambios, validación CI y asuntos pendientes.
 
-## Comandos
+## Jerarquía de fuentes
 
-Instalar dependencias:
+1. Implementación, tests y configuración de la rama `dev` de `from_movil`.
+2. Contratos de REST, MQTT y realtime contrastados con el backend; no se reemplazan por documentos históricos.
+3. Documentación central en `smart-home-doc`, incluidas referencias de arquitectura, diseño, componentes y archivo.
+4. Documentación operativa local para instalación y compilación, mantenida en el mismo PR que cambie su comportamiento.
 
-```bash
-npm install
-```
+## Traslado completado
 
-Iniciar el proyecto:
+El [PR documental #9](https://github.com/Kevin-Stiven-Lopez-Amaya404/smart-home-doc/pull/9) conservó 26 archivos de origen con manifiesto, identificadores Git de procedencia y redacción de referencias a credenciales demostrativas. Los documentos históricos retirados de esta rama siguen disponibles allí. Los archivos de operación backend y BLE permanecen aquí; también se archivaron copias de trazabilidad.
 
-```bash
-npm run start
-```
-
-Ejecutar en web:
-
-```bash
-npm run web
-```
-
-Validar código:
-
-```bash
-npm run lint
-npx tsc --noEmit
-```
-
-## Estructura
-
-- `app/`: rutas y pantallas de Expo Router.
-- `app/(tabs)/`: navegación principal después del login.
-- `components/`: componentes reutilizables de UI.
-- `constants/`: tokens visuales compartidos.
-- `hooks/`: hooks multiplataforma.
-- `lib/`: lógica de dominio simple, como el store local de autenticación.
-
-## Flujo
-
-1. `welcome`: entrada inicial.
-2. `register` o `login`: autenticación.
-3. `(tabs)`: dashboard, hogares, reportes y perfil.
-4. `forgot-password` -> `otp-verification` -> `new-password`: recuperación.
-
-## Acceso demo
-
-- Correo: `pepe@smarthome.com`
-- Contraseña: `Smart123!`
-
-El store de usuarios es local y en memoria para facilitar la demo. Para producción, reemplazar `lib/auth/auth-store.ts` por una integración real con backend seguro.
+La eliminación de archivos en una rama Git **no elimina el historial anterior**. Si una contraseña demostrativa hubiera sido real, debe revocarse por separado.

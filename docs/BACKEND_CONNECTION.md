@@ -1,147 +1,83 @@
-# Conexión con backend
+# Integración de SmartHome móvil con el backend
 
-La app queda preparada para trabajar en dos modos:
+**Repositorio:** `Kevin-Stiven-Lopez-Amaya404/from_movil`.  
+**Referencia de implementación:** rama `dev`, commit de auditoría `46845ffb908c11e250596368bc73651ba5ef56e7`.  
+**Alcance:** configuración y consumo de servicios desde la aplicación; la autoridad de los contratos REST/MQTT pertenece al backend y debe contrastarse antes de cambiarlos.
 
-- Sin `EXPO_PUBLIC_API_URL`: usa datos mock locales para desarrollo visual; la interfaz debe identificarlos como demo.
-- Con `EXPO_PUBLIC_API_URL`: usa HTTP mediante `lib/api/api-client.ts`.
+## Configuración del entorno
 
-## Configuracion
+La aplicación utiliza el backend real. `lib/config/api-config.ts` **no habilita un modo demo sin backend**. Para desarrollo crea `.env.local` a partir de `.env.example` e introduce una URL accesible desde el teléfono:
 
-Crear un archivo `.env` en la raiz del proyecto:
-
-```env
-EXPO_PUBLIC_API_URL=http://<HOST_ACCESIBLE_DESDE_EL_TELEFONO>:3000/api/v1
+```powershell
+Copy-Item .env.example .env.local
+# Editar EXPO_PUBLIC_API_URL con la URL accesible real (sin publicar secretos)
+npm ci
+npx expo start --clear --lan
 ```
 
-La URL puede terminar en `/api/v1` (como en el ejemplo) o ser solo el origen. El cliente HTTP evita duplicar el prefijo `/api/v1`; Socket.IO conecta al namespace `/realtime` desde el origen. En un teléfono físico, `localhost` apunta al propio dispositivo. Usa una dirección LAN, staging o producción accesible desde el teléfono. Reinicia Expo después de cambiar variables.
+La variable `EXPO_PUBLIC_API_URL` acepta un origen o una URL acabada en `/api/v1`; `lib/api/api-client.ts` resuelve el prefijo para evitar duplicarlo. Si el backend es local, el teléfono debe alcanzar la IP del computador: `localhost` en el dispositivo significa el propio teléfono.
 
-## App móvil y enlaces de activación
+En el entorno de producción la configuración exige **HTTPS público válido** y bloquea dominios de ejemplo, localhost e IP locales. Además, `app.config.js` exige `APP_LINK_DOMAIN`, `ANDROID_PACKAGE` e `IOS_BUNDLE_IDENTIFIER` al compilar con perfil de producción.
 
-La aplicación genera destinos nativos solo para Android e iOS. El esquema `smarthome` permite abrir rutas durante desarrollo. En producción, la configuración también crea Android App Links e iOS Universal Links para `/activate-account?token=...` y `/reset-password?token=...`, conservando el parámetro `token`.
+### Enlaces de activación y restablecimiento
 
-Define estas variables en el entorno de producción de EAS:
+Expo Router maneja `/activate-account` y `/reset-password` con token. Los enlaces verificados requieren publicar archivos de asociación Android App Links y Apple Universal Links en `APP_LINK_DOMAIN`; compilar el cliente no demuestra que ese dominio y su asociación funcionen.
 
-- `EXPO_PUBLIC_API_URL`: URL HTTPS real del backend, por ejemplo `https://api.tudominio.com/api/v1`.
-- `APP_LINK_DOMAIN`: dominio HTTPS que aparece en los enlaces del correo, sin ruta. Debe coincidir con el host configurado como `FRONTEND_URL` en el backend.
-- `ANDROID_PACKAGE`: identificador de publicación real de Android.
-- `IOS_BUNDLE_IDENTIFIER`: identificador de publicación real de iOS.
+- Android: `/.well-known/assetlinks.json`, con paquete y huella SHA-256 de la firma que se utilice.
+- iOS: `/.well-known/apple-app-site-association`, con Apple Team ID y Bundle ID.
 
-El build `production` se detiene si falta alguno de estos valores o si contiene un marcador de ejemplo. No uses `localhost`, direcciones LAN ni HTTP para producción. Para desarrollo local, copia `.env.example`, usa una IP LAN accesible desde el teléfono y deja los marcadores de enlaces sin reemplazar hasta conocer los identificadores definitivos.
+## Separación de responsabilidades
 
-El dominio de enlaces puede servir únicamente los archivos de asociación; no hace falta publicar una web de producto. Para completar la verificación, publica `/.well-known/assetlinks.json` con el paquete Android y la huella SHA-256 del certificado de firma, y `/.well-known/apple-app-site-association` con el identificador de equipo Apple y el Bundle ID. Ambos archivos deben servirse por HTTPS en el mismo dominio. Expo Router ya resuelve las rutas existentes `activate-account` y `reset-password` y sus parámetros.
+- `lib/api/api-client.ts`: peticiones HTTP autenticadas y normalización de rutas.
+- `lib/services/auth-service.ts` y `lib/auth/auth-store.ts`: registro, sesión, activación y recuperación, usando servicios reales.
+- `lib/session/session-store.ts`: almacenamiento y renovación de la sesión.
+- `lib/services/smart-home-service.ts`: hogares, dispositivos, membresías.
+- `lib/services/consumption-service.ts` y `lib/services/energy-service.ts`: consumo y reglas SQL034 de tarifas y metas.
+- `lib/services/notifications-service.ts` y `lib/services/realtime-service.ts`: notificaciones y Socket.IO.
+- `lib/services/pairing-service.ts` y `lib/pairing/`: sesiones Shelly, identidad local, preparación/provisión MQTT y exploración BLE/LAN.
 
-Comandos de compilación:
+**Las pantallas no deben gestionar directamente el contrato HTTP.** Utiliza los servicios y conserva validaciones de acceso y estados de conectividad.
 
-```bash
-eas build --profile preview --platform android
-eas build --profile preview --platform ios
-eas build --profile production --platform android
-eas build --profile production --platform ios
+## Contratos consumidos por el frontend
+
+Estas rutas se describen desde el **cliente móvil** y no constituyen una especificación OpenAPI del backend:
+
+| Función | Rutas HTTP consumidas |
+| --- | --- |
+| Registro e inicio de sesión | `POST /api/v1/auth/register`, `POST /api/v1/auth/login` |
+| Activación y contraseñas | `/api/v1/auth/activate`, `/api/v1/auth/forgot-password`, `/api/v1/auth/reset-password`, `PATCH /api/v1/auth/change-password` |
+| Sesiones | `POST /api/v1/auth/refresh`, `/api/v1/auth/logout`, `/api/v1/auth/logout-all` |
+| Hogares y dispositivos | `/api/v1/homes`, `/api/v1/homes/:homeId/devices`, `PATCH /api/v1/homes/:homeId/devices/:deviceId/control` |
+| Invitaciones y miembros | `/api/v1/invitations`, `/api/v1/homes/:homeId/members` y rutas relacionadas |
+| Energía SQL034 | `/api/v1/homes/:homeId/energy/tariffs`, `/energy/goals`, `/energy/summary` bajo el mismo hogar |
+| Shelly | `/api/v1/homes/:homeId/shelly/setup-sessions` y operaciones de identificación/completado y MQTT |
+
+El backend maneja la renovación de sesiones a través de cookie `HttpOnly`, mientras el cliente envía `credentials: include`. Verificar en Android y iOS la persistencia real de cookies al relanzar la APK; una prueba unitaria no certifica este comportamiento.
+
+## Shelly: LAN, BLE y MQTT
+
+El flujo de pairing **sí tiene implementación móvil** en `lib/services/pairing-service.ts`: crea sesiones `setup-sessions`, consulta su estado y realiza identificación, preparación MQTT, bootstrap de configuración local y confirmación de conectividad. La función `prepareAndEnableShellyMqtt` coordina las etapas y valida sus resultados. Su presencia en código **no certifica** vinculación exitosa con un Shelly real ni compatibilidad con todas las versiones de firmware.
+
+La búsqueda por **LAN** se realiza desde el teléfono usando descubrimiento local. El descubrimiento ejecutado en un backend remoto no puede buscar automáticamente los equipos de la red Wi-Fi doméstica. **BLE/GATT** es experimental y su inspección de `Shelly.GetDeviceInfo` es de solo lectura; no equivale a pairing Bluetooth productivo.
+
+No emitir credenciales por logs, URLs o documentación. Las operaciones MQTT requieren TLS, identidad y autorización por sesión y comprobación del estado autenticado, no solo un resultado de configuración local.
+
+## Despliegue Android y actualización
+
+`eas.json` define una APK Android interna con perfil y canal `preview`. La configuración habilita Expo Updates y versión runtime basada en `appVersion`. Las actualizaciones JS/estilos compatibles pueden entregarse OTA:
+
+```powershell
+npx --yes eas-cli@latest update --channel preview --platform android --environment preview --message "SmartHome: actualización validada"
 ```
 
-## Servicios frontend
+No publicar este comando por cambios solo documentales ni sin pasar CI. Si cambian módulos nativos, permisos, plugins, identificadores o runtime, evaluar una nueva APK mediante `eas build --platform android --profile preview`.
 
-La conexion con backend no debe hacerse desde las pantallas.
-Cada pantalla debe consumir funciones de servicios:
+## Verificación antes de aprobar un cambio de contrato
 
-- `lib/services/auth-service.ts`: autenticacion.
-- `lib/services/smart-home-service.ts`: hogares y dispositivos.
-- `lib/services/consumption-service.ts`: consumo por hogar y dispositivo.
-- `lib/services/notifications-service.ts`: notificaciones.
-- `lib/services/realtime-service.ts`: Socket.IO.
-- `lib/services/pairing-service.ts`: pairing móvil todavía no integrado con el flujo Shelly del backend.
-- `lib/api/api-client.ts`: cliente HTTP comun.
+1. Contrastar rutas, métodos, permisos y cuerpos con los controladores del backend en su commit concreto.
+2. Ejecutar lint, typecheck, `test:mobile-config`, `test:navigation-auth`, `test:energy-sql034`, `test:shelly-mqtt-pairing` y `test:shelly-ble-rpc`.
+3. Probar en APK física: inicio/cierre/refresh, reconexión, LAN, BLE read-only y sesión MQTT con Shelly real.
+4. No marcar como completado ningún pairing si la sesión sigue en `WAITING_FOR_MQTT` o si falta conexión autenticada.
+5. Registrar diferencias de contrato como solicitud al backend; no modificar backend ni BD desde esta limpieza móvil.
 
-## Endpoints esperados
-
-| Funcion                              | Metodo         | Endpoint                                                                                              |
-| ------------------------------------ | -------------- | ----------------------------------------------------------------------------------------------------- | -------- |
-| Iniciar sesión                       | `POST`         | `/api/v1/auth/login`                                                                                  |
-| Registrar usuario                    | `POST`         | `/api/v1/auth/register`                                                                               |
-| Activar cuenta                       | `POST`         | `/api/v1/auth/activate`                                                                               |
-| Recuperar/restablecer contraseña     | `POST`         | `/api/v1/auth/forgot-password`, `/api/v1/auth/reset-password`                                         |
-| Cambiar contraseña                   | `PATCH`        | `/api/v1/auth/change-password`                                                                        |
-| Renovar sesión                       | `POST`         | `/api/v1/auth/refresh`                                                                                |
-| Cerrar sesión / todas                | `POST`         | `/api/v1/auth/logout`, `/api/v1/auth/logout-all`                                                      |
-| Usuario autenticado                  | `GET`          | `/api/v1/auth/me`                                                                                     |
-| Listar/crear hogares                 | `GET`, `POST`  | `/api/v1/homes`                                                                                       |
-| Listar miembros/invitar              | `GET`, `POST`  | `/api/v1/homes/:homeId/members`, `/api/v1/homes/:homeId/invitations`                                  |
-| Listar/aceptar/rechazar invitaciones | `GET`, `PATCH` | `/api/v1/invitations`, `/api/v1/invitations/:memberId/accept`, `/api/v1/invitations/:memberId/reject` |
-| Cambiar rol/revocar miembro          | `PATCH`        | `/api/v1/homes/:homeId/members/:memberId/role`, `/api/v1/homes/:homeId/members/:memberId/revoke`     |
-| Salir del hogar                     | `POST`         | `/api/v1/homes/:homeId/leave`                                                                         |
-| Listar dispositivos por hogar        | `GET`          | `/api/v1/homes/:homeId/devices`                                                                       |
-| Controlar dispositivo                | `PATCH`        | `/api/v1/homes/:homeId/devices/:deviceId/control`                                                     |
-| Consumo hogar                        | `GET`          | `/api/v1/homes/:homeId/consumption[/(summary                                                          | daily)]` |
-| Consumo dispositivo                  | `GET`          | `/api/v1/homes/:homeId/devices/:deviceId/consumption[/(summary                                        | daily)]` |
-| Notificaciones                       | `GET`, `PATCH` | `/api/v1/notifications`                                                                               |
-
-## Contratos verificados en el backend entregado
-
-- Registro recibe `name`, `email`, `password` y `passwordConfirmation`; responde con `id`, `name`, `email`, `status` y `emailVerified`. La cuenta queda pendiente de activación y se envía un enlace por correo.
-- Activación y reenvío reciben `token` y `email`, respectivamente. El código de 6 dígitos del prototipo no corresponde al contrato del backend.
-- Recuperación recibe `{ email }`; el enlace incluye un token. El restablecimiento recibe `{ token, password, passwordConfirmation }`.
-- Cambio de contraseña usa `PATCH /api/v1/auth/change-password` con `currentPassword`, `newPassword` y `newPasswordConfirmation`.
-- Login responde con `accessToken`, `tokenType` y `user` (`id`, `name`, `email`, `role`). El refresh token no viene en JSON: el backend lo administra en una cookie `HttpOnly`; `/auth/refresh` devuelve un nuevo access token. El cliente móvil envía cookies con `credentials: "include"`, pero ese comportamiento debe validarse en Android/iOS contra el entorno desplegado.
-- Control de dispositivo usa `PATCH /api/v1/homes/:homeId/devices/:deviceId/control` con `command: "TURN_ON" | "TURN_OFF"`. Crear un dispositivo no usa `deviceTypeId`; el backend actual eliminó `device_type`.
-- Invitaciones y membresía del hogar usan `GET /api/v1/invitations`, `PATCH /api/v1/invitations/:id/accept`, `PATCH /api/v1/invitations/:id/reject`, `PATCH /api/v1/homes/:homeId/members/:memberId/role`, `PATCH /api/v1/homes/:homeId/members/:memberId/revoke` y `POST /api/v1/homes/:homeId/leave`.
-- Consumo real usa las rutas del servicio `consumption`; el backend no define `/reports`.
-- Notificaciones incluyen `GET /notifications/unread-count`, `PATCH /notifications/read-all`, `PATCH /notifications/:notificationId/read` y `PATCH /notifications/:notificationId/dismiss`.
-
-### Límite del pairing Shelly
-
-El backend incluye `GET /api/v1/homes/:homeId/shelly/discover`, `POST .../identify` y `POST .../provision`. Identificación/provisionamiento reciben la IP local (`shellyIp`); provisionamiento también recibe `name`. `discover` busca desde la red donde se ejecuta el backend y no debe llamarse desde una app apuntando a un backend cloud para buscar en la LAN de la casa. Este contrato tampoco expone `DevicePairingSession`, BLE ni configuración Wi-Fi desde el móvil. Por tanto, el pairing móvil Shelly queda pendiente de un flujo que mantenga la comunicación local teléfono-dispositivo y de validar cómo se coordinará de forma segura el aprovisionamiento MQTT.
-
-## Relacion principal de datos
-
-Un hogar puede tener varios dispositivos.
-Un dispositivo siempre pertenece a un hogar mediante `homeId`.
-
-```ts
-type SmartHomePlace = {
-  id: string;
-  name: string;
-  location: string;
-  favorite: boolean;
-};
-
-type SmartDevice = {
-  id: string;
-  homeId: string;
-  name: string;
-  category: string;
-  icon: string;
-  consumption: number;
-  yesterday: number;
-  online: boolean;
-};
-```
-
-## Respuesta de login del backend
-
-```json
-{
-  "accessToken": "jwt-token",
-  "tokenType": "Bearer",
-  "user": {
-    "id": "uuid",
-    "email": "usuario@correo.com",
-    "name": "Usuario",
-    "role": "USER"
-  }
-}
-```
-
-## Reglas de integracion
-
-- Mantener las pantallas sin `fetch` directo.
-- Centralizar errores en `ApiError`.
-- Usar `homeId` para consultar dispositivos por hogar.
-- Obtener `OWNER`, `MEMBER` o `GUEST` de la membresía de cada hogar; el rol global del usuario no autoriza operaciones del hogar.
-- No guardar ni esperar el refresh token en el JSON de login: el contrato vigente lo entrega en una cookie `HttpOnly`.
-- El contrato vigente de miembros devuelve `userId`, rol y estado, pero no nombre ni correo; la UI no debe inventarlos.
-- No usar zonas/estancias como parte del modelo funcional.
-- No crear un endpoint `/reports` ni endpoints de pairing sin contrato backend confirmado.
-- Para consumo incremental, agregar `energyDeltaKwh`; no sumar `energyTotalKwh`.
-- En dispositivos físicos, nunca configurar `localhost` como dirección backend.
-- No usar descubrimiento Shelly ejecutado desde el backend cloud para encontrar dispositivos en la LAN de la casa.
-- El backend entregado aún no expone `DevicePairingSession`; el flujo móvil no debe fingir éxito de pairing.
+**Documentación central:** [smart-home-doc](https://github.com/Kevin-Stiven-Lopez-Amaya404/smart-home-doc). Archivos previos preservados en `docs/99-archivo/movil`.
