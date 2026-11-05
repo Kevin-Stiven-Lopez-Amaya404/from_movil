@@ -46,7 +46,14 @@ Búsquedas de referencias en GitHub detectaron archivos sin consumidores obvios 
 
 No se elimina código o assets en este PR documental. El retiro requiere revisar imports, rutas, recursos de Expo y pruebas, seguido por CI. **`app.json`, `app.config.js`, `eas.json`, `package.json`, `package-lock.json`, Shelly, MQTT y BLE se mantienen intactos**.
 
-## 6. Puertas de validación
+## 6. Riesgos técnicos detectados y diferidos
+
+- `lib/services/pairing-service.ts` conserva un host MQTT fijado en el código. Revisar externalización controlada por entorno y compatibilidad con el backend antes de producción; no cambiarlo durante un PR exclusivamente documental.
+- La auditoría de imports encontró componentes antiguos sin consumidores evidentes fuera de su propio archivo o documentos. Deben validarse con análisis estático y CI en un PR separado.
+- Los paquetes nativos de Expo, la integración BLE y el sistema de actualización deben verificarse juntos; **no se eliminan dependencias** en esta etapa sin regenerar lockfile y ejecutar tests.
+- Corroborar en Android físico el flujo de BLE/RPC y sesiones MQTT; las pruebas automatizadas utilizan simulaciones.
+
+## 7. Puertas de validación
 
 - Antes de fusionar el PR móvil: `git diff --check`, lint, typecheck y Mobile CI completos en verde.
 - Después del merge: pruebas manuales con APK Android existente, autenticación, enlaces, energía, LAN/BLE Shelly y backend.
