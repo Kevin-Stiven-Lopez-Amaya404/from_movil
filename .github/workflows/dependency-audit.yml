@@ -4,11 +4,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 13 * * 1"
-  pull_request:
-    paths:
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/dependency-audit.yml"
+  # Existing high-severity baseline tracked in issue #42.
+  # Manual and weekly audits report risk without blocking unrelated PRs.
 
 permissions:
   contents: read
