@@ -64,3 +64,6 @@ jobs:
 
       - name: Test language preferences
         run: node scripts/language-preferences.test.mjs
+
+      - name: Export Android JavaScript bundle
+        run: npx expo export --platform android --output-dir dist-ci
