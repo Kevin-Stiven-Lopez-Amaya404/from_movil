@@ -1,55 +1,18 @@
-export const Colors = {
-  light: {
-    tint: "#0057B8",
-    icon: "#1A1A2E",
-    background: "#FFFFFF",
-    text: "#1A1A2E",
-  },
-  dark: {
-    tint: "#FFFFFF",
-    icon: "#FFFFFF",
-    background: "#0057B8",
-    text: "#FFFFFF",
-  },
-} as const;
+import { typography } from "@/lib/theme/typography";
 
+/** Tokens de espaciado y proporciones que no dependen de la paleta visual. */
 export const theme = {
-  colors: {
-    primary: "#0057B8",
-    primaryDark: "#004494",
-    backgroundBlue: "#0057B8",
-    backgroundWhite: "#FFFFFF",
-    inputBg: "#F0F4FF",
-    inputBorder: "#C5D3E8",
-    inputText: "#1A1A2E",
-    placeholder: "#9AABC2",
-    textDark: "#1A1A2E",
-    textLight: "#FFFFFF",
-    textLink: "#0057B8",
-    textMuted: "#6B7A99",
-    buttonPrimary: "#0057B8",
-    buttonOutline: "transparent",
-    buttonBorder: "#FFFFFF",
-    buttonBorderBlue: "#0057B8",
-    buttonText: "#FFFFFF",
-    buttonTextOutline: "#FFFFFF",
-    checkboxActive: "#0057B8",
-    checkboxBorder: "#C5D3E8",
-    divider: "#E0E8F5",
-    error: "#D32F2F",
-  },
   fontSize: {
-    xs: 11,
-    sm: 13,
-    base: 15,
-    md: 17,
-    lg: 20,
-    xl: 26,
-    xxl: 32,
-    logo: 28,
+    xs: typography.size.caption,
+    sm: typography.size.helper,
+    base: typography.size.body,
+    md: typography.size.bodyLarge,
+    lg: typography.size.section,
+    xl: typography.size.title,
+    xxl: typography.size.screenTitle,
+    logo: typography.size.brand,
   },
-  rounded: "System",
-  mono: "monospace",
+
   spacing: {
     xs: 4,
     sm: 8,
@@ -58,6 +21,7 @@ export const theme = {
     xl: 28,
     xxl: 40,
   },
+
   radius: {
     input: 10,
     button: 10,

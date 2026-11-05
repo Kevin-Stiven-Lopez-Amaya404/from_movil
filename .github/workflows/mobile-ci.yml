@@ -1,0 +1,84 @@
+name: Mobile CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Lint, types and regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test mobile configuration
+        run: npm run test:mobile-config
+
+      - name: Test navigation and authentication
+        run: npm run test:navigation-auth
+
+      - name: Test alerts
+        run: npm run test:alerts
+
+      - name: Test realtime device status
+        run: npm run test:realtime-device-status
+
+      - name: Test device presentation
+        run: npm run test:device-presentation
+
+      - name: Test energy SQL034
+        run: npm run test:energy-sql034
+
+      - name: Test Shelly MQTT pairing
+        run: npm run test:shelly-mqtt-pairing
+
+      - name: Verify production Shelly pairing is safely unavailable
+        run: node --test scripts/shelly-release-policy.test.js
+
+      - name: Test Shelly BLE RPC
+        run: npm run test:shelly-ble-rpc
+
+      - name: Test profile actions
+        run: node scripts/profile-settings-actions.test.mjs
+
+      - name: Test language preferences
+        run: node scripts/language-preferences.test.mjs
+
+      - name: Export Android JavaScript bundle
+        run: npx expo export --platform android --output-dir dist-ci
+
+      - name: Verify guarded branch cleanup rules
+        run: node --test scripts/branch-cleanup.test.mjs
+
+      - name: Test release promotion policy
+        run: node --test scripts/release-promotion-policy.test.mjs
+
+      - name: Test production release acceptance gate
+        run: node --test scripts/release-readiness.test.mjs
+
+      - name: Test dependency audit report summarizer
+        run: node --test scripts/audit-report.test.mjs

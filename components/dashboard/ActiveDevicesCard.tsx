@@ -1,0 +1,231 @@
+import { Ionicons } from "@expo/vector-icons";
+import { Pressable, Text, View } from "react-native";
+
+import {
+  isDeviceConfirmedOnline,
+  type SmartDevice,
+} from "@/lib/domain/device";
+import { useAppTheme } from "@/lib/theme/app-theme";
+
+import { formatWatts } from "@/lib/utils/formatters";
+import { styles } from "./ActiveDevicesCard.styles";
+
+type Props = {
+  devices: SmartDevice[];
+  onDevicePress: (deviceId: string) => void;
+  onViewAll: () => void;
+};
+
+const categoryMap: Record<
+  string,
+  {
+    icon: keyof typeof Ionicons.glyphMap;
+  }
+> = {
+  Iluminacion: {
+    icon: "bulb-outline",
+  },
+  Climatizacion: {
+    icon: "snow-outline",
+  },
+  Electrodomesticos: {
+    icon: "tv-outline",
+  },
+  Seguridad: {
+    icon: "shield-checkmark-outline",
+  },
+};
+
+export function ActiveDevicesCard({
+  devices,
+  onDevicePress,
+  onViewAll,
+}: Props) {
+  const theme = useAppTheme();
+
+  const active = devices
+    .filter(
+      (device) =>
+        isDeviceConfirmedOnline(device) &&
+        device.state === "on" &&
+        device.power > 0,
+    )
+    .slice(0, 4);
+
+  return (
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.card,
+          borderColor: theme.borderLight,
+          shadowColor: theme.shadowColor,
+        },
+      ]}
+    >
+      <View style={styles.header}>
+        <View>
+          <Text
+            style={[
+              styles.title,
+              {
+                color: theme.text,
+              },
+            ]}
+          >
+            Dispositivos activos
+          </Text>
+
+          <Text
+            style={[
+              styles.subtitle,
+              {
+                color: theme.muted,
+              },
+            ]}
+          >
+            {active.length} funcionando ahora
+          </Text>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={onViewAll}
+          style={({ pressed }) => [
+            styles.viewButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Text
+            style={[
+              styles.viewText,
+              {
+                color: theme.blue,
+              },
+            ]}
+          >
+            Ver todo
+          </Text>
+
+          <Ionicons name="chevron-forward" size={16} color={theme.blue} />
+        </Pressable>
+      </View>
+
+      {active.length === 0 ? (
+        <View style={styles.empty}>
+          <View
+            style={[
+              styles.emptyIcon,
+              {
+                backgroundColor: theme.rowAlt,
+              },
+            ]}
+          >
+            <Ionicons name="power-outline" size={24} color={theme.muted} />
+          </View>
+
+          <Text
+            style={[
+              styles.emptyText,
+              {
+                color: theme.muted,
+              },
+            ]}
+          >
+            No hay dispositivos activos
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.list}>
+          {active.map((device, index) => {
+            const category = categoryMap[device.category];
+
+            const icon = category?.icon ?? "power-outline";
+
+            return (
+              <Pressable
+                key={device.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Abrir ${device.name}`}
+                onPress={() => onDevicePress(device.id)}
+                style={({ pressed }) => [
+                  styles.device,
+                  index < active.length - 1 && {
+                    borderBottomColor: theme.borderLight,
+                    borderBottomWidth: 1,
+                  },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.deviceIcon,
+                    {
+                      backgroundColor: theme.rowAlt,
+                    },
+                  ]}
+                >
+                  <Ionicons name={icon} size={19} color={theme.blue} />
+                </View>
+
+                <View style={styles.deviceInfo}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.deviceName,
+                      {
+                        color: theme.text,
+                      },
+                    ]}
+                  >
+                    {device.name}
+                  </Text>
+
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.deviceRoom,
+                      {
+                        color: theme.muted,
+                      },
+                    ]}
+                  >
+                    Conectado
+                  </Text>
+                </View>
+
+                <View style={styles.deviceRight}>
+                  <View
+                    style={[
+                      styles.activeDot,
+                      {
+                        backgroundColor: theme.success,
+                      },
+                    ]}
+                  />
+
+                  <Text
+                    style={[
+                      styles.power,
+                      {
+                        color: theme.text,
+                      },
+                    ]}
+                  >
+                    {formatWatts(device.power)}
+                  </Text>
+
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={theme.muted}
+                  />
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}

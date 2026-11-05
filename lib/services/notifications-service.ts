@@ -1,0 +1,90 @@
+import { apiClient } from "@/lib/api/api-client";
+
+export type NotificationStatus = "UNREAD" | "READ" | "DISMISSED";
+
+export type SmartNotification = {
+  id: string;
+
+  homeId?: string | null;
+  homeName?: string | null;
+  deviceId?: string | null;
+  deviceName?: string | null;
+  alertId?: string | null;
+
+  title?: string;
+  message?: string;
+  description?: string;
+  type?: string;
+
+  status: NotificationStatus;
+  priority?: string;
+  channel?: string;
+
+  createdAt?: string;
+  updatedAt?: string;
+  readAt?: string | null;
+  dismissedAt?: string | null;
+};
+
+export interface NotificationsService {
+  list(options?: {
+    status?: NotificationStatus;
+    limit?: number;
+    token?: string;
+  }): Promise<SmartNotification[]>;
+  unreadCount(token?: string): Promise<number>;
+  markAsRead(
+    notificationId: string,
+    token?: string,
+  ): Promise<SmartNotification>;
+  dismiss(
+    notificationId: string,
+    token?: string,
+  ): Promise<SmartNotification>;
+  markAllAsRead(token?: string): Promise<void>;
+}
+
+const backendNotificationsService: NotificationsService = {
+  list({ status, limit, token } = {}) {
+    const query = new URLSearchParams();
+    if (status) query.set("status", status);
+    if (limit) query.set("limit", String(limit));
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+
+    return apiClient.get<SmartNotification[]>(
+      `/api/v1/notifications${suffix}`,
+      { token },
+    );
+  },
+  unreadCount(token) {
+    return apiClient
+      .get<{
+        unreadCount?: number;
+        count?: number;
+      }>("/api/v1/notifications/unread-count", { token })
+      .then((response) => response.unreadCount ?? response.count ?? 0);
+  },
+  markAsRead(notificationId, token) {
+    return apiClient.patch<SmartNotification>(
+      `/api/v1/notifications/${notificationId}/read`,
+      undefined,
+      { token },
+    );
+  },
+  dismiss(notificationId, token) {
+    return apiClient.patch<SmartNotification>(
+      `/api/v1/notifications/${notificationId}/dismiss`,
+      undefined,
+      { token },
+    );
+  },
+  markAllAsRead(token) {
+    return apiClient
+      .patch<{
+        updated?: number;
+      }>("/api/v1/notifications/read-all", undefined, { token })
+      .then(() => undefined);
+  },
+};
+
+export const notificationsService: NotificationsService = backendNotificationsService;

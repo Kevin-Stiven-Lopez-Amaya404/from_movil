@@ -1,59 +1,78 @@
-# Smart Home
+# SmartHome — frontend móvil
 
-Aplicación móvil hecha con Expo Router y React Native para gestionar una experiencia básica de hogar inteligente: bienvenida, registro, inicio de sesión, recuperación de contraseña, dashboard, dispositivos, reportes, perfil y ajustes.
+Aplicación nativa Android/iOS para gestionar hogares, dispositivos Shelly, energía, alertas y preferencias. Implementada con **Expo SDK 57**, **React Native 0.86**, **TypeScript** y **Expo Router**.
 
-## Requisitos
+La rama de integración es `dev`. No hay despliegue web de este frontend. Los servicios y pruebas del código prevalecen frente a la documentación histórica.
 
-- Node.js LTS
-- npm
-- Expo CLI vía `npx expo`
+## Organización
 
-## Comandos
+| Ruta | Responsabilidad |
+| --- | --- |
+| `app/` | Pantallas y navegación Expo Router. |
+| `components/`, `styles/`, `assets/`, `constants/` | UI, estilos y recursos. |
+| `lib/api/`, `lib/services/` | API, autenticación, consumo y realtime. |
+| `lib/pairing/` | Descubrimiento LAN, BLE experimental y MQTT. |
+| `lib/context/`, `lib/hooks/` | Contexto y sincronización. |
+| `lib/legal/` | Texto legal que usa la aplicación. |
+| `scripts/` | Pruebas automatizadas. |
+| `.github/workflows/` | CI y compilación de POC Android. |
 
-Instalar dependencias:
+## Desarrollo
 
-```bash
-npm install
+Requisitos: Node.js 22 para reproducir CI, npm y un dispositivo/emulador Android cuando se pruebe funcionalidad nativa.
+
+```powershell
+git fetch origin
+git switch dev
+git pull --ff-only origin dev
+npm ci
+Copy-Item .env.example .env.local
+npx expo start --clear --lan
 ```
 
-Iniciar el proyecto:
+Edita `.env.local` y define `EXPO_PUBLIC_API_URL` con la URL del backend accesible desde el teléfono. No publiques secretos ni archivos `.env.local`. En un teléfono físico, `localhost` no es el computador.
 
-```bash
-npm run start
-```
+**Expo Go no incluye necesariamente los módulos BLE nativos** de la aplicación; usa Development Build o APK compatible para esas funciones.
 
-Ejecutar en web:
+## Pruebas
 
-```bash
-npm run web
-```
-
-Validar código:
-
-```bash
+```powershell
 npm run lint
-npx tsc --noEmit
+npm run typecheck
+npm run test:mobile-config
+npm run test:navigation-auth
+npm run test:alerts
+npm run test:realtime-device-status
+npm run test:device-presentation
+npm run test:energy-sql034
+npm run test:shelly-mqtt-pairing
+npm run test:shelly-ble-rpc
+node scripts/profile-settings-actions.test.mjs
+node scripts/language-preferences.test.mjs
 ```
 
-## Estructura
+Las pruebas simuladas no reemplazan la verificación de Shelly físico, backend y compilación nativa.
 
-- `app/`: rutas y pantallas de Expo Router.
-- `app/(tabs)/`: navegación principal después del login.
-- `components/`: componentes reutilizables de UI.
-- `constants/`: tokens visuales compartidos.
-- `hooks/`: hooks multiplataforma.
-- `lib/`: lógica de dominio simple, como el store local de autenticación.
+## APK Preview y actualizaciones OTA
 
-## Flujo
+`eas.json` define el perfil y canal `preview` para la APK Android instalada. `app.json` habilita Expo Updates con runtime `appVersion`. Tras integrar y validar un cambio compatible en `dev`:
 
-1. `welcome`: entrada inicial.
-2. `register` o `login`: autenticación.
-3. `(tabs)`: dashboard, dispositivos, reportes y perfil.
-4. `forgot-password` -> `otp-verification` -> `new-password`: recuperación.
+```powershell
+npx --yes eas-cli@latest update --channel preview --platform android --environment preview --message "SmartHome: frontend móvil validado"
+```
 
-## Acceso demo
+Esta orden **publica una OTA**. No ejecutarla por cambios documentales solamente. Plugins, permisos, código nativo, splash nativo y cambios incompatibles de runtime pueden requerir una nueva APK:
 
-- Correo: `pepe@smarthome.com`
-- Contraseña: `Smart123!`
+```powershell
+npx --yes eas-cli@latest build --platform android --profile preview
+```
 
-El store de usuarios es local y en memoria para facilitar la demo. Para producción, reemplazar `lib/auth-store.ts` por una integración real con backend seguro.
+## Documentación
+
+- [Índice de documentos y vigencia](docs/README.md).
+- [Integración con backend](docs/BACKEND_CONNECTION.md).
+- [POC BLE Shelly Android](docs/BLE_POC_ANDROID.md) — lectura experimental, no pairing completo.
+- [Estado de la limpieza](docs/auditoria/limpieza-repositorio-2026-11-04.md).
+- [Repositorio documental central](https://github.com/Kevin-Stiven-Lopez-Amaya404/smart-home-doc) (singular).
+
+El [archivo histórico central](https://github.com/Kevin-Stiven-Lopez-Amaya404/smart-home-doc/tree/main/docs/99-archivo/movil) conserva 26 documentos con manifiesto de trazabilidad, integrado en el PR documental #9. Solo permanecen aquí las guías operativas y esta auditoría.
