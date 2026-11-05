@@ -4,15 +4,22 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 13 * * 1"
-  # Existing high-severity baseline tracked in issue #42.
-  # Manual and weekly audits report risk without blocking unrelated PRs.
+  push:
+    branches:
+      - dev
+    paths:
+      - package.json
+      - package-lock.json
+      - .github/workflows/dependency-audit.yml
+      - scripts/audit-report.mjs
+      - scripts/audit-report.test.mjs
 
 permissions:
   contents: read
 
 jobs:
   production-dependencies:
-    name: Audit production dependencies
+    name: Audit production dependency lockfile
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -23,5 +30,30 @@ jobs:
         with:
           node-version: 22
 
-      - name: Check lockfile vulnerabilities
-        run: npm audit --omit=dev --audit-level=high
+      - name: Test audit summarizer
+        run: node --test scripts/audit-report.test.mjs
+
+      - name: Collect npm audit JSON
+        id: npm-audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --audit-level=high --json > "$RUNNER_TEMP/production-audit.json"
+          code=$?
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          echo "npm audit request finished (exit code: $code)"
+
+      - name: Upload raw audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: production-dependency-audit-json
+          path: ${{ runner.temp }}/production-audit.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Summarize severity and verify high-risk baseline
+        env:
+          AUDIT_EXIT_CODE: ${{ steps.npm-audit.outputs.exit_code }}
+        run: node scripts/audit-report.mjs "$RUNNER_TEMP/production-audit.json"
