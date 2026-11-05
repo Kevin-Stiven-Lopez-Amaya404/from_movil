@@ -1,0 +1,44 @@
+name: Dependency Regression Guard
+
+on:
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - package.json
+      - package-lock.json
+      - .github/workflows/dependency-regression.yml
+      - scripts/audit-regressions.mjs
+      - scripts/audit-regressions.test.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: Block newly introduced high/critical vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR with history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test audit comparator
+        run: node --test scripts/audit-regressions.test.mjs
+
+      - name: Audit baseline and pull request (lockfiles only)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/audit-base"
+          git show "$BASE_SHA:package.json" > "$RUNNER_TEMP/audit-base/package.json"
+          git show "$BASE_SHA:package-lock.json" > "$RUNNER_TEMP/audit-base/package-lock.json"
+          (cd "$RUNNER_TEMP/audit-base" && npm audit --omit=dev --json > "$RUNNER_TEMP/base-audit.json") || true
+          npm audit --omit=dev --json > "$RUNNER_TEMP/head-audit.json" || true
+          node scripts/audit-regressions.mjs "$RUNNER_TEMP/base-audit.json" "$RUNNER_TEMP/head-audit.json"
