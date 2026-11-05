@@ -79,3 +79,6 @@ jobs:
 
       - name: Test production release acceptance gate
         run: node --test scripts/release-readiness.test.mjs
+
+      - name: Test dependency audit report summarizer
+        run: node --test scripts/audit-report.test.mjs
