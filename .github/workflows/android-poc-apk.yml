@@ -12,6 +12,9 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/android-poc-apk.yml"
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -20,6 +23,11 @@ permissions:
 jobs:
   build:
     name: Build installable development APK
+    # QA release PR must originate from the same repository; no secrets are used.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.ref == 'qa' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
