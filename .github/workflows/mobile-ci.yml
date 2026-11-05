@@ -67,3 +67,6 @@ jobs:
 
       - name: Export Android JavaScript bundle
         run: npx expo export --platform android --output-dir dist-ci
+
+      - name: Verify guarded branch cleanup rules
+        run: node --test scripts/branch-cleanup.test.mjs
