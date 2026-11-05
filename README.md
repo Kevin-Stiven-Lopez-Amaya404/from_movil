@@ -75,4 +75,4 @@ npx --yes eas-cli@latest build --platform android --profile preview
 - [Estado de la limpieza](docs/auditoria/limpieza-repositorio-2026-11-04.md).
 - [Repositorio documental central](https://github.com/Kevin-Stiven-Lopez-Amaya404/smart-home-doc) (singular).
 
-La documentación histórica del repositorio móvil **no se eliminará hasta que el traslado a la documentación central esté verificado**.
+El [archivo histórico central](https://github.com/Kevin-Stiven-Lopez-Amaya404/smart-home-doc/tree/main/docs/99-archivo/movil) conserva 26 documentos con manifiesto de trazabilidad, integrado en el PR documental #9. Solo permanecen aquí las guías operativas y esta auditoría.
