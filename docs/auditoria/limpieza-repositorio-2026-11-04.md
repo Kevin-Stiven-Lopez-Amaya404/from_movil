@@ -59,3 +59,37 @@ No se elimina código o assets en este PR documental. El retiro requiere revisar
 - Después del merge: pruebas manuales con APK Android existente, autenticación, enlaces, energía, LAN/BLE Shelly y backend.
 - No publicar una OTA de documentación ni reconstruir APK por eliminación de Markdown.
 - Ninguna acción sobre el PR #36 sin decisión específica del equipo.
+
+## 8. Depuración de código y recursos no referenciados
+
+Se realizó una segunda comprobación de búsqueda de referencias de identificadores e imports en GitHub sobre la rama `dev` (04/11/2026). Los archivos siguientes no tenían consumidores de código fuera de sí mismos o de documentos ya archivados; su eliminación se propone en un PR separado con `lint`, `typecheck`, suites automatizadas y export Android.
+
+**Candidatos de la limpieza estática:**
+
+- `assets/images/favicon.png`
+- `assets/images/logo-smart-home.png`
+- `assets/images/logosmarthome-removebg-preview.png`
+- `components/dashboard/ConsumptionChartCard.tsx`
+- `components/dashboard/CurrentConsumptionCard.tsx`
+- `components/dashboard/CurrentConsumptionCard.styles.ts`
+- `components/dashboard/EnergyAccumulatedCard.tsx`
+- `components/dashboard/EnergyAccumulatedCard.styles.ts`
+- `components/dashboard/EnergySummaryCard.tsx`
+- `components/dashboard/HomeConsumptionGoalCard.tsx`
+- `components/dashboard/HomeWidgetCard.tsx`
+- `components/dashboard/HomeWidgetCard.styles.ts`
+- `components/homes/HomeHeroCard.tsx`
+- `components/profile/ProfileModule.tsx`
+- `components/profile/ProfileSectionHeader.tsx`
+- `components/profile/ProfileShortcutCard.tsx`
+- `components/navigation/HapticTab.tsx`
+- `components/icons/GoogleIcon.tsx`
+- `components/ui/Card.tsx`
+- `components/reports/.gitkeep`
+- `hooks/use-theme-color.ts`
+- `hooks/use-color-scheme.ts`
+- `hooks/use-color-scheme.web.ts`
+
+**Protecciones:** conservar `app/`, `lib/`, servicios, tipos y rutas Expo; no modificar imports activos, `package.json`, lockfile ni config EAS. No eliminar `assets/images/icon.png`, `assets/images/splash-icon.png`, imágenes adaptativas Android o logos con referencias. Las dependencias transitivas de React Native/Expo requieren una auditoría con instalador y resolución real antes de retirarse.
+
+El CI Android exporta el bundle para detectar recursos o imports ausentes, pero la compilación nativa y prueba con hardware siguen pendientes. No se publican OTA ni APK como parte de esta depuración.
