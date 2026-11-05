@@ -1,25 +1,22 @@
-# Documentación del frontend móvil
+# Documentación técnica del frontend móvil
 
-Esta carpeta mezcla guías operativas con materiales históricos. **La rama `dev` y sus pruebas son la referencia del comportamiento implementado**; no interpretes las guías antiguas como contratos vigentes.
+Este repositorio mantiene **únicamente documentación operativa cercana al código**. La arquitectura, manuales de proyecto y auditorías históricas ya se preservaron en el [archivo central del móvil](https://github.com/Kevin-Stiven-Lopez-Amaya404/smart-home-doc/tree/main/docs/99-archivo/movil) de `smart-home-doc` (singular).
 
-## Guías operativas junto al código
+## Documentos locales vigentes
 
-- [Conexión con backend](BACKEND_CONNECTION.md): variables, HTTP, deep links y servicios. El texto sobre Shelly debe contrastarse con los contratos actuales.
-- [POC BLE Android](BLE_POC_ANDROID.md): inspección GATT experimental de solo lectura.
-- [Auditoría de limpieza](auditoria/limpieza-repositorio-2026-11-04.md): alcance y pendientes.
+- [Conexión con backend y configuración EAS](BACKEND_CONNECTION.md): API HTTP, entorno y contratos que consume el frontend; el backend es la autoridad de los endpoints.
+- [POC BLE Android](BLE_POC_ANDROID.md): ensayo experimental de Shelly GATT de solo lectura. No equivale al pairing completo certificado.
+- [Auditoría de limpieza de repositorio](auditoria/limpieza-repositorio-2026-11-04.md): manifiesto de cambios, validación CI y asuntos pendientes.
 
-## Documentos históricos / no canónicos
+## Jerarquía de fuentes
 
-- **Proyecto y diseño:** [documentación de proyecto](DOCUMENTACION_PROYECTO_SMART_HOME.md), [código por pantallas](DOCUMENTACION_CODIGO_PANTALLAS_SMART_HOME.md), [identidad visual](ACTIVIDAD_IDENTIDAD_VISUAL_SMART_HOME.md), [mejoras del instructor](MEJORAS_INSTRUCTOR.md).
-- **Flujos anteriores:** [flujo final](FLUJO_FINAL.md), [flujo de usuario](FLUJO_USUARIO.md), [guía rápida](GUIA_RAPIDA.md), [resumen](RESUMEN.md), [project documentation](PROJECT_DOCUMENTATION.md), [project flow](PROJECT_FLOW.md).
-- **Auditorías de fases:** [auditoría de frontend](auditoria/mobile-frontend-audit.md), [pantallas secundarias](auditoria/secondary-screens-review.md), [inventario de colores](auditoria/inventario-colores.md), [componentes candidatos](auditoria/auditoria-componentes-fase-2.md).
-- **Inventario de componentes:** [docs/components](components/README.md).
-- **Notas históricas de pantallas:** [README de pantallas](historico/README_PANTALLAS.md).
+1. Implementación, tests y configuración de la rama `dev` de `from_movil`.
+2. Contratos de REST, MQTT y realtime contrastados con el backend; no se reemplazan por documentos históricos.
+3. Documentación central en `smart-home-doc`, incluidas referencias de arquitectura, diseño, componentes y archivo.
+4. Documentación operativa local para instalación y compilación, mantenida en el mismo PR que cambie su comportamiento.
 
-Varias guías antiguas describen un flujo OTP, login simulado, credenciales de demostración o versión web que no coincide con el código actual.
+## Traslado completado
 
-## Migración documental
+El [PR documental #9](https://github.com/Kevin-Stiven-Lopez-Amaya404/smart-home-doc/pull/9) conservó 26 archivos de origen con manifiesto, identificadores Git de procedencia y redacción de referencias a credenciales demostrativas. Los documentos históricos retirados de esta rama siguen disponibles allí. Los archivos de operación backend y BLE permanecen aquí; también se archivaron copias de trazabilidad.
 
-El destino central correcto es [`smart-home-doc`](https://github.com/Kevin-Stiven-Lopez-Amaya404/smart-home-doc), **singular**. Los documentos históricos **permanecen aquí hasta confirmar su copia, manifiesto y enlaces en el repositorio central**. No se ha fusionado el PR documental.
-
-Los cambios en el Markdown actual no borran el historial Git; si hubo credenciales reales expuestas, es necesario revocarlas.
+La eliminación de archivos en una rama Git **no elimina el historial anterior**. Si una contraseña demostrativa hubiera sido real, debe revocarse por separado.
