@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { ScrollView, StyleSheet, View, type ScrollViewInstance, type StyleProp, type ViewStyle } from "react-native";
 
 import { useAppTheme } from "@/lib/theme/app-theme";
 import { FilterChip, type FilterItem, type FilterChipRole } from "@/components/ui/FilterChip";
@@ -35,7 +35,7 @@ export function HorizontalFilterTabs<T extends string | number>({
   testID,
 }: HorizontalFilterTabsProps<T>) {
   const theme = useAppTheme();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance | null>(null);
   const itemLayouts = useRef<Record<string, ItemLayout>>({});
 
   useEffect(() => {
