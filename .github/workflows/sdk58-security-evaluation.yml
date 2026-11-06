@@ -31,9 +31,8 @@ jobs:
         env:
           CI: "1"
         run: |
-          npm ci
-          npm install expo@^58.0.0 --save
-          npx expo install --fix --npm
+          npm install
+          npx expo install --check
           npm ci
       - name: Collect real npm audit report without hiding failures
         shell: bash
