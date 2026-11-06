@@ -1,0 +1,42 @@
+name: Evaluate SDK 58 native Android POC
+on:
+  push:
+    branches: [fix/mobile-sdk58-security-evaluation]
+    paths: [.github/workflows/android-sdk58-evaluation.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-build:
+    name: Compile debug Android APK with Expo SDK 58
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install lockfile dependencies
+        run: npm ci
+      - name: Verify npm high-risk audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Prebuild Android native project
+        env:
+          APP_ENV: development
+          ANDROID_PACKAGE: com.smarthome.poc.sdk58
+        run: npx expo prebuild --platform android --no-install
+      - name: Compile debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon :app:assembleDebug
+      - name: Retain APK for manual QA only
+        uses: actions/upload-artifact@v4
+        with:
+          name: smarthome-sdk58-android-debug-poc
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
