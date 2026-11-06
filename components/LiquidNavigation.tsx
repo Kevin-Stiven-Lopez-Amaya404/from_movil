@@ -26,7 +26,8 @@ const ACTIVE_PILL_HEIGHT = 60;
 export function LiquidNavigation({
   state,
   descriptors,
-  navigation,
+  emitter,
+  navigateToTab,
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
@@ -75,7 +76,7 @@ export function LiquidNavigation({
     const route = state.routes.find((item) => item.name === routeName);
     if (!route) return;
 
-    const event = navigation.emit({
+    const event = emitter.emit({
       type: "tabPress",
       target: route.key,
       canPreventDefault: true,
@@ -85,7 +86,7 @@ export function LiquidNavigation({
       !event.defaultPrevented &&
       state.index !== state.routes.indexOf(route)
     ) {
-      navigation.navigate(route.name, route.params);
+      navigateToTab(route.key);
     }
   }
 
