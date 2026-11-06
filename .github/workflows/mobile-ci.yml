@@ -29,6 +29,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify Expo 57 dependency compatibility
+        run: |
+          node --test scripts/dependency-compatibility.test.mjs
+          node scripts/dependency-compatibility.mjs
+
       - name: Lint
         run: npm run lint
 
