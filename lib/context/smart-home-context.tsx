@@ -511,12 +511,20 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           ...created,
           location: created.location ?? "Hogar",
           favorite: created.favorite ?? false,
+          // Quien crea el hogar es su propietario; se respeta el rol del backend si lo envía.
+          homeRole: created.homeRole ?? ("OWNER" as const),
         };
 
         setHomes((items) => {
           const exists = items.some((item) => item.id === nextHome.id);
           return exists ? items : [...items, nextHome];
         });
+
+        // Un hogar recién creado no tiene dispositivos: evita que quede en "cargando".
+        setDeviceLoadStatusByHome((current) => ({
+          ...current,
+          [nextHome.id]: current[nextHome.id] ?? "loaded",
+        }));
 
         setActiveHomeId(nextHome.id);
       },
