@@ -1,0 +1,28 @@
+name: Production Release Readiness
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  release-acceptance:
+    name: Require QA, pairing and security acceptance
+    if: ${{ github.event.pull_request.head.ref == 'qa' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test release acceptance policy
+        run: node --test scripts/release-readiness.test.mjs
+      - name: Verify accepted production release blockers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release-readiness.mjs

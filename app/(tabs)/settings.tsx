@@ -1,386 +1,304 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRef, useState } from "react";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useResponsiveLayout } from "@/lib/responsive";
-import { useSmartHome } from "@/lib/smart-home-context";
-
-const BLUE = "#0864C8";
-const LILAC = "#DDDDFB";
-const TEXT = "#454545";
-const GREEN = "#35AD61";
-const ORANGE = "#F7B637";
-const RED = "#FF3B20";
-const MUTED = "#6B7280";
+import { ColorPaletteSelector } from "@/components/settings/ColorPaletteSelector";
+import { SettingsActionRow } from "@/components/settings/SettingsActionRow";
+import { SettingsSectionCard } from "@/components/settings/SettingsSectionCard";
+import { ThemeModeSelector } from "@/components/settings/ThemeModeSelector";
+import { useSmartHome } from "@/lib/context/smart-home-context";
+import type { ColorMode } from "@/lib/domain/preferences";
+import { useTranslation } from "@/lib/i18n/i18n";
+import {
+  returnToParent,
+  useAndroidBackFallback,
+} from "@/lib/navigation/use-android-back-fallback";
+import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { useAppTheme } from "@/lib/theme/app-theme";
+import { runSingleFlight } from "@/lib/utils/async-action-lock";
+import { styles } from "../../styles/(tabs)/settings.styles";
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const layout = useResponsiveLayout();
-  const { activeDevices, lastSync, offlineMode, refreshSync, resolveDeviceAlert } = useSmartHome();
-  const pendingDevices = activeDevices.filter((device) => !device.verified);
-  const isSynced = pendingDevices.length === 0 && !offlineMode;
+  const theme = useAppTheme();
+  const { t } = useTranslation();
+  const {
+    colorMode,
+    colorPalette,
+    deactivateAccount,
+    language,
+    setColorMode,
+    setColorPalette,
+  } = useSmartHome();
+  const deactivationLock = useRef(false);
+  const [deactivating, setDeactivating] = useState(false);
 
-  function handleLogout() {
-    Alert.alert("Cerrar sesión", "Tu sesión local se cerrará y volverás al inicio.", [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Cerrar sesión", style: "destructive", onPress: () => router.replace("/welcome") },
-    ]);
+  useAndroidBackFallback(from !== "profile", "/(tabs)/(main)/profile");
+
+  const modeLabels: Record<ColorMode, string> = {
+    system: t("settings.system"),
+    light: t("settings.light"),
+    dark: t("settings.dark"),
+  };
+
+  const languageLabel =
+    language === "en"
+      ? "English"
+      : language === "pt"
+        ? "Português (Brasil)"
+        : "Español (Colombia)";
+
+  function confirmDeactivation() {
+    if (deactivationLock.current) return;
+
+    Alert.alert(
+      t("profile.deactivateAccount"),
+      t("profile.deactivatePrompt"),
+      [
+        { text: t("action.cancel"), style: "cancel" },
+        {
+          text: t("action.deactivate"),
+          style: "destructive",
+          onPress: () => void deactivate(),
+        },
+      ],
+    );
   }
 
-  function handleRefresh() {
-    if (offlineMode) {
-      Alert.alert("Modo sin conexión activo", "Desactiva el modo sin conexión desde Perfil para sincronizar de nuevo.");
-      return;
-    }
+  async function deactivate() {
+    await runSingleFlight(deactivationLock, async () => {
+      setDeactivating(true);
 
-    refreshSync();
-    Alert.alert("Sincronización completa", "Los datos locales quedaron actualizados.");
+      try {
+        await deactivateAccount();
+        router.replace("/welcome");
+      } catch {
+        setDeactivating(false);
+        Alert.alert(
+          t("profile.deactivateAccount"),
+          t("settings.deactivationError"),
+        );
+      }
+    });
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
+    >
       <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          {
-            paddingHorizontal: layout.gutter,
-            paddingTop: layout.compact ? 12 : 16,
-          },
-        ]}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          alignItems: "center",
+          paddingHorizontal: layout.gutter,
+          paddingTop: layout.screenTop + 8,
+          paddingBottom: layout.screenBottom,
+        }}
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.6 }]}
-        >
-          <Ionicons name="chevron-back" size={22} color={BLUE} />
-          <Text style={styles.backText}>Perfil</Text>
-        </Pressable>
-
-        <Text style={styles.title}>Sincronización de datos</Text>
-
-        <View style={styles.syncCard}>
-          <View style={[styles.cloudCircle, !isSynced && styles.cloudWarning]}>
-            <Ionicons
-              name={isSynced ? "cloud-done" : "cloud-upload-outline"}
-              size={38}
-              color={isSynced ? GREEN : ORANGE}
-            />
-          </View>
-          <View style={styles.syncCopy}>
-            <Text style={styles.syncTitle}>
-              {offlineMode ? "Modo sin conexión" : isSynced ? "Sincronizado" : "Revisión pendiente"}
-            </Text>
-            <Text style={styles.syncSubtitle}>Última: hoy, {lastSync}</Text>
-            <Pressable style={styles.checkButton} onPress={handleRefresh}>
-              <Text style={styles.checkButtonText}>Comprobar de nuevo</Text>
+          <View style={styles.screenHeader}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("action.back")}
+              accessibilityHint={t("settings.backToProfileHint")}
+              hitSlop={8}
+              onPress={() =>
+                returnToParent(
+                  router,
+                  from,
+                  "profile",
+                  "/(tabs)/(main)/profile",
+                )
+              }
+              style={({ pressed }) => [
+                styles.backButton,
+                { backgroundColor: theme.rowAlt },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons name="chevron-back" size={21} color={theme.text} />
             </Pressable>
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>Tus dispositivos activos</Text>
-
-        <View style={styles.deviceList}>
-          {activeDevices.map((device) => (
-            <View key={device.id} style={[styles.deviceCard, !device.verified && styles.problemCard]}>
-              <View style={styles.deviceTopRow}>
-                <View style={styles.deviceIconBox}>
-                  <Ionicons name="phone-portrait-outline" size={31} color={BLUE} />
-                </View>
-                <View style={styles.deviceCopy}>
-                  <Text style={styles.deviceTitle}>{device.name}</Text>
-                  <Text style={styles.deviceSubtitle}>Último acceso: {device.lastAccess}</Text>
-                </View>
-                {device.verified ? (
-                  <View style={styles.checkCircle}>
-                    <Ionicons name="checkmark" size={20} color={GREEN} />
-                  </View>
-                ) : (
-                  <Ionicons name="ellipsis-horizontal" size={26} color={TEXT} />
-                )}
-              </View>
-
-              {!device.verified && (
-                <>
-                  <View style={styles.warningPill}>
-                    <Ionicons name="alert-circle-outline" size={14} color={ORANGE} />
-                    <Text style={styles.warningText}>Requiere verificación</Text>
-                  </View>
-
-                  <Pressable style={styles.solveButton} onPress={() => resolveDeviceAlert(device.id)}>
-                    <Text style={styles.solveText}>Solucionar</Text>
-                  </Pressable>
-                </>
-              )}
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.preferenceCard}>
-          <View style={styles.preferenceRow}>
-            <Ionicons name="shield-checkmark-outline" size={24} color={BLUE} />
-            <View style={styles.preferenceCopy}>
-              <Text style={styles.preferenceTitle}>Seguridad de cuenta</Text>
-              <Text style={styles.preferenceText}>Verificación de dispositivos y sesiones activas.</Text>
+            <View style={styles.headerCopy}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.title, { color: theme.text }]}
+              >
+                {t("settings.title")}
+              </Text>
+              <Text style={[styles.subtitle, { color: theme.muted }]}>
+                {t("settings.subtitle")}
+              </Text>
             </View>
           </View>
-          <View style={styles.preferenceRow}>
-            <Ionicons name="notifications-outline" size={24} color={BLUE} />
-            <View style={styles.preferenceCopy}>
-              <Text style={styles.preferenceTitle}>Alertas inteligentes</Text>
-              <Text style={styles.preferenceText}>Avisos por consumo alto y sincronización.</Text>
+
+          <SettingsSectionCard
+            iconName="contrast-outline"
+            title={t("settings.appearance")}
+            description={t("settings.appearanceDescription")}
+          >
+            <View style={styles.appearanceControls}>
+              <Text style={[styles.currentValue, { color: theme.muted }]}>
+                {modeLabels[colorMode]}
+              </Text>
+              <ThemeModeSelector
+                accessibilityLabel={t("settings.appearance")}
+                activeMode={colorMode}
+                blueColor={theme.blue}
+                borderColor={theme.border}
+                labels={modeLabels}
+                onPrimaryColor={theme.onPrimary}
+                onChange={setColorMode}
+                rowColor={theme.row}
+              />
+              <ColorPaletteSelector
+                activePalette={colorPalette}
+                accessibilityLabel={t("settings.colorPalette")}
+                borderColor={theme.border}
+                labels={{
+                  classic: t("settings.paletteClassic"),
+                  emerald: t("settings.paletteEmerald"),
+                }}
+                onChange={setColorPalette}
+                onPrimaryColor={theme.onPrimary}
+                primaryColor={theme.blue}
+                rowColor={theme.row}
+                textColor={theme.text}
+                title={t("settings.colorPalette")}
+              />
+            </View>
+          </SettingsSectionCard>
+
+          <SettingsSectionCard
+            iconName="globe-outline"
+            title={t("profile.language")}
+            description={t("profile.languageDescription")}
+          >
+            <SettingsActionRow
+              accessibilityHint={t("settings.openLanguageHint")}
+              backgroundColor={theme.card}
+              borderColor={theme.borderLight}
+              description={languageLabel}
+              iconName="language-outline"
+              iconColor={theme.blue}
+              mutedColor={theme.muted}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/language",
+                  params: { from: "settings" },
+                })
+              }
+              textColor={theme.text}
+              title={t("profile.language")}
+            />
+          </SettingsSectionCard>
+
+          <View
+            style={[
+              styles.syncCard,
+              { backgroundColor: theme.card, borderColor: theme.borderLight },
+            ]}
+          >
+            <View
+              style={[styles.syncIcon, { backgroundColor: theme.rowAlt }]}
+            >
+              <Ionicons
+                name="sync-outline"
+                size={20}
+                color={theme.blue}
+                accessible={false}
+              />
+            </View>
+            <View style={styles.syncCopy}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.syncTitle, { color: theme.text }]}
+              >
+                {t("settings.sync")}
+              </Text>
+              <Text style={[styles.syncDescription, { color: theme.muted }]}>
+                {t("settings.syncDescription")}
+              </Text>
             </View>
           </View>
-        </View>
 
-        <Pressable
-          onPress={handleLogout}
-          style={({ pressed }) => [
-            styles.logoutButton,
-            pressed && styles.logoutButtonPressed,
-          ]}
-        >
-          <Ionicons name="log-out-outline" size={22} color="#FFFFFF" />
-          <Text style={styles.logoutText}>Cerrar sesión</Text>
-        </Pressable>
+          <SettingsSectionCard
+            iconName="help-buoy-outline"
+            title={t("settings.resources")}
+          >
+            <SettingsActionRow
+              accessibilityHint="Abre los Términos y Condiciones de Smart Home"
+              backgroundColor={theme.card}
+              borderColor={theme.borderLight}
+              description="Consulta las condiciones de uso de la aplicación"
+              iconName="document-text-outline"
+              iconColor={theme.blue}
+              mutedColor={theme.muted}
+              onPress={() =>
+                router.push({ pathname: "/terms", params: { from: "settings" } })
+              }
+              textColor={theme.text}
+              title="Términos y condiciones"
+            />
+            <SettingsActionRow
+              backgroundColor={theme.card}
+              borderColor={theme.borderLight}
+              description={t("profile.helpSubtitle")}
+              iconName="help-circle-outline"
+              iconColor={theme.blue}
+              mutedColor={theme.muted}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/help",
+                  params: { from: "settings" },
+                })
+              }
+              textColor={theme.text}
+              title={t("settings.helpSupport")}
+            />
+            <SettingsActionRow
+              backgroundColor={theme.card}
+              borderColor={theme.borderLight}
+              description={t("settings.aboutDescription")}
+              iconName="information-circle-outline"
+              iconColor={theme.blue}
+              mutedColor={theme.muted}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/about-smart-home",
+                  params: { from: "settings" },
+                })
+              }
+              textColor={theme.text}
+              title={t("settings.about")}
+            />
+          </SettingsSectionCard>
+
+          <SettingsSectionCard
+            danger
+            iconName="warning-outline"
+            title={t("settings.dangerZone")}
+          >
+            <SettingsActionRow
+              accessibilityHint={t("settings.deactivateHint")}
+              backgroundColor={theme.dangerSoft}
+              borderColor={theme.dangerSoft}
+              description={t("profile.deactivateDescription")}
+              iconName="person-remove-outline"
+              iconColor={theme.danger}
+              mutedColor={theme.danger}
+              onPress={confirmDeactivation}
+              pending={deactivating}
+              textColor={theme.danger}
+              title={t("profile.deactivateAccount")}
+            />
+          </SettingsSectionCard>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const appFont = "sans-serif-medium";
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  container: {
-    alignItems: "center",
-    paddingBottom: 92,
-  },
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-  backButton: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 4,
-    marginBottom: 12,
-  },
-  backText: {
-    color: BLUE,
-    fontFamily: appFont,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  title: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 18,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  syncCard: {
-    alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: LILAC,
-    borderRadius: 16,
-    flexDirection: "row",
-    marginTop: 38,
-    paddingHorizontal: 17,
-    paddingVertical: 12,
-    width: "100%",
-  },
-  cloudCircle: {
-    width: 58,
-    height: 58,
-    alignItems: "center",
-    backgroundColor: "#D7FFE1",
-    borderRadius: 29,
-    justifyContent: "center",
-  },
-  cloudWarning: {
-    backgroundColor: "#FFF3D7",
-  },
-  syncCopy: {
-    flex: 1,
-    marginLeft: 22,
-  },
-  syncTitle: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 20,
-    fontWeight: "800",
-  },
-  syncSubtitle: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "800",
-    marginTop: 5,
-  },
-  checkButton: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: BLUE,
-    borderRadius: 7,
-    borderWidth: 1,
-    minHeight: 30,
-    justifyContent: "center",
-    marginTop: 14,
-    paddingHorizontal: 8,
-  },
-  checkButtonText: {
-    color: BLUE,
-    fontFamily: appFont,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  sectionTitle: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 21,
-    fontWeight: "800",
-    marginTop: 36,
-  },
-  deviceList: {
-    gap: 14,
-    marginTop: 13,
-  },
-  deviceCard: {
-    alignItems: "stretch",
-    backgroundColor: LILAC,
-    borderRadius: 8,
-    minHeight: 62,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  problemCard: {
-    paddingBottom: 12,
-  },
-  deviceTopRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    width: "100%",
-  },
-  deviceIconBox: {
-    width: 39,
-    height: 39,
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 5,
-    justifyContent: "center",
-  },
-  deviceCopy: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  deviceTitle: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  deviceSubtitle: {
-    color: MUTED,
-    fontFamily: appFont,
-    fontSize: 13,
-    fontWeight: "700",
-    marginTop: 2,
-  },
-  checkCircle: {
-    width: 24,
-    height: 24,
-    alignItems: "center",
-    backgroundColor: "#D7FFE1",
-    borderColor: GREEN,
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: "center",
-  },
-  warningPill: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    flexDirection: "row",
-    gap: 7,
-    minHeight: 30,
-    justifyContent: "center",
-    marginTop: 15,
-  },
-  warningText: {
-    color: ORANGE,
-    fontFamily: appFont,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  solveButton: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    height: 30,
-    justifyContent: "center",
-    marginTop: 6,
-  },
-  solveText: {
-    color: BLUE,
-    fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  preferenceCard: {
-    backgroundColor: "#F4F6FF",
-    borderRadius: 14,
-    gap: 14,
-    marginTop: 28,
-    padding: 14,
-  },
-  preferenceRow: {
-    alignItems: "center",
-    flexDirection: "row",
-  },
-  preferenceCopy: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  preferenceTitle: {
-    color: TEXT,
-    fontFamily: appFont,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  preferenceText: {
-    color: MUTED,
-    fontFamily: appFont,
-    fontSize: 12,
-    fontWeight: "700",
-    marginTop: 3,
-  },
-  logoutButton: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: RED,
-    borderRadius: 12,
-    flexDirection: "row",
-    gap: 12,
-    height: 52,
-    justifyContent: "center",
-    marginTop: 34,
-    marginBottom: 24,
-  },
-  logoutButtonPressed: {
-    backgroundColor: "#E62810",
-  },
-  logoutText: {
-    color: "#FFFFFF",
-    fontFamily: appFont,
-    fontSize: 18,
-    fontWeight: "800",
-  },
-});

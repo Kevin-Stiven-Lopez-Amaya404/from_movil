@@ -1,228 +1,218 @@
-import { GoogleIcon } from "@/components/icons/GoogleIcon";
-import SmartHomeLogo from "@/components/smartHomeLogo";
-import { theme } from "@/constants/theme";
-import { getAuthPalette } from "@/lib/appearance";
-import { useResponsiveLayout } from "@/lib/responsive";
-import { useSmartHome } from "@/lib/smart-home-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { useEffect } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  ReduceMotion,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+  ZoomIn,
+} from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { useAppTheme } from "@/lib/theme/app-theme";
+import { useAuthPalette } from "@/lib/theme/appearance";
+import { useAppReady } from "@/lib/ui/app-ready";
+import { styles } from "../styles/welcome.styles";
+
+// Ritmo de la entrada: casa → rayo (energía) → textos → botones.
+const EASE_OUT = Easing.out(Easing.cubic);
+const HOUSE_DELAY = 0;
+const BOLT_DELAY = 420;
+const TITLE_DELAY = 260;
+const SUBTITLE_DELAY = 340;
+const ACTIONS_DELAY = 460;
+const PULSE_DELAY = 820;
+
+function enter(delay: number) {
+  return FadeInDown.delay(delay)
+    .duration(480)
+    .easing(EASE_OUT)
+    .withInitialValues({ transform: [{ translateY: 12 }] })
+    .reduceMotion(ReduceMotion.System);
+}
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const layout = useResponsiveLayout();
-  const { colorMode, setColorMode } = useSmartHome();
-  const palette = getAuthPalette(colorMode);
-  const dark = colorMode === "dark";
+  const palette = useAuthPalette();
+  const theme = useAppTheme();
+  const appReady = useAppReady();
+  const reduceMotion = useReducedMotion();
 
-  function handleGoogleLogin() {
-    Alert.alert(
-      "Inicio con Google",
-      "La conexión OAuth queda preparada para producción. En esta versión de prueba continúa desde iniciar sesión y usa el acceso demo.",
-      [{ text: "Ir a iniciar sesión", onPress: () => router.push("/login") }],
+  // Dos pulsos suaves alrededor del rayo: "la casa se enciende".
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    if (!appReady || reduceMotion) return;
+
+    pulse.value = withDelay(
+      PULSE_DELAY,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 900, easing: EASE_OUT }),
+          withTiming(0, { duration: 0 }),
+        ),
+        2,
+        false,
+      ),
     );
-  }
+  }, [appReady, pulse, reduceMotion]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    opacity: pulse.value === 0 ? 0 : 0.35 * (1 - pulse.value),
+    transform: [{ scale: 1 + pulse.value * 0.9 }],
+  }));
+
+  const outline =
+    palette.fieldBorder === "transparent" ? palette.border : palette.fieldBorder;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: dark ? palette.background : theme.colors.backgroundBlue }]}>
-      <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-      <View style={styles.modeRow}>
-        {(["light", "dark"] as const).map((mode) => {
-          const active = colorMode === mode;
-
-          return (
-            <Pressable
-              key={mode}
-              style={[
-                styles.modeButton,
-                active && styles.modeButtonActive,
-                active && { backgroundColor: dark ? "#3B82F6" : "#FFFFFF" },
-              ]}
-              onPress={() => setColorMode(mode)}
-            >
-              <Ionicons
-                name={mode === "light" ? "sunny-outline" : "moon-outline"}
-                size={17}
-                color={active ? (dark ? "#FFFFFF" : theme.colors.primary) : "#FFFFFF"}
-              />
-              <Text
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: palette.background }]}
+    >
+      <ScrollView
+        bounces={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingHorizontal: layout.gutter,
+            paddingTop: layout.compact ? 16 : 32,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Mientras el splash cubre la pantalla no se monta nada animado */}
+        {appReady ? (
+          <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
+            <View style={styles.hero}>
+              <Animated.View
+                entering={FadeIn.delay(HOUSE_DELAY)
+                  .duration(520)
+                  .easing(EASE_OUT)
+                  .reduceMotion(ReduceMotion.System)}
                 style={[
-                  styles.modeText,
-                  active && { color: dark ? "#FFFFFF" : theme.colors.primary },
+                  styles.houseTile,
+                  layout.compact && styles.houseTileCompact,
+                  { backgroundColor: palette.primarySoft },
                 ]}
               >
-                {mode === "light" ? "Claro" : "Oscuro"}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      <View style={[styles.logoArea, layout.compact && styles.logoAreaCompact]}>
-        <SmartHomeLogo size={layout.compact ? 184 : 220} showText={true} variant="dark" />
-      </View>
+                <Ionicons
+                  accessible={false}
+                  color={palette.button}
+                  name="home-outline"
+                  size={layout.compact ? 48 : 56}
+                />
 
-      <View style={styles.buttonsArea}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.buttonFilled,
-            dark && styles.buttonFilledDark,
-            pressed && styles.buttonPressedFilled,
-          ]}
-          onPress={() => router.push("/login")}
-        >
-          <Text style={styles.buttonFilledText}>Iniciar sesión</Text>
-        </Pressable>
+                <View style={styles.boltAnchor}>
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      styles.boltPulse,
+                      { backgroundColor: palette.button },
+                      pulseStyle,
+                    ]}
+                  />
+                  <Animated.View
+                    entering={ZoomIn.delay(BOLT_DELAY)
+                      .springify()
+                      .damping(14)
+                      .stiffness(180)
+                      .reduceMotion(ReduceMotion.System)}
+                    style={[
+                      styles.boltBadge,
+                      {
+                        backgroundColor: palette.button,
+                        borderColor: palette.background,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      accessible={false}
+                      color={palette.onPrimary}
+                      name="flash"
+                      size={16}
+                    />
+                  </Animated.View>
+                </View>
+              </Animated.View>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.buttonOutline,
-            dark && styles.buttonOutlineDark,
-            pressed && styles.buttonPressedOutline,
-          ]}
-          onPress={() => router.push("/register")}
-        >
-          <Text style={styles.buttonOutlineText}>Registrarse</Text>
-        </Pressable>
+              <Animated.Text
+                entering={enter(TITLE_DELAY)}
+                style={[styles.brand, { color: palette.muted }]}
+              >
+                SMART HOME
+              </Animated.Text>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.googleButton,
-            dark && styles.googleButtonDark,
-            pressed && styles.googleButtonPressed,
-          ]}
-          onPress={handleGoogleLogin}
-        >
-          <GoogleIcon size={24} />
-          <Text style={[styles.googleButtonText, dark && styles.googleButtonTextDark]}>Continuar con Google</Text>
-        </Pressable>
-      </View>
-      </View>
+              <Animated.Text
+                accessibilityRole="header"
+                entering={enter(TITLE_DELAY)}
+                style={[
+                  styles.title,
+                  layout.tiny && styles.titleTiny,
+                  { color: theme.textPrimary },
+                ]}
+              >
+                Tu hogar, más inteligente
+              </Animated.Text>
+
+              <Animated.Text
+                entering={enter(SUBTITLE_DELAY)}
+                style={[styles.subtitle, { color: palette.muted }]}
+              >
+                Controla tus dispositivos y conoce tu consumo de energía desde
+                un solo lugar.
+              </Animated.Text>
+            </View>
+
+            <Animated.View entering={enter(ACTIONS_DELAY)} style={styles.actions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/login")}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  {
+                    backgroundColor: pressed
+                      ? palette.welcomeButtonPressed
+                      : palette.welcomeButton,
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.primaryButtonText, { color: palette.onPrimary }]}
+                >
+                  Iniciar sesión
+                </Text>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/register")}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  { borderColor: outline },
+                  pressed && { backgroundColor: palette.welcomeSoftPressed },
+                ]}
+              >
+                <Text
+                  style={[styles.secondaryButtonText, { color: theme.textPrimary }]}
+                >
+                  Crear cuenta
+                </Text>
+              </Pressable>
+            </Animated.View>
+          </View>
+        ) : null}
+      </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    flex: 1,
-    backgroundColor: theme.colors.backgroundBlue,
-    paddingHorizontal: theme.spacing.xl,
-  },
-  content: {
-    flex: 1,
-    width: "100%",
-  },
-  modeRow: {
-    alignSelf: "center",
-    backgroundColor: "rgba(255,255,255,0.16)",
-    borderColor: "rgba(255,255,255,0.28)",
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 4,
-    marginTop: theme.spacing.lg,
-    padding: 6,
-    
-    
-  },
-  modeButton: {
-    alignItems: "center",
-    borderRadius: 11,
-    flexDirection: "row",
-    gap: 6,
-    minHeight: 34,
-    paddingHorizontal: 12,
-  },
-  modeButtonActive: {
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  modeText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  logoArea: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: theme.spacing.xxl,
-  },
-  logoAreaCompact: {
-    paddingTop: theme.spacing.lg,
-  },
-  buttonsArea: {
-    paddingBottom: theme.spacing.xxl,
-    gap: theme.spacing.md,
-  },
-  buttonFilled: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: theme.radius.button,
-    paddingVertical: theme.spacing.md + 2,
-    alignItems: "center",
-  },
-  buttonPressedFilled: {
-    backgroundColor: "#E0E8FF",
-  },
-  buttonFilledDark: {
-    backgroundColor: "#E8F0FF",
-  },
-  buttonFilledText: {
-    color: theme.colors.buttonPrimary,
-    fontWeight: "700",
-    fontSize: theme.fontSize.md,
-  },
-  buttonOutline: {
-    backgroundColor: "transparent",
-    borderRadius: theme.radius.button,
-    borderWidth: 1.5,
-    borderColor: "#FFFFFF",
-    paddingVertical: theme.spacing.md + 2,
-    alignItems: "center",
-  },
-  buttonPressedOutline: {
-    backgroundColor: "rgba(255,255,255,0.1)",
-  },
-  buttonOutlineDark: {
-    borderColor: "#93C5FD",
-  },
-  buttonOutlineText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: theme.fontSize.md,
-  },
-  googleButton: {
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: theme.radius.button,
-    flexDirection: "row",
-    gap: 12,
-    justifyContent: "center",
-    marginTop: theme.spacing.sm,
-    paddingVertical: theme.spacing.md + 1,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  googleButtonPressed: {
-    backgroundColor: "#F3F6FF",
-  },
-  googleButtonDark: {
-    backgroundColor: "#151F33",
-    borderColor: "#2D3B59",
-    borderWidth: 1,
-  },
-  googleButtonText: {
-    color: theme.colors.textDark,
-    fontSize: theme.fontSize.base,
-    fontWeight: "700",
-  },
-  googleButtonTextDark: {
-    color: "#F8FAFC",
-  },
-});

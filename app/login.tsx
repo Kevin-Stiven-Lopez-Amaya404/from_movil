@@ -1,395 +1,276 @@
-import { CheckIcon } from "@/components/icons/CheckIcon";
-import { BackButton } from "@/components/navigation/BackButton";
-import { theme } from "@/constants/theme";
-import { getAuthPalette } from "@/lib/appearance";
-import { authenticateUser } from "@/lib/auth-store";
-import { useResponsiveLayout } from "@/lib/responsive";
-import { useSmartHome } from "@/lib/smart-home-context";
-import { isValidEmail } from "@/lib/validators";
+import { AuthScreenLayout } from "@/components/auth/AuthScreenLayout";
+import {
+  AuthPasswordField,
+  AuthTextField,
+} from "@/components/auth/AuthTextField";
+import { PrimaryButton } from "@/components/auth/PrimaryButton";
+import { BackButton } from "@/components/common/BackButton";
+import { getApiErrorMessage } from "@/lib/api/api-error";
+import { useAuthSession } from "@/lib/auth/auth-session-context";
+import { useSmartHome } from "@/lib/context/smart-home-context";
+import { useResponsiveLayout } from "@/lib/responsive/responsive";
+import { useAppTheme } from "@/lib/theme/app-theme";
+import { getAuthPalette } from "@/lib/theme/appearance";
+
+import { isValidEmail } from "@/lib/utils/validators";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { useState } from "react";
+import { Pressable, Text, View } from "react-native";
+import { styles } from "../styles/login.styles";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login } = useAuthSession();
   const layout = useResponsiveLayout();
-  const { accountActive, colorMode, setAccountActive, setSessionName } = useSmartHome();
-  const palette = getAuthPalette(colorMode);
+  const theme = useAppTheme();
+
+  const {
+    colorPalette,
+    effectiveColorMode,
+    setSessionName,
+    setSessionEmail,
+    setSessionRole,
+  } = useSmartHome();
+
+  const palette = getAuthPalette(effectiveColorMode, colorPalette);
+
+  // ==========================================
+  // ESTADO DEL FORMULARIO
+  // ==========================================
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [touched, setTouched] = useState({ email: false, password: false });
-  const [failedAttempts, setFailedAttempts] = useState(0);
+
+  const [touched, setTouched] = useState({
+    email: false,
+    password: false,
+  });
+
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  /** Error general del formulario (credenciales o conexión). */
+  const [formError, setFormError] = useState("");
+
+  // ==========================================
+  // VALIDACIONES
+  // ==========================================
 
   const cleanEmail = email.trim().toLowerCase();
+
   const emailError =
-    touched.email && !isValidEmail(cleanEmail)
+    (submitted || touched.email) && !isValidEmail(cleanEmail)
       ? "Ingresa un correo válido."
       : "";
+
   const passwordError =
-    touched.password && password.length < 4
+    (submitted || touched.password) && password.length < 4
       ? "La contraseña debe tener mínimo 4 caracteres."
       : "";
+
   const canSubmit = isValidEmail(cleanEmail) && password.length >= 4;
 
-  const securityHint = useMemo(() => {
-    if (failedAttempts === 0) return "Tus dispositivos se sincronizan al entrar.";
-    if (failedAttempts === 1) return "Revisa mayúsculas y espacios antes de continuar.";
-    return "Puedes usar el acceso demo para probar la app.";
-  }, [failedAttempts]);
+  // ==========================================
+  // LOGIN
+  // ==========================================
 
-  function fillDemoUser() {
-    setEmail("pepe@smarthome.com");
-    setPassword("Smart123!");
-    setTouched({ email: true, password: true });
-  }
+  async function handleLogin() {
+    setSubmitted(true);
 
-  function handleLogin() {
-    setTouched({ email: true, password: true });
-
-    if (!accountActive) {
-      Alert.alert(
-        "Cuenta desactivada",
-        "Esta cuenta fue desactivada. Puedes reactivarla para continuar en esta versión de prueba.",
-        [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Reactivar", onPress: () => setAccountActive(true) },
-        ],
-      );
+    if (submitting) {
       return;
     }
 
+    // Los errores de cada campo ya se muestran debajo de él.
     if (!canSubmit) {
-      Alert.alert("Datos incompletos", "Corrige los campos marcados.");
       return;
     }
 
-    const user = authenticateUser(cleanEmail, password);
+    setFormError("");
+    setSubmitting(true);
 
-    if (!user) {
-      setFailedAttempts((value) => value + 1);
-      Alert.alert("No pudimos iniciar sesión", "Correo o contraseña incorrectos.");
-      return;
+    try {
+      const loggedUser = await login(cleanEmail, password);
+
+      if (!loggedUser) {
+        setFormError("Correo o contraseña incorrectos.");
+        return;
+      }
+
+      setSessionName(loggedUser.name.split(" ")[0] || loggedUser.name);
+      setSessionEmail(loggedUser.email);
+      setSessionRole(loggedUser.role ?? "miembro");
+    } catch (error) {
+      setFormError(getApiErrorMessage(error));
+    } finally {
+      setSubmitting(false);
     }
-
-    setFailedAttempts(0);
-    setSessionName(user.name.split(" ")[0] || user.name);
-    Alert.alert("Bienvenido", `Hola, ${user.name}.`, [
-      { text: "Entrar", onPress: () => router.replace("/(tabs)") },
-    ]);
   }
+
+  function updateEmail(value: string) {
+    setEmail(value);
+    if (formError) setFormError("");
+  }
+
+  function updatePassword(value: string) {
+    setPassword(value);
+    if (formError) setFormError("");
+  }
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerStyle={[
-            styles.container,
-            {
-              paddingHorizontal: layout.gutter,
-              paddingTop: layout.compact ? 32 : 64,
-            },
+    <AuthScreenLayout
+      compact={layout.compact}
+      contentStyle={styles.screenContent}
+      contentTopPadding={layout.compact ? 4 : 8}
+    >
+      {/* Volver: anclado arriba, fuera del contenido */}
+      <View style={styles.header}>
+        <BackButton
+          accessibilityLabel="Volver"
+          backgroundColor="transparent"
+          color={theme.textPrimary}
+          fallbackHref="/welcome"
+        />
+      </View>
+
+      <View style={styles.introSection}>
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.title,
+            layout.tiny && styles.titleTiny,
+            { color: theme.textPrimary },
           ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
-          <BackButton color={palette.link} fallbackHref="/welcome" />
-          <Text style={[styles.title, layout.tiny && styles.titleTiny, { color: palette.title }]}>Smart Home</Text>
+          Bienvenido de nuevo
+        </Text>
+        <Text style={[styles.subtitle, { color: palette.muted }]}>
+          Inicia sesión para conectar con tu hogar.
+        </Text>
+      </View>
 
-          <Pressable style={[styles.demoPill, { backgroundColor: palette.primarySoft }]} onPress={fillDemoUser}>
-            <Ionicons name="flash-outline" size={18} color={palette.link} />
-            <Text style={[styles.demoText, { color: palette.link }]}>Usar acceso demo</Text>
-          </Pressable>
+      {/* ====================================== */}
+      {/* FORMULARIO                             */}
+      {/* ====================================== */}
 
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: palette.field,
-                borderColor: palette.fieldBorder,
-                color: palette.text,
-              },
-              emailError && styles.inputError,
-            ]}
-            placeholder="Correo electrónico"
-            placeholderTextColor={palette.muted}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={email}
-            onBlur={() => setTouched((value) => ({ ...value, email: true }))}
-            onChangeText={setEmail}
+      <View style={styles.formContainer}>
+        <AuthTextField
+          autoCapitalize="none"
+          autoCorrect={false}
+          error={emailError}
+          inputStyle={styles.input}
+          keyboardType="email-address"
+          label="Correo electrónico"
+          onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+          onChangeText={updateEmail}
+          placeholder="nombre@correo.com"
+          returnKeyType="next"
+          value={email}
+          variant="outlined"
+        />
+
+        <View>
+          <AuthPasswordField
+            error={passwordError}
+            inputStyle={styles.input}
+            label="Contraseña"
+            onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
+            onChangeText={updatePassword}
+            onSubmitEditing={() => void handleLogin()}
+            onToggleVisibility={() => setShowPassword((prev) => !prev)}
+            placeholder="Tu contraseña"
+            returnKeyType="go"
+            showPassword={showPassword}
+            value={password}
+            variant="outlined"
           />
-          {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
 
-          <View style={styles.passwordWrap}>
-            <TextInput
-              style={[
-                styles.input,
-                styles.passwordInput,
-                {
-                  backgroundColor: palette.field,
-                  borderColor: palette.fieldBorder,
-                  color: palette.text,
-                },
-                passwordError && styles.inputError,
-              ]}
-              placeholder="Contraseña"
-              placeholderTextColor={palette.muted}
-              secureTextEntry={!showPassword}
-              value={password}
-              onBlur={() => setTouched((value) => ({ ...value, password: true }))}
-              onChangeText={setPassword}
-            />
+          <View style={styles.optionsRow}>
             <Pressable
-              accessibilityLabel={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-              style={styles.eyeButton}
-              onPress={() => setShowPassword((value) => !value)}
+              accessibilityRole="link"
+              hitSlop={8}
+              onPress={() => router.push("/forgot-password")}
+              style={styles.forgotButton}
             >
-              <Ionicons
-                name={showPassword ? "eye-outline" : "eye-off-outline"}
-                size={21}
-                color={palette.muted}
-              />
+              <Text style={[styles.linkText, { color: palette.link }]}>
+                ¿Olvidaste tu contraseña?
+              </Text>
             </Pressable>
           </View>
-          {!!passwordError && <Text style={styles.errorText}>{passwordError}</Text>}
+        </View>
 
-          <Pressable
-            style={styles.checkboxRow}
-            onPress={() => setRememberMe((value) => !value)}
+        {/* Error general: credenciales incorrectas o fallo de conexión */}
+        {formError ? (
+          <View
+            accessibilityLiveRegion="polite"
+            accessibilityRole="alert"
+            style={[styles.formError, { backgroundColor: theme.dangerSoft }]}
           >
-            <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-              {rememberMe && <CheckIcon />}
-            </View>
-            <Text style={[styles.checkboxLabel, { color: palette.text }]}>Recordar contraseña</Text>
-          </Pressable>
-
-          <View style={[styles.securityBox, { backgroundColor: palette.primarySoft }]}>
-            <Ionicons name="shield-checkmark-outline" size={21} color={palette.link} />
-            <Text style={[styles.securityText, { color: palette.text }]}>{securityHint}</Text>
+            <Ionicons
+              accessible={false}
+              color={palette.danger}
+              name="alert-circle-outline"
+              size={18}
+            />
+            <Text style={[styles.formErrorText, { color: palette.danger }]}>
+              {formError}
+            </Text>
           </View>
+        ) : null}
 
-          <Pressable onPress={() => router.push("/forgot-password")} style={styles.linkRow}>
-            <Text style={[styles.linkText, { color: palette.text }]}>¿Olvidaste tu contraseña?</Text>
-          </Pressable>
+        <PrimaryButton
+          loading={submitting}
+          onPress={() => void handleLogin()}
+          style={[styles.button, { backgroundColor: palette.button }]}
+          text="Iniciar sesión"
+        />
+      </View>
 
+      <View style={styles.footer}>
+        <View style={styles.registerRow}>
+          <Text style={[styles.footerText, { color: palette.muted }]}>
+            ¿No tienes una cuenta?
+          </Text>
           <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              !canSubmit && styles.buttonDisabled,
-              { backgroundColor: palette.button },
-              pressed && canSubmit && { backgroundColor: palette.buttonPressed },
-            ]}
-            onPress={handleLogin}
+            accessibilityRole="link"
+            accessibilityLabel="Crear una cuenta"
+            hitSlop={8}
+            onPress={() => router.push("/register")}
+            style={styles.footerLink}
           >
-            <Text style={styles.buttonText}>Iniciar sesión</Text>
+            <Text style={[styles.linkText, { color: palette.link }]}>
+              Regístrate
+            </Text>
           </Pressable>
+        </View>
 
-          <Pressable onPress={() => router.push("/register")} style={styles.registerRow}>
-            <Text style={[styles.registerText, { color: palette.text }]}>¿No tienes cuenta? </Text>
-            <Text style={[styles.registerText, styles.registerLink, { color: palette.link }]}>Registrarse</Text>
-          </Pressable>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Solicitar reactivación de cuenta"
+          hitSlop={8}
+          onPress={() =>
+            router.push({
+              pathname: "/request-reactivation",
+              params: { email: cleanEmail },
+            })
+          }
+          style={styles.footerLink}
+        >
+          <Text style={[styles.footerText, { color: palette.muted }]}>
+            ¿Cuenta desactivada?{" "}
+            <Text style={[styles.linkText, { color: palette.link }]}>
+              Reactívala
+            </Text>
+          </Text>
+        </Pressable>
+      </View>
+    </AuthScreenLayout>
   );
 }
-
-const serifFont = Platform.select({
-  ios: "Georgia",
-  android: "serif",
-  default: "Georgia",
-});
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.backgroundWhite,
-  },
-  flex: { flex: 1 },
-  container: {
-    alignItems: "center",
-    flexGrow: 1,
-    paddingBottom: 38,
-  },
-  content: {
-    alignSelf: "center",
-    width: "100%",
-  },
-  title: {
-    color: "#0864C8",
-    fontFamily: serifFont,
-    fontSize: 42,
-    fontWeight: "700",
-    lineHeight: 51,
-    marginBottom: 26,
-    textAlign: "center",
-  },
-  titleTiny: {
-    fontSize: 36,
-    lineHeight: 43,
-    marginBottom: 20,
-  },
-  demoPill: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    backgroundColor: "#EEF4FF",
-    borderRadius: 12,
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  demoText: {
-    color: theme.colors.primary,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  input: {
-    backgroundColor: "#FBFBFD",
-    borderColor: "transparent",
-    borderRadius: 17,
-    borderWidth: 1,
-    color: "#3F3F3F",
-    fontFamily: serifFont,
-    fontSize: 20,
-    fontWeight: "700",
-    height: 56,
-    marginTop: 10,
-    paddingHorizontal: 18,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  inputError: {
-    borderColor: theme.colors.error,
-  },
-  errorText: {
-    color: theme.colors.error,
-    fontSize: 12,
-    fontWeight: "700",
-    marginLeft: 8,
-    marginTop: 6,
-  },
-  passwordWrap: {
-    position: "relative",
-  },
-  passwordInput: {
-    paddingRight: 52,
-  },
-  eyeButton: {
-    bottom: 0,
-    justifyContent: "center",
-    position: "absolute",
-    right: 16,
-    top: 10,
-  },
-  checkboxRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    marginTop: 20,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    alignItems: "center",
-    backgroundColor: "#D8DADC",
-    borderRadius: 5,
-    justifyContent: "center",
-  },
-  checkboxChecked: {
-    backgroundColor: theme.colors.primary,
-  },
-  checkboxLabel: {
-    color: "#3F3F3F",
-    fontFamily: serifFont,
-    fontSize: 17,
-    fontWeight: "700",
-    marginLeft: 10,
-  },
-  securityBox: {
-    alignItems: "center",
-    backgroundColor: "#EEF4FF",
-    borderRadius: 12,
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  securityText: {
-    color: "#3F3F3F",
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  linkRow: {
-    alignSelf: "flex-start",
-    marginTop: 20,
-  },
-  linkText: {
-    color: "#3F3F3F",
-    fontFamily: serifFont,
-    fontSize: 20,
-    fontWeight: "700",
-    textDecorationLine: "underline",
-  },
-  button: {
-    alignItems: "center",
-    backgroundColor: theme.colors.buttonPrimary,
-    borderRadius: 15,
-    height: 56,
-    justifyContent: "center",
-    marginTop: 30,
-  },
-  buttonPressed: {
-    backgroundColor: theme.colors.primaryDark,
-  },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontFamily: serifFont,
-    fontSize: 25,
-    fontWeight: "700",
-  },
-  registerRow: {
-    alignSelf: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    marginTop: 18,
-  },
-  registerText: {
-    color: "#3F3F3F",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  registerLink: {
-    color: theme.colors.primary,
-    textDecorationLine: "underline",
-  },
-});

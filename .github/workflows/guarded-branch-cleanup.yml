@@ -1,0 +1,54 @@
+name: Guarded Historical Branch Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      branches:
+        description: "Explicit branch names (comma/space separated, max 20; no wildcards)"
+        type: string
+        required: true
+      dry_run:
+        description: "Preview only (recommended)"
+        type: boolean
+        default: true
+        required: true
+      confirmation:
+        description: 'Only for actual deletion: type DELETE SAFE BRANCHES'
+        type: string
+        default: "NO"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: guarded-branch-cleanup
+  cancel-in-progress: false
+
+jobs:
+  verify-and-clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out default dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run safety unit tests
+        run: node --test scripts/branch-cleanup.test.mjs
+
+      - name: Compare each requested branch to dev
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BRANCHES: ${{ inputs.branches }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/branch-cleanup.mjs
