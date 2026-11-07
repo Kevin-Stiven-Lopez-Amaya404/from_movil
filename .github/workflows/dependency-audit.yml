@@ -4,6 +4,15 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 13 * * 1"
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - package.json
+      - package-lock.json
+      - .github/workflows/dependency-audit.yml
+      - scripts/audit-report.mjs
+      - scripts/audit-report.test.mjs
   push:
     branches:
       - dev
