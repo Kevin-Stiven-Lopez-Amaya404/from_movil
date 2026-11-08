@@ -252,7 +252,7 @@ const backendAuthService: AuthService = {
 export const authService: AuthService = backendAuthService;
 
 setSessionRefreshHandler(async (): Promise<StoredSession | null> => {
-  // Identificar la sesión antes de solicitar la renovación.
+  // Identify the session before requesting the refresh.
   const originalSession = await loadSession();
   if (!originalSession) return null;
 
@@ -265,7 +265,7 @@ setSessionRefreshHandler(async (): Promise<StoredSession | null> => {
     },
   );
 
-  // Comprobar que el usuario no haya cerrado o cambiado de sesión.
+  // Check that the user did not sign out or switch sessions.
   const activeSession = await loadSession();
 
   if (!response.accessToken || activeSession !== originalSession) {

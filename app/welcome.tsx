@@ -24,7 +24,7 @@ import { useAuthPalette } from "@/lib/theme/appearance";
 import { useAppReady } from "@/lib/ui/app-ready";
 import { styles } from "../styles/welcome.styles";
 
-// Ritmo de la entrada: casa → rayo (energía) → textos → botones.
+// Entrance rhythm: house → bolt (energy) → texts → buttons.
 const EASE_OUT = Easing.out(Easing.cubic);
 const HOUSE_DELAY = 0;
 const BOLT_DELAY = 420;
@@ -49,7 +49,7 @@ export default function WelcomeScreen() {
   const appReady = useAppReady();
   const reduceMotion = useReducedMotion();
 
-  // Dos pulsos suaves alrededor del rayo: "la casa se enciende".
+  // Two soft pulses around the bolt: "the house turns on".
   const pulse = useSharedValue(0);
 
   useEffect(() => {
@@ -91,7 +91,7 @@ export default function WelcomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Mientras el splash cubre la pantalla no se monta nada animado */}
+        {/* Nothing animated is mounted while the splash covers the screen */}
         {appReady ? (
           <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
             <View style={styles.hero}>

@@ -1,12 +1,12 @@
 
 /**
- * Identificación local de Shelly 1PM Gen4.
+ * Local identification of a Shelly 1PM Gen4.
  *
- * Solo lectura.
+ * Read only.
  *
- * No crea sesiones backend.
- * No configura MQTT.
- * No registra dispositivos.
+ * Does not create backend sessions.
+ * Does not configure MQTT.
+ * Does not register devices.
  */
 
 export type ShellyLocalIdentity = {

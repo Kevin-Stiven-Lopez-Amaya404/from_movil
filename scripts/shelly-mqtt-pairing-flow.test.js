@@ -1,4 +1,4 @@
-// Tests locales del contrato backend/dispositivo; no usan red ni credenciales reales.
+// Local tests of the backend/device contract; they use no network or real credentials.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -87,7 +87,7 @@ function dependencies(overrides = {}) {
   return deps;
 }
 
-test('prepara la sesión, configura localmente y habilita solo una vez', async () => {
+test('prepares the session, configures locally and enables only once', async () => {
   const deps = dependencies({
     async readLocalMqttStatus() {
       this.calls.push('local-status');
@@ -105,7 +105,7 @@ test('prepara la sesión, configura localmente y habilita solo una vez', async (
   ]);
 });
 
-test('reporta etapa exacta al detenerse antes de configurar credenciales', async () => {
+test('reports the exact stage when stopping before configuring credentials', async () => {
   const stages = [];
   const deps = dependencies({
     async authorizeBootstrap() {
@@ -124,7 +124,7 @@ test('reporta etapa exacta al detenerse antes de configurar credenciales', async
   assert.equal(deps.calls.some(call => call.startsWith('enable:')), false);
 });
 
-test('confirma el broker y solo entonces ejecuta el complete final', async () => {
+test('confirms the broker and only then runs the final complete', async () => {
   const deps = dependencies();
   const result = await confirmAndCompleteShellyMqtt({ operationId }, deps);
 
@@ -149,7 +149,7 @@ test('no confirma ni completa cuando MQTT.GetStatus sigue desconectado', async (
   assert.deepEqual(deps.calls, ['get-session', 'local-status']);
 });
 
-test('reconoce COMPLETED si el backend terminó entre la consulta y confirm', async () => {
+test('recognizes COMPLETED if the backend finished between the query and confirm', async () => {
   const deps = dependencies({
     async confirmMqtt(id) {
       this.calls.push(`confirm:${id}`);
@@ -164,7 +164,7 @@ test('reconoce COMPLETED si el backend terminó entre la consulta y confirm', as
   assert.equal(deps.calls.includes('complete'), false);
 });
 
-test('no llama a complete si el backend no persistió CONNECTED', async () => {
+test('does not call complete if the backend did not persist CONNECTED', async () => {
   const deps = dependencies({
     async getSession() {
       this.calls.push('get-session');
@@ -180,7 +180,7 @@ test('no llama a complete si el backend no persistió CONNECTED', async () => {
   assert.equal(deps.calls.includes('complete'), false);
 });
 
-test('no repite confirmación ante una respuesta incierta', async () => {
+test('does not repeat confirmation on an uncertain response', async () => {
   const deps = dependencies({
     async confirmMqtt() {
       this.calls.push('confirm');

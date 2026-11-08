@@ -3,8 +3,8 @@ import type { SmartDevice } from "@/lib/domain/device";
 import type { DeviceStatusUpdatedEvent } from "@/lib/services/realtime-service";
 
 /**
- * Aplica un evento de estado recibido por Socket.IO.
- * No modifica los objetos originales ni inventa estados de conexión.
+ * Applies a status event received over Socket.IO.
+ * Does not modify the original objects or invent connection states.
  */
 export function applyDeviceStatusEvent(
   devices: SmartDevice[],

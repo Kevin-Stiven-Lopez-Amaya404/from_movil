@@ -1,6 +1,6 @@
 /**
- * EN-03: Registrar una nueva tarifa referencial (solo OWNER).
- * Crea una nueva vigencia; nunca modifica tarifas anteriores.
+ * EN-03: record a new reference tariff (OWNER only).
+ * Creates a new effective period; never modifies earlier tariffs.
  */
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation, usePreventRemove } from "expo-router/react-navigation";
@@ -121,7 +121,7 @@ export default function EnergyTariffNewScreen() {
                 { cancelable: false },
               );
             } catch (error) {
-              // Se conservan los valores escritos para corregir y reintentar.
+              // The typed values are kept so they can be fixed and retried.
               setServerError(energyErrorMessage(error));
             } finally {
               savingRef.current = false;

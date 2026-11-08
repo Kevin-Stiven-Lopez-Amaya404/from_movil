@@ -399,7 +399,7 @@ export default function HomesScreen() {
             Gestiona tus hogares y dispositivos.
           </Text>
 
-          {/* Resumen y creación */}
+          {/* Summary and creation */}
           <View
             style={[
               styles.summaryBanner,
@@ -469,7 +469,7 @@ export default function HomesScreen() {
             </Pressable>
           </View>
 
-          {/* Chips de filtro */}
+          {/* Filter chips */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -531,7 +531,7 @@ export default function HomesScreen() {
             })}
           </ScrollView>
 
-          {/* Encabezado de resultados */}
+          {/* Results header */}
           <View style={styles.listHeader}>
             <Text
               style={[
@@ -660,7 +660,7 @@ export default function HomesScreen() {
               </Text>
             </View>
           ) : (
-            /* Lista de hogares */
+            /* Homes list */
             <View style={styles.homesList}>
               {visibleHomes.map((home) => {
                 const shared = isSharedRole(home.homeRole);
@@ -800,7 +800,7 @@ export default function HomesScreen() {
         </View>
       </ScrollView>
 
-      {/* Modal de creación */}
+      {/* Creation modal */}
       <Modal
         visible={createVisible}
         transparent
@@ -917,7 +917,7 @@ export default function HomesScreen() {
         </View>
       </Modal>
 
-      {/* Modal de edición */}
+      {/* Edit modal */}
       <Modal
         visible={editingHome !== null}
         transparent

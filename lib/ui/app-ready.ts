@@ -1,11 +1,11 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * Señal "la app ya es visible".
+ * "The app is visible" signal.
  *
- * El layout raíz la marca cuando se ocultan el splash nativo y la animación
- * de bienvenida. Las pantallas la usan para no reproducir sus animaciones
- * de entrada detrás del splash, donde nadie las vería.
+ * The root layout sets it when the native splash and the welcome animation
+ * are hidden. Screens use it so they do not play their entrance animations
+ * behind the splash, where nobody would see them.
  */
 let ready = false;
 const listeners = new Set<() => void>();

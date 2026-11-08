@@ -1,17 +1,17 @@
 import Svg, { Polyline } from "react-native-svg";
 
 type Props = {
-  /** Color del trazo del check. */
+  /** Stroke color of the check. */
   color: string;
-  /** Tamano del SVG. */
+  /** SVG size. */
   size?: number;
 };
 
 /**
- * Icono reutilizable de confirmacion.
+ * Reusable confirmation icon.
  *
- * Se usa en checkboxes y reglas de validacion. Es un componente presentacional:
- * no maneja estado ni logica de negocio.
+ * Used in checkboxes and validation rules. It is a presentational component:
+ * it holds no state or business logic.
  */
 export function CheckIcon({ color, size = 14 }: Props) {
   return (

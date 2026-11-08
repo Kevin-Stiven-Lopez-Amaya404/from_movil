@@ -33,7 +33,7 @@ export default function RegisterScreen() {
   const palette = useAuthPalette();
 
   // ==========================================
-  // ESTADO DEL FORMULARIO
+  // FORM STATE
   // ==========================================
 
   const [firstName, setFirstName] = useState("");
@@ -50,14 +50,14 @@ export default function RegisterScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   // ==========================================
-  // DATOS NORMALIZADOS
+  // NORMALIZED DATA
   // ==========================================
 
   const cleanName = firstName.trim();
   const cleanEmail = email.trim().toLowerCase();
 
   // ==========================================
-  // VALIDACIÓN DE CONTRASEÑA
+  // PASSWORD VALIDATION
   // ==========================================
 
   const passwordRules = useMemo(() => getPasswordRules(password), [password]);
@@ -108,7 +108,7 @@ export default function RegisterScreen() {
   }
 
   // ==========================================
-  // REGISTRO
+  // REGISTRATION
   // ==========================================
 
   async function handleRegister() {
@@ -135,7 +135,7 @@ export default function RegisterScreen() {
       });
 
       // ======================================
-      // CORREO YA REGISTRADO
+      // EMAIL ALREADY REGISTERED
       // ======================================
 
       if (!result.ok) {
@@ -159,7 +159,7 @@ export default function RegisterScreen() {
       }
 
       // ======================================
-      // REGISTRO EXITOSO
+      // SUCCESSFUL REGISTRATION
       // ======================================
 
       Alert.alert(
@@ -190,7 +190,7 @@ export default function RegisterScreen() {
       contentTopPadding={layout.compact ? 12 : 20}
     >
       {/* ====================================== */}
-      {/* BOTÓN VOLVER                           */}
+      {/* BACK BUTTON                            */}
       {/* ====================================== */}
 
       <View style={styles.header}>
@@ -253,7 +253,7 @@ export default function RegisterScreen() {
         />
 
         {/* ==================================== */}
-        {/* CONTRASEÑA                            */}
+        {/* PASSWORD                              */}
         {/* ==================================== */}
 
         <View>
@@ -326,7 +326,7 @@ export default function RegisterScreen() {
         </View>
 
         {/* ==================================== */}
-        {/* CONFIRMAR CONTRASEÑA                  */}
+        {/* CONFIRM PASSWORD                      */}
         {/* ==================================== */}
 
         <AuthPasswordField
@@ -342,7 +342,7 @@ export default function RegisterScreen() {
         />
 
         {/* ==================================== */}
-        {/* TÉRMINOS                              */}
+        {/* TERMS                                 */}
         {/* ==================================== */}
 
         <View>
@@ -469,7 +469,7 @@ export default function RegisterScreen() {
         </View>
 
         {/* ==================================== */}
-        {/* BOTÓN REGISTRO                        */}
+        {/* REGISTER BUTTON                       */}
         {/* ==================================== */}
 
         <PrimaryButton

@@ -60,7 +60,7 @@ async function restoreStoredSession(
 ): Promise<StoredSession | null> {
   if (!session) return null;
 
-  // Una sesion demo antigua nunca debe restaurarse.
+  // An old demo session must never be restored.
   if (session.mode === "demo") {
     await clearSessionIfUnchanged(expectedVersion);
     return null;
@@ -125,7 +125,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 
     void loadSession()
       .then((session) => {
-        // No restaurar si comenzo otro cambio de sesion.
+        // Do not restore if another session change started.
         if (getSessionMutationVersion() !== restorationVersion) {
           return null;
         }
@@ -133,16 +133,16 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         return restoreStoredSession(session, restorationVersion);
       })
       .then((session) => {
-        // Evitar que una respuesta antigua actualice la interfaz.
-        // Si la restauracion guardo la sesion, el listener
-        // ya recibio y aplico esa actualizacion.
+        // Prevent an old response from updating the interface.
+        // If the restore saved the session, the listener
+        // already received and applied that update.
         if (getSessionMutationVersion() === restorationVersion) {
           applySession(session);
         }
       })
       .catch(async () => {
-        // No cerrar una sesion nueva por un error antiguo.
-        // El listener se encarga de actualizar la interfaz.
+        // Do not close a new session because of an old error.
+        // The listener updates the interface.
         await clearSessionIfUnchanged(restorationVersion);
       })
       .finally(() => {
@@ -172,8 +172,8 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async (allSessions = false) => {
-    // Iniciar la revocación con el token vigente antes de borrar el almacén.
-    // Su respuesta no debe bloquear el cierre local ni limpiar un login posterior.
+    // Start the revocation with the current token before clearing the store.
+    // Its response must not block the local sign-out or clear a later login.
     void authService.logout(allSessions, token ?? undefined).catch(() => undefined);
 
     await clearSession();

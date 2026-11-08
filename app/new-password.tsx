@@ -19,7 +19,7 @@ export default function NewPasswordScreen() {
   const palette = useAuthPalette();
 
   // ==========================================
-  // PARÁMETROS
+  // PARAMETERS
   // ==========================================
 
   const params = useLocalSearchParams<{ token?: string | string[] }>();
@@ -27,7 +27,7 @@ export default function NewPasswordScreen() {
     typeof params.token === "string" ? params.token : (params.token?.[0] ?? "");
 
   // ==========================================
-  // ESTADO
+  // STATE
   // ==========================================
 
   const [password, setPassword] = useState("");
@@ -41,7 +41,7 @@ export default function NewPasswordScreen() {
   const [submitted, setSubmitted] = useState(false);
 
   // ==========================================
-  // VALIDACIÓN DE CONTRASEÑA
+  // PASSWORD VALIDATION
   // ==========================================
 
   const passwordRules = useMemo(() => getPasswordRules(password), [password]);
@@ -66,7 +66,7 @@ export default function NewPasswordScreen() {
     : "";
 
   // ==========================================
-  // CAMBIAR CONTRASEÑA
+  // CHANGE PASSWORD
   // ==========================================
 
   async function handleFinish() {
@@ -125,7 +125,7 @@ export default function NewPasswordScreen() {
   return (
     <AuthScreenLayout compact={layout.compact} contentStyle={styles.content}>
       {/* ====================================== */}
-      {/* BOTÓN VOLVER                           */}
+      {/* BACK BUTTON                            */}
       {/* ====================================== */}
 
       <View style={styles.header}>
@@ -133,7 +133,7 @@ export default function NewPasswordScreen() {
       </View>
 
       {/* ====================================== */}
-      {/* TÍTULO                                 */}
+      {/* TITLE                                  */}
       {/* ====================================== */}
 
       <Text
@@ -149,7 +149,7 @@ export default function NewPasswordScreen() {
 
       <View style={styles.formContainer}>
         {/* ==================================== */}
-        {/* NUEVA CONTRASEÑA                      */}
+        {/* NEW PASSWORD                          */}
         {/* ==================================== */}
 
         <View>
@@ -191,7 +191,7 @@ export default function NewPasswordScreen() {
         </View>
 
         {/* ==================================== */}
-        {/* CONFIRMAR CONTRASEÑA                  */}
+        {/* CONFIRM PASSWORD                      */}
         {/* ==================================== */}
 
         <AuthPasswordField
@@ -205,7 +205,7 @@ export default function NewPasswordScreen() {
         />
 
         {/* ==================================== */}
-        {/* BOTÓN                                 */}
+        {/* BUTTON                                */}
         {/* ==================================== */}
 
         <PrimaryButton
@@ -220,7 +220,7 @@ export default function NewPasswordScreen() {
 }
 
 // ======================================================
-// TIPOGRAFÍA
+// TYPOGRAPHY
 // ======================================================
 
 

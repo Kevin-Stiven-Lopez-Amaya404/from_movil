@@ -297,8 +297,8 @@ export default function HomeDetailScreen() {
     setPendingDeviceId(telemetryDevice.id);
     try {
       await setHomeDeviceState(telemetryDevice.id, nextState);
-      // La publicación del comando no prueba que el relé haya cambiado.
-      // El estado se actualizará mediante telemetría o lectura del backend.
+      // Publishing the command does not prove that the relay changed.
+      // The state is updated through telemetry or a backend read.
     } catch (error) {
       Alert.alert(
         "No se pudo cambiar el estado",

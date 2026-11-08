@@ -36,7 +36,7 @@ export default function LoginScreen() {
   const palette = getAuthPalette(effectiveColorMode, colorPalette);
 
   // ==========================================
-  // ESTADO DEL FORMULARIO
+  // FORM STATE
   // ==========================================
 
   const [email, setEmail] = useState("");
@@ -52,7 +52,7 @@ export default function LoginScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  /** Error general del formulario (credenciales o conexión). */
+  /** General form error (credentials or connection). */
   const [formError, setFormError] = useState("");
 
   // ==========================================
@@ -84,7 +84,7 @@ export default function LoginScreen() {
       return;
     }
 
-    // Los errores de cada campo ya se muestran debajo de él.
+    // Field errors are already shown below each field.
     if (!canSubmit) {
       return;
     }
@@ -130,7 +130,7 @@ export default function LoginScreen() {
       contentStyle={styles.screenContent}
       contentTopPadding={layout.compact ? 4 : 8}
     >
-      {/* Volver: anclado arriba, fuera del contenido */}
+      {/* Back: anchored at the top, outside the content */}
       <View style={styles.header}>
         <BackButton
           accessibilityLabel="Volver"
@@ -206,7 +206,7 @@ export default function LoginScreen() {
           </View>
         </View>
 
-        {/* Error general: credenciales incorrectas o fallo de conexión */}
+        {/* General error: wrong credentials or connection failure */}
         {formError ? (
           <View
             accessibilityLiveRegion="polite"

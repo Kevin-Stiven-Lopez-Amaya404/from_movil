@@ -2,36 +2,36 @@ import { useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
- * Hook centralizado para adaptar las pantallas a distintos celulares.
+ * Central hook to adapt screens to different phones.
  *
- * Combina:
- * - Tamano real de pantalla (`useWindowDimensions`).
- * - Margenes seguros del dispositivo (`useSafeAreaInsets`).
+ * Combines:
+ * - Real screen size (`useWindowDimensions`).
+ * - Device safe margins (`useSafeAreaInsets`).
  *
- * Asi las pantallas no repiten calculos y se evitan elementos por fuera de la
- * pantalla en Android, iPhone, notch o barra inferior.
+ * That way screens do not repeat calculations and elements do not end up
+ * off-screen on Android, iPhone, notch or bottom bar.
  */
 export function useResponsiveLayout() {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
-  // Clasificaciones simples para ajustar tipografia, espacios y alto de elementos.
+  // Simple classifications to adjust typography, spacing and element height.
   const tiny = width < 340 || height < 620;
   const short = height < 700;
   const narrow = width < 380;
   const compact = tiny || short || narrow;
 
-  // Margen lateral dinamico: menos espacio en pantallas pequenas.
+  // Dynamic side margin: less space on small screens.
   const gutter = tiny ? 12 : narrow ? 16 : 22;
 
-  // Limita el ancho para que en web/tablet el contenido no se estire demasiado.
+  // Limits the width so content does not stretch too much on web/tablet.
   const maxWidth = Math.min(Math.max(width - gutter * 2, 0), 420);
 
-  // Safe areas reales del dispositivo.
+  // Real safe areas of the device.
   const safeBottom = Math.max(insets.bottom, 12);
   const safeTop = Math.max(insets.top, 0);
 
-  // SafeAreaView ya aplica los insets; estos valores son solo espacios visuales.
+  // SafeAreaView already applies the insets; these values are only visual spacing.
   const screenTop = compact ? 10 : 16;
   const screenBottom = 16;
 
