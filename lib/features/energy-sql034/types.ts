@@ -1,8 +1,8 @@
 /**
- * Contrato HTTP SQL034 (tarifas, metas y resumen de costo estimado).
- * Fuente: smarthome-backend PR #15. Dinero y kWh viajan como texto decimal.
+ * SQL034 HTTP contract (tariffs, goals and estimated cost summary).
+ * Source: smarthome-backend PR #15. Money and kWh travel as decimal text.
  */
-export type DecimalString = string; // por ej. '950.2500'
+export type DecimalString = string; // e.g. '950.2500'
 export type LocalDate = string; // YYYY-MM-DD (America/Bogota)
 export type Month = string; // YYYY-MM
 export type IsoDateTime = string; // ISO UTC

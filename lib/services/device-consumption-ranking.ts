@@ -30,7 +30,7 @@ export async function loadDeviceConsumptionRanking(
 
   const summaries: DeviceConsumptionRankingItem[] = [];
 
-  // Consultar máximo cinco dispositivos simultáneamente.
+  // Query at most five devices at the same time.
   for (let index = 0; index < homeDevices.length; index += 5) {
     const batch = homeDevices.slice(index, index + 5);
 

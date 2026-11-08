@@ -1,7 +1,7 @@
 /**
- * Diagnostico LAN de solo lectura para Shelly 1PM Gen4.
- * No realiza pairing ni escribe estados en backend o BD.
- * No acciona el rele. Nunca envia credenciales.
+ * Read-only LAN diagnostics for a Shelly 1PM Gen4.
+ * Does no pairing and writes no state to the backend or DB.
+ * Does not switch the relay. Never sends credentials.
  */
 import {
   isPrivateIpv4,
@@ -28,7 +28,7 @@ export async function readShellyLocalTelemetry(
     throw new Error("La identidad o IP local del Shelly no es valida.");
   }
 
-  // Revalidar identidad en cada lectura: no confiar solo en una IP reutilizada.
+  // Revalidate the identity on every read: do not trust a reused IP alone.
   const identity = await readShellyLocalIdentity(ip, signal);
   if (
     identity.manufacturerDeviceId.toLowerCase() !==

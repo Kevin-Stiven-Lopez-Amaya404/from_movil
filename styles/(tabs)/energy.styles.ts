@@ -2,7 +2,7 @@ import { StyleSheet } from "react-native";
 
 import { typography } from "@/lib/theme/typography";
 
-/** Estilos compartidos por la tarjeta y las pantallas de energia SQL034. */
+/** Styles shared by the card and the SQL034 energy screens. */
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

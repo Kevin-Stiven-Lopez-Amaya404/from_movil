@@ -50,7 +50,7 @@ export function useSessionLifecycle() {
         setSessionRole(session.user.role ?? "miembro");
       })
       .catch(() => {
-        // La pantalla de autenticación manejará el reintento.
+        // The authentication screen handles the retry.
       });
 
     return () => {

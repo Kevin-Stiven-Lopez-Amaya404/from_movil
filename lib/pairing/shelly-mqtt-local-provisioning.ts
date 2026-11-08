@@ -1,11 +1,11 @@
 /**
- * SmartHome 504.13 - transporte LAN del APROVISIONAMIENTO MQTT Shelly Gen4.
- * No solicita credenciales al usuario, no crea identidades, no habilita el
- * broker y JAMAS marca una sesion CONNECTED o COMPLETED.
+ * SmartHome 504.13 - LAN transport for Shelly Gen4 MQTT PROVISIONING.
+ * Does not ask the user for credentials, create identities or enable the
+ * broker, and NEVER marks a session CONNECTED or COMPLETED.
  *
- * Solo puede invocarse tras una autorizacion corta del backend (aun pendiente).
- * La RPC HTTP LAN no ofrece confidencialidad de transporte: requiere una red
- * aislada/confiable o un canal local protegido antes del uso en produccion.
+ * Can only be invoked after a short backend authorization (still pending).
+ * The LAN HTTP RPC offers no transport confidentiality: it requires an
+ * isolated/trusted network or a protected local channel before production use.
  */
 import { isPrivateIpv4, readShellyLocalIdentity } from './shelly-local-identity';
 
@@ -99,8 +99,8 @@ function assertValid(
 }
 
 /**
- * HTTP en el dispositivo. No incluir credenciales en URL, query string,
- * logs, mensajes de error ni almacenamiento persistente del telefono.
+ * HTTP on the device. Do not put credentials in the URL, query string,
+ * logs, error messages or the phone's persistent storage.
  */
 export const defaultShellyRpcTransport: ShellyRpcTransport = async (
   ip, method, params, signal,
@@ -129,7 +129,7 @@ export const defaultShellyRpcTransport: ShellyRpcTransport = async (
     }
     return obj.result;
   } catch {
-    // La respuesta del dispositivo podria incluir detalles sensibles.
+    // The device response could include sensitive details.
     throw new Error('SHELLY_RPC_OUTCOME_UNCERTAIN');
   } finally {
     clearTimeout(timeout);
@@ -234,8 +234,8 @@ export async function readShellyMqttStatus(
 }
 
 /**
- * Configura MQTT localmente, aplica el reinicio solicitado por Shelly y
- * comprueba la configuración/estado. El estado local nunca acredita al backend.
+ * Configures MQTT locally, applies the reboot requested by the Shelly and
+ * checks the configuration/state. The local state never vouches for the backend.
  */
 export async function configureShellyMqttLocally(
   input: {
@@ -256,11 +256,11 @@ export async function configureShellyMqttLocally(
   }
   if (signal?.aborted) throw new Error('SHELLY_PROVISIONING_ABORTED');
 
-  // El endpoint público mqtt-dev termina TLS en Traefik con Let's Encrypt.
-  // El paquete broker.caPem corresponde a la CA INTERNA (Traefik -> Mosquitto)
-  // y NO debe instalarse en Shelly ni usarse como confianza del broker público.
-  // Usar el almacén público de Shelly (ca.pem), validado físicamente contra HTTPS.
-  // No sobrescribir user_ca.pem ni realizar escrituras adicionales de certificados.
+  // The public mqtt-dev endpoint terminates TLS in Traefik with Let's Encrypt.
+  // The broker.caPem bundle is the INTERNAL CA (Traefik -> Mosquitto)
+  // and must NOT be installed on the Shelly or trusted for the public broker.
+  // Use the Shelly's public store (ca.pem), physically validated against HTTPS.
+  // Do not overwrite user_ca.pem or perform additional certificate writes.
   if (Date.parse(authorization.expiresAt) <= Date.now()) {
     throw new Error('SHELLY_PROVISIONING_AUTHORIZATION_EXPIRED');
   }
@@ -305,7 +305,7 @@ export async function configureShellyMqttLocally(
     }
     mqttConnected = status.connected;
   }
-  // Deliberadamente no verificar 'pass' por RPC ni devolverla al llamador.
+  // Deliberately do not verify 'pass' over RPC or return it to the caller.
   return {
     phase: 'CONFIGURED_LOCALLY_UNVERIFIED',
     restartRequired: result.restart_required,

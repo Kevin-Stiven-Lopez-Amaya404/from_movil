@@ -54,11 +54,11 @@ function pairingSessionPath(
 }
 
 /**
- * Genera 32 bytes aleatorios mediante una fuente
- * criptográficamente segura.
+ * Generates 32 random bytes from a
+ * cryptographically secure source.
  *
- * Se codifican como 64 caracteres hexadecimales,
- * compatibles con el contrato del backend.
+ * They are encoded as 64 hexadecimal characters,
+ * compatible with the backend contract.
  */
 function generateSessionToken(): string {
   const bytes = Crypto.getRandomBytes(32);
@@ -76,10 +76,10 @@ function pairingHeaders(sessionToken: string) {
 
 export const pairingService = {
   /**
-   * Crea una sesión LAN temporal.
+   * Creates a temporary LAN session.
    *
-   * El token permanece en memoria del llamador.
-   * No debe almacenarse en registros de diagnóstico.
+   * The token stays in the caller's memory.
+   * It must not be stored in diagnostic logs.
    */
   createAttempt(): CreateSessionRequest {
     return {
@@ -112,7 +112,7 @@ export const pairingService = {
   },
 
   /**
-   * Consulta el estado de una sesión existente.
+   * Gets the state of an existing session.
    */
   async getSession(
     homeId: string,
@@ -128,10 +128,10 @@ export const pairingService = {
   },
 
   /**
-   * Reporta al backend la identidad obtenida
-   * directamente del Shelly por la red local.
+   * Reports to the backend the identity obtained
+   * directly from the Shelly over the local network.
    *
-   * Esto NO confirma posesión ni conexión MQTT.
+   * This does NOT confirm possession or an MQTT connection.
    */
   async identifyDevice(
     homeId: string,
@@ -161,9 +161,9 @@ export const pairingService = {
   },
 
   /**
-   * Registro definitivo. El backend solo confirma el alta si ha observado
-   * una conexión MQTT autenticada y la sesión está en CONNECTED.
-   * Nunca considerar una respuesta WAITING_FOR_MQTT como alta exitosa.
+   * Final registration. The backend only confirms it if it has observed
+   * an authenticated MQTT connection and the session is CONNECTED.
+   * Never treat a WAITING_FOR_MQTT response as a successful registration.
    */
   async completeSession(
     homeId: string,
@@ -183,7 +183,7 @@ export const pairingService = {
   },
 
 
-  /** Prepara una identidad DESHABILITADA, devuelve solo el UUID de operacion. */
+  /** Prepares a DISABLED identity and returns only the operation UUID. */
   async prepareMqtt(
     homeId: string,
     sessionId: string,
@@ -217,8 +217,8 @@ export const pairingService = {
   },
 
   /**
-   * SOLO build de desarrollo, laboratorio autorizado y API HTTPS válida.
-   * Retorna contraseña individual temporalmente en memoria; no registrar ni almacenar.
+   * ONLY development builds, an authorized lab and a valid HTTPS API.
+   * Returns the individual password temporarily in memory; do not log or store it.
    */
   async authorizeMqttBootstrap(
     homeId: string,
@@ -246,7 +246,7 @@ export const pairingService = {
     return result;
   },
 
-  /** Habilita la cuenta MQTT, pero NO marca autenticacion ni equipo registrado. */
+  /** Enables the MQTT account, but does NOT mark authentication or a registered device. */
   async enablePreparedMqtt(
     homeId: string, sessionId: string, sessionToken: string, operationId: string,
   ): Promise<{phase: 'AWAITING_MQTT_AUTH'; mqttAuthenticated: false}> {
@@ -270,7 +270,7 @@ export const pairingService = {
     return result;
   },
 
-  /** Solo el backend puede confirmar CONNECTED tras el desafío del broker. */
+  /** Only the backend can confirm CONNECTED after the broker challenge. */
   async confirmMqttAuthentication(
     homeId: string,
     sessionId: string,
@@ -300,7 +300,7 @@ export const pairingService = {
   },
 
   /**
-   * Cancela una sesión de pairing activa.
+   * Cancels an active pairing session.
    */
   async cancelSession(
     homeId: string,

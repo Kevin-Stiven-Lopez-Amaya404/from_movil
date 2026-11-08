@@ -27,7 +27,7 @@ import {
 import { getAppTheme } from "@/lib/theme/app-theme";
 import { markAppReady } from "@/lib/ui/app-ready";
 
-// El splash nativo se mantiene visible hasta que sepamos qué mostrar.
+// The native splash stays visible until we know what to show.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ duration: 200, fade: true });
 
@@ -36,9 +36,9 @@ export const unstable_settings = {
 };
 
 /**
- * checking: leyendo si ya se vio la animación (cubre el splash nativo).
- * intro:    primera vez en esta instalación, se reproduce la animación.
- * done:     la animación terminó o no corresponde mostrarla.
+ * checking: reading whether the animation was already seen (covers the native splash).
+ * intro:    first time on this installation, the animation plays.
+ * done:     the animation finished or does not apply.
  */
 type IntroPhase = "checking" | "intro" | "done";
 
@@ -57,15 +57,15 @@ function RootNavigator({
 }: RootNavigatorProps) {
   const { isAuthenticated, isLoading } = useAuthSession();
 
-  // Ocultar el splash nativo:
-  // - Primera vez: en cuanto arranca la animación (mismo fondo, sin salto).
-  // - Resto de veces: cuando la sesión ya está restaurada, para entrar directo.
+  // Hide the native splash:
+  // - First time: as soon as the animation starts (same background, no jump).
+  // - Other times: when the session is already restored, to go straight in.
   useEffect(() => {
     if (introPhase === "checking") return;
     if (introPhase === "intro" || !isLoading) {
       SplashScreen.hideAsync().catch(() => {});
     }
-    // La app ya es visible: las pantallas pueden animar su entrada.
+    // The app is visible now: screens can animate their entrance.
     if (introPhase === "done" && !isLoading) {
       markAppReady();
     }
@@ -74,12 +74,12 @@ function RootNavigator({
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
-        {/* Rutas de usuarios autenticados */}
+        {/* Routes for authenticated users */}
         <Stack.Protected guard={isAuthenticated}>
           <Stack.Screen name="(tabs)" />
         </Stack.Protected>
 
-        {/* Rutas de usuarios sin sesión */}
+        {/* Routes for users without a session */}
         <Stack.Protected guard={!isAuthenticated}>
           <Stack.Screen name="welcome" />
           <Stack.Screen name="login" />
@@ -88,7 +88,7 @@ function RootNavigator({
           <Stack.Screen name="request-reactivation" />
         </Stack.Protected>
 
-        {/* Enlaces de recuperación y activación */}
+        {/* Recovery and activation links */}
         <Stack.Screen name="new-password" />
         <Stack.Screen name="reset-password" />
         <Stack.Screen name="activate-account" />
@@ -96,12 +96,12 @@ function RootNavigator({
         <Stack.Screen name="terms" />
       </Stack>
 
-      {/* Animación de bienvenida: solo la primera vez por instalación */}
+      {/* Welcome animation: only the first time per installation */}
       {introPhase === "intro" && (
         <SplashAnimation onFinish={onIntroFinish} />
       )}
 
-      {/* Solo aparece si la animación terminó y la sesión aún no está lista */}
+      {/* Only shown if the animation finished and the session is not ready yet */}
       {introPhase === "done" && isLoading && (
         <View
           style={[

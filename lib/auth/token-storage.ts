@@ -6,8 +6,8 @@ import {
 } from "@/lib/session/session-store";
 
 /**
- * Compatibilidad temporal para imports antiguos.
- * La sesión real se guarda únicamente en session-store.
+ * Temporary compatibility for old imports.
+ * The real session is stored only in session-store.
  */
 export async function saveAccessToken(token: string): Promise<void> {
   const currentSession = await loadSession();

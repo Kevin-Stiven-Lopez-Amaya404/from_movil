@@ -10,7 +10,7 @@ type PrimaryButtonProps = {
   text: string;
 };
 
-/** Compatibilidad para formularios de acceso mientras adoptan Button directamente. */
+/** Compatibility for sign-in forms while they adopt Button directly. */
 export function PrimaryButton({
   disabled = false,
   loading = false,

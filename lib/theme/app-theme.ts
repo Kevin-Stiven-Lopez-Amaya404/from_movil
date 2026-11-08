@@ -10,8 +10,8 @@ import { DEFAULT_COLOR_PALETTE } from "@/lib/domain/preferences";
 export type AppTheme = ReturnType<typeof getAppTheme>;
 
 /**
- * Devuelve la paleta visual de la aplicación
- * según el modo claro u oscuro.
+ * Returns the app's visual palette
+ * for light or dark mode.
  */
 export function getAppTheme(
   mode: EffectiveColorMode,
@@ -55,7 +55,7 @@ export function getAppTheme(
   return {
     dark,
 
-    // Tokens semanticos compartidos; Azul Clasico conserva los valores originales.
+    // Shared semantic tokens; Classic Blue keeps the original values.
     primaryPressed,
     primarySoft,
     accent: emerald ? "#10B981" : "#22C55E",
@@ -73,7 +73,7 @@ export function getAppTheme(
     textSecondary,
     divider,
 
-    // Tokens originales y alias semanticos usados por pantallas existentes.
+    // Original tokens and semantic aliases used by existing screens.
     blue1: primarySoft,
     blue: primary,
     solidActionBackground: emerald ? "#047857" : "#0047AB",
@@ -199,7 +199,7 @@ export function getAppTheme(
     },
 
     // ==========================================
-    // BARRA DE NAVEGACIÓN
+    // NAVIGATION BAR
     // ==========================================
 
     tabBar: emerald
@@ -251,7 +251,7 @@ export function getAppTheme(
 }
 
 /**
- * Hook para consumir el tema actual desde cualquier componente.
+ * Hook to read the current theme from any component.
  */
 export function useAppTheme() {
   const { colorPalette, effectiveColorMode } = useSmartHome();

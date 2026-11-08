@@ -6,8 +6,8 @@ const test = require("node:test");
 const vm = require("node:vm");
 const ts = require("typescript");
 
-// Compila la función TypeScript para probar la implementación
-// real, sin duplicar su lógica ni agregar dependencias.
+// Compiles the TypeScript function to test the real
+// implementation, without duplicating its logic or adding dependencies.
 const source = readFileSync(
   path.join(
     __dirname,
@@ -43,7 +43,7 @@ function device(connectivityStatus, id = "device-1") {
   };
 }
 
-test("OFFLINE confirmado genera una alerta", () => {
+test("confirmed OFFLINE creates an alert", () => {
   const alerts = getActiveDeviceAlerts(
     [device("OFFLINE")],
     homes,
@@ -77,7 +77,7 @@ test("UNKNOWN no genera desconexiones falsas", () => {
   );
 });
 
-test("Estado ausente no se interpreta como OFFLINE", () => {
+test("a missing status is not interpreted as OFFLINE", () => {
   assert.equal(
     getActiveDeviceAlerts(
       [device(undefined)],
@@ -88,7 +88,7 @@ test("Estado ausente no se interpreta como OFFLINE", () => {
   );
 });
 
-test("No muestra alertas mientras carga un hogar", () => {
+test("shows no alerts while a home is loading", () => {
   assert.equal(
     getActiveDeviceAlerts(
       [device("OFFLINE")],
@@ -99,7 +99,7 @@ test("No muestra alertas mientras carga un hogar", () => {
   );
 });
 
-test("No muestra alertas si la consulta falló", () => {
+test("shows no alerts if the query failed", () => {
   assert.equal(
     getActiveDeviceAlerts(
       [device("OFFLINE")],
@@ -110,7 +110,7 @@ test("No muestra alertas si la consulta falló", () => {
   );
 });
 
-test("No muestra dispositivos de hogares inaccesibles", () => {
+test("shows no devices of inaccessible homes", () => {
   assert.equal(
     getActiveDeviceAlerts(
       [device("OFFLINE")],
@@ -121,7 +121,7 @@ test("No muestra dispositivos de hogares inaccesibles", () => {
   );
 });
 
-test("Evita alertas duplicadas por dispositivo", () => {
+test("avoids duplicate alerts per device", () => {
   assert.equal(
     getActiveDeviceAlerts(
       [device("OFFLINE"), device("OFFLINE")],
@@ -132,7 +132,7 @@ test("Evita alertas duplicadas por dispositivo", () => {
   );
 });
 
-test("Distingue dos dispositivos desconectados", () => {
+test("distinguishes two disconnected devices", () => {
   assert.equal(
     getActiveDeviceAlerts(
       [
@@ -146,7 +146,7 @@ test("Distingue dos dispositivos desconectados", () => {
   );
 });
 
-test("La alerta desaparece al reconectarse", () => {
+test("the alert disappears on reconnection", () => {
   const disconnected = getActiveDeviceAlerts(
     [device("OFFLINE")],
     homes,

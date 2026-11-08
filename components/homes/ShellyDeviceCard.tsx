@@ -68,7 +68,7 @@ export function ShellyDeviceCard({
         },
       ]}
     >
-      {/* Barra superior de iconos (Compartir, Nube, Sincronización) */}
+      {/* Top icon bar (Share, Cloud, Sync) */}
       <View style={styles.topStatusRow}>
         <View style={styles.iconGroup}>
           <Ionicons
@@ -129,10 +129,10 @@ export function ShellyDeviceCard({
           onPress={onPress}
           style={styles.bodyContent}
         >
-        {/* Gráfico miniatura auténtico del Shelly 1PM Gen4 (Rojo) */}
+        {/* Faithful thumbnail of the Shelly 1PM Gen4 (red) */}
         <View style={styles.shellyThumb}>
           <Svg width="52" height="42" viewBox="0 0 52 42">
-            {/* Cuerpo rojo del Shelly 1PM Gen4 */}
+            {/* Red body of the Shelly 1PM Gen4 */}
             <Rect
               x="2"
               y="6"
@@ -143,13 +143,13 @@ export function ShellyDeviceCard({
               stroke={theme.danger}
               strokeWidth="1"
             />
-            {/* Bornes de conexión superiores */}
+            {/* Top connection terminals */}
             <Rect x="6" y="1" width="7" height="6" rx="1" fill={theme.muted} />
             <Rect x="15" y="1" width="7" height="6" rx="1" fill={theme.muted} />
             <Rect x="24" y="1" width="7" height="6" rx="1" fill={theme.muted} />
             <Rect x="33" y="1" width="7" height="6" rx="1" fill={theme.muted} />
             <Rect x="41" y="1" width="5" height="6" rx="1" fill={theme.muted} />
-            {/* Texto Shelly en miniatura */}
+            {/* Miniature Shelly text */}
             <SvgText
               x="26"
               y="22"
@@ -172,7 +172,7 @@ export function ShellyDeviceCard({
           </Svg>
         </View>
 
-        {/* Información del dispositivo */}
+        {/* Device information */}
         <View style={styles.info}>
           <Text
             numberOfLines={1}

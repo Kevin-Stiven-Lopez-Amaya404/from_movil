@@ -22,7 +22,7 @@ type Props = {
   homeRole?: HomeRole;
 };
 
-/** Resumen compacto; la gestión detallada vive en Tarifas y Metas. */
+/** Compact summary; detailed management lives in Tariffs and Goals. */
 export function EnergyCostSummaryCard({ homeId, homeRole }: Props) {
   const theme = useAppTheme();
   const router = useRouter();

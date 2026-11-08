@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 
 type Props = { children: ReactNode };
 
-/** Evita que el teclado tape botones y campos en pantallas con formularios. */
+/** Prevents the keyboard from covering buttons and fields on form screens. */
 export function KeyboardAvoidingScreen({ children }: Props) {
   return (
     <KeyboardAvoidingView

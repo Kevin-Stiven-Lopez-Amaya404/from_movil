@@ -11,7 +11,7 @@ export type ConsumptionGoalProgress = {
 
 export const CONSUMPTION_WARNING_PERCENTAGE = 80;
 
-/** Suma la energía acumulada de todos los dispositivos de un hogar. */
+/** Adds up the accumulated energy of every device of a home. */
 export function getHouseConsumption(
   devices: readonly SmartDevice[],
   homeId: string,
@@ -21,7 +21,7 @@ export function getHouseConsumption(
     .reduce((total, device) => total + Math.max(device.energy, 0), 0);
 }
 
-/** Convierte consumo y meta en un estado reutilizable para tarjetas y alertas. */
+/** Turns consumption and target into a reusable state for cards and alerts. */
 export function getConsumptionGoalProgress(
   consumedWh: number,
   targetWh: number,

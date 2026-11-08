@@ -69,8 +69,8 @@ export function useRealtimeSync({
             },
           ),
           realtimeService.on("consumption.created", (event) => {
-            // Las lecturas confirmadas por el backend alimentan las tarjetas
-            // sin inferir conectividad ni estado del relé.
+            // Readings confirmed by the backend feed the cards
+            // without inferring connectivity or relay state.
             if (typeof event.deviceId === "string") {
               const deviceId = event.deviceId;
               const power = event.powerW;
@@ -94,7 +94,7 @@ export function useRealtimeSync({
           }),
           realtimeService.on("realtime.error", () => {
             console.warn(
-              "[RealtimeSync] Error en la conexión en tiempo real.",
+              "[RealtimeSync] Realtime connection error.",
             );
           }),
         );
@@ -102,7 +102,7 @@ export function useRealtimeSync({
       .catch(() => {
         if (active) {
           console.warn(
-            "[RealtimeSync] No se pudo iniciar la sincronización en tiempo real.",
+            "[RealtimeSync] Could not start realtime synchronization.",
           );
         }
       });

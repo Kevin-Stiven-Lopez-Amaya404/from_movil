@@ -12,7 +12,7 @@ type Props = {
   theme: AppTheme;
 };
 
-/** Fila de navegación con icono decorativo neutro para el dashboard. */
+/** Navigation row with a neutral decorative icon for the dashboard. */
 export function NavigationRow({ icon, title, subtitle, onPress, theme }: Props) {
   const accent = theme.decorativeAccent;
 

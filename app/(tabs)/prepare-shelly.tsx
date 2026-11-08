@@ -181,7 +181,7 @@ export default function PrepareShellyScreen() {
         );
       }
 
-      // Verificar nuevamente la identidad del equipo.
+      // Verify the device identity again.
       const identity = await readShellyLocalIdentity(
         ip,
         controller.signal,
@@ -233,7 +233,7 @@ export default function PrepareShellyScreen() {
       return;
     }
 
-    // La comprobacion HTTP inicia despues de montar el componente.
+    // The HTTP check starts after the component mounts.
     const startTimer = setTimeout(() => {
       void verifySelectedDevice();
     }, 0);
@@ -332,8 +332,8 @@ export default function PrepareShellyScreen() {
         () => {
           void backToSearch();
 
-          // Consumir el evento para impedir
-          // que Android navegue sin cancelar.
+          // Consume the event to prevent
+          // Android from navigating without cancelling.
           return true;
         },
       );
@@ -374,7 +374,7 @@ export default function PrepareShellyScreen() {
       | undefined;
 
     try {
-      // Consultamos nuevamente el dispositivo real.
+      // Query the real device again.
       const identity = await readShellyLocalIdentity(ip);
 
       if (
@@ -385,8 +385,8 @@ export default function PrepareShellyScreen() {
         );
       }
 
-      // Creamos la sesión temporal en el backend.
-      // Reutilizar el mismo intento ante errores temporales.
+      // Create the temporary session in the backend.
+      // Reuse the same attempt on temporary errors.
       const attempt =
         pairingAttempt.current ?? pairingService.createAttempt();
 
@@ -397,12 +397,12 @@ export default function PrepareShellyScreen() {
         attempt,
       );
 
-      // El backend confirmó la creación de la sesión.
+      // The backend confirmed the session creation.
       pairingAttempt.current = null;
 
       const { session, sessionToken } = createdSession;
 
-      // Conservamos el token únicamente en memoria.
+      // The token is kept in memory only.
       activePairing.current = {
         homeId,
         sessionId: session.sessionId,
@@ -421,7 +421,7 @@ export default function PrepareShellyScreen() {
       setLocalMqttConnected(null);
       setMqttSetupNotice(null);
 
-      // Reportamos la identidad local al backend.
+      // Report the local identity to the backend.
       const identifiedSession =
         await pairingService.identifyDevice(
           homeId,
@@ -432,8 +432,8 @@ export default function PrepareShellyScreen() {
 
       setPairingSession(identifiedSession);
     } catch (error) {
-      // Solo conservamos el intento cuando no sabemos
-      // si el backend recibió la solicitud.
+      // The attempt is kept only when we do not know
+      // whether the backend received the request.
       if (error instanceof ApiError) {
         const mayHaveReachedBackend =
           error.code === "NETWORK_ERROR" ||
@@ -460,8 +460,8 @@ export default function PrepareShellyScreen() {
   async function retryPairingIdentification() {
     const active = activePairing.current;
 
-    // Nunca descartar silenciosamente el toque: un Fast Refresh puede dejar
-    // visible PENDING sin conservar el token temporal en memoria.
+    // Never silently drop the tap: a Fast Refresh can leave PENDING
+    // visible without keeping the temporary token in memory.
     if (!active) {
       setPairingError(
         "No se conserva el token de esta sesión en el teléfono. No es seguro reintentar ni crear otra sesión todavía. Espera a que expire y prepara una nueva vinculación.",
@@ -498,7 +498,7 @@ export default function PrepareShellyScreen() {
     setPairingError(null);
 
     try {
-      // Consultar primero la verdad del backend.
+      // Query the backend's truth first.
       const currentSession = await pairingService.getSession(
         active.homeId,
         active.sessionId,
@@ -507,17 +507,17 @@ export default function PrepareShellyScreen() {
 
       setPairingSession(currentSession);
 
-      // La identificación ya fue confirmada por el backend.
+      // The identification was already confirmed by the backend.
       if (currentSession.status === "DEVICE_IDENTIFIED") {
         return;
       }
 
-      // No repetir operaciones en estados incompatibles.
+      // Do not repeat operations in incompatible states.
       if (currentSession.status !== "PENDING") {
         return;
       }
 
-      // Confirmar nuevamente la identidad física por LAN.
+      // Confirm the physical identity over LAN again.
       const identity = await readShellyLocalIdentity(ip);
 
       if (
@@ -604,14 +604,14 @@ export default function PrepareShellyScreen() {
   }
 
   /**
-   * Consulta el backend: la detección LAN nunca equivale a CONNECTED.
-   * No usamos reintentos automáticos que puedan duplicar la operación.
+   * Queries the backend: LAN detection never means CONNECTED.
+   * No automatic retries that could duplicate the operation.
    */
 
   /**
-   * Flujo EXPLICITO para laboratorio aislado, sin reintentos automaticos.
-   * No se conserva la password en estado React ni almacenamiento persistente.
-   * El backend debe exigir HTTPS antes de entregar la identidad individual.
+   * EXPLICIT flow for an isolated lab, without automatic retries.
+   * The password is not kept in React state or persistent storage.
+   * The backend must require HTTPS before handing out the individual identity.
    */
   function createMqttPairingDependencies(
     active: NonNullable<typeof activePairing.current>,
@@ -705,7 +705,7 @@ export default function PrepareShellyScreen() {
     );
   }
 
-  /** Cada escritura se ejecuta una sola vez; las consultas posteriores son de solo lectura. */
+  /** Each write runs only once; later queries are read-only. */
   async function configureMqttForTrustedLab() {
     const active = activePairing.current;
     if (!__DEV__ || !active || !ip || !manufacturerDeviceId || !canPrepare ||
@@ -735,7 +735,7 @@ export default function PrepareShellyScreen() {
         },
       );
       setLocalMqttConnected(progress.mqttConnected);
-      // Sólo se puede confirmar después de /mqtt/enable exitoso.
+      // Can only be confirmed after a successful /mqtt/enable.
       setMqttOperationReady(true);
       if (progress.mqttConnected) {
         mqttAutoFinalizeAttempted.current = true;
@@ -752,8 +752,8 @@ export default function PrepareShellyScreen() {
         ["MQTT_BOOTSTRAP_REQUIRES_HTTPS_BACKEND_DEV",
           "MQTT_ENABLE_REQUIRES_HTTPS_BACKEND_DEV",
           "MQTT_CONFIRM_REQUIRES_HTTPS_BACKEND_DEV"].includes(error.message);
-      // Sólo códigos de error internos y etapas; nunca imprimir respuestas RPC,
-      // contraseñas, tokens de sesión ni payloads del backend.
+      // Only internal error codes and stages; never print RPC responses,
+      // passwords, session tokens or backend payloads.
       const diagnostic = error instanceof Error
         ? error instanceof ApiError
           ? `API_${error.code}_${error.status ?? 'SIN_HTTP'}`
@@ -783,7 +783,7 @@ export default function PrepareShellyScreen() {
     try {
       await finishMqttPairing(active, operationId, name);
     } catch {
-      // El usuario puede consultar el estado persistido; confirm no se reenvía.
+      // The user can check the persisted state; confirm is not sent again.
       setPairingError(
         mqttConfirmAttempted.current
           ? "No hay confirmación final del backend. La petición no se repetirá; consulta el estado o cancela la sesión para reconciliarla."
@@ -794,9 +794,9 @@ export default function PrepareShellyScreen() {
       setPairingLoading(false);
     }
   }
-  // Shelly puede tardar varios minutos en reintentar MQTT después del
-  // reinicio. Vigilar sólo por LAN (consultas de lectura), sin repetir
-  // /prepare, /bootstrap, /enable ni la escritura de credenciales.
+  // A Shelly can take several minutes to retry MQTT after the
+  // reboot. Watch only over LAN (read queries), without repeating
+  // /prepare, /bootstrap, /enable or the credential write.
   useEffect(() => {
     if (!__DEV__ || !mqttOperationReady || pairingExpired ||
         pairingSession?.status !== "WAITING_FOR_MQTT" ||
@@ -828,8 +828,8 @@ export default function PrepareShellyScreen() {
           await verifyMqttAuthenticationAndComplete();
         }
       } catch {
-        // Un fallo temporal de lectura no autoriza escrituras ni reintentos
-        // de confirmación. Continuará la observación local hasta el vencimiento.
+        // A temporary read failure does not authorize writes or confirmation
+        // retries. Local observation continues until expiry.
       } finally {
         mqttPollInProgress.current = false;
       }
@@ -841,7 +841,7 @@ export default function PrepareShellyScreen() {
       disposed = true;
       clearInterval(timer);
     };
-    // verifyMqttAuthenticationAndComplete usa los mismos estados de guarda.
+    // verifyMqttAuthenticationAndComplete uses the same guard states.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mqttOperationReady, pairingExpired, pairingSession?.status,
       canPrepare, ip, manufacturerDeviceId, confirmedName]);
@@ -892,8 +892,8 @@ export default function PrepareShellyScreen() {
   }
 
   /**
-   * No registra un dispositivo sin la confirmación CONNECTED del backend.
-   * El backend vuelve a validar sesión, propietario, token y estado.
+   * Does not register a device without the backend's CONNECTED confirmation.
+   * The backend validates session, owner, token and state again.
    */
   async function completeVerifiedPairing() {
     const active = activePairing.current;
@@ -939,7 +939,7 @@ export default function PrepareShellyScreen() {
         );
       }
     } catch (error) {
-      // Un error de red después del commit es ambiguo. Consultar antes de reintentar.
+      // A network error after the commit is ambiguous. Query before retrying.
       setPairingError(
         error instanceof Error ? error.message : "No se pudo confirmar el registro. Consulta el estado.",
       );
@@ -956,7 +956,7 @@ export default function PrepareShellyScreen() {
 
     const status = pairingSession?.status;
 
-    // No descartamos una vinculación completada.
+    // A completed pairing is not discarded.
     if (status === "COMPLETED") {
       return;
     }
@@ -982,7 +982,7 @@ export default function PrepareShellyScreen() {
     const expirationTime = new Date(pairingSession.expiresAt).getTime();
     if (!Number.isFinite(expirationTime)) return;
 
-    // Incluso una sesion ya expirada se procesa desde el temporizador.
+    // Even an already expired session is processed from the timer.
     const remainingMs = Math.max(0, expirationTime - Date.now());
     const timeout = setTimeout(() => {
       setPairingExpired(true);
@@ -1042,7 +1042,7 @@ export default function PrepareShellyScreen() {
             />
           </View>
 
-          {/* Dispositivo seleccionado */}
+          {/* Selected device */}
           <Text
             style={[
               styles.kicker,
@@ -1101,7 +1101,7 @@ export default function PrepareShellyScreen() {
             ) : null}
           </View>
 
-          {/* Error de identificación */}
+          {/* Identification error */}
           {verification === "error" ? (
             <View style={styles.errorSection}>
               <Text
@@ -1137,7 +1137,7 @@ export default function PrepareShellyScreen() {
               {pairingAvailability.reason}
             </Text>
           ) : null}
-          {/* Hogar seleccionado */}
+          {/* Selected home */}
           <Text
             style={[
               styles.label,
@@ -1164,7 +1164,7 @@ export default function PrepareShellyScreen() {
             </Text>
           </View>
 
-          {/* Nombre del dispositivo */}
+          {/* Device name */}
           <Text
             style={[
               styles.label,
@@ -1210,7 +1210,7 @@ export default function PrepareShellyScreen() {
             su vinculación al hogar.
           </Text>
 
-          {/* Confirmación local */}
+          {/* Local confirmation */}
           <Button
             accessibilityLabel="Confirmar nombre del dispositivo"
             disabled={!canConfirm}

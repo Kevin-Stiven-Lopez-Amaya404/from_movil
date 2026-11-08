@@ -37,7 +37,7 @@ const productionEnv = {
   IOS_BUNDLE_IDENTIFIER: "com.smarthome.mobile",
 };
 
-test("el config limita Expo a Android e iOS y conserva el esquema móvil", () => {
+test("the config limits Expo to Android and iOS and keeps the mobile scheme", () => {
   const { config, error } = resolveConfig({});
   assert.equal(error, null);
   assert.deepEqual(config.platforms, ["ios", "android"]);
@@ -45,7 +45,7 @@ test("el config limita Expo a Android e iOS y conserva el esquema móvil", () =>
   assert.equal("web" in config, false);
 });
 
-test("la configuración de producción bloquea variables faltantes", () => {
+test("the production configuration blocks missing variables", () => {
   const { error } = resolveConfig({ APP_ENV: "production" });
   assert.ok(error);
   assert.match(error.message, /EXPO_PUBLIC_API_URL/);
@@ -54,7 +54,7 @@ test("la configuración de producción bloquea variables faltantes", () => {
   assert.match(error.message, /IOS_BUNDLE_IDENTIFIER/);
 });
 
-test("la configuración válida genera enlaces nativos para activación y recuperación", () => {
+test("a valid configuration generates native links for activation and recovery", () => {
   const { config, error } = resolveConfig(productionEnv);
   assert.equal(error, null);
   assert.equal(config.android.package, productionEnv.ANDROID_PACKAGE);
@@ -69,7 +69,7 @@ test("la configuración válida genera enlaces nativos para activación y recupe
   assert.ok(config.android.intentFilters.every((filter) => filter.autoVerify));
 });
 
-test("la configuración de producción rechaza dominios de ejemplo", () => {
+test("the production configuration rejects example domains", () => {
   const { error } = resolveConfig({
     ...productionEnv,
     APP_LINK_DOMAIN: "example.com",
@@ -78,7 +78,7 @@ test("la configuración de producción rechaza dominios de ejemplo", () => {
   assert.match(error.message, /APP_LINK_DOMAIN/);
 });
 
-test("la configuración de producción rechaza una URL de API sin HTTPS", () => {
+test("the production configuration rejects an API URL without HTTPS", () => {
   const { error } = resolveConfig({
     ...productionEnv,
     EXPO_PUBLIC_API_URL: "http://api.smarthome.com/api/v1",
@@ -87,7 +87,7 @@ test("la configuración de producción rechaza una URL de API sin HTTPS", () => 
   assert.match(error.message, /EXPO_PUBLIC_API_URL/);
 });
 
-test("el Development Build Android permite RPC local HTTP sin relajar builds de producción", () => {
+test("the Android Development Build allows local HTTP RPC without relaxing production builds", () => {
   const development = resolveConfig({
     EAS_BUILD_PROFILE: "development",
     APP_ENV: "development",

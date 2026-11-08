@@ -17,16 +17,16 @@ const ANIMATION_DURATION_MS = 950;
 const SMART_HOME_LOGO = require("@/assets/images/logo-smart-home-white.png");
 
 interface Props {
-  /** Callback que avisa al layout raíz que terminó la animación. */
+  /** Callback that tells the root layout the animation finished. */
   onFinish: () => void;
 }
 
 /**
- * Animación de bienvenida (solo la primera vez por instalación).
+ * Welcome animation (only the first time per installation).
  *
- * Arranca sobre el mismo color del splash nativo para que no haya salto:
- * el logo aparece con un fundido y un leve crecimiento, se sostiene un
- * instante y la capa completa se desvanece sobre la primera pantalla.
+ * Starts on the same color as the native splash so there is no jump:
+ * the logo fades in with a slight growth, holds for a
+ * moment and the whole layer fades out over the first screen.
  */
 export default function SplashAnimation({ onFinish }: Props) {
   const progress = useSharedValue(0);

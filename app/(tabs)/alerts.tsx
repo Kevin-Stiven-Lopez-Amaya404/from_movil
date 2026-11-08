@@ -1,6 +1,6 @@
 import { Redirect } from "expo-router";
 
-/** Compatibilidad con la antigua ruta /alerts. */
+/** Compatibility with the old /alerts route. */
 export default function LegacyAlertsScreen() {
   return (
     <Redirect

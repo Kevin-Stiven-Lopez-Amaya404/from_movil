@@ -40,7 +40,7 @@ export function useNotificationActions({
         setUnreadNotificationCount(count);
       } catch {
         console.warn(
-          "[Notifications] No se pudo actualizar el contador.",
+          "[Notifications] Could not update the counter.",
         );
       }
     },

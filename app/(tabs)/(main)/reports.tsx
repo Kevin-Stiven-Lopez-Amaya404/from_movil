@@ -1,10 +1,10 @@
 import { typography } from "@/lib/theme/typography";
 /**
- * Pantalla de Análisis Energético y Reportes.
+ * Energy Analysis and Reports screen.
  *
- * Sub-pestañas disponibles:
- * Historia: Selector desplegable (24h, Día, 7d, Semana, 30d, Mes), selector de fecha,
- *    gráfica de telemetría horaria en Wh/kWh, zona horaria (America/Bogota) y tarjetas de descarga.
+ * Available sub-tabs:
+ * History: dropdown selector (24h, Day, 7d, Week, 30d, Month), date selector,
+ *    hourly telemetry chart in Wh/kWh, time zone (America/Bogota) and download cards.
  */
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
@@ -386,7 +386,7 @@ export default function ReportsScreen() {
     0,
   );
 
-  // Estados de la pestaña "Historia"
+  // State of the "History" tab
   async function handleExportCsv(): Promise<void> {
     if (exportInFlight.current || !canExportCsv || !selectedHome) {
       return;
@@ -475,7 +475,7 @@ export default function ReportsScreen() {
       >
         <View style={[styles.content, { maxWidth: layout.contentWidth }]}>
           {/* ============================================================ */}
-          {/* CABECERA DE PANTALLA                                         */}
+          {/* SCREEN HEADER                                                */}
           {/* ============================================================ */}
           <View style={styles.screenHeader}>
             <Text style={[styles.screenTitle, { color: theme.text }]}>
@@ -550,8 +550,8 @@ export default function ReportsScreen() {
                     accessibilityState={{ selected: isSelected }}
                     onPress={() => {
                       if (!isSelected) {
-                        // Invalidar la información anterior antes
-                        // de cambiar el hogar seleccionado.
+                        // Invalidate the previous information before
+                        // changing the selected home.
                         setLoadedQueryKey(null);
                         setRankingQueryState(null);
                         setActiveHomeId(home.id);
@@ -705,7 +705,7 @@ export default function ReportsScreen() {
             ) : null}
           </View>
 
-          {/* PESTAÑA 1: HISTORIA (IMÁGENES 2 Y 3)                         */}
+          {/* TAB 1: HISTORY (IMAGES 2 AND 3)                              */}
           {/* ============================================================ */}
           <View
             style={[
@@ -768,7 +768,7 @@ export default function ReportsScreen() {
                 </Text>
               </View>
 
-              {/* Área de la Gráfica */}
+              {/* Chart area */}
               <View style={styles.chartArea}>
                 {!activeHomeId ? (
                   <Text style={[styles.chartEmptyText, { color: theme.muted }]}>
@@ -858,7 +858,7 @@ export default function ReportsScreen() {
                 )}
               </View>
 
-              {/* Pie de zona horaria */}
+              {/* Time zone footer */}
               <Text style={[styles.timezoneFooter, { color: theme.muted }]}>
                 Los consumos diarios se agrupan según el backend.
               </Text>

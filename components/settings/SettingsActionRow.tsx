@@ -27,10 +27,10 @@ type SettingsActionRowProps = {
 const appFont = typography.fontFamily.emphasis;
 
 /**
- * Fila reutilizable para las opciones del menú de configuración.
+ * Reusable row for the settings menu options.
  *
- * Mantiene un patrón visual consistente:
- * icono → título → descripción → chevron.
+ * Keeps a consistent visual pattern:
+ * icon → title → description → chevron.
  */
 export function SettingsActionRow({
   accessibilityHint,

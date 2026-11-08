@@ -3,8 +3,8 @@ import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 
 /**
- * Crea un archivo CSV temporal y abre el menu
- * nativo de Android/iOS para compartirlo o guardarlo.
+ * Creates a temporary CSV file and opens the native
+ * Android/iOS menu to share or save it.
  */
 export async function shareConsumptionCsv(
   csvContent: string,
@@ -21,14 +21,14 @@ export async function shareConsumptionCsv(
     );
   }
 
-  // Nombre unico sin datos personales del usuario.
+  // Unique name without the user's personal data.
   const timestamp = new Date()
     .toISOString()
     .replace(/[:.]/g, "-");
 
   const fileName = `smarthome-consumo-${timestamp}.csv`;
 
-  // Archivo temporal: no se guardan informes en el servidor.
+  // Temporary file: no reports are stored on the server.
   const file = new File(Paths.cache, fileName);
 
   file.create({ overwrite: true });

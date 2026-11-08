@@ -68,7 +68,7 @@ function alertCount(devices) {
   ).length;
 }
 
-test("El evento OFFLINE genera una alerta", () => {
+test("an OFFLINE event creates an alert", () => {
   const devices = applyDeviceStatusEvent(
     [makeDevice()],
     {
@@ -82,7 +82,7 @@ test("El evento OFFLINE genera una alerta", () => {
   assert.equal(alertCount(devices), 1);
 });
 
-test("El evento ONLINE elimina la alerta", () => {
+test("an ONLINE event removes the alert", () => {
   const offline = applyDeviceStatusEvent(
     [makeDevice()],
     {
@@ -101,7 +101,7 @@ test("El evento ONLINE elimina la alerta", () => {
   assert.equal(online[0].online, true);
 });
 
-test("UNKNOWN no genera una falsa desconexión", () => {
+test("UNKNOWN does not create a false disconnection", () => {
   const devices = applyDeviceStatusEvent(
     [makeDevice()],
     {
@@ -115,7 +115,7 @@ test("UNKNOWN no genera una falsa desconexión", () => {
   assert.equal(alertCount(devices), 0);
 });
 
-test("Un evento sin identificador no modifica dispositivos", () => {
+test("an event without an identifier does not modify devices", () => {
   const original = [makeDevice()];
 
   const result = applyDeviceStatusEvent(original, {
@@ -126,7 +126,7 @@ test("Un evento sin identificador no modifica dispositivos", () => {
   assert.equal(alertCount(result), 0);
 });
 
-test("Un dispositivo desconocido no modifica la lista", () => {
+test("an unknown device does not modify the list", () => {
   const original = [makeDevice()];
 
   const result = applyDeviceStatusEvent(original, {
@@ -137,7 +137,7 @@ test("Un dispositivo desconocido no modifica la lista", () => {
   assert.strictEqual(result, original);
 });
 
-test("No modifica los demás dispositivos", () => {
+test("does not modify the other devices", () => {
   const first = makeDevice("device-1");
   const second = makeDevice("device-2");
 
@@ -155,7 +155,7 @@ test("No modifica los demás dispositivos", () => {
   assert.equal(alertCount(result), 1);
 });
 
-test("Actualiza telemetría y conserva conversiones", () => {
+test("updates telemetry and keeps the conversions", () => {
   const result = applyDeviceStatusEvent(
     [makeDevice()],
     {
@@ -178,7 +178,7 @@ test("Actualiza telemetría y conserva conversiones", () => {
   );
 });
 
-test("Un evento sin conectividad conserva el estado previo", () => {
+test("an event without connectivity keeps the previous state", () => {
   const result = applyDeviceStatusEvent(
     [makeDevice()],
     {
@@ -192,7 +192,7 @@ test("Un evento sin conectividad conserva el estado previo", () => {
   assert.equal(result[0].power, 35);
 });
 
-test("Acepta el identificador alternativo id", () => {
+test("accepts the alternative id identifier", () => {
   const result = applyDeviceStatusEvent(
     [makeDevice()],
     {

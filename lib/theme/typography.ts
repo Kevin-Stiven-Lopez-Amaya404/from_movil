@@ -1,12 +1,12 @@
 import { Platform } from "react-native";
 
 /**
- * Tipografia central de Smart Home.
+ * Central Smart Home typography.
  *
- * Usa fuentes nativas para evitar instalar librerias extra:
- * - iOS: San Francisco mediante `System`.
- * - Android: Roboto mediante `sans-serif`.
- * - Web: Arial como fallback estable.
+ * Uses native fonts to avoid installing extra libraries:
+ * - iOS: San Francisco through `System`.
+ * - Android: Roboto through `sans-serif`.
+ * - Web: Arial as a stable fallback.
  */
 export const typography = {
   fontFamily: {

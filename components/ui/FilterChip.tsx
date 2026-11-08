@@ -28,10 +28,10 @@ export type FilterChipProps<T extends string | number> = {
 };
 
 /**
- * Boton base para tabs y filtros.
+ * Base button for tabs and filters.
  *
- * Mantiene estados visuales y accesibilidad en un solo lugar, evitando que
- * cada pantalla repita estilos de activo, inactivo, presionado y deshabilitado.
+ * Keeps visual states and accessibility in one place, so that each
+ * screen does not repeat the active, inactive, pressed and disabled styles.
  */
 export function FilterChip<T extends string | number>({
   item,
