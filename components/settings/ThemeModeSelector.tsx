@@ -17,7 +17,7 @@ type ThemeModeSelectorProps = {
 
 const appFont = typography.fontFamily.emphasis;
 
-/** Selector del modo de apariencia preferido por el usuario. */
+/** Selector of the appearance mode preferred by the user. */
 export function ThemeModeSelector({
   accessibilityLabel,
   activeMode,

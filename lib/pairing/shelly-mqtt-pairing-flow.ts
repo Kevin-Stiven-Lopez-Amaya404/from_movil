@@ -49,7 +49,7 @@ export type ShellyMqttProvisioningStage =
   | 'READING_LOCAL_MQTT_STATUS';
 
 export interface ShellyMqttPairingProgressCallbacks {
-  /** Etapa sin datos sensibles: permite diagnosticar fallos sin imprimir credenciales. */
+  /** Stage without sensitive data: allows diagnosing failures without printing credentials. */
   onStage?(stage: ShellyMqttProvisioningStage): void;
   onPrepared?(operationId: string): void;
   onLocalConfigurationVerified?(result: ShellyMqttLocalProvisioningResult): void;

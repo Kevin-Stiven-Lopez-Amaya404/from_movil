@@ -1,8 +1,8 @@
 /**
- * Valida el contrato publico del bootstrap sin registrar ni devolver secretos.
- * El backend limita el TTL a 120 segundos (tiempo del servidor). El telefono
- * puede tener un desfase pequeno respecto al servidor: permitir 60 s para la
- * comprobacion de MAXIMO, sin ampliar la expiracion real del backend.
+ * Validates the public bootstrap contract without logging or returning secrets.
+ * The backend limits the TTL to 120 seconds (server time). The phone
+ * may drift slightly from the server: allow 60 s for the
+ * MAXIMUM check, without extending the real backend expiry.
  */
 import type { ShellyMqttBootstrapAuthorization } from './shelly-mqtt-local-provisioning';
 

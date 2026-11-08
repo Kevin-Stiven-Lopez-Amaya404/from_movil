@@ -13,7 +13,7 @@ type Props = {
   busy?: boolean;
 };
 
-/** Resumen compacto de una métrica del hogar en el dashboard. */
+/** Compact summary of a home metric on the dashboard. */
 export function SummaryTile({
   icon,
   label,

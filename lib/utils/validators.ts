@@ -1,22 +1,22 @@
 // ======================================================
-// VALIDACIÓN DE CORREO
+// EMAIL VALIDATION
 // ======================================================
 
 /**
- * Expresión regular simple para validar la estructura
- * básica de un correo electrónico.
+ * Simple regular expression to validate the basic
+ * structure of an email address.
  */
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Valida un correo normalizando espacios y mayúsculas.
+ * Validates an email after normalizing spaces and case.
  */
 export function isValidEmail(email: string): boolean {
   return EMAIL_PATTERN.test(email.trim().toLowerCase());
 }
 
 // ======================================================
-// VALIDACIÓN DE CONTRASEÑA
+// PASSWORD VALIDATION
 // ======================================================
 
 export type PasswordRule = {
@@ -25,14 +25,14 @@ export type PasswordRule = {
 };
 
 /**
- * Reglas de seguridad de contraseña utilizadas
- * en Registro y Recuperación de contraseña.
+ * Password security rules used
+ * in Registration and Password Recovery.
  *
- * Reglas:
- * - Mínimo 8 caracteres.
- * - Una mayúscula y una minúscula.
- * - Al menos un número.
- * - Un símbolo especial.
+ * Rules:
+ * - At least 8 characters.
+ * - One uppercase and one lowercase letter.
+ * - At least one number.
+ * - One special symbol.
  */
 export function getPasswordRules(password: string): PasswordRule[] {
   return [

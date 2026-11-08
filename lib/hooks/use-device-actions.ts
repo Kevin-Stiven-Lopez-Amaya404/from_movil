@@ -60,7 +60,7 @@ export function useDeviceActions({
 
       const latestDevice = devicesRef.current.find((item) => item.id === id);
 
-      // El listener realtime ya confirmó el estado solicitado.
+      // The realtime listener already confirmed the requested state.
       if (latestDevice?.state === state) return;
 
       try {
@@ -88,7 +88,7 @@ export function useDeviceActions({
           }),
         );
       } catch {
-        // Conserva el último estado conocido si falla la lectura de respaldo.
+        // Keeps the last known state if the fallback read fails.
       }
     },
     [homes, setDevices],

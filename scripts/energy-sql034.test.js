@@ -3,7 +3,7 @@ const test = require("node:test");
 
 const rules = require("../lib/features/energy-sql034/energy-rules");
 
-test("tarifa: normaliza coma y punto a formato API", () => {
+test("tariff: normalizes comma and dot to the API format", () => {
   assert.deepEqual(rules.normalizeDecimalInput("950,25", "tariff"), {
     ok: true,
     value: "950.25",
@@ -18,7 +18,7 @@ test("tarifa: normaliza coma y punto a formato API", () => {
   });
 });
 
-test("tarifa: rechaza vacío, cero, negativo, miles y exceso de dígitos", () => {
+test("tariff: rejects empty, zero, negative, thousands and extra digits", () => {
   assert.equal(rules.normalizeDecimalInput("", "tariff").ok, false);
   assert.equal(rules.normalizeDecimalInput("0", "tariff").ok, false);
   assert.equal(rules.normalizeDecimalInput("0,0000", "tariff").ok, false);
@@ -30,7 +30,7 @@ test("tarifa: rechaza vacío, cero, negativo, miles y exceso de dígitos", () =>
   assert.equal(rules.normalizeDecimalInput("1234567890.1234", "tariff").ok, true);
 });
 
-test("presupuesto y meta: límites 12+2 y 8+6, vacío = null", () => {
+test("budget and target: limits 12+2 and 8+6, empty = null", () => {
   assert.equal(rules.normalizeDecimalInput("1.123", "budget").ok, false);
   assert.equal(rules.normalizeDecimalInput("123456789012.12", "budget").ok, true);
   assert.equal(rules.normalizeDecimalInput("123456789", "target").ok, false);
@@ -45,20 +45,20 @@ test("presupuesto y meta: límites 12+2 y 8+6, vacío = null", () => {
   });
 });
 
-test("el valor normalizado siempre es texto, nunca number", () => {
+test("the normalized value is always text, never a number", () => {
   const result = rules.normalizeDecimalInput("950,25", "tariff");
   assert.equal(typeof result.value, "string");
   assert.equal(JSON.stringify({ v: result.value }), '{"v":"950.25"}');
 });
 
-test("fechas: hoy y mes en Bogotá, sin depender de la zona del equipo", () => {
-  // 2026-11-01 03:00 UTC = 2026-10-31 22:00 en Bogotá
+test("dates: today and month in Bogota, independent of the device time zone", () => {
+  // 2026-11-01 03:00 UTC = 2026-10-31 22:00 in Bogota
   const date = new Date("2026-11-01T03:00:00.000Z");
   assert.equal(rules.todayBogota(date), "2026-10-31");
   assert.equal(rules.currentMonthBogota(date), "2026-10");
 });
 
-test("fechas: validación de fecha real y mes", () => {
+test("dates: real date and month validation", () => {
   assert.equal(rules.isValidLocalDate("2026-11-01"), true);
   assert.equal(rules.isValidLocalDate("2026-02-30"), false);
   assert.equal(rules.isValidLocalDate("2028-02-29"), true);
@@ -68,7 +68,7 @@ test("fechas: validación de fecha real y mes", () => {
   assert.equal(rules.isValidMonth("2026-13"), false);
 });
 
-test("meses: navegar y fecha de referencia de tarifa", () => {
+test("months: navigation and tariff reference date", () => {
   assert.equal(rules.shiftMonth("2026-12", 1), "2027-01");
   assert.equal(rules.shiftMonth("2026-01", -1), "2025-12");
   assert.equal(rules.lastDayOfMonth("2026-02"), "2026-02-28");
@@ -79,7 +79,7 @@ test("meses: navegar y fecha de referencia de tarifa", () => {
   assert.equal(rules.formatLocalDate("2026-11-01"), "01/11/2026");
 });
 
-test("formato: COP, kWh, tarifa y porcentaje sin perder precisión", () => {
+test("format: COP, kWh, tariff and percentage without losing precision", () => {
   assert.equal(rules.formatCop("120000.00"), "$ 120.000");
   assert.equal(rules.formatCop("25000.50"), "$ 25.000,5");
   assert.equal(rules.formatCop("999999999999.99"), "$ 999.999.999.999,99");
@@ -91,7 +91,7 @@ test("formato: COP, kWh, tarifa y porcentaje sin perder precisión", () => {
   assert.equal(rules.trimDecimalZeros("125.500000"), "125.5");
 });
 
-test("porcentajes por encima de 100 %: se muestra completo, la barra se limita", () => {
+test("percentages above 100 %: shown in full, the bar is capped", () => {
   assert.equal(rules.formatPercent("135.50"), "135,5 %");
   assert.equal(rules.overLimitPercent("135.50"), "35.50");
   assert.equal(rules.overLimitPercent("100.00"), null);
@@ -112,14 +112,14 @@ test("porcentajes por encima de 100 %: se muestra completo, la barra se limita",
   assert.equal(rules.barWidthPercent(null), 0);
 });
 
-test("permisos por rol del hogar", () => {
+test("permissions by home role", () => {
   assert.deepEqual(rules.getEnergyAccess("OWNER"), { canRequest: true, canManage: true });
   assert.deepEqual(rules.getEnergyAccess("MEMBER"), { canRequest: true, canManage: false });
   assert.deepEqual(rules.getEnergyAccess("GUEST"), { canRequest: false, canManage: false });
   assert.deepEqual(rules.getEnergyAccess(undefined), { canRequest: false, canManage: false });
 });
 
-test("errores: códigos de negocio del backend", () => {
+test("errors: backend business codes", () => {
   assert.match(
     rules.energyErrorMessage({ status: 409, serverCode: "ENERGY_TARIFF_DUPLICATE" }),
     /Ya existe una tarifa/,

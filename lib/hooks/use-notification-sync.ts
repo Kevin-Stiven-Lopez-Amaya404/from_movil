@@ -19,7 +19,7 @@ export function useNotificationSync({
   useEffect(() => {
     let active = true;
 
-    // Evitar mostrar notificaciones de la sesión anterior.
+    // Avoid showing notifications from the previous session.
     setNotifications([]);
     setUnreadNotificationCount(0);
 
@@ -42,7 +42,7 @@ export function useNotificationSync({
       .catch(() => {
         if (active) {
           console.warn(
-            "[NotificationSync] No se pudieron sincronizar las notificaciones.",
+            "[NotificationSync] Could not synchronize notifications.",
           );
         }
       });

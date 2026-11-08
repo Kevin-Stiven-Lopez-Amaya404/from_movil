@@ -1,17 +1,17 @@
 /**
- * Layout de navegacion de tabs.
+ * Tab navigation layout.
  *
- * Configura la barra inferior de pestañas y aplica el tema global, iconos y
- * comportamiento haptico. Las pantallas dentro de `(tabs)` se renderizan aqui.
+ * Configures the bottom tab bar and applies the global theme, icons and
+ * haptic behavior. Screens inside `(tabs)` are rendered here.
  */
 import { LiquidNavigation } from "@/components/LiquidNavigation";
 import { Tabs } from "expo-router";
 
 /**
- * Layout de navegacion inferior.
+ * Bottom navigation layout.
  *
- * Todas las pantallas dentro de `(tabs)` comparten esta barra. Aqui se configuran
- * iconos, titulos, tema, haptics y margen inferior seguro del dispositivo.
+ * Every screen inside `(tabs)` shares this bar. Icons, titles, theme,
+ * haptics and the device's safe bottom margin are configured here.
  */
 export default function TabLayout() {
   return (

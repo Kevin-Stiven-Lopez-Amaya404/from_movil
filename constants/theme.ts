@@ -1,6 +1,6 @@
 import { typography } from "@/lib/theme/typography";
 
-/** Tokens de espaciado y proporciones que no dependen de la paleta visual. */
+/** Spacing and proportion tokens that do not depend on the color palette. */
 export const theme = {
   fontSize: {
     xs: typography.size.caption,

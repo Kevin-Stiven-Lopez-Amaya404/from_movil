@@ -9,10 +9,10 @@ import { DEFAULT_COLOR_PALETTE } from "@/lib/domain/preferences";
 import { getAppTheme } from "@/lib/theme/app-theme";
 
 /**
- * Paleta especifica para pantallas de autenticacion.
+ * Palette specific to authentication screens.
  *
- * Se mantiene separada de `app-theme` porque welcome/login/register tienen
- * una composicion visual distinta al resto de pantallas internas.
+ * Kept separate from `app-theme` because welcome/login/register have
+ * a different visual composition from the other internal screens.
  */
 export function getAuthPalette(
   mode: EffectiveColorMode,

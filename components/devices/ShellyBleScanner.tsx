@@ -102,7 +102,7 @@ export function ShellyBleScanner({ canScan }: Props) {
     try {
       await bleAdapter.cancelDiscovery();
     } catch {
-      // El escaneo puede haber finalizado.
+      // The scan may already have finished.
     }
 
     setIsScanning(false);

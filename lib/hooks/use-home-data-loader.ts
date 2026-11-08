@@ -44,7 +44,7 @@ export function useHomeDataLoader({
   useEffect(() => {
     let active = true;
 
-    // Limpiar los datos de la sesión anterior antes de consultar la nueva.
+    // Clear the previous session's data before querying the new one.
     setHomesLoadStatus("loading");
     setHomes([]);
     setHomeMembersByHome({});
@@ -93,7 +93,7 @@ export function useHomeDataLoader({
 
         if (invitationsResult.status === "rejected") {
           console.warn(
-            "[HomeDataLoader] No se pudieron cargar las invitaciones recibidas.",
+            "[HomeDataLoader] Could not load the received invitations.",
           );
         }
 
@@ -116,7 +116,7 @@ export function useHomeDataLoader({
             membersByHome[home.id] = result.value;
           } else {
             console.warn(
-              "[HomeDataLoader] No se pudieron cargar los miembros del hogar:",
+              "[HomeDataLoader] Could not load the home members:",
               home.id,
             );
           }
@@ -191,7 +191,7 @@ export function useHomeDataLoader({
           } else {
             nextDeviceLoadStatusByHome[home.id] = "error";
             console.warn(
-              "[HomeDataLoader] No se pudieron cargar los dispositivos del hogar:",
+              "[HomeDataLoader] Could not load the home devices:",
               home.id,
             );
           }

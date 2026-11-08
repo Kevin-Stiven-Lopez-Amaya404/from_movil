@@ -1,13 +1,13 @@
 import { Image } from "react-native";
 
 interface SmartHomeLogoProps {
-  /** Tamaño cuadrado del símbolo de marca. */
+  /** Square size of the brand symbol. */
   size?: number;
 
-  /** Se conserva por compatibilidad con llamadas existentes. */
+  /** Kept for compatibility with existing calls. */
   showText?: boolean;
 
-  /** Variante visual conservada por compatibilidad. */
+  /** Visual variant kept for compatibility. */
   variant?: "light" | "dark";
 }
 

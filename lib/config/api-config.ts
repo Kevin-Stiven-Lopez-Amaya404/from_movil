@@ -1,8 +1,8 @@
 /**
- * Configuracion central para conectar el backend real.
+ * Central configuration to connect to the real backend.
  *
- * La aplicacion no utiliza servicios mock ni modo demo.
- * En produccion se exige una URL HTTPS publica y valida.
+ * The app uses no mock services or demo mode.
+ * In production a valid public HTTPS URL is required.
  */
 const configuredBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim() ?? "";
 const normalizedBaseUrl = configuredBaseUrl.replace(/\/+$/, "");

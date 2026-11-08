@@ -1,7 +1,7 @@
 /**
- * EN-04 / EN-05: Presupuesto (COP) y meta (kWh) mensual del hogar.
- * Vista para OWNER y MEMBER con permiso; edición solo OWNER.
- * El PUT reemplaza ambos campos: el que quede vacío se envía como null.
+ * EN-04 / EN-05: monthly budget (COP) and target (kWh) of the home.
+ * View for OWNER and MEMBER with permission; editing for OWNER only.
+ * The PUT replaces both fields: the empty one is sent as null.
  */
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
@@ -203,7 +203,7 @@ export default function EnergyGoalsScreen() {
               setServerError(energyErrorMessage(error));
               const serverCode = (error as { serverCode?: string })?.serverCode;
               if (serverCode === "ENERGY_GOAL_CONCURRENT_WRITE") {
-                // Otra sesión cambió el mes: se recargan los datos actuales.
+                // Another session changed the month: the current data is reloaded.
                 query.reload();
                 summaryQuery.reload();
               }
@@ -265,7 +265,7 @@ export default function EnergyGoalsScreen() {
                 { backgroundColor: theme.card, borderColor: theme.border },
               ]}
             >
-              {/* Selector de mes */}
+              {/* Month selector */}
               <View style={[styles.monthSelector, { marginTop: 0 }]}>
                 <Pressable
                   accessibilityRole="button"

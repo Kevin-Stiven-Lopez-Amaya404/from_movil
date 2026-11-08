@@ -63,7 +63,7 @@ export async function discoverLocalShelly(
       try {
         zeroconf.stop();
       } catch {
-        // El escaneo puede no haber comenzado.
+        // The scan may not have started.
       }
 
       zeroconf.removeAllListeners();
