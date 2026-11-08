@@ -75,10 +75,10 @@ export type {
 };
 
 /**
- * Contrato completo del contexto global.
+ * Full contract of the global context.
  *
- * Incluye datos y acciones que consumen varias pantallas. Esto evita pasar props
- * manualmente entre Dashboard, Hogares, Reportes, Perfil y Configuracion.
+ * Includes data and actions used by several screens. This avoids passing props
+ * manually between Dashboard, Homes, Reports, Profile and Settings.
  */
 type DataLoadStatus = "loading" | "loaded" | "error";
 
@@ -147,7 +147,7 @@ type SmartHomeState = {
 const SmartHomeContext = createContext<SmartHomeState | null>(null);
 
 /**
- * Genera una hora corta para mostrar ultima sincronizacion local.
+ * Builds a short time to show the last local sync.
  */
 function getTimeStamp() {
   return new Intl.DateTimeFormat("es-CO", {
@@ -157,13 +157,13 @@ function getTimeStamp() {
 }
 
 /**
- * Proveedor global de Smart Home.
+ * Global Smart Home provider.
  *
- * Aqui vive la "fuente de verdad" de la app mientras no hay backend:
- * hogares, dispositivos, tema, idioma, sesion y acciones de modificacion.
+ * Holds the app's shared state: homes, devices, theme,
+ * language, session and update actions.
  */
 export function SmartHomeProvider({ children }: PropsWithChildren) {
-  // Estados principales compartidos entre pantallas.
+  // Main state shared between screens.
   const [homes, setHomes] = useState<SmartHomePlace[]>([]);
   const [favoritePreferences, setFavoritePreferences] = useState<{
     ownerKey: string | null;
@@ -214,7 +214,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         }
       })
       .catch((error: unknown) => {
-        console.warn("[Appearance] No se pudo cargar la preferencia.", error);
+        console.warn("[Appearance] Could not load the preference.", error);
       });
 
     return () => {
@@ -232,7 +232,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         }
       })
       .catch((error: unknown) => {
-        console.warn("[Language] No se pudo cargar la preferencia.", error);
+        console.warn("[Language] Could not load the preference.", error);
       });
 
     return () => {
@@ -250,7 +250,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         }
       })
       .catch((error: unknown) => {
-        console.warn("[Appearance] No se pudo cargar la paleta.", error);
+        console.warn("[Appearance] Could not load the palette.", error);
       });
 
     return () => {
@@ -271,7 +271,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     setColorModeState(mode);
 
     void saveColorModePreference(mode).catch((error: unknown) => {
-      console.warn("[Appearance] No se pudo guardar la preferencia.", error);
+      console.warn("[Appearance] Could not save the preference.", error);
     });
   }, []);
 
@@ -280,7 +280,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     setColorPaletteState(palette);
 
     void saveColorPalettePreference(palette).catch((error: unknown) => {
-      console.warn("[Appearance] No se pudo guardar la paleta.", error);
+      console.warn("[Appearance] Could not save the palette.", error);
     });
   }, []);
 
@@ -289,7 +289,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     setLanguageState(nextLanguage);
 
     void saveLanguagePreference(nextLanguage).catch((error: unknown) => {
-      console.warn("[Language] No se pudo guardar la preferencia.", error);
+      console.warn("[Language] Could not save the preference.", error);
     });
   }, []);
 
@@ -316,10 +316,10 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     setSessionRole,
   });
 
-  // Alertas Smart Home ya resueltas por el usuario.
+  // Smart Home alerts already resolved by the user.
   const [resolvedSmartAlerts, setResolvedSmartAlerts] = useState<string[]>([]);
 
-  // Identificar al usuario propietario de los datos locales.
+  // Identify the user who owns the local data.
   const sessionOwnerRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -335,12 +335,12 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         : `email:${session.user.email.trim().toLowerCase()}`;
     };
 
-    // La limpieza ocurre al notificarse un cambio real de sesion.
+    // Cleanup happens when a real session change is notified.
     const unsubscribe = subscribeToSessionChanges((session) => {
       const nextOwner = getOwnerKey(session);
       setSessionOwnerKey(nextOwner);
 
-      // Una renovacion JWT del mismo usuario no borra sus datos.
+      // A JWT refresh of the same user does not delete their data.
       if (sessionOwnerRef.current === nextOwner) {
         return;
       }
@@ -350,7 +350,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setResolvedSmartAlerts([]);
     });
 
-    // Reconocer una sesion existente al abrir la aplicacion.
+    // Recognize an existing session when the app opens.
     void loadSession()
       .then((session) => {
         if (active && sessionOwnerRef.current === null) {
@@ -360,7 +360,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
         }
       })
       .catch(() => {
-        // La restauracion de sesion se maneja en autenticacion.
+        // Session restore is handled by authentication.
       });
 
     return () => {
@@ -406,7 +406,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           favoritePreferencesRef.current = fallbackPreferences;
           setFavoritePreferences(fallbackPreferences);
         }
-        console.warn("[Favorites] No se pudieron cargar los favoritos locales.", error);
+        console.warn("[Favorites] Could not load the local favorites.", error);
       });
 
     return () => {
@@ -465,7 +465,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
     setUnreadNotificationCount,
   });
 
-  // `useMemo` evita reconstruir el objeto de contexto si sus dependencias no cambian.
+  // `useMemo` avoids rebuilding the context object if its dependencies do not change.
   const value = useMemo<SmartHomeState>(
     () => ({
       activeHomeId,
@@ -511,7 +511,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           ...created,
           location: created.location ?? "Hogar",
           favorite: created.favorite ?? false,
-          // Quien crea el hogar es su propietario; se respeta el rol del backend si lo envía.
+          // The creator of the home is its owner; the backend role is respected if sent.
           homeRole: created.homeRole ?? ("OWNER" as const),
         };
 
@@ -520,7 +520,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           return exists ? items : [...items, nextHome];
         });
 
-        // Un hogar recién creado no tiene dispositivos: evita que quede en "cargando".
+        // A newly created home has no devices: avoids leaving it "loading".
         setDeviceLoadStatusByHome((current) => ({
           ...current,
           [nextHome.id]: current[nextHome.id] ?? "loaded",
@@ -605,7 +605,7 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
       setSessionEmail,
       setSessionRole,
       toggleDevice,
-      // Guarda la preferencia localmente por cuenta mientras la API no la persiste.
+      // Stores the preference locally per account while the API does not persist it.
       toggleHomeFavorite: async (homeId) => {
         if (!sessionOwnerKey) {
           throw new Error("Inicia sesión para guardar favoritos.");
@@ -653,13 +653,13 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           throw error;
         }
       },
-      // Fuerza un estado especifico para un dispositivo.
+      // Forces a specific state for a device.
       setDeviceOnline: (id, online) => {
         setDevices((items) =>
           items.map((item) => (item.id === id ? { ...item, online } : item)),
         );
-        // Un cambio manual de estado inicia un nuevo ciclo de evaluación
-        // para ese dispositivo.
+        // A manual state change starts a new evaluation cycle
+        // for that device.
         setResolvedSmartAlerts((alerts) =>
           alerts.filter((alertId) => alertId !== id),
         );
@@ -729,9 +729,9 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
           [homeId]: [],
         }));
       },
-      // Resuelve una alerta de un dispositivo Smart Home.
-      // La alerta queda registrada por su id para que la pantalla
-      // de alertas pueda ocultarla sin modificar el dispositivo.
+      // Resolves an alert of a Smart Home device.
+      // The alert is recorded by its id so the alerts screen
+      // can hide it without modifying the device.
       resolveSmartDeviceAlert: (id) => {
         setResolvedSmartAlerts((items) =>
           items.includes(id) ? items : [...items, id],
@@ -791,10 +791,10 @@ export function SmartHomeProvider({ children }: PropsWithChildren) {
 }
 
 /**
- * Hook seguro para consumir el contexto.
+ * Safe hook to read the context.
  *
- * Lanza error si se usa fuera de `SmartHomeProvider`, lo que ayuda a detectar
- * configuraciones incorrectas durante desarrollo.
+ * Throws if used outside `SmartHomeProvider`, which helps detect
+ * wrong configurations during development.
  */
 export function useSmartHome() {
   const context = useContext(SmartHomeContext);

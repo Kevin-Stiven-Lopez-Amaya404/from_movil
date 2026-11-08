@@ -17,7 +17,7 @@ type Props = {
   titleSize?: keyof typeof typography.size;
 };
 
-/** Encabezado de pantalla con navegación de salida y acción opcional. */
+/** Screen header with back navigation and an optional action. */
 export function ScreenHeader({
   title,
   fallbackHref,

@@ -10,8 +10,8 @@ export const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 24,
   },
-  // Columna completa: el bloque principal se centra en el espacio libre
-  // y los botones quedan abajo, en la zona del pulgar.
+  // Full column: the main block is centered in the free space
+  // and the buttons stay at the bottom, in the thumb zone.
   content: {
     flex: 1,
     justifyContent: "space-between",

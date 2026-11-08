@@ -27,7 +27,7 @@ function enqueueSessionStorageOperation(
 ): Promise<void> {
   const pending = sessionStorageQueue.then(operation, operation);
 
-  // Permitir nuevas operaciones aunque una anterior falle.
+  // Allow new operations even if a previous one fails.
   sessionStorageQueue = pending.catch(() => undefined);
 
   return pending;
@@ -73,10 +73,10 @@ export async function loadSession(): Promise<StoredSession | null> {
     return memorySession;
   }
 
-  // Identificar la version de sesion antes de leer el almacenamiento.
+  // Identify the session version before reading the storage.
   const expectedVersion = sessionMutationVersion;
 
-  // Esperar las operaciones de guardado o eliminacion pendientes.
+  // Wait for pending save or delete operations.
   await sessionStorageQueue;
 
   if (expectedVersion !== sessionMutationVersion) return null;
@@ -88,7 +88,7 @@ export async function loadSession(): Promise<StoredSession | null> {
 
   const serialized = await SecureStore.getItemAsync(SESSION_KEY);
 
-  // Descartar lecturas que pertenecen a una sesion anterior.
+  // Discard reads that belong to a previous session.
   if (expectedVersion !== sessionMutationVersion) return null;
 
   if (!serialized) {
@@ -100,7 +100,7 @@ export async function loadSession(): Promise<StoredSession | null> {
   try {
     normalized = normalizeStoredSession(JSON.parse(serialized));
   } catch {
-    // Una sesion almacenada con formato invalido se limpiara abajo.
+    // A stored session with an invalid format is cleared below.
   }
 
   if (expectedVersion !== sessionMutationVersion) return null;
@@ -112,7 +112,7 @@ export async function loadSession(): Promise<StoredSession | null> {
     ? JSON.stringify(normalizedSession)
     : null;
 
-  // Coordinar las correcciones del almacenamiento con la cola.
+  // Coordinate storage fixes with the queue.
   if (normalizedText !== serialized) {
     await enqueueSessionStorageOperation(async () => {
       if (expectedVersion !== sessionMutationVersion) return;
@@ -137,11 +137,11 @@ export async function saveSession(session: StoredSession): Promise<void> {
     throw new Error("La sesión no tiene un formato válido.");
   }
 
-  // Identificar esta operación de guardado.
+  // Identify this save operation.
   const operationVersion = ++sessionMutationVersion;
 
   await enqueueSessionStorageOperation(async () => {
-    // Evitar guardar una operación reemplazada.
+    // Avoid saving a replaced operation.
     if (operationVersion !== sessionMutationVersion) {
       throw new Error("La sesión cambió antes de guardarse.");
     }
@@ -151,7 +151,7 @@ export async function saveSession(session: StoredSession): Promise<void> {
       JSON.stringify(safeSession),
     );
 
-    // Evitar activar una sesión invalidada durante el guardado.
+    // Avoid activating a session invalidated during the save.
     if (operationVersion !== sessionMutationVersion) {
       throw new Error("La sesión cambió durante el guardado.");
     }
@@ -162,33 +162,33 @@ export async function saveSession(session: StoredSession): Promise<void> {
 }
 
 export async function clearSession(): Promise<void> {
-  // Invalidar cualquier guardado o renovación pendiente.
+  // Invalidate any pending save or refresh.
   ++sessionMutationVersion;
 
-  // Limpiar inmediatamente la sesión en memoria.
+  // Clear the in-memory session immediately.
   memorySession = null;
   refreshPromise = null;
 
-  // Notificar el cierre para limpiar los datos de la interfaz.
+  // Notify the sign-out so the interface data is cleared.
   notifySessionListeners(null);
 
-  // Eliminar la sesión persistida después de las escrituras anteriores.
+  // Delete the persisted session after the previous writes.
   await enqueueSessionStorageOperation(async () => {
     await SecureStore.deleteItemAsync(SESSION_KEY);
   });
 }
 
 /**
- * Obtiene la version actual de la sesion.
- * Permite detectar si otra operacion modifico la sesion.
+ * Gets the current session version.
+ * Allows detecting whether another operation changed the session.
  */
 export function getSessionMutationVersion(): number {
   return sessionMutationVersion;
 }
 
 /**
- * Guarda una sesion solamente si no ha comenzado
- * otra operacion de cambio de sesion.
+ * Saves a session only if no other session
+ * change operation has started.
  */
 export async function saveSessionIfUnchanged(
   session: StoredSession,
@@ -203,8 +203,8 @@ export async function saveSessionIfUnchanged(
 }
 
 /**
- * Cierra la sesion solamente si su version
- * no ha cambiado desde que comenzo la operacion.
+ * Closes the session only if its version
+ * has not changed since the operation started.
  */
 export async function clearSessionIfUnchanged(
   expectedVersion: number,
@@ -241,13 +241,13 @@ export async function refreshSession(
 ): Promise<StoredSession | null> {
   if (!refreshHandler) return null;
 
-  // Registrar la version antes de esperar operaciones pendientes.
+  // Record the version before waiting for pending operations.
   const mutationVersionBeforeWait = sessionMutationVersion;
 
-  // No renovar mientras se esta guardando otra sesion.
+  // Do not refresh while another session is being saved.
   await sessionStorageQueue;
 
-  // Descartar la renovacion si cambio la sesion durante la espera.
+  // Discard the refresh if the session changed while waiting.
   if (mutationVersionBeforeWait !== sessionMutationVersion) {
     return null;
   }
@@ -271,7 +271,7 @@ export async function refreshSession(
   if (!refreshPromise) {
     const pendingRefresh = refreshHandler()
       .then(async (nextSession) => {
-        // No restaurar una sesión que fue cerrada o reemplazada.
+        // Do not restore a session that was closed or replaced.
         if (
           !nextSession ||
           memorySession !== current ||
@@ -282,7 +282,7 @@ export async function refreshSession(
 
         await saveSession(nextSession);
 
-        // Comprobar que el resultado siga siendo la sesión vigente.
+        // Check that the result is still the current session.
         if (memorySession?.accessToken !== nextSession.accessToken) {
           return null;
         }
@@ -290,7 +290,7 @@ export async function refreshSession(
         return nextSession;
       })
       .finally(() => {
-        // No borrar la referencia de una renovación más reciente.
+        // Do not clear the reference to a more recent refresh.
         if (refreshPromise === pendingRefresh) {
           refreshPromise = null;
         }

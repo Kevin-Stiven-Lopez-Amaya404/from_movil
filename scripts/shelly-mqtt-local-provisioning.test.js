@@ -1,4 +1,4 @@
-// Pruebas sin red, sin credenciales reales, sin Shelly fisico.
+// Tests without network, real credentials or a physical Shelly.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -7,7 +7,7 @@ const Module = require('node:module');
 const ts = require('typescript');
 const root = path.resolve(__dirname, '..');
 const file = path.join(root, 'lib', 'pairing', 'shelly-mqtt-local-provisioning.ts');
-// Adaptador de require solo para estas pruebas; el build Expo usa su propio bundler.
+// Require adapter only for these tests; the Expo build uses its own bundler.
 const originalTs = require.extensions['.ts'];
 require.extensions['.ts'] = function(m, filename) {
   const input = fs.readFileSync(filename, 'utf8');
@@ -19,7 +19,7 @@ require.extensions['.ts'] = function(m, filename) {
   m._compile(js, filename);
 };
 let identityCalls = 0;
-// Sustituye el modulo de identidad por una respuesta fisica simulada.
+// Replaces the identity module with a simulated physical response.
 const identityFile = path.join(root, 'lib', 'pairing', 'shelly-local-identity.ts');
 const identityStub = new Module(identityFile);
 identityStub.filename = identityFile;
@@ -46,24 +46,24 @@ const example = () => ({
   },
 });
 
-test('sin aprobacion explicita de LAN confiable no hace llamadas',async()=>{
+test('without explicit trusted-LAN approval it makes no calls',async()=>{
   const calls=[];
   await assert.rejects(configureShellyMqttLocally({...example(),explicitlyTrustedLocalNetwork:false}, async (...x)=>calls.push(x)), /TRUST_REQUIRED/);
   assert.equal(calls.length,0);
 });
 
-test('sin autorizacion vigente no hace llamadas',async()=>{
+test('without a current authorization it makes no calls',async()=>{
   const calls=[]; const payload=example();payload.authorization.expiresAt='2020-01-01T00:00:00Z';
   await assert.rejects(configureShellyMqttLocally(payload,async(...x)=>calls.push(x)),/AUTHORIZATION_INVALID/);
   assert.equal(calls.length,0);
 });
 
-test('no permite broker ni scope arbitrario',async()=>{
+test('does not allow an arbitrary broker or scope',async()=>{
   const wrong=example();wrong.authorization.identity.topicPrefix='otro/espacio';
   await assert.rejects(configureShellyMqttLocally(wrong,async()=>{}),/IDENTITY_INVALID/);
 });
 
-test('rechaza un broker distinto al DEV autorizado antes de llamar al Shelly',async()=>{
+test('rejects a broker other than the authorized DEV one before calling the Shelly',async()=>{
   const wrong=example();wrong.authorization.broker.hostname='broker.invalid';
   const calls=[];
   await assert.rejects(configureShellyMqttLocally(wrong,async(...x)=>calls.push(x)),/BROKER_INVALID/);
@@ -101,7 +101,7 @@ test('usa CA publica, configura TLS y verifica readback; no declara autenticado'
   assert.ok(identityCalls>0);
 });
 
-test('estado conectado local no equivale a autenticacion del backend',async()=>{
+test('a locally connected state is not backend authentication',async()=>{
   const status=await readShellyMqttStatus({
     ip:'192.168.1.10',expectedDeviceId:'shelly1pmg4-aabbcc',
   },async(_ip,method)=>{
@@ -111,7 +111,7 @@ test('estado conectado local no equivale a autenticacion del backend',async()=>{
   assert.deepEqual(status,{connected:true});
 });
 
-test('respuesta incierta de reinicio no reenvia escritura ni reinicio',async()=>{
+test('an uncertain reboot response does not resend the write or the reboot',async()=>{
   const calls=[];
   const rpc=async(_ip,method,params)=>{
     calls.push(method);

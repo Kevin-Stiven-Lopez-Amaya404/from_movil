@@ -15,10 +15,10 @@ export type SegmentedControlProps<T extends string | number> = {
 };
 
 /**
- * Control segmentado reutilizable.
+ * Reusable segmented control.
  *
- * - En grupos cortos reparte los items con `flex: 1`.
- * - En grupos largos usa scroll horizontal con auto-posicionamiento.
+ * - In short groups it spreads the items with `flex: 1`.
+ * - In long groups it uses horizontal scroll with auto-positioning.
  */
 export function SegmentedControl<T extends string | number>({
   accessibilityLabel,

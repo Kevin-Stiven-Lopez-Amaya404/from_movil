@@ -1,8 +1,8 @@
 import { StyleSheet } from "react-native";
 
 /**
- * Debe coincidir con `backgroundColor` del plugin expo-splash-screen en
- * app.json para que el paso del splash nativo a la animación no tenga salto.
+ * Must match the `backgroundColor` of the expo-splash-screen plugin in
+ * app.json so the switch from the native splash to the animation does not jump.
  */
 export const SPLASH_BACKGROUND = "#047857";
 

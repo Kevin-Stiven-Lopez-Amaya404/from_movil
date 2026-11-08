@@ -1,6 +1,6 @@
 /**
- * EN-02: Historial de tarifas referenciales (COP/kWh) de un hogar.
- * Las tarifas son inmutables: no hay editar ni eliminar.
+ * EN-02: history of reference tariffs (COP/kWh) of a home.
+ * Tariffs are immutable: there is no edit or delete.
  */
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useRef } from "react";

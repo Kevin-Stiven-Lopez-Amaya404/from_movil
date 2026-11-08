@@ -7,7 +7,7 @@ type HomeConsumptionCsvInput = {
 };
 
 function escapeCsvText(value: string): string {
-  // Evitar que Excel interprete nombres como formulas.
+  // Prevent Excel from interpreting names as formulas.
   const safeValue = /^\s*[=+\-@]/.test(value) ? `'${value}` : value;
 
   return `"${safeValue.replace(/"/g, '""')}"`;
@@ -54,6 +54,6 @@ export function buildHomeConsumptionCsv({
       ].join(";");
     });
 
-  // BOM UTF-8 para conservar acentos al abrir en Excel.
+  // UTF-8 BOM to keep accents when opened in Excel.
   return `\uFEFF${[header, ...rows].join("\r\n")}\r\n`;
 }

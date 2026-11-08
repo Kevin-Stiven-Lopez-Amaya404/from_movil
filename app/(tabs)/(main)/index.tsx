@@ -159,7 +159,7 @@ export default function DashboardScreen() {
           ? "Aún no tienes hogares favoritos"
           : `${favoriteHomes} ${favoriteHomes === 1 ? "hogar favorito" : "hogares favoritos"}`;
 
-  // Movimiento ambiental ligero, respetando la preferencia de accesibilidad.
+  // Light ambient motion, respecting the accessibility preference.
   const [imageScale] = useState(() => new Animated.Value(1));
   const [reduceMotion, setReduceMotion] = useState(true);
 

@@ -23,13 +23,13 @@ export default function ForgotPasswordScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   // ==========================================
-  // DATOS NORMALIZADOS
+  // NORMALIZED DATA
   // ==========================================
 
   const cleanEmail = email.trim().toLowerCase();
 
   // ==========================================
-  // VALIDACIÓN
+  // VALIDATION
   // ==========================================
 
   const emailError = !isValidEmail(cleanEmail)
@@ -77,7 +77,7 @@ export default function ForgotPasswordScreen() {
   return (
     <AuthScreenLayout compact={layout.compact} contentStyle={styles.content}>
       {/* ====================================== */}
-      {/* BOTÓN VOLVER                           */}
+      {/* BACK BUTTON                            */}
       {/* ====================================== */}
 
       <View style={styles.header}>
@@ -85,7 +85,7 @@ export default function ForgotPasswordScreen() {
       </View>
 
       {/* ====================================== */}
-      {/* TÍTULO                                 */}
+      {/* TITLE                                  */}
       {/* ====================================== */}
 
       <Text

@@ -31,7 +31,7 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** Botón común con colores, estados y tamaño táctil basados en el tema actual. */
+/** Shared button with colors, states and touch size based on the current theme. */
 export function Button({
   label,
   onPress,

@@ -5,9 +5,9 @@ import { Platform, Pressable, StyleSheet } from "react-native";
 import { useAuthPalette } from "@/lib/theme/appearance";
 
 type BackButtonProps = {
-  /** Color del icono. Permite adaptarlo a pantallas claras u oscuras. */
+  /** Icon color. Lets it adapt to light or dark screens. */
   color?: string;
-  /** Ruta segura a la que se navega si no existe historial para volver. */
+  /** Safe route to navigate to when there is no history to go back. */
   fallbackHref: Href;
   accessibilityLabel?: string;
   backgroundColor?: string;
@@ -16,11 +16,11 @@ type BackButtonProps = {
 };
 
 /**
- * Botón reutilizable para volver desde una pantalla.
+ * Reusable button to go back from a screen.
  *
- * En movil intenta usar `router.back()` cuando existe historial.
- * En web o cuando no hay historial confiable, usa `router.replace(fallbackHref)`
- * para enviar al usuario a una ruta segura.
+ * On mobile it tries `router.back()` when there is history.
+ * On web, or when there is no reliable history, it uses `router.replace(fallbackHref)`
+ * to send the user to a safe route.
  */
 export function BackButton({
   accessibilityLabel = "Volver",
@@ -34,8 +34,8 @@ export function BackButton({
   const palette = useAuthPalette();
 
   /**
-   * Usa el historial cuando es posible y una ruta segura como fallback.
-   * Esta proteccion evita pantallas sin salida cuando el usuario entra directo por URL.
+   * Uses the history when possible and a safe route as a fallback.
+   * This protection avoids dead-end screens when the user enters directly by URL.
    */
   function handlePress() {
     if (onPress) {

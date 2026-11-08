@@ -20,9 +20,9 @@ type HomeListItemProps = {
 const appFont = typography.fontFamily.emphasis;
 
 /**
- * Elemento de la lista de hogares.
+ * Item of the homes list.
  *
- * Muestra la informacion basica de un hogar y un boton de favorito.
+ * Shows the basic information of a home and a favorite button.
  */
 export function HomeListItem({
   count,
@@ -40,18 +40,18 @@ export function HomeListItem({
 
   return (
     <Pressable style={[styles.homeCard, { backgroundColor: rowColor }]} onPress={onPress}>
-      {/* Icono identificador del hogar. */}
+      {/* Home identifying icon. */}
       <View style={[styles.itemIcon, { backgroundColor: rowAltColor }]}> 
         <MaterialCommunityIcons name="home-city-outline" size={31} color={theme.brandStrong} />
       </View>
 
-      {/* Texto principal y secundario del hogar. */}
+      {/* Main and secondary text of the home. */}
       <View style={styles.itemCopy}>
         <Text style={[styles.itemTitle, { color: textColor }]}>{name}</Text>
         <Text style={[styles.itemSubtitle, { color: mutedColor }]}>{count} dispositivos · {location}</Text>
       </View>
 
-      {/* Boton de favorito, independiente del press general de la fila. */}
+      {/* Favorite button, independent of the row press. */}
       <Pressable
         accessibilityLabel={favorite ? "Quitar de favoritos" : "Agregar a favoritos"}
         onPress={onFavoritePress}

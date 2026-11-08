@@ -37,7 +37,7 @@ class RealtimeService {
   private socket: Socket | null = null;
 
   connect(): void {
-    // Cerrar cualquier conexión anterior antes de evaluar la nueva sesión.
+    // Close any previous connection before evaluating the new session.
     this.disconnect();
 
     const token = getAccessToken();

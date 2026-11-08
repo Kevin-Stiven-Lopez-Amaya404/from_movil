@@ -12,7 +12,7 @@ type Props = PropsWithChildren<{
   danger?: boolean;
 }>;
 
-/** Grupo temático de opciones de perfil o configuración. */
+/** Thematic group of profile or settings options. */
 export function SettingsSectionCard({
   children,
   danger = false,

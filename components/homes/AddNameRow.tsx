@@ -18,10 +18,10 @@ type AddNameRowProps = {
 const appFont = typography.fontFamily.emphasis;
 
 /**
- * Campo de ingreso con boton de envio rapido.
+ * Input field with a quick submit button.
  *
- * Se utiliza en pantalla de hogares y en cualquier lugar donde el usuario
- * deba ingresar un nombre corto y confirmar en la misma fila.
+ * Used on the homes screen and anywhere the user
+ * must type a short name and confirm on the same row.
  */
 export function AddNameRow({
   backgroundColor,
@@ -45,7 +45,7 @@ export function AddNameRow({
         onChangeText={onChangeText}
       />
 
-      {/* Boton de envio a la derecha del input. Mantiene la fila compacta. */}
+      {/* Submit button to the right of the input. Keeps the row compact. */}
       <Pressable
         style={[styles.addButton, { backgroundColor: theme.brandStrong }]}
         onPress={onSubmit}

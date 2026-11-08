@@ -2,14 +2,14 @@ import { StyleSheet } from "react-native";
 import { typography } from "@/lib/theme/typography";
 
 export const styles = StyleSheet.create({
-  // Columna completa: encabezado arriba, formulario, enlaces al final.
+  // Full column: header at the top, form, links at the end.
   screenContent: {
     flexGrow: 1,
   },
   header: {
     flexDirection: "row",
     marginBottom: 16,
-    marginLeft: -10, // alinea la flecha con el borde del texto
+    marginLeft: -10, // aligns the arrow with the text edge
   },
   introSection: {
     gap: 8,

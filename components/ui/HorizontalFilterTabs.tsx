@@ -20,10 +20,10 @@ export type HorizontalFilterTabsProps<T extends string | number> = {
 };
 
 /**
- * Grupo horizontal para opciones que pueden superar el ancho disponible.
+ * Horizontal group for options that may exceed the available width.
  *
- * Mide cada chip y desplaza el ScrollView hacia la opcion activa para evitar
- * botones cortados sin pista visual.
+ * Measures each chip and scrolls the ScrollView to the active option to avoid
+ * cut-off buttons without a visual hint.
  */
 export function HorizontalFilterTabs<T extends string | number>({
   accessibilityLabel,

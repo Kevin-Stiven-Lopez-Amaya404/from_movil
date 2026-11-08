@@ -1,4 +1,4 @@
 import { typography } from "@/lib/theme/typography";
 
-// Fuente base para que los modulos del perfil mantengan una apariencia consistente.
+// Base font so that the profile modules keep a consistent look.
 export const profileFont = typography.fontFamily.emphasis;

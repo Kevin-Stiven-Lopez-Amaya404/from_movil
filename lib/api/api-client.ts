@@ -147,11 +147,11 @@ export class ApiClient {
           let nextSession;
 
           try {
-            // Renovar exclusivamente la sesión que originó la petición.
+            // Refresh only the session that originated the request.
             nextSession = await refreshSession(accessToken);
           } catch (refreshError) {
-            // Cerrar solo cuando el backend rechaza la renovación
-            // y el token original todavía corresponde a la sesión vigente.
+            // Sign out only when the backend rejects the refresh
+            // and the original token still belongs to the current session.
             if (
               refreshError instanceof ApiError &&
               refreshError.code === "UNAUTHORIZED" &&
@@ -160,7 +160,7 @@ export class ApiClient {
               await clearSession();
             }
 
-            // Los errores temporales de red o servidor no cierran la sesión.
+            // Temporary network or server errors do not close the session.
             throw refreshError;
           }
 
@@ -175,10 +175,10 @@ export class ApiClient {
             });
           }
 
-          // Una renovación descartada no demuestra que la sesión sea inválida.
-          // Si no fue posible renovar, se propagará el HTTP 401 original.
-          // El rechazo explícito de la renovación con HTTP 401 ya se
-          // gestiona en el bloque catch anterior.
+          // A discarded refresh does not prove the session is invalid.
+          // If the refresh was not possible, the original HTTP 401 is propagated.
+          // An explicit refresh rejection with HTTP 401 is already
+          // handled in the previous catch block.
         }
 
         const message =

@@ -16,7 +16,7 @@ type Props = {
   unavailableText: string;
 };
 
-/** Progreso mensual de una meta, visible en la pantalla independiente de Metas. */
+/** Monthly progress of a goal, shown on the separate Goals screen. */
 export function EnergyGoalProgressRow({
   title,
   limitLabel,

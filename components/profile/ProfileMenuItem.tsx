@@ -7,26 +7,26 @@ import { styles } from "./ProfileMenuItem.styles";
 
 
 type ProfileMenuItemProps = {
-  /** Texto secundario opcional debajo del titulo. */
+  /** Optional secondary text below the title. */
   description?: string;
-  /** Nombre del icono Ionicons que acompaña la accion. */
+  /** Name of the Ionicons icon that goes with the action. */
   icon: keyof typeof Ionicons.glyphMap;
-  /** Define color semantico: normal, primario o peligro. */
+  /** Defines the semantic color: normal, primary or danger. */
   intent?: "default" | "danger" | "primary";
-  /** Accion que se ejecuta al tocar la fila. */
+  /** Action run when the row is tapped. */
   onPress: () => void;
   title: string;
-  /** `boxed` muestra la fila como tarjeta; `plain` como opcion simple. */
+  /** `boxed` shows the row as a card; `plain` as a simple option. */
   variant?: "plain" | "boxed" | "menu";
   showChevron?: boolean;
   accessibilityHint?: string;
 };
 
 /**
- * Fila reutilizable para opciones del perfil.
+ * Reusable row for profile options.
  *
- * Centraliza estilos, iconos, estados presionados y colores por intencion.
- * Asi `profile.tsx` puede enfocarse en la estructura y no repetir JSX.
+ * Centralizes styles, icons, pressed states and colors by intent.
+ * That way `profile.tsx` can focus on structure and not repeat JSX.
  */
 export function ProfileMenuItem({
   description,
@@ -40,7 +40,7 @@ export function ProfileMenuItem({
 }: ProfileMenuItemProps) {
   const theme = useAppTheme();
 
-  // El color comunica el tipo de accion: peligro, primaria o normal.
+  // The color conveys the kind of action: danger, primary or normal.
   const iconColor =
     intent === "danger" ? theme.danger : intent === "primary" ? theme.blue : theme.text;
 

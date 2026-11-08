@@ -201,7 +201,7 @@ export default function AddDeviceScreen() {
       setWifiSearched(true);
       setWifiSearching(false);
 
-      // Verificar automáticamente cada dispositivo encontrado.
+      // Automatically verify every device found.
       void verifyDiscoveredCandidates(results, run);
     } catch (error) {
       if (run !== scanRun.current) return;
@@ -339,7 +339,7 @@ export default function AddDeviceScreen() {
               titleSize="section"
             />
 
-          {/* Hogar seleccionado */}
+          {/* Selected home */}
           <Text
             style={[
               styles.homeLabel,
@@ -368,7 +368,7 @@ export default function AddDeviceScreen() {
             </Text>
           ) : null}
 
-          {/* Búsqueda principal */}
+          {/* Main search */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Buscar dispositivos Shelly"
