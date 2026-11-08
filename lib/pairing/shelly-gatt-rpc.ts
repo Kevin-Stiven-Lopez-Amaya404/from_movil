@@ -1,5 +1,24 @@
 import { PairingError } from "./pairing-types";
 
+
+/**
+ * Trace output of the experimental BLE proof of concept.
+ * It is printed only in development builds, never in release builds.
+ */
+const isDevelopmentBuild =
+  typeof __DEV__ !== "undefined" && __DEV__ === true;
+const bleLog = {
+  log: (...args: unknown[]) => {
+    if (isDevelopmentBuild) console.log(...args);
+  },
+  warn: (...args: unknown[]) => {
+    if (isDevelopmentBuild) console.warn(...args);
+  },
+  error: (...args: unknown[]) => {
+    if (isDevelopmentBuild) console.error(...args);
+  },
+};
+
 export const SHELLY_RPC_SERVICE_UUID =
   "5f6d4f53-5f52-5043-5f53-56435f49445f";
 export const SHELLY_RPC_DATA_UUID =
@@ -172,7 +191,7 @@ async function waitForResponseLength(
   manager: ShellyBleManager,
   deviceId: string,
 ): Promise<number> {
-  console.log("[ShellyBLE] 4A - Consultando RX");
+  bleLog.log("[ShellyBLE] 4A - Polling RX");
 
   for (let attempt = 1; attempt <= 20; attempt++) {
     const characteristic = await withTimeout(
@@ -196,8 +215,8 @@ async function waitForResponseLength(
       }
 
       if (length > 0) {
-        console.log(
-          "[ShellyBLE] 4B - Respuesta disponible",
+        bleLog.log(
+          "[ShellyBLE] 4B - Response available",
           length,
         );
         return length;
@@ -270,13 +289,13 @@ export async function readShellyDeviceInfo(
   let disconnectSub: BleSubscription | null = null;
   try {
     connectionAttempted = true;
-    console.log("[ShellyBLE] 1 - Conectando");
-    console.log("[ShellyBLE] Iniciando conexión sin timeout nativo");
+    bleLog.log("[ShellyBLE] 1 - Connecting");
+    bleLog.log("[ShellyBLE] Starting connection without a native timeout");
     const device = await withTimeout(
       manager.connectToDevice(deviceId),
       "No se pudo conectar al Shelly por BLE.",
     );
-    console.log("[ShellyBLE] Conexión GATT establecida");
+    bleLog.log("[ShellyBLE] GATT connection established");
 
     disconnectSub = manager.onDeviceDisconnected(
       deviceId,
@@ -287,7 +306,7 @@ export async function readShellyDeviceInfo(
           attErrorCode?: number;
         }) | null;
 
-        console.warn("[ShellyBLE] EVENTO DESCONEXIÓN", {
+        bleLog.warn("[ShellyBLE] DISCONNECTION EVENT", {
           errorCode: bleError?.errorCode ?? null,
           androidErrorCode: bleError?.androidErrorCode ?? null,
           attErrorCode: bleError?.attErrorCode ?? null,
@@ -295,7 +314,7 @@ export async function readShellyDeviceInfo(
       },
     );
 
-    console.log("[ShellyBLE] 2 - Descubriendo GATT");
+    bleLog.log("[ShellyBLE] 2 - Discovering GATT");
     await withTimeout(
       device.discoverAllServicesAndCharacteristics(),
       "No se pudieron descubrir los servicios GATT del Shelly.",
@@ -308,8 +327,8 @@ export async function readShellyDeviceInfo(
       "No se pudieron consultar las caracter\u00edsticas RPC.",
     );
 
-    console.log(
-      "[ShellyBLE] Propiedades GATT:",
+    bleLog.log(
+      "[ShellyBLE] GATT properties:",
       characteristics.map((c) => ({
         uuid: c.uuid.slice(-12),
         read: c.isReadable,
@@ -321,12 +340,12 @@ export async function readShellyDeviceInfo(
 
     const mtuPayloadBytes = 20;
 
-    console.log(
-      "[ShellyBLE] POC sin negociación MTU",
+    bleLog.log(
+      "[ShellyBLE] POC without MTU negotiation",
     );
 
-    console.log(
-      "[ShellyBLE] Tamaño de fragmento DATA:",
+    bleLog.log(
+      "[ShellyBLE] DATA fragment size:",
       mtuPayloadBytes,
     );
 
@@ -338,14 +357,14 @@ export async function readShellyDeviceInfo(
         method: "Shelly.GetDeviceInfo",
       }),
     );
-    console.log("[ShellyBLE] 3 - Preparando RPC");
+    bleLog.log("[ShellyBLE] 3 - Preparing RPC");
 
     const connected = await manager.isDeviceConnected(
       deviceId,
     );
 
-    console.log(
-      "[ShellyBLE] ¿Conectado antes de TX?",
+    bleLog.log(
+      "[ShellyBLE] Connected before TX?",
       connected,
     );
 
@@ -356,7 +375,7 @@ export async function readShellyDeviceInfo(
       );
     }
 
-    console.log("[ShellyBLE] 3C - Escribiendo longitud TX");
+    bleLog.log("[ShellyBLE] 3C - Writing TX length");
 
     await withTimeout(
       manager.writeCharacteristicWithResponseForDevice(
@@ -368,15 +387,15 @@ export async function readShellyDeviceInfo(
       "Tiempo agotado al escribir TX",
     );
 
-    console.log("[ShellyBLE] 3D - Escritura TX correcta");
+    bleLog.log("[ShellyBLE] 3D - TX write succeeded");
 
     for (
       let offset = 0;
       offset < request.length;
       offset += mtuPayloadBytes
     ) {
-      console.log(
-        "[ShellyBLE] 3E - Escribiendo DATA, offset:",
+      bleLog.log(
+        "[ShellyBLE] 3E - Writing DATA, offset:",
         offset,
       );
 
@@ -395,12 +414,12 @@ export async function readShellyDeviceInfo(
         "Tiempo agotado al escribir DATA",
       );
 
-      console.log(
-        "[ShellyBLE] 3F - Escritura DATA correcta",
+      bleLog.log(
+        "[ShellyBLE] 3F - DATA write succeeded",
       );
     }
 
-    console.log("[ShellyBLE] 4 - Leyendo respuesta RX");
+    bleLog.log("[ShellyBLE] 4 - Reading RX response");
 
     const responseLength = await waitForResponseLength(
       manager,
@@ -413,7 +432,7 @@ export async function readShellyDeviceInfo(
       responseLength,
     );
 
-    console.log("[ShellyBLE] 5 - Respuesta RPC recibida");
+    bleLog.log("[ShellyBLE] 5 - RPC response received");
 
     return decodeShellyRpcResponse(
       responseFrame,
@@ -427,7 +446,7 @@ export async function readShellyDeviceInfo(
       reason?: string | null;
     };
 
-    console.log("[ShellyBLE] Detalle del rechazo:", {
+    bleLog.log("[ShellyBLE] Rejection detail:", {
       message: bleError.message,
       errorCode: bleError.errorCode,
       attErrorCode: bleError.attErrorCode,
@@ -435,8 +454,8 @@ export async function readShellyDeviceInfo(
       reason: bleError.reason,
     });
 
-    console.error(
-      "[ShellyBLE] ERROR ORIGINAL DE LECTURA GATT:",
+    bleLog.error(
+      "[ShellyBLE] ORIGINAL GATT READ ERROR:",
       error,
     );
 
@@ -456,7 +475,7 @@ export async function readShellyDeviceInfo(
   } finally {
     disconnectSub?.remove();
     if (connectionAttempted) {
-      console.log("[ShellyBLE] Cerrando conexión GATT...");
+      bleLog.log("[ShellyBLE] Closing GATT connection...");
 
       try {
         await withTimeout(
@@ -464,13 +483,13 @@ export async function readShellyDeviceInfo(
           "Tiempo agotado al cerrar conexión BLE.",
         );
       } catch (error) {
-        console.warn(
-          "[ShellyBLE] No se pudo cerrar GATT normalmente:",
+        bleLog.warn(
+          "[ShellyBLE] Could not close GATT normally:",
           error,
         );
       }
 
-      console.log("[ShellyBLE] Finalizada la operación BLE.");
+      bleLog.log("[ShellyBLE] BLE operation finished.");
     }
   }
 }
