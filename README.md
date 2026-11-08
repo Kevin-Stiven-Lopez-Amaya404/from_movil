@@ -1,6 +1,6 @@
 # SmartHome — frontend móvil
 
-Aplicación nativa Android/iOS para gestionar hogares, dispositivos Shelly, energía, alertas y preferencias. Implementada con **Expo SDK 57**, **React Native 0.86**, **TypeScript** y **Expo Router**.
+Aplicación nativa Android/iOS para gestionar hogares, dispositivos Shelly, energía, alertas y preferencias. Implementada con **Expo SDK 58**, **React Native 0.88**, **TypeScript** y **Expo Router**.
 
 La rama de integración es `dev`. No hay despliegue web de este frontend. Los servicios y pruebas del código prevalecen frente a la documentación histórica.
 
